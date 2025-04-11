@@ -69,9 +69,8 @@ postgres = ['psycopg2']
 
 [dependency-groups]
 dev = [
+    # Test requirements
     'hypothesis',
-    'pycodestyle',
-    'pylint',
     'pytest',
     'pytest-cov',
     'pytest-timeout',
@@ -79,8 +78,12 @@ dev = [
     'moto<5.0',  # 5.0 will require changes to some tests.
     'psycopg2',
     'netcdf4',
-]
-types = [
+
+    # Linting tools
+    'pycodestyle',
+    'pylint',
+
+    # Types and type checking
     "mypy",
     "types-affine",
     "types-cachetools",

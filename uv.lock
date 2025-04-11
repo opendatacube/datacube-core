@@ -740,8 +740,11 @@ s3 = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "boto3-stubs" },
+    { name = "botocore-stubs" },
     { name = "hypothesis" },
     { name = "moto" },
+    { name = "mypy" },
     { name = "netcdf4" },
     { name = "psycopg2" },
     { name = "pycodestyle" },
@@ -750,6 +753,14 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-httpserver" },
     { name = "pytest-timeout" },
+    { name = "types-affine" },
+    { name = "types-cachetools" },
+    { name = "types-jsonschema" },
+    { name = "types-psutil" },
+    { name = "types-python-dateutil" },
+    { name = "types-pyyaml" },
+    { name = "types-redis" },
+    { name = "types-setuptools" },
 ]
 doc = [
     { name = "autodocsumm" },
@@ -763,19 +774,6 @@ doc = [
     { name = "sphinx-autodoc-typehints" },
     { name = "sphinx-click" },
     { name = "sphinx-design" },
-]
-types = [
-    { name = "boto3-stubs" },
-    { name = "botocore-stubs" },
-    { name = "mypy" },
-    { name = "types-affine" },
-    { name = "types-cachetools" },
-    { name = "types-jsonschema" },
-    { name = "types-psutil" },
-    { name = "types-python-dateutil" },
-    { name = "types-pyyaml" },
-    { name = "types-redis" },
-    { name = "types-setuptools" },
 ]
 
 [package.metadata]
@@ -820,8 +818,11 @@ provides-extras = ["performance", "distributed", "s3", "cf", "netcdf", "postgres
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "boto3-stubs" },
+    { name = "botocore-stubs" },
     { name = "hypothesis" },
     { name = "moto", specifier = "<5.0" },
+    { name = "mypy" },
     { name = "netcdf4" },
     { name = "psycopg2" },
     { name = "pycodestyle" },
@@ -830,6 +831,14 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-httpserver" },
     { name = "pytest-timeout" },
+    { name = "types-affine" },
+    { name = "types-cachetools" },
+    { name = "types-jsonschema" },
+    { name = "types-psutil" },
+    { name = "types-python-dateutil" },
+    { name = "types-pyyaml" },
+    { name = "types-redis" },
+    { name = "types-setuptools" },
 ]
 doc = [
     { name = "autodocsumm" },
@@ -842,19 +851,6 @@ doc = [
     { name = "sphinx-autodoc-typehints" },
     { name = "sphinx-click" },
     { name = "sphinx-design" },
-]
-types = [
-    { name = "boto3-stubs" },
-    { name = "botocore-stubs" },
-    { name = "mypy" },
-    { name = "types-affine" },
-    { name = "types-cachetools" },
-    { name = "types-jsonschema" },
-    { name = "types-psutil" },
-    { name = "types-python-dateutil" },
-    { name = "types-pyyaml" },
-    { name = "types-redis" },
-    { name = "types-setuptools" },
 ]
 
 [[package]]
