@@ -66,7 +66,7 @@ Minor Fixes and Cleanup:
 - Optimize index_drivers() to return a set :pull:`1774`
 - Various minor cleanups :pull:`1772`
 - api: add missing staticmethod :pull:`1773`
-- whats_new.rst updates :pull:`1769`, :pull:`THIS`
+- whats_new.rst updates :pull:`1769`, :pull:`1778`
 
 v1.9.2 (26th February 2025)
 ===========================
