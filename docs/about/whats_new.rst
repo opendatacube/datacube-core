@@ -32,6 +32,7 @@ Next Version
 - api: add missing staticmethod :pull:`1773`
 - CI: update doctor rst version :pull:`1775`
 - Fix error when run with Python 3.10 causing pickling errors :pull:`1776`
+- Make `give_me_a_connection` in postgis driver public again :pull:`1782`
 
 v1.9.2 (26th February 2025)
 ===========================
