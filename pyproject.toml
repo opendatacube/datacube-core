@@ -24,33 +24,39 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
-        'affine',
-        'antimeridian',
-        'attrs>=18.1',
-        'pyproj>=2.5',
-        'shapely>=2.0',
-        'cachetools',
-        'click>=5.0',
-        'cloudpickle>=0.4',
-        'dask[array]',  # Dask versions from 2024.11 cause problems with numpy2
-        'distributed',
-        'jsonschema>=4.18',  # New reference resolution API
-        'numpy>=1.26.0',
-        'lark',
-        'pandas',
-        'python-dateutil',
-        'pyyaml',
-        'rasterio>=1.3.11',  # Deleted Numpy version in 1.3.10
-        'ruamel.yaml',
-        'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.
-        'GeoAlchemy2',
-        "alembic",
-        'toolz',
-        'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
-        'packaging',
-        'odc-geo>=0.4.8',
-        'deprecat',
+    'affine',
+    'alembic',
+    'antimeridian',
+    'attrs>=18.1',
+    'cachetools',
+    'click>=5.0',
+    'cloudpickle>=0.4',
+    'dask[array]',
+    'deprecat',
+    'distributed',
+    'GeoAlchemy2',
+    'jsonschema>=4.18',  # New reference resolution API
+    'lark',
+    'numpy>=1.26.0',
+    'odc-geo>=0.4.8',
+    'packaging',
+    'pandas',
+    'pyproj>=2.5',
+    'python-dateutil',
+    'pyyaml',
+    'rasterio>=1.3.11',  # Deleted Numpy version in 1.3.10
+    'ruamel.yaml',
+    'shapely>=2.0',
+    'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.
+    'toolz',
+    'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
 ]
+
+[build-system]
+requires = ["setuptools>=69", "setuptools_scm[toml]>=3.4"]
+# v61 Add support for pyproject.toml, and include-package-data defaults to try when using pyproject.toml
+# v69 includes py.typed files by default
+build-backend = "setuptools.build_meta"
 
 [project.urls]
 Homepage = "https://opendatacube.org/"
@@ -71,19 +77,21 @@ postgres = ['psycopg2']
 dev = [
     # Test requirements
     'hypothesis',
+    'moto<5.0',  # 5.0 will require changes to some tests.
+    'netcdf4',
+    'psycopg2',
     'pytest',
     'pytest-cov',
-    'pytest-timeout',
     'pytest-httpserver',
-    'moto<5.0',  # 5.0 will require changes to some tests.
-    'psycopg2',
-    'netcdf4',
+    'pytest-timeout',
 
     # Linting tools
     'pycodestyle',
     'pylint',
 
     # Types and type checking
+    "boto3-stubs",
+    "botocore-stubs",
     "mypy",
     "types-affine",
     "types-cachetools",
@@ -93,19 +101,17 @@ dev = [
     "types-PyYAML",
     "types-redis",
     "types-setuptools",
-    "boto3-stubs",
-    "botocore-stubs"
 ]
 doc = [
+    'autodocsumm',
+    'beautifulsoup4',
+    'ipython',
+    'nbsphinx',
+    'pydata-sphinx-theme',
+    'recommonmark',
     'Sphinx',
     'sphinx_autodoc_typehints',  # Propagate mypy info into docs
     'sphinx-click',
-    'recommonmark',
-    'autodocsumm',
-    'beautifulsoup4',
-    'nbsphinx',
-    'ipython',
-    'pydata-sphinx-theme',
     'sphinx-design',
 ]
 
@@ -114,16 +120,10 @@ datacube = 'datacube.scripts.cli_app:cli'
 datacube-search = 'datacube.scripts.search_tool:cli'
 datacube-worker = 'datacube.execution.worker:main'
 
-[build-system]
-requires = ["setuptools>=69", "setuptools_scm[toml]>=3.4"]
-# v61 Add support for pyproject.toml, and include-package-data defaults to try when using pyproject.toml
-# v69 includes py.typed files by default
-build-backend = "setuptools.build_meta"
-
 [project.entry-points."datacube.plugins.io.read"]
-netcdf = "datacube.drivers.netcdf.driver:reader_driver_init"
+netcdf = 'datacube.drivers.netcdf.driver:reader_driver_init'
 
-[project.entry-points."datacube.plugins.io.write"]
+[project.entry-points.'datacube.plugins.io.write']
 netcdf = 'datacube.drivers.netcdf.driver:writer_driver_init'
 
 [project.entry-points."datacube.plugins.index"]
@@ -137,12 +137,12 @@ exclude = ['integration_tests', 'tests', 'examples', 'docs']
 include = ['datacube*']
 
 [tool.setuptools_scm]
-write_to = "datacube/_version.py"
+write_to = 'datacube/_version.py'
 
 [tool.mypy]
-python_version = "3.10"
+python_version = '3.10'
 allow_redefinition = true
-enable_error_code = ["explicit-override"]
+enable_error_code = ['explicit-override']
 ignore_missing_imports = true
 warn_redundant_casts = true
 warn_unused_ignores = true
