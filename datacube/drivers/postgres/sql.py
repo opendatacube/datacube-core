@@ -109,9 +109,9 @@ class CommonTimestamp(GenericFunction):
 
     name = 'common_timestamp'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.packagenames = ['%s' % SCHEMA_NAME]
+        self.packagenames = ('%s' % SCHEMA_NAME,)
 
 
 # pylint: disable=too-many-ancestors
@@ -123,9 +123,9 @@ class Float8Range(GenericFunction):
 
     name = 'float8range'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.packagenames = ['%s' % SCHEMA_NAME]
+        self.packagenames = ('%s' % SCHEMA_NAME,)
 
 
 class PGNAME(sqltypes.Text):

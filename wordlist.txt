@@ -509,6 +509,7 @@ SpatioTemporal
 spc
 SPDX
 spindex
+SQL
 SQLAlchemy
 SRID
 srid
