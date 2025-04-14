@@ -59,8 +59,8 @@ Minor Fixes and Cleanup:
 - api: add missing staticmethod :pull:`1773`
 - whats_new.rst updates :pull:`1769`, :pull:`1778`
 
-Typecheck Cleanups:
--------------------
+Typechecking Cleanups:
+----------------------
 
 - Type check cleanups :pull:`1744`, :pull:`1746`, :pull:`1742`, :pull:`1755`
 - Remove redundant casts :pull:`1758`

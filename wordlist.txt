@@ -18,6 +18,7 @@ aio
 albers
 Algo
 algo
+allrob
 Analytics
 analytics
 antimeridian
@@ -42,6 +43,7 @@ automethod
 automodule
 autoselectionlabel
 autosummary
+autoupdates
 auxuser
 aws
 backend
@@ -64,6 +66,7 @@ brazil
 Bugfix
 Bugfixes
 bY
+caitlinadams
 cartesian
 cbk
 cd
@@ -163,6 +166,7 @@ EarthData
 earthobservation
 ec
 eg
+emmanuel
 EnterpriseDB
 entrypoint
 env
@@ -185,6 +189,7 @@ executor
 f'file
 fd
 feedstock
+ferdman
 Festivus
 fmask
 fmt
@@ -235,6 +240,7 @@ GridSpec
 GridWorkflow
 gridWorkflow
 GroupBy
+handedly
 HDF
 hdf
 hhBQVas
@@ -407,6 +413,7 @@ pgadmin
 pgintegration
 pgisintegration
 pixelquality
+pjonsson
 pkgs
 Pluggable
 pmap
@@ -496,6 +503,7 @@ serialiser
 setuptools
 SimpleDocNav
 singledispatch
+SpacemanPaul
 spatio
 SpatioTemporal
 spc
