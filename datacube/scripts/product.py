@@ -35,8 +35,7 @@ def product_cli():
                 type=str,
                 nargs=-1)
 @ui.pass_index()
-def add_products(index, allow_exclusive_lock, files):
-    # type: (Index, bool, list) -> None
+def add_products(index: Index, allow_exclusive_lock: bool, files: list) -> None:
     """
     Add or update products in the generic index.
     """

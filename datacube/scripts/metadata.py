@@ -32,8 +32,7 @@ def this_group():
                 type=str,
                 nargs=-1)
 @ui.pass_index()
-def add_metadata_types(index, allow_exclusive_lock, files):
-    # type: (Index, bool, list) -> None
+def add_metadata_types(index: Index, allow_exclusive_lock: bool, files: list) -> None:
     """
     Add or update metadata types in the index
     """
