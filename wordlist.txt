@@ -558,6 +558,7 @@ ul
 unarchived
 unary
 Uncomment
+undeprecate
 ur
 URI
 uri
