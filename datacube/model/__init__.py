@@ -36,9 +36,10 @@ __all__ = [
     "ExtraDimensions"
 ]
 
-from odc.geo import CRS, BoundingBox, Geometry, wh_, resyx_
+from odc.geo import CRS, BoundingBox, Geometry, wh_, resyx_, yx_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
+from odc.geo.gridspec import GridSpec as GeoGridSpec
 from datacube.migration import ODC2DeprecationWarning
 from deprecat import deprecat
 
@@ -712,12 +713,7 @@ class Product:
         return ExtraDimensions(self._extra_dimensions)
 
     @cached_property
-    @deprecat(
-        reason="The Grid Workflow is deprecated. This property may return an (optional) odc-geo GridSpec in future.",
-        version="1.9.0",
-        category=ODC2DeprecationWarning
-    )
-    def grid_spec(self) -> 'GridSpec' | None:
+    def grid_spec(self) -> 'GridSpec' | GeoGridSpec | None:
         """
         Grid specification for this product
         """
@@ -737,12 +733,24 @@ class Product:
 
         # extract both tile_size and tile_shape for backwards compatibility
         gs_params = {name: extract_point(name)
-                     for name in ('tile_size', 'resolution', 'origin')}
+                     for name in ('tile_size', 'tile_shape', 'resolution', 'origin')}
 
-        complete = all(gs_params[k] is not None for k in ('tile_size', 'resolution'))
+        complete = gs_params['resolution'] is not None and (gs_params['tile_size'] or gs_params['tile_shape'])
         if not complete:
             return None
 
+        if gs_params['tile_shape'] is not None:
+            # convert origin to XY
+            if gs_params['origin'] is not None:
+                gs_params['origin'] = yx_(gs_params['origin'])
+
+            if type(gs_params['resolution']) is tuple:
+                gs_params['resolution'] = resyx_(*gs_params['resolution'])
+
+            del gs_params['tile_size']
+            return GeoGridSpec(crs=crs, **gs_params)
+
+        del gs_params['tile_shape']
         return GridSpec(crs=crs, **gs_params)
 
     @staticmethod
@@ -831,7 +839,7 @@ class Product:
             storage = self.definition.get('storage', {})
 
             if 'crs' in storage and 'resolution' in storage:
-                if 'tile_size' in storage:
+                if 'tile_size' in storage or 'tile_shape' in storage:
                     # Fully defined GridSpec, ignore it
                     return None
 
@@ -907,10 +915,14 @@ class Product:
                    description=self.description)
 
         if self.grid_spec is not None:
+            if isinstance(self.grid_spec, GeoGridSpec):
+                tile_shape = self.grid_spec.tile_shape
+            else:
+                tile_shape = self.grid_spec.tile_resolution
             row.update({
                 'crs': str(self.grid_spec.crs),
                 'spatial_dimensions': self.grid_spec.dimensions,
-                'tile_size': self.grid_spec.tile_size,
+                'tile_shape': tile_shape,
                 'resolution': self.grid_spec.resolution,
             })
         return row
