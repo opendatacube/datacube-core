@@ -72,11 +72,11 @@ class BoundingBox(_BoundingBox):
 
     @property
     def range_x(self) -> tuple[float, float]:
-        return (self.left, self.right)
+        return self.left, self.right
 
     @property
     def range_y(self) -> tuple[float, float]:
-        return (self.bottom, self.top)
+        return self.bottom, self.top
 
     @property
     def points(self) -> CoordList:
@@ -142,11 +142,11 @@ def _make_crs(crs: str | int | _CRS) -> tuple[_CRS, str, int | None]:
     crs_str = crs.srs
     if crs_str.upper().startswith("EPSG:"):
         epsg = int(crs_str.split(":", maxsplit=1)[-1])
-    return (crs, crs_str, epsg)
+    return crs, crs_str, epsg
 
 
 def _make_crs_transform_key(from_crs, to_crs, always_xy):
-    return (id(from_crs), id(to_crs), always_xy)
+    return id(from_crs), id(to_crs), always_xy
 
 
 @cachetools.cached({}, key=_make_crs_transform_key)
@@ -350,12 +350,12 @@ class CRS:
             rx, ry = transform(x, y)
 
             if not isinstance(rx, numpy.ndarray) or not isinstance(ry, numpy.ndarray):
-                return (rx, ry)
+                return rx, ry
 
             missing = numpy.isnan(rx) | numpy.isnan(ry)
             rx[missing] = numpy.nan
             ry[missing] = numpy.nan
-            return (rx, ry)
+            return rx, ry
 
         return result
 
@@ -1139,7 +1139,7 @@ class GeoBox:
         """
         crs = self.crs
         if crs is None:
-            return ('y', 'x')
+            return 'y', 'x'
         return crs.dimensions
 
     @property

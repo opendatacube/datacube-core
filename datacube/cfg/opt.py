@@ -139,8 +139,9 @@ class IndexDriverOptionHandler(ODCOptionHandler):
     def validate_and_normalise(self, value: Any) -> Any:
         value = super().validate_and_normalise(value)
         from datacube.drivers.indexes import index_drivers
-        if value not in index_drivers():
-            raise ConfigException(f"Unknown index driver: {value} - Try one of {','.join(index_drivers())}")
+        drivers = index_drivers()
+        if value not in drivers:
+            raise ConfigException(f"Unknown index driver: {value} - Try one of {','.join(sorted(drivers))}")
         return value
 
     @override
@@ -229,7 +230,7 @@ class PostgresURLOptionHandler(ODCOptionHandler):
             return None
         components = urlparse(value)
         # Check URL scheme is postgresql:
-        if components.scheme != "postgresql":
+        if components.scheme != "postgresql" and not value.startswith("postgresql+psycopg2"):
             raise ConfigException("Database URL is not a postgresql connection URL")
         # Don't bother splitting up the url, we'd just have to put it back together again later
         return value
@@ -304,7 +305,7 @@ def psql_url_from_config(env: "ODCEnvironment"):
         return env.db_url
     if not env.db_database:
         raise ConfigException(f"No database name supplied for environment {env._name}")
-    url = "postgresql://"
+    url = "postgresql+psycopg2://"
     if env.db_username:
         if env.db_password:
             escaped_password = quote_plus(env.db_password)

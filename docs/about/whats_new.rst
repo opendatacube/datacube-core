@@ -8,9 +8,31 @@ What's New
 Next Version
 ============
 
+- docs: fix broken links :pull:`1725`
+- Update dependencies :pull:`1727`, :pull:`1731`
+- config.py: emit ODC2DeprecationWarning :pull:`1733`
+- Stop filtering warnings :pull:`1734`
+- Fix ODC2DeprecationWarnings :pull:`1737`, :pull:`1738`, :pull:`1745`
+- CI: fix codecov warning :pull:`1740`
+- tests: ignore deliberate warnings :pull:`1741`, :pull:`1754`, :pull:`1768`
+- Update mypy version :pull:`1743`
 - Add a common table expression to fix a SQLAlchemy 2.0 sub-query warning :pull:`1747`
+- Convert examples and tests to pyproject.toml :pull:`1748`
+- pytest: only test documentation for relevant files :pull:`1751`
+- Stop building Python 2 wheels :pull:`1752`
+- CI: retry more in setup-miniconda :pull:`1753`
+- Remove redundant casts :pull:`1758`
 - CI: cancel old PR jobs :pull:`1761`
 - Remove deprecation of Product.grid_spec :pull:`1770`
+- Fix some readthedocs warnings :pull:`1762`
+- Update to Python 3.10 syntax :pull:`1756`, :pull:`1757`, :pull:`1758`, :pull:`1759`
+- Preparations for Psycopg3 support :pull:`1763`, :pull:`1764`, :pull:`1765`, :pull:`1766`
+- Add override annotations :pull:`1767`
+- Optimize index_drivers() to return a set :pull:`1774`
+- Various minor cleanups :pull:`1772`
+- api: add missing staticmethod :pull:`1773`
+- CI: update doctor rst version :pull:`1775`
+- Fix error when run with Python 3.10 causing pickling errors :pull:`1776`
 
 v1.9.2 (26th February 2025)
 ===========================

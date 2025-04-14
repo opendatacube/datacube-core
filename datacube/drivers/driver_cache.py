@@ -51,6 +51,6 @@ def load_drivers(group: str) -> dict[str, Any]:
         for ep in entry_points(group=group):
             driver = safe_load(ep)
             if driver is not None:
-                yield (ep.name, driver)
+                yield ep.name, driver
 
     return dict((name, driver) for name, driver in resolve_all(group))

@@ -159,7 +159,7 @@ class NativeField(PgField):
     def dataset_join_args(self) -> DatasetJoinArgs:
         if self.join_clause is None:
             return super().dataset_join_args
-        return (self.select_alchemy_table, self.join_clause)
+        return self.select_alchemy_table, self.join_clause
 
 
 class PgDocField(PgField):

@@ -92,6 +92,7 @@ def test_archive_datasets(index, ls8_eo3_dataset):
     assert not indexed_dataset.is_archived
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_archive_less_mature(index, final_dataset, nrt_dataset, ds_no_region):
     # case 1: add nrt then final; nrt should get archived
     index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
@@ -108,6 +109,7 @@ def test_archive_less_mature(index, final_dataset, nrt_dataset, ds_no_region):
         index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_cannot_search_for_less_mature(index, nrt_dataset, ds_no_region):
     # if a dataset is missing a property required for finding less mature datasets,
     # it should error
@@ -118,6 +120,7 @@ def test_cannot_search_for_less_mature(index, nrt_dataset, ds_no_region):
         index.datasets.add(ds_no_region, with_lineage=False, archive_less_mature=0)
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_archive_less_mature_approx_timestamp(index, ga_s2am_ard3_final, ga_s2am_ard3_interim):
     # test archive_less_mature where there's a slight difference in timestamps
     index.datasets.add(ga_s2am_ard3_interim, with_lineage=False)
@@ -127,6 +130,7 @@ def test_archive_less_mature_approx_timestamp(index, ga_s2am_ard3_final, ga_s2am
     assert not index.datasets.get(ga_s2am_ard3_final.id).is_archived
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_dont_archive_less_mature(index, final_dataset, nrt_dataset):
     # ensure datasets aren't archive if no archive_less_mature value is provided
     index.datasets.add(nrt_dataset, with_lineage=False)
@@ -136,6 +140,7 @@ def test_dont_archive_less_mature(index, final_dataset, nrt_dataset):
     assert not index.datasets.get(final_dataset.id).is_archived
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_archive_less_mature_bool(index, final_dataset, nrt_dataset):
     # if archive_less_mature value gets passed as a bool via an outdated script
     index.datasets.add(nrt_dataset, with_lineage=False)
@@ -258,6 +263,7 @@ def test_get_dataset(index: Index, ls8_eo3_dataset: Dataset) -> None:
                                     'f226a278-e422-11e6-b501-185e0f80a5c1']) == []
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_add_dataset_no_product_id(index: Index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8_dataset_doc):
     product_no_id = Product(extended_eo3_metadata_type, ls8_eo3_product.definition)
     assert product_no_id.id is None
@@ -266,6 +272,7 @@ def test_add_dataset_no_product_id(index: Index, extended_eo3_metadata_type, ls8
     assert index.datasets.add(dataset, with_lineage=False)
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_transactions_api_ctx_mgr(index,
                                   extended_eo3_metadata_type_doc,
                                   ls8_eo3_product,
@@ -296,6 +303,7 @@ def test_transactions_api_ctx_mgr(index,
     assert index.datasets.get(ds2.id) is None
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_transactions_api_ctx_mgr_nested(index,
                                          extended_eo3_metadata_type_doc,
                                          ls8_eo3_product,
@@ -329,6 +337,7 @@ def test_transactions_api_ctx_mgr_nested(index,
     assert index.datasets.get(ds2.id) is None
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_transactions_api_manual(index,
                                  extended_eo3_metadata_type_doc,
                                  ls8_eo3_product,
@@ -355,6 +364,7 @@ def test_transactions_api_manual(index,
     assert index.datasets.get(ds2.id) is not None
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_transactions_api_hybrid(index,
                                  extended_eo3_metadata_type_doc,
                                  ls8_eo3_product,
@@ -434,6 +444,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_index_dataset_with_lineage(index, ds_with_lineage, ls8_eo3_dataset):
     assert ds_with_lineage.source_tree
     index.datasets.add(ds_with_lineage)

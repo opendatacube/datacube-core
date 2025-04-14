@@ -172,7 +172,7 @@ class DatasetResource(AbstractDatasetResource):
             if vals in dups:
                 dups[vals].add(ds.id)
             else:
-                dups[vals] = set([ds.id])  # avoid duplicate entries
+                dups[vals] = {ds.id}  # avoid duplicate entries
         # only return entries with more than one dataset
         return list({k: v for k, v in dups.items() if len(v) > 1})
 
@@ -256,7 +256,7 @@ class DatasetResource(AbstractDatasetResource):
                           dataset: Dataset,
                           existing: Dataset | None = None
                          ) -> bool:
-        skip_set: set[str | None] = set([None])
+        skip_set: set[str | None] = {None}
         new_uris: list[str] = []
         if existing and existing.uris:
             for uri in existing.uris:
@@ -277,7 +277,7 @@ class DatasetResource(AbstractDatasetResource):
                 ds = self._active_by_id.pop(id_)
                 self._by_product[ds.product.name].remove(ds.id)
                 if ds.product.name not in self._archived_by_product:
-                    self._archived_by_product[ds.product.name] = set([ds.id])
+                    self._archived_by_product[ds.product.name] = {ds.id}
                 else:
                     self._archived_by_product[ds.product.name].add(ds.id)
                 ds.archived_time = datetime.datetime.now()
@@ -569,7 +569,7 @@ class DatasetResource(AbstractDatasetResource):
                 elif return_format == self.RET_FORMAT_PRODUCT_GROUPED:
                     product_results.append(ds)
             if return_format == self.RET_FORMAT_PRODUCT_GROUPED and product_results:
-                yield (product_results, product)
+                yield product_results, product
 
     def _search_flat(
             self,
@@ -676,7 +676,7 @@ class DatasetResource(AbstractDatasetResource):
     @override
     def count_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[tuple[Product, int]]:
         for datasets, prod in self.search_by_product(archived=archived, **query):
-            yield (prod, len(list(datasets)))
+            yield prod, len(list(datasets))
 
     @override
     def count_by_product_through_time(self,
@@ -845,7 +845,7 @@ class DatasetResource(AbstractDatasetResource):
                 min_time = dsmin
             if max_time is None or dsmax > max_time:
                 max_time = dsmax
-        return (cast(datetime.datetime, min_time), cast(datetime.datetime, max_time))
+        return cast(datetime.datetime, min_time), cast(datetime.datetime, max_time)
 
     # pylint: disable=redefined-outer-name
     @override

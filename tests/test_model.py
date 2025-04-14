@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import pytest
 import numpy
+import pickle
 from copy import deepcopy
 from datacube.testutils import mk_sample_dataset, mk_sample_product
 from datacube.model import (Product, GridSpec, Measurement,
@@ -292,6 +293,35 @@ def test_measurement():
 
     assert 'required keys missing:' in str(e.value)
     assert 'dtype' in str(e.value)
+
+
+def test_measurement_equality():
+    m1 = Measurement(name='t', dtype='uint8', nodata=255, units='1')
+    m2 = Measurement(name='t', dtype='uint8', nodata=255, units='1')
+    assert m1 == m2
+    g1 = AlbersGS.tile_geobox((15, -40))
+    assert m1 != g1
+
+
+@pytest.mark.parametrize("protocol", range(pickle.HIGHEST_PROTOCOL))
+def test_measurement_pickling(protocol):
+    m = Measurement(name='t', dtype='uint8', nodata=255, units='1')
+
+    serialised_m = pickle.dumps(m, protocol=protocol)
+
+    restored_m = pickle.loads(serialised_m)
+
+    assert m == restored_m
+
+
+def test_measurement_cloudpickle():
+    import cloudpickle
+
+    m = Measurement(name='t', dtype='uint8', nodata=255, units='1')
+    serialised = cloudpickle.dumps(m)
+
+    deserialised = cloudpickle.loads(serialised)
+    assert m == deserialised
 
 
 def test_output_geobox_load_hints():

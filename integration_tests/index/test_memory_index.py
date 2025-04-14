@@ -22,7 +22,7 @@ def test_init_memory(in_memory_config: ODCEnvironment):
     assert "default" in idxs._drivers
     assert "memory" in idxs._drivers
     with Datacube(env=in_memory_config, validate_connection=True) as dc:
-        assert (dc.index.url) == "memory"
+        assert dc.index.url == "memory"
         assert dc.index.environment.index_driver == "memory"
 
 
@@ -729,6 +729,7 @@ def test_default_clone_bulk_ops_multiloc(
         assert len(mem_index_fresh.index.datasets.get(ls8_eo3_dataset.id)._uris) == 2
 
 
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_default_clone_bulk_ops_reverse(mem_eo3_data: tuple, index):
     mem_idx, ls8id, woid = mem_eo3_data
     index.clone(mem_idx.index)

@@ -35,6 +35,7 @@ def test_create_drop_spatial_index(index: Index):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_spatial_index_maintain(index: Index, ls8_eo3_product, eo3_ls8_dataset_doc):
     index.create_spatial_index(CRS("EPSG:3577"))
     assert set(index.spatial_indexes(refresh=True)) == {CRS("EPSG:3577"), CRS("EPSG:4326")}
@@ -50,6 +51,7 @@ def test_spatial_index_maintain(index: Index, ls8_eo3_product, eo3_ls8_dataset_d
 
 
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_spatial_index_populate(index: Index,
                                 ls8_eo3_product,
                                 wo_eo3_product,
