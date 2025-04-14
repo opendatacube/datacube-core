@@ -11,7 +11,7 @@ products implementing the same interface.
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 
-from typing import Any, cast
+from typing import Any, Iterator, cast
 from typing_extensions import override
 from collections.abc import Hashable
 from collections.abc import Mapping as TypeMapping
@@ -46,7 +46,7 @@ class VirtualProductException(Exception):  # noqa: N818
 
 class VirtualDatasetBag:
     """ Result of `VirtualProduct.query`. """
-    def __init__(self, bag, geopolygon, product_definitions):
+    def __init__(self, bag, geopolygon, product_definitions) -> None:
         self.bag = bag
         self.geopolygon = geopolygon
         self.product_definitions = product_definitions
@@ -69,7 +69,7 @@ class VirtualDatasetBag:
 
         return worker(self.bag)
 
-    def explode(self):
+    def explode(self) -> Iterator:
         def worker(bag):
             if isinstance(bag, Sequence):
                 for child in bag:
@@ -92,14 +92,14 @@ class VirtualDatasetBag:
             yield VirtualDatasetBag(child, self.geopolygon, self.product_definitions)
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<VirtualDatasetBag of {len(list(self.contained_datasets()))} datacube datasets>"
 
 
 class VirtualDatasetBox:
     """ Result of `VirtualProduct.group`. """
 
-    def __init__(self, box, geobox, load_natively, product_definitions, geopolygon=None):
+    def __init__(self, box, geobox, load_natively, product_definitions, geopolygon=None) -> None:
         if not load_natively and geobox is None:
             raise VirtualProductException("VirtualDatasetBox has no geobox")
         if not load_natively and geopolygon is not None:
@@ -112,7 +112,7 @@ class VirtualDatasetBox:
         self.geopolygon = geopolygon
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         if not self.load_natively:
             return f"<VirtualDatasetBox of shape {dict(zip(self.dims, self.shape))}>"
 
@@ -262,15 +262,15 @@ class VirtualProduct(Mapping):
         return self._settings[key]
 
     @override
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._settings)
 
     @override
-    def __iter__(self):
+    def __iter__(self) -> Iterator:
         return iter(self._settings)
 
     @staticmethod
-    def _assert(cond, msg):
+    def _assert(cond, msg) -> None:
         if not cond:
             raise VirtualProductException(msg)
 
@@ -329,7 +329,7 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
         """ The name of an existing datacube product. """
         return self['product']
 
-    def _reconstruct(self):
+    def _reconstruct(self) -> dict:
         return {key: value if key not in ['fuse_func', 'dataset_predicate'] else qualified_name(value)
                 for key, value in self.items()}
 

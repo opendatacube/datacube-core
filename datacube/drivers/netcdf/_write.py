@@ -13,7 +13,7 @@ from datacube.storage._hdf5 import HDF5_LOCK
 _LOG = logging.getLogger(__name__)
 
 
-def _get_units(coord):
+def _get_units(coord) -> str:
     """
     Guess units from coordinate
     1. Value of .units if set
@@ -86,7 +86,7 @@ def create_netcdf_storage_unit(filename,
 
 
 def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_params=None,
-                            netcdfparams=None):
+                            netcdfparams=None) -> None:
     """
     Write a Data Cube style xarray Dataset to a NetCDF file
 

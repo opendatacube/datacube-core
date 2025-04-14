@@ -20,7 +20,7 @@ SCHEMA_NAME = 'agdc'
 class CreateView(Executable, ClauseElement):
     inherit_cache = True
 
-    def __init__(self, name, select):
+    def __init__(self, name, select) -> None:
         self.name = name
         self.select = select
 
@@ -95,7 +95,7 @@ class FLOAT8RANGE(AbstractRange[Range[Double]]):
 
 
 @compiles(FLOAT8RANGE)
-def visit_float8range(element, compiler, **kw):
+def visit_float8range(element, compiler, **kw) -> str:
     return "FLOAT8RANGE"
 
 
@@ -134,11 +134,11 @@ class PGNAME(sqltypes.Text):
 
 
 @compiles(PGNAME)
-def visit_name(element, compiler, **kw):
+def visit_name(element, compiler, **kw) -> str:
     return "NAME"
 
 
-def pg_exists(conn, name):
+def pg_exists(conn, name) -> bool:
     """
     Does a postgres object exist?
     :rtype bool
@@ -146,7 +146,7 @@ def pg_exists(conn, name):
     return conn.execute(text(f"SELECT to_regclass('{name}')")).scalar() is not None
 
 
-def pg_column_exists(conn, table, column):
+def pg_column_exists(conn, table, column) -> bool:
     """
     Does a postgres object exist?
     :rtype bool

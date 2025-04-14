@@ -18,6 +18,7 @@ import warnings
 import contextlib
 from datetime import datetime
 from collections.abc import Sequence, Mapping
+from typing import Any
 import pathlib
 
 from affine import Affine
@@ -34,7 +35,10 @@ from odc.geo.geobox import GeoBox
 _DEFAULT = object()
 
 
-def assert_file_structure(folder, expected_structure, root=''):
+def assert_file_structure(
+        folder: pathlib.Path,
+        expected_structure: Mapping[str, str | Sequence[str] | Mapping[str, str | Sequence[str]]],
+        root: str = '') -> None:
     """
     Assert that the contents of a folder (filenames and subfolder names recursively)
     match the given nested dictionary structure.
@@ -66,7 +70,7 @@ def assert_file_structure(folder, expected_structure, root=''):
             assert False, "Only strings|[strings] and dicts expected when defining a folder structure."
 
 
-def write_files(file_dict):
+def write_files(file_dict: Mapping[str, str | Sequence[str]]) -> pathlib.Path:
     """
     Convenience method for writing a bunch of files to a temporary directory.
 
@@ -83,7 +87,7 @@ def write_files(file_dict):
     containing_dir = tempfile.mkdtemp(suffix='neotestrun')
     _write_files_to_dir(containing_dir, file_dict)
 
-    def remove_if_exists(path):
+    def remove_if_exists(path) -> None:
         if os.path.exists(path):
             shutil.rmtree(path)
 
@@ -91,7 +95,7 @@ def write_files(file_dict):
     return pathlib.Path(containing_dir)
 
 
-def _write_files_to_dir(directory_path, file_dict):
+def _write_files_to_dir(directory_path: str, file_dict: Mapping[str, str | Sequence[str]]) -> None:
     """
     Convenience method for writing a bunch of files to a given directory.
 
@@ -113,7 +117,7 @@ def _write_files_to_dir(directory_path, file_dict):
                     raise ValueError('Unexpected file contents: %s' % type(contents))
 
 
-def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+def isclose(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0) -> float:
     """
     Testing approximate equality for floats
     See https://docs.python.org/3/whatsnew/3.5.html#pep-485-a-function-for-testing-approximate-equality
@@ -121,7 +125,10 @@ def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
-def geobox_to_gridspatial(geobox):
+def geobox_to_gridspatial(geobox: GeoBox | None
+                         ) -> dict[str,
+                                   dict[str,
+                                        dict[str, str | dict[str, dict[str, float]]]]]:
     if geobox is None:
         return {}
 
@@ -136,7 +143,7 @@ def geobox_to_gridspatial(geobox):
             "spatial_reference": str(geobox.crs)}}}
 
 
-def mk_sample_eo(name='eo'):
+def mk_sample_eo(name: str = 'eo') -> MetadataType:
     eo_yaml = f"""
 name: {name}
 description: Sample
@@ -213,18 +220,18 @@ def mk_sample_product(name,
 
 
 def mk_sample_dataset(bands,
-                      uri='file:///tmp',
+                      uri: str | list[str] | None = 'file:///tmp',
                       product_name='sample',
                       format='GeoTiff',
                       timestamp=None,
-                      id='3a1df9e0-8484-44fc-8102-79184eab85dd',
-                      geobox=None,
-                      product_opts=None):
+                      id: str = '3a1df9e0-8484-44fc-8102-79184eab85dd',
+                      geobox: GeoBox | None = None,
+                      product_opts=None) -> Dataset:
     # pylint: disable=redefined-builtin
     image_bands_keys = 'path layer band'.split(' ')
     measurement_keys = 'dtype units nodata aliases name'.split(' ')
 
-    def with_keys(d, keys):
+    def with_keys(d, keys) -> dict:
         return dict((k, d[k]) for k in keys if k in d)
 
     measurements = [with_keys(m, measurement_keys) for m in bands]
@@ -240,7 +247,7 @@ def mk_sample_dataset(bands,
     if timestamp is None:
         timestamp = '2018-06-29'
     if not uri:
-        kwargs = {
+        kwargs: dict[str, str | list[str] | None] = {
             "uri": None
         }
     elif isinstance(uri, str):
@@ -266,7 +273,7 @@ def mk_sample_dataset(bands,
         }, **kwargs)
 
 
-def make_graph_abcde(node):
+def make_graph_abcde(node) -> tuple[Any, Any, Any, Any, Any]:
     """
       A -> B
       |    |
@@ -296,7 +303,7 @@ def dataset_maker(idx, t=None):
 
     t = t.isoformat()
 
-    def make(name, sources=_DEFAULT, **kwargs):
+    def make(name, sources=_DEFAULT, **kwargs) -> dict:
         if sources is _DEFAULT:
             sources = {}
 
@@ -310,7 +317,7 @@ def dataset_maker(idx, t=None):
     return make
 
 
-def gen_dataset_test_dag(idx, t=None, force_tree=False):
+def gen_dataset_test_dag(idx, t=None, force_tree: bool = False) -> Any:
     """Build document suitable for consumption by dataset add
 
     when force_tree is True pump the object graph through json

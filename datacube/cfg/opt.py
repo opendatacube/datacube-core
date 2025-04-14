@@ -42,7 +42,7 @@ class ODCOptionHandler:
     allow_envvar_lookup: bool = True
 
     def __init__(self, name: str, env: "ODCEnvironment", default: Any = None,
-                 legacy_env_aliases=None):
+                 legacy_env_aliases=None) -> None:
         """
 
         :param name: Name of the option
@@ -158,7 +158,7 @@ class IntOptionHandler(ODCOptionHandler):
     """
     Require an integer value, with optional min and max vals.
     """
-    def __init__(self, *args, minval: int | None = None, maxval: int | None = None, **kwargs):
+    def __init__(self, *args, minval: int | None = None, maxval: int | None = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.minval = minval
         self.maxval = maxval
@@ -264,7 +264,7 @@ class PostgresURLOptionHandler(ODCOptionHandler):
 
 
 class PostgresURLPartHandler(ODCOptionHandler):
-    def __init__(self, urlhandler: PostgresURLOptionHandler, urlpart: str, name: str, env: "ODCEnvironment"):
+    def __init__(self, urlhandler: PostgresURLOptionHandler, urlpart: str, name: str, env: "ODCEnvironment") -> None:
         self.urlhandler = urlhandler
         self.urlpart = urlpart
         super().__init__(name, env)
@@ -286,7 +286,7 @@ class PostgresURLPartHandler(ODCOptionHandler):
         return None
 
 
-def config_options_for_psql_driver(env: "ODCEnvironment"):
+def config_options_for_psql_driver(env: "ODCEnvironment") -> list[ODCOptionHandler]:
     """
        Config options for shared use by postgres-based index drivers
        (i.e. postgres and postgis drivers)

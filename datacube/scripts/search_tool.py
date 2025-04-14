@@ -25,11 +25,11 @@ from datacube.utils.dates import tz_as_utc
 PASS_INDEX = ui.pass_index('datacube-search')
 
 
-def printable_values(d):
+def printable_values(d) -> dict:
     return {k: printable(v) for k, v in d.items()}
 
 
-def write_pretty(out_f, field_names, search_results, terminal_size=shutil.get_terminal_size()):
+def write_pretty(out_f, field_names, search_results, terminal_size=shutil.get_terminal_size()) -> None:
     """
     Output in a human-readable text format. Inspired by psql's expanded output.
     """
@@ -53,7 +53,7 @@ def write_pretty(out_f, field_names, search_results, terminal_size=shutil.get_te
         record_num += 1
 
 
-def write_csv(out_f, field_names, search_results):
+def write_csv(out_f, field_names, search_results) -> None:
     """
     Output as a CSV.
     """
@@ -89,7 +89,7 @@ def cli(ctx, f):
 @ui.parsed_search_expressions
 @PASS_INDEX
 @click.pass_context
-def datasets(ctx, index, expressions):
+def datasets(ctx, index, expressions) -> None:
     """
     Search available Datasets
     """
@@ -103,7 +103,7 @@ def datasets(ctx, index, expressions):
 @click.argument('period', nargs=1)
 @ui.parsed_search_expressions
 @PASS_INDEX
-def product_counts(index, period, expressions):
+def product_counts(index, period, expressions) -> None:
     """
     Count product Datasets available by period
 
@@ -122,7 +122,7 @@ def printable(val):
 
 
 @printable.register(type(None))
-def printable_none(val):
+def printable_none(val) -> str:
     return ''
 
 
@@ -135,7 +135,7 @@ def printable_dt(val):
 
 
 @printable.register(Range)
-def printable_r(val):
+def printable_r(val) -> str:
     """
     :type val: sqlalchemy.dialects.postgresql.Range
     """

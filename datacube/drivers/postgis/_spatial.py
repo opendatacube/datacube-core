@@ -38,7 +38,7 @@ class SpatialIndexORMRegistry:
     _registry: dict[int, type[SpatialIndex]] = {}
     _lock = Lock()
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._registry = self.__class__._registry
         self._lock = self.__class__._lock
 
@@ -94,7 +94,7 @@ class SpatialIndexORMRegistry:
         return orm_registry.mapped(type(f'SpatialIdx{epsg}', (SpatialIndex,), attributes))
 
 
-def is_spindex_table_name(name: str):
+def is_spindex_table_name(name: str) -> bool:
     bits = name.split("_")
     if len(bits) == 2:
         if bits[0] == "spatial":
@@ -170,7 +170,7 @@ def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> None:
     return
 
 
-def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex]):
+def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> bool:
     with Session(engine) as session:
         results = session.execute(
             select(SpatialIndexRecord).where(
@@ -243,7 +243,7 @@ def geom_alchemy(geom: Geom) -> str:
 EPSG4326_LIKE_CODES = [3857]
 
 
-def sanitise_extent(extent, crs):
+def sanitise_extent(extent, crs) -> Geom:
     if crs.epsg == 4326:
         prelim = extent.to_crs(crs)
         return Geom(fix_shape(prelim.geom), crs=crs)
@@ -263,7 +263,7 @@ def generate_dataset_spatial_values(dataset_id, crs, extent):
     return {"dataset_ref": dataset_id, "extent": geom_alch}
 
 
-def extract_geometry_from_eo3_projection(eo3_gs_doc):
+def extract_geometry_from_eo3_projection(eo3_gs_doc) -> Geom | None:
     native_crs = CRS(eo3_gs_doc["spatial_reference"])
     valid_data = eo3_gs_doc.get("valid_data")
     if valid_data:

@@ -62,7 +62,7 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def include_name(name, type_, parent_names):
+def include_name(name, type_, parent_names) -> bool:
     if type_ == "table":
         # Ignore postgis system table
         if name == "spatial_ref_sys" and parent_names["schema_name"] is None:
@@ -134,7 +134,7 @@ def run_migrations_online() -> None:
         run_migration_with_connection(connection)
 
 
-def run_migration_with_connection(connection):
+def run_migration_with_connection(connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,

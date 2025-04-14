@@ -16,7 +16,7 @@ import json
 import logging
 import re
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, Iterator
 from typing_extensions import override
 from collections.abc import Callable, Iterable, Mapping
 
@@ -57,7 +57,7 @@ class PostGisDb:
 
     driver_name = 'postgis'  # Mostly to support parametrised tests
 
-    def __init__(self, engine: Engine):
+    def __init__(self, engine: Engine) -> None:
         # We don't recommend using this constructor directly as it may change.
         # Use static methods PostGisDb.create() or PostGisDb.from_config()
         self._engine = engine
@@ -149,7 +149,7 @@ class PostGisDb:
         self._engine.dispose()
 
     @classmethod
-    def _expand_app_name(cls, application_name):
+    def _expand_app_name(cls, application_name) -> str:
         """
         >>> PostGisDb._expand_app_name(None) #doctest: +ELLIPSIS
         'odc-...'
@@ -239,7 +239,7 @@ class PostGisDb:
         return list(CRS(epsg) for epsg in self.spindexes.keys())
 
     @contextmanager
-    def _connect(self):
+    def _connect(self) -> Iterator:
         """
         Borrow a connection from the pool.
 
@@ -273,7 +273,7 @@ class PostGisDb:
         return _api.get_dataset_fields(metadata_type_definition)
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"PostgisDb<engine={self._engine!r}>"
 
 
@@ -298,12 +298,12 @@ def handle_dynamic_token_authentication(engine: Engine,
         cparams["password"] = last_token[0]
 
 
-def _to_json(o):
+def _to_json(o) -> str:
     # Postgres <=9.5 doesn't support NaN and Infinity
     fixedup = jsonify_document(o)
     return json.dumps(fixedup, default=_json_fallback)
 
 
-def _json_fallback(obj):
+def _json_fallback(obj) -> None:
     """Fallback json serialiser."""
     raise TypeError(f"Type not serializable: {type(obj)}")

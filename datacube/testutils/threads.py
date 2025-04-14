@@ -13,8 +13,8 @@ class FakeThreadPoolExecutor:
     """ Limited version of ThreadPool that executes in the current thread.
     """
 
-    def submit(self, fn, *args, **kwargs):
-        f = Future()
+    def submit(self, fn, *args, **kwargs) -> Future:
+        f: Future = Future()
         try:
             f.set_result(fn(*args, **kwargs))
         except Exception as e:  # pylint: disable=broad-except
@@ -22,7 +22,7 @@ class FakeThreadPoolExecutor:
 
         return f
 
-    def map(self, fn, *iterables, timeout=None, chunksize=1):
+    def map(self, fn, *iterables, timeout=None, chunksize: int = 1) -> map:
         return map(partial(self.submit, fn), *iterables)
 
     def shutdown(self, wait=True):

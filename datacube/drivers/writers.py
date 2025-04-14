@@ -8,7 +8,7 @@ from .driver_cache import load_drivers
 
 
 class WriterDriverCache:
-    def __init__(self, group: str):
+    def __init__(self, group: str) -> None:
         self._drivers = load_drivers(group)
 
         for driver in list(self._drivers.values()):
@@ -16,7 +16,7 @@ class WriterDriverCache:
                 for alias in driver.aliases:
                     self._drivers[alias] = driver
 
-    def __call__(self, name: str):
+    def __call__(self, name: str) -> dict | None:
         """
         :returns: None if driver with a given name is not found
 

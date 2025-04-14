@@ -16,7 +16,7 @@ Persistence API implementation for postgres.
 import datetime
 import logging
 import uuid  # noqa: F401
-from typing import Any
+from typing import Any, Iterator
 from typing_extensions import override
 from collections.abc import Iterable
 from typing import cast as type_cast
@@ -90,7 +90,7 @@ _DATASET_BULK_SELECT_FIELDS = (
 )
 
 
-def _base_known_fields():
+def _base_known_fields() -> dict:
     fields = get_native_fields().copy()
     fields['archived'] = NativeField(
         'archived',
@@ -203,7 +203,7 @@ def get_dataset_fields(metadata_type_definition):
 
 
 class PostgresDbAPI:
-    def __init__(self, connection):
+    def __init__(self, connection) -> None:
         self._connection = connection
         self._sqla_txn = None
 
@@ -211,20 +211,20 @@ class PostgresDbAPI:
     def in_transaction(self):
         return self._connection.in_transaction()
 
-    def begin(self):
+    def begin(self) -> None:
         self._connection.execution_options(isolation_level="REPEATABLE READ")
         self._sqla_txn = self._connection.begin()
 
-    def _end_transaction(self):
+    def _end_transaction(self) -> None:
         self._sqla_txn = None
         self._connection.execution_options(isolation_level="AUTOCOMMIT")
 
-    def commit(self):
-        self._sqla_txn.commit()
+    def commit(self) -> None:
+        self._sqla_txn.commit()  # type: ignore[attr-defined]
         self._end_transaction()
 
-    def rollback(self):
-        self._sqla_txn.rollback()
+    def rollback(self) -> None:
+        self._sqla_txn.rollback()  # type: ignore[attr-defined]
         self._end_transaction()
 
     def execute(self, command):
@@ -263,14 +263,14 @@ class PostgresDbAPI:
         )
         return ret.rowcount > 0
 
-    def insert_dataset_bulk(self, values):
+    def insert_dataset_bulk(self, values) -> tuple:
         requested = len(values)
         res = self._connection.execute(
             insert(DATASET), values
         )
         return res.rowcount, requested - res.rowcount
 
-    def update_dataset(self, metadata_doc, dataset_id, product_id):
+    def update_dataset(self, metadata_doc, dataset_id, product_id) -> bool:
         """
         Update dataset
         :type metadata_doc: dict
@@ -289,7 +289,7 @@ class PostgresDbAPI:
         )
         return res.rowcount > 0
 
-    def insert_dataset_location(self, dataset_id, uri):
+    def insert_dataset_location(self, dataset_id, uri) -> bool:
         """
         Add a location to a dataset if it is not already recorded.
 
@@ -315,7 +315,7 @@ class PostgresDbAPI:
 
         return r.rowcount > 0
 
-    def insert_dataset_location_bulk(self, values):
+    def insert_dataset_location_bulk(self, values) -> tuple:
         requested = len(values)
         res = self._connection.execute(insert(DATASET_LOCATION), values)
         return res.rowcount, requested - res.rowcount
@@ -331,7 +331,7 @@ class PostgresDbAPI:
             ).fetchone()
         )
 
-    def datasets_intersection(self, dataset_ids):
+    def datasets_intersection(self, dataset_ids) -> list:
         """ Compute set intersection: db_dataset_ids & dataset_ids
         """
         return [r[0]
@@ -398,7 +398,7 @@ class PostgresDbAPI:
                 raise MissingRecordError("Referenced source dataset doesn't exist")
             raise
 
-    def archive_dataset(self, dataset_id):
+    def archive_dataset(self, dataset_id) -> None:
         self._connection.execute(
             DATASET.update().where(
                 DATASET.c.id == dataset_id
@@ -409,7 +409,7 @@ class PostgresDbAPI:
             )
         )
 
-    def restore_dataset(self, dataset_id):
+    def restore_dataset(self, dataset_id) -> None:
         self._connection.execute(
             DATASET.update().where(
                 DATASET.c.id == dataset_id
@@ -418,7 +418,7 @@ class PostgresDbAPI:
             )
         )
 
-    def delete_dataset(self, dataset_id):
+    def delete_dataset(self, dataset_id) -> None:
         self._connection.execute(
             DATASET_LOCATION.delete().where(
                 DATASET_LOCATION.c.dataset_ref == dataset_id
@@ -526,7 +526,7 @@ class PostgresDbAPI:
         ).fetchall()
 
     @staticmethod
-    def _alchemify_expressions(expressions):
+    def _alchemify_expressions(expressions) -> list:
         def raw_expr(expression):
             if isinstance(expression, OrExpression):
                 return or_(raw_expr(expr) for expr in expression.exprs)
@@ -687,7 +687,7 @@ class PostgresDbAPI:
                                                   archived=archived, order_by=order_by)
         return self._connection.execute(select_query)
 
-    def bulk_simple_dataset_search(self, products=None, batch_size=0):
+    def bulk_simple_dataset_search(self, products=None, batch_size=0) -> list:
         """
         Perform bulk database reads (e.g. for index cloning)
 
@@ -730,7 +730,7 @@ class PostgresDbAPI:
         query = select(DATASET_SOURCE.c.dataset_ref, DATASET_SOURCE.c.classifier, DATASET_SOURCE.c.source_dataset_ref)
         return self._connection.execution_options(stream_results=True, yield_per=batch_size).execute(query)
 
-    def insert_lineage_bulk(self, vals):
+    def insert_lineage_bulk(self, vals) -> tuple:
         """
         Insert bulk lineage records (e.g. for index cloning)
 
@@ -871,7 +871,7 @@ class PostgresDbAPI:
 
         return self._connection.scalar(select_query)
 
-    def count_datasets_through_time(self, start, end, period, time_field, expressions):
+    def count_datasets_through_time(self, start, end, period, time_field, expressions) -> Iterator:
         """
         :type period: str
         :type start: datetime.datetime
@@ -1039,7 +1039,7 @@ class PostgresDbAPI:
 
         return type_id
 
-    def insert_metadata_type(self, name, definition, concurrently=False):
+    def insert_metadata_type(self, name, definition, concurrently=False) -> None:
         res = self._connection.execute(
             METADATA_TYPE.insert().values(
                 name=name,
@@ -1071,7 +1071,7 @@ class PostgresDbAPI:
 
         return type_id
 
-    def check_dynamic_fields(self, concurrently=False, rebuild_views=False, rebuild_indexes=False):
+    def check_dynamic_fields(self, concurrently=False, rebuild_views=False, rebuild_indexes=False) -> None:
         _LOG.info('Checking dynamic views/indexes. (rebuild views=%s, indexes=%s)', rebuild_views, rebuild_indexes)
 
         for metadata_type in self.get_all_metadata_types():
@@ -1085,7 +1085,7 @@ class PostgresDbAPI:
             )
 
     def _setup_metadata_type_fields(self, id_, name, definition,
-                                    rebuild_indexes=False, rebuild_views=False, concurrently=True):
+                                    rebuild_indexes=False, rebuild_views=False, concurrently=True) -> None:
         # Metadata fields are no longer used (all queries are per-dataset-type): exclude all.
         # This will have the effect of removing any old indexes that still exist.
         fields = get_dataset_fields(definition)
@@ -1121,7 +1121,7 @@ class PostgresDbAPI:
                                      delete_view=delete)
 
     @staticmethod
-    def _get_active_field_names(fields, metadata_doc):
+    def _get_active_field_names(fields, metadata_doc) -> Iterator:
         for field in fields.values():
             if field.can_extract:
                 try:
@@ -1194,7 +1194,7 @@ class PostgresDbAPI:
             raise RuntimeError("Product has no datasets and therefore no temporal extent")
         return res
 
-    def get_locations(self, dataset_id):
+    def get_locations(self, dataset_id) -> list:
         return [
             record[0]
             for record in self._connection.execute(
@@ -1209,7 +1209,7 @@ class PostgresDbAPI:
             ).fetchall()
         ]
 
-    def get_archived_locations(self, dataset_id):
+    def get_archived_locations(self, dataset_id) -> list:
         """
         Return a list of uris and archived_times for a dataset
         """
@@ -1226,7 +1226,7 @@ class PostgresDbAPI:
             ).fetchall()
         ]
 
-    def remove_location(self, dataset_id, uri):
+    def remove_location(self, dataset_id, uri) -> bool:
         """
         Remove the given location for a dataset
 
@@ -1244,7 +1244,7 @@ class PostgresDbAPI:
         )
         return res.rowcount > 0
 
-    def archive_location(self, dataset_id, uri):
+    def archive_location(self, dataset_id, uri) -> bool:
         scheme, body = split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update().where(
@@ -1260,7 +1260,7 @@ class PostgresDbAPI:
         )
         return res.rowcount > 0
 
-    def restore_location(self, dataset_id, uri):
+    def restore_location(self, dataset_id, uri) -> bool:
         scheme, body = split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update().where(
@@ -1277,10 +1277,10 @@ class PostgresDbAPI:
         return res.rowcount > 0
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "PostgresDb<connection={!r}>".format(self._connection)
 
-    def list_users(self):
+    def list_users(self) -> Iterator:
         result = self._connection.execute(text("""
             select
                 group_role.rolname as role_name,
@@ -1295,7 +1295,7 @@ class PostgresDbAPI:
         for row in result:
             yield _core.from_pg_role(row.role_name), row.user_name, row.description
 
-    def create_user(self, username, password, role, description=None):
+    def create_user(self, username, password, role, description=None) -> None:
         pg_role = _core.to_pg_role(role)
         username = escape_pg_identifier(self._connection, username)
         sql = text('create user {username} password :password in role {role}'.format(username=username, role=pg_role))

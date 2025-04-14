@@ -293,7 +293,7 @@ class Datacube:
         limit: int | None = None,
         driver: Any | None = None,
         **query: QueryField,
-    ):
+    ) -> xarray.Dataset:
         r"""
         Load data as an ``xarray.Dataset`` object.
         Each measurement will be a data variable in the :class:`xarray.Dataset`.
@@ -1108,23 +1108,23 @@ class Datacube:
             )
 
     @override
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Datacube<index={self.index!r}>"
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def close(self):
+    def close(self) -> None:
         """
         Close any open connections
         """
         self.index.close()
 
-    def __enter__(self):
+    def __enter__(self) -> Datacube:
         return self
 
-    def __exit__(self, type_, value, traceback):
+    def __exit__(self, type_, value, traceback) -> None:
         self.close()
 
 

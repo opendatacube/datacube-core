@@ -41,7 +41,7 @@ def check_valid_option(name: str) -> None:
         )
 
 
-def smells_like_ini(cfg_text: str):
+def smells_like_ini(cfg_text: str) -> bool:
     """
     Does this file smell like an INI file?
 

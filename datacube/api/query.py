@@ -27,7 +27,7 @@ _LOG = logging.getLogger(__name__)
 
 
 class GroupBy:
-    def __init__(self, group_by_func, dimension, units, sort_key=None, group_key=None):
+    def __init__(self, group_by_func, dimension, units, sort_key=None, group_key=None) -> None:
         """
         GroupBy Object
 
@@ -57,7 +57,7 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
 
 
 class Query:
-    def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms):
+    def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms) -> None:
         """Parses search terms in preparation for querying the Data Cube Index.
 
         Create a :class:`Query` object by passing it a set of search terms as keyword arguments.
@@ -95,7 +95,7 @@ class Query:
         self.product = product
         self.geopolygon = extract_geom_from_query(geopolygon=geopolygon, **search_terms)
         if 'source_filter' in search_terms and search_terms['source_filter'] is not None:
-            self.source_filter = Query(**search_terms['source_filter'])
+            self.source_filter: Query | None = Query(**search_terms['source_filter'])
         else:
             self.source_filter = None
 
@@ -137,7 +137,7 @@ class Query:
                     )
 
     @property
-    def search_terms(self):
+    def search_terms(self) -> dict:
         """
         Access the search terms as a dictionary.
 
@@ -165,11 +165,11 @@ class Query:
         return kwargs
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
     @override
-    def __str__(self):
+    def __str__(self) -> str:
         return f"""Datacube Query:
         type = {self.product}
         search = {self.search}
@@ -181,7 +181,7 @@ def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:
     return normalise_dt(ds.center_time)
 
 
-def query_group_by(group_by='time', **kwargs):
+def query_group_by(group_by='time', **kwargs) -> GroupBy:
     """
     Group by function for loading datasets
 
@@ -211,7 +211,7 @@ def query_group_by(group_by='time', **kwargs):
                                 sort_key=_extract_time_from_ds,
                                 group_key=lambda datasets: _extract_time_from_ds(datasets[0]))
 
-    group_by_map = {
+    group_by_map: dict[str | None, GroupBy] = {
         None: time_grouper,
         'time': time_grouper,
         'solar_day': solar_day_grouper
@@ -225,7 +225,7 @@ def query_group_by(group_by='time', **kwargs):
         )
 
 
-def _value_to_range(value):
+def _value_to_range(value) -> tuple[float, float]:
     if isinstance(value, (str, float, int)):
         value = float(value)
         return value, value
@@ -233,7 +233,7 @@ def _value_to_range(value):
         return float(value[0]), float(value[-1])
 
 
-def _values_to_search(**kwargs):
+def _values_to_search(**kwargs) -> dict:
     search = {}
     for key, value in kwargs.items():
         if key.lower() in ('time', 't'):

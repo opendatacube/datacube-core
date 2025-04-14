@@ -12,7 +12,7 @@ from datacube.model import LineageRelation
 
 
 class LineageResource(NoLineageResource, IndexResourceAddIn):
-    def __init__(self, db, index):
+    def __init__(self, db, index) -> None:
         self._db = db
         super().__init__(index)
 

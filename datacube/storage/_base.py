@@ -93,7 +93,7 @@ class BandInfo:
                  band: str,
                  uri_scheme: str | None = None,
                  extra_dim_index: int | None = None,
-                 patch_url: Callable[[str], str] | None = None):
+                 patch_url: Callable[[str], str] | None = None) -> None:
         try:
             mp, = ds.product.lookup_measurements([band]).values()
         except KeyError:

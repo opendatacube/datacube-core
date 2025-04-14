@@ -8,7 +8,7 @@ import numpy
 from datacube.utils.masking import valid_data_mask
 
 
-def formula_parser():
+def formula_parser() -> lark.Lark:
     return lark.Lark("""
                 ?expr: num_expr | bool_expr
 
@@ -97,11 +97,11 @@ class MaskEvaluator(lark.Transformer):
     neg = pos = inv = not_
 
     @staticmethod
-    def float_literal(value):
+    def float_literal(value) -> bool:
         return False
 
     @staticmethod
-    def int_literal(value):
+    def int_literal(value) -> bool:
         return False
 
 

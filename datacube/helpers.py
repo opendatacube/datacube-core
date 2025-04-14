@@ -20,7 +20,7 @@ DEFAULT_PROFILE = {
     'tiled': True}
 
 
-def _calculate_blocksize(profile):
+def _calculate_blocksize(profile) -> None:
     # Block size must be smaller than the image size, and for geotiffs must be divisible by 16
     # Fix for small images.
     if profile['blockxsize'] > profile['width']:
@@ -36,7 +36,7 @@ def _calculate_blocksize(profile):
             profile['blockysize'] = 16
 
 
-def ga_pq_fuser(dest, src):
+def ga_pq_fuser(dest, src) -> None:
     """
     Fuse two Geoscience Australia Pixel Quality ndarrays
 

@@ -18,7 +18,7 @@ from .sql import pg_exists, CreateView
 _LOG = logging.getLogger(__name__)
 
 
-def contains_all(d_, *keys):
+def contains_all(d_, *keys) -> bool:
     """
     Does the dictionary have values for all of the given keys?
 
@@ -32,7 +32,7 @@ def contains_all(d_, *keys):
     return all([d_.get(key) for key in keys])
 
 
-def _ensure_view(conn, fields, name, replace_existing, where_expression, delete=False):
+def _ensure_view(conn, fields, name, replace_existing, where_expression, delete=False) -> None:
     """
     Ensure a view exists for the given fields
     """
@@ -74,7 +74,7 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression, delete=
 
 
 def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_names, fields, name,
-                         rebuild_indexes=False, rebuild_view=False, delete_view=False):
+                         rebuild_indexes=False, rebuild_view=False, delete_view=False) -> None:
     """
     Check that we have expected indexes and views for the given fields
     """
@@ -122,7 +122,7 @@ def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_name
 
 def _check_field_index(conn, fields, name_prefix, filter_expression,
                        should_exist=True, concurrently=False,
-                       replace_existing=False, index_type=None):
+                       replace_existing=False, index_type=None) -> None:
     """
     Check the status of a given index: add or remove it as needed
     """

@@ -452,13 +452,13 @@ def obtain_new_iam_auth_token(url: URL, region_name: str = "auto", profile_name:
                                          Region=region_name)
 
 
-def configure_s3_access(profile=None,
-                        region_name="auto",
-                        aws_unsigned=False,
-                        requester_pays=False,
-                        cloud_defaults=True,
+def configure_s3_access(profile: str | None = None,
+                        region_name: str = "auto",
+                        aws_unsigned: bool = False,
+                        requester_pays: bool = False,
+                        cloud_defaults: bool = True,
                         client=None,
-                        **gdal_opts):
+                        **gdal_opts) -> Credentials | None:
     """ Credentialize for S3 bucket access or configure public access.
 
     This function obtains credentials for S3 access and passes them on to

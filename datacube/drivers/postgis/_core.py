@@ -45,7 +45,7 @@ METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME
 _LOG = logging.getLogger(__name__)
 
 
-def install_timestamp_trigger(connection):
+def install_timestamp_trigger(connection) -> None:
     from . import _schema
     TABLE_NAMES = [  # noqa: N806
         _schema.MetadataType.__tablename__,
@@ -60,7 +60,7 @@ def install_timestamp_trigger(connection):
             connection.execute(text(s.format(schema=SCHEMA_NAME, table=name)))
 
 
-def schema_qualified(name):
+def schema_qualified(name) -> str:
     """
     >>> schema_qualified('dataset')
     'odc.dataset'
@@ -68,7 +68,7 @@ def schema_qualified(name):
     return f'{SCHEMA_NAME}.{name}'
 
 
-def _get_quoted_connection_info(connection):
+def _get_quoted_connection_info(connection) -> tuple:
     db, user = connection.execute(text("select quote_ident(current_database()), quote_ident(current_user)")).fetchone()
     return db, user
 
@@ -189,7 +189,7 @@ def schema_is_latest(engine: Engine) -> bool:
     return False
 
 
-def update_schema(engine: Engine):
+def update_schema(engine: Engine) -> None:
     """
     Check and apply any missing schema changes to the database.
 
@@ -205,12 +205,12 @@ def update_schema(engine: Engine):
         command.upgrade(cfg, "head")
 
 
-def _ensure_extension(conn, extension_name="POSTGIS"):
+def _ensure_extension(conn, extension_name="POSTGIS") -> None:
     sql = text(f'create extension if not exists {extension_name}')
     conn.execute(sql)
 
 
-def _ensure_role(conn, name, inherits_from=None, add_user=False, create_db=False):
+def _ensure_role(conn, name, inherits_from=None, add_user=False, create_db=False) -> None:
     if has_role(conn, name):
         _LOG.debug('Role exists: %s', name)
         return
@@ -225,7 +225,7 @@ def _ensure_role(conn, name, inherits_from=None, add_user=False, create_db=False
     conn.execute(text(' '.join(sql)))
 
 
-def grant_role(conn, role, users):
+def grant_role(conn, role, users) -> None:
     if role not in USER_ROLES:
         raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
 
@@ -234,18 +234,18 @@ def grant_role(conn, role, users):
     conn.execute(text('grant {role} to {users}'.format(users=', '.join(users), role=role)))
 
 
-def has_role(conn, role_name):
+def has_role(conn, role_name) -> bool:
     return bool(
         conn.execute(text(f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'")).fetchall()
     )
 
 
-def has_schema(engine):
+def has_schema(engine) -> bool:
     inspector = inspect(engine)
     return SCHEMA_NAME in inspector.get_schema_names()
 
 
-def drop_db(connection):
+def drop_db(connection) -> None:
     # if_exists parameter seems to not be working in SQLA1.4?
     if has_schema(connection.engine):
         connection.execute(DropSchema(SCHEMA_NAME, cascade=True, if_exists=True))

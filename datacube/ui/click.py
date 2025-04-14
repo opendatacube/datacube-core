@@ -29,7 +29,7 @@ CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 _LOG = logging.getLogger(__name__)
 
 
-def _print_version(ctx, param, value):
+def _print_version(ctx, param, value) -> None:
     if not value or ctx.resilient_parsing:
         return
 
@@ -77,7 +77,7 @@ class ColorFormatter(logging.Formatter):
 
 class ClickHandler(logging.Handler):
     @override
-    def emit(self, record):
+    def emit(self, record) -> None:
         try:
             msg = self.format(record)
             click.echo(msg, err=True)
@@ -85,13 +85,13 @@ class ClickHandler(logging.Handler):
             self.handleError(record)
 
 
-def remove_handlers_of_type(logger, handler_type):
+def remove_handlers_of_type(logger, handler_type) -> None:
     for handler in logger.handlers:
         if isinstance(handler, handler_type):
             logger.removeHandler(handler)
 
 
-def _init_logging(ctx, param, value):
+def _init_logging(ctx, param, value) -> None:
     # When running in tests, we don't want to keep adding log handlers. It creates duplicate log messages up the wahoo.
     remove_handlers_of_type(logging.root, ClickHandler)
     handler = ClickHandler()
@@ -113,7 +113,7 @@ def _init_logging(ctx, param, value):
     ctx.obj['verbosity'] = value
 
 
-def _add_logfile(ctx, param, value):
+def _add_logfile(ctx, param, value) -> None:
     formatter = logging.Formatter(_LOG_FORMAT_STRING)
     for logfile in value:
         handler = logging.FileHandler(logfile)
@@ -121,7 +121,7 @@ def _add_logfile(ctx, param, value):
         logging.root.addHandler(handler)
 
 
-def _log_queries(ctx, param, value):
+def _log_queries(ctx, param, value) -> None:
     if value:
         logging.getLogger('sqlalchemy.engine').setLevel('INFO')
 
@@ -138,13 +138,13 @@ def _set_config(ctx, param, value):
     return value
 
 
-def _set_environment(ctx, param, value):
+def _set_environment(ctx, param, value) -> None:
     if not ctx.obj:
         ctx.obj = {}
     ctx.obj['config_environment'] = value
 
 
-def _set_config_text(ctx, param, value):
+def _set_config_text(ctx, param, value) -> None:
     if not ctx.obj:
         ctx.obj = {}
     ctx.obj['config_text'] = value
@@ -193,7 +193,7 @@ global_cli_options = compose(
 
 @click.group(help="Data Cube command-line interface", context_settings=CLICK_SETTINGS)
 @global_cli_options
-def cli():
+def cli() -> None:
     pass
 
 
@@ -284,12 +284,12 @@ def pass_datacube(app_name=None, expect_initialised=True):
     return decorate
 
 
-def parse_endpoint(value):
+def parse_endpoint(value) -> tuple[str, int]:
     ip, port = tuple(value.split(':'))
     return ip, int(port)
 
 
-def handle_exception(msg, e):
+def handle_exception(msg, e) -> None:
     """
     Exit following an exception in a CLI app
 
@@ -363,12 +363,12 @@ def parsed_search_expressions(f):
     return f
 
 
-def print_help_msg(command):
+def print_help_msg(command) -> None:
     with click.Context(command) as ctx:
         click.echo(command.get_help(ctx))
 
 
-def exit_on_empty_file(read_files_list):
+def exit_on_empty_file(read_files_list) -> None:
     if len(read_files_list) == 0:
         click.echo("All files are empty, exit")
         sys.exit(1)
