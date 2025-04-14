@@ -23,6 +23,7 @@ Next Version
 - CI: retry more in setup-miniconda :pull:`1753`
 - Remove redundant casts :pull:`1758`
 - CI: cancel old PR jobs :pull:`1761`
+- Remove deprecation of Product.grid_spec :pull:`1770`
 - Fix some readthedocs warnings :pull:`1762`
 - Update to Python 3.10 syntax :pull:`1756`, :pull:`1757`, :pull:`1758`, :pull:`1759`
 - Preparations for Psycopg3 support :pull:`1763`, :pull:`1764`, :pull:`1765`, :pull:`1766`
