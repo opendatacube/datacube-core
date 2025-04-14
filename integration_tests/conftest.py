@@ -609,7 +609,7 @@ def index_pair_populated_empty(cfg_env_pair, uninitialised_postgres_db_pair,
     assert list(empty_idx.products.get_all()) == []
     assert list(populated_idx.products.get_all()) != []
 
-    yield (populated_idx, empty_idx)
+    yield populated_idx, empty_idx
 
     del populated_idx
     del empty_idx

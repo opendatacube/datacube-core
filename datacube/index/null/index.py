@@ -116,13 +116,13 @@ class Index(AbstractIndex):
 
 
 class NullIndexDriver(AbstractIndexDriver):
-    @override
     @classmethod
+    @override
     def index_class(cls) -> type[AbstractIndex]:
         return Index
 
-    @override
     @staticmethod
+    @override
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
                "Please use the 'index.metadata_type.from_doc()' instead.",

@@ -162,7 +162,7 @@ def test_task_app_cell_index(tmpdir):
 
 def test_wrap_task():
     def task_with_args(task, a, b):
-        return (task, a, b)
+        return task, a, b
 
     assert task_with_args(1, 2, 'a') == (1, 2, 'a')
     assert wrap_task(task_with_args, 'a', 'b')(0) == (0, 'a', 'b')

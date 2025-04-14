@@ -363,7 +363,7 @@ class LineageRelations:
             self.by_source[rel.source_id][rel.derived_id] = rel.classifier
             self.by_derived[rel.derived_id][rel.source_id] = rel.classifier
             # Check for cyclic dependencies:
-            new_ids = set([ids.derived_id, ids.source_id])
+            new_ids = {ids.derived_id, ids.source_id}
             if new_ids & self.dataset_ids:
                 # We already know about these ids so need to confirm we are still acyclic
                 # Extract sourcewards from derived and vice versa for full tree coverage

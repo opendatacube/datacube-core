@@ -145,7 +145,7 @@ def xr_load(sources: XrDataArray,
         for idx, dss in np.ndenumerate(sources.values):
             for m in measurements:
                 bbi = [BandInfo(ds, m.name) for ds in dss]
-                yield (m, idx, bbi)
+                yield m, idx, bbi
 
     def just_bands(groups) -> Iterator[BandInfo]:
         for _, _, bbi in groups:

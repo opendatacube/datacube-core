@@ -215,7 +215,7 @@ class Datacube:
 
             # Add sorted count to each existing row
             rows = [row + [count[1]] for row, count in zip(rows, counts)]
-            cols = cols + ["dataset_count"]
+            cols += ["dataset_count"]
 
         # If pandas not requested, return list of dicts
         if not with_pandas:
@@ -722,7 +722,7 @@ class Datacube:
 
         def mk_group(group: Iterable[Dataset]) -> tuple[Any, Iterable[Dataset]]:
             dss = tuple(sorted(group, key=ds_sorter))
-            return (norm_axis_value(group_by.group_key(dss)), dss)
+            return norm_axis_value(group_by.group_key(dss)), dss
 
         datasets = sorted(datasets, key=group_by.group_by_func)
 

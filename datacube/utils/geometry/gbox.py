@@ -177,7 +177,7 @@ class GeoboxTiles:
         ir, ic = (
             _slice(i, N, n) for i, N, n in zip(idx, self._gbox.shape, self._tile_shape)
         )
-        return (ir, ic)
+        return ir, ic
 
     def chunk_shape(self, idx: tuple[int, int]) -> tuple[int, int]:
         """
@@ -197,7 +197,7 @@ class GeoboxTiles:
                 raise IndexError("Index ({},{}) is out of range".format(*idx))
 
         n1, n2 = map(_sz, idx, self._shape, self._tile_shape, self._gbox.shape)
-        return (n1, n2)
+        return n1, n2
 
     def __getitem__(self, idx: tuple[int, int]) -> GeoBox:
         """
@@ -232,7 +232,7 @@ class GeoboxTiles:
         NY, NX = self.shape
         xx = clamped_range(bbox.left, bbox.right, NX)
         yy = clamped_range(bbox.bottom, bbox.top, NY)
-        return (yy, xx)
+        return yy, xx
 
     def tiles(self, polygon: Geometry) -> Iterable[tuple[int, int]]:
         """
