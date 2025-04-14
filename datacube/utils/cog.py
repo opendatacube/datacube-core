@@ -94,7 +94,7 @@ def _write_cog(
     if pix.ndim == 2:
         h, w = pix.shape
         nbands = 1
-        band = 1  # type: Any
+        band: Any = 1
     elif pix.ndim == 3:
         if pix.shape[:2] == geobox.shape:
             pix = pix.transpose([2, 0, 1])

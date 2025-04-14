@@ -196,7 +196,7 @@ def compute_tasks(tasks: Iterable[Any], client: Client,
     from .generic import it2q, qmap
 
     # (max_in_flight - 2) -- one on each side of queue
-    wrk_q = queue.Queue(maxsize=max(1, max_in_flight - 2))  # type: queue.Queue
+    wrk_q: queue.Queue = queue.Queue(maxsize=max(1, max_in_flight - 2))
 
     # fifo_timeout='0ms' ensures that priority of later tasks is lower
     futures = (client.compute(task, fifo_timeout='0ms') for task in tasks)
