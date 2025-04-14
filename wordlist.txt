@@ -575,6 +575,7 @@ utils
 UUID
 uuid
 UUIDs
+uv
 ValueError
 vam
 VDI
