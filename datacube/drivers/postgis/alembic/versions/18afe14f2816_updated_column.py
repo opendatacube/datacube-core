@@ -51,7 +51,7 @@ def upgrade() -> None:
                                         nullable=False, comment="when last updated"), schema="odc")
     else:
         op.alter_column("product", "updated", schema="odc", type_=DateTime(timezone=True),
-                        server_default=func.now(), nullable=False, comment="when last updated") # noqa: E501
+                        server_default=func.now(), nullable=False, comment="when last updated")  # noqa: E501
 
 
 def downgrade() -> None:
