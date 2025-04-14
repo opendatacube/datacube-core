@@ -18,12 +18,53 @@ Includes contributions from @pjonsson, @omad, @caitlinadams, @SpacemanPaul and f
 @emmanuel-ferdman and @allrob23.
 
 Special thanks to @pjonsson who is single-handedly responsible for most of the PRs in this release, and to
-to all supporting organisations including Geoscience Australia, CSIRO and RI.SE.
+to all supporting organisations including Geoscience Australia, CSIRO and RISE.
 
-Bug Fix
--------
+Known Issue
+-----------
+
+There are still some issues with Dask loading in 1.9.  We are looking into them and anticipate a 1.9.4 release
+to fix them in the next few weeks.
+
+Full list of changes:
+---------------------
+
+Bug Fixes
+---------
 
 - Fix error when run with Python 3.10 causing pickling errors :pull:`1776`
+- Stop filtering warnings :pull:`1734`
+
+Warnings Cleanup:
+-----------------
+
+- Fix some readthedocs warnings :pull:`1762`
+- config.py: emit ODC2DeprecationWarning :pull:`1733`
+- tests: ignore deliberate warnings :pull:`1741`, :pull:`1754`, :pull:`1768`
+- Add a common table expression to fix a SQLAlchemy 2.0 sub-query warning :pull:`1747`
+- Fix ODC2DeprecationWarnings :pull:`1737`, :pull:`1738`, :pull:`1745`
+- Undeprecate Product.grid_spec :pull:`1770`
+
+Minor Fixes and Cleanup:
+------------------------
+
+- Replace setup.py with pyproject.toml :pull:`1670`
+- Documentation fixes and tweaks :pull:`1722`, :pull:`1725`
+- Update dependencies :pull:`1727`, :pull:`1731`, :pull:`1750`
+- Convert examples and tests to pyproject.toml :pull:`1748`
+- Update to Python 3.10 syntax :pull:`1756`, :pull:`1757`, :pull:`1758`, :pull:`1759`
+- Preparations for Psycopg3 support :pull:`1763`, :pull:`1764`, :pull:`1765`, :pull:`1766`
+- Optimize index_drivers() to return a set :pull:`1774`
+- Various minor cleanups :pull:`1772`
+- api: add missing staticmethod :pull:`1773`
+- whats_new.rst updates :pull:`1769`, :pull:`1778`
+
+Typecheck Cleanups:
+-------------------
+
+- Type check cleanups :pull:`1744`, :pull:`1746`, :pull:`1742`, :pull:`1755`
+- Remove redundant casts :pull:`1758`
+- Add override annotations :pull:`1767`
 
 CI Fixes and Improvements:
 --------------------------
@@ -35,38 +76,8 @@ CI Fixes and Improvements:
 - CI: update doctor rst version :pull:`1775`
 - Stop building Python 2 wheels :pull:`1752`
 - pytest: only test documentation for relevant files :pull:`1751`
-- Fix some readthedocs warnings :pull:`1762`
 - Autoupdates :pull:`1723`, :pull:`1726`, :pull:`1729`, :pull:`1771`
 - Update mypy version :pull:`1743`
-
-Warnings Cleanups:
-------------------
-
-- config.py: emit ODC2DeprecationWarning :pull:`1733`
-- Stop filtering warnings :pull:`1734`
-- tests: ignore deliberate warnings :pull:`1741`, :pull:`1754`, :pull:`1768`
-- Add a common table expression to fix a SQLAlchemy 2.0 sub-query warning :pull:`1747`
-- Fix ODC2DeprecationWarnings :pull:`1737`, :pull:`1738`, :pull:`1745`
-
-Typecheck Cleanups:
--------------------
-
-- Type check cleanups :pull:`1744`, :pull:`1746`, :pull:`1742`, :pull:`1755`
-- Remove redundant casts :pull:`1758`
-- Add override annotations :pull:`1767`
-
-Minor Fixes and Cleanup:
-------------------------
-
-- Documentation fixes and tweaks :pull:`1722`, :pull:`1725`
-- Update dependencies :pull:`1727`, :pull:`1731`, :pull:`1750`
-- Convert examples and tests to pyproject.toml :pull:`1748`
-- Update to Python 3.10 syntax :pull:`1756`, :pull:`1757`, :pull:`1758`, :pull:`1759`
-- Preparations for Psycopg3 support :pull:`1763`, :pull:`1764`, :pull:`1765`, :pull:`1766`
-- Optimize index_drivers() to return a set :pull:`1774`
-- Various minor cleanups :pull:`1772`
-- api: add missing staticmethod :pull:`1773`
-- whats_new.rst updates :pull:`1769`, :pull:`1778`
 
 v1.9.2 (26th February 2025)
 ===========================
