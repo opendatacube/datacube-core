@@ -127,17 +127,18 @@ class Index(AbstractIndex):
     def from_config(cls,
                     config_env: ODCEnvironment,
                     application_name: str | None = None,
-                    validate_connection: bool = True):
+                    validate_connection: bool = True) -> "Index":
         db = PostGisDb.from_config(config_env, application_name=application_name,
                                    validate_connection=validate_connection)
         return cls(db, config_env)
 
     @classmethod
-    def get_dataset_fields(cls, doc):
+    @override
+    def get_dataset_fields(cls, doc) -> dict:
         return PostGisDb.get_dataset_fields(doc)
 
     @override
-    def init_db(self, with_default_types=True, with_permissions=True, with_default_spatial_index=True):
+    def init_db(self, with_default_types=True, with_permissions=True, with_default_spatial_index=True) -> bool:
         is_new = self._db.init(with_permissions=with_permissions)
 
         if is_new and with_default_types:
@@ -151,7 +152,7 @@ class Index(AbstractIndex):
         return is_new
 
     @override
-    def close(self):
+    def close(self) -> None:
         """
         Close any idle connections database connections.
 
@@ -190,7 +191,7 @@ class Index(AbstractIndex):
             return conn.update_spindex(crses, product_names, dataset_ids)
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Index<db={self._db!r}>"
 
     @override
@@ -265,5 +266,5 @@ class PostgisIndexDriver(AbstractIndexDriver):
         return config_options_for_psql_driver(env)
 
 
-def index_driver_init():
+def index_driver_init() -> PostgisIndexDriver:
     return PostgisIndexDriver()

@@ -13,37 +13,37 @@ FORMAT = 'NetCDF'
 
 
 class NetcdfReaderDriver:
-    def __init__(self):
+    def __init__(self) -> None:
         self.name = 'NetcdfReader'
         self.protocols = [PROTOCOL]
         self.formats = [FORMAT]
 
-    def supports(self, protocol, fmt):
+    def supports(self, protocol, fmt) -> bool:
         return (protocol in self.protocols and
                 fmt in self.formats)
 
-    def new_datasource(self, band):
+    def new_datasource(self, band) -> RasterDatasetDataSource:
         return RasterDatasetDataSource(band)
 
 
-def reader_driver_init():
+def reader_driver_init() -> NetcdfReaderDriver:
     return NetcdfReaderDriver()
 
 
 class NetcdfWriterDriver:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @property
-    def aliases(self):
+    def aliases(self) -> list[str]:
         return ['NetCDF CF']
 
     @property
-    def format(self):
+    def format(self) -> str:
         return FORMAT
 
     @property
-    def uri_scheme(self):
+    def uri_scheme(self) -> str:
         return PROTOCOL
 
     def mk_uri(self, file_path):
@@ -66,7 +66,7 @@ class NetcdfWriterDriver:
     def write_dataset_to_storage(self, dataset, file_uri,
                                  global_attributes=None,
                                  variable_params=None,
-                                 **kwargs):
+                                 **kwargs) -> dict:
 
         write_dataset_to_netcdf(dataset, urlsplit(file_uri).path,
                                 global_attributes=global_attributes,
@@ -76,5 +76,5 @@ class NetcdfWriterDriver:
         return {}
 
 
-def writer_driver_init():
+def writer_driver_init() -> NetcdfWriterDriver:
     return NetcdfWriterDriver()

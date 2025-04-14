@@ -36,7 +36,7 @@ def rdr_geobox(rdr) -> GeoBox:
     return GeoBox(wh_(w, h), rdr.transform, rdr.crs)
 
 
-def pick_read_scale(scale: float, rdr=None, tol=1e-3):
+def pick_read_scale(scale: float, rdr=None, tol=1e-3) -> float:
     assert scale > 0
     # First find nearest integer scale
     #    Scale down to nearest integer, unless we can scale up by less than tol

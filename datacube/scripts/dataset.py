@@ -8,7 +8,7 @@ import logging
 import sys
 from collections import OrderedDict
 from textwrap import dedent
-from typing import cast, Any
+from typing import cast, Any, Iterator
 from collections.abc import Iterable, Mapping, MutableMapping
 from uuid import UUID
 
@@ -58,7 +58,7 @@ def _resolve_uri(uri, doc):
     return uri
 
 
-def remap_uri_from_doc(doc_stream):
+def remap_uri_from_doc(doc_stream) -> Iterator:
     """
     Given a stream of `uri: str, doc: dict` tuples, replace `uri` with `doc.location` if it is set.
     """
@@ -68,11 +68,11 @@ def remap_uri_from_doc(doc_stream):
 
 
 @cli.group(name='dataset', help='Dataset management commands')
-def dataset_cmd():
+def dataset_cmd() -> None:
     pass
 
 
-def dataset_stream(doc_stream, ds_resolve):
+def dataset_stream(doc_stream, ds_resolve) -> Iterator:
     """ Convert a stream `(uri, doc)` pairs into a stream of resolved datasets
 
         skips failures with logging
@@ -87,7 +87,7 @@ def dataset_stream(doc_stream, ds_resolve):
         yield dataset
 
 
-def load_datasets_for_update(doc_stream, index):
+def load_datasets_for_update(doc_stream, index) -> Iterator:
     """Consume stream of dataset documents, associate each to a product by looking
     up existing dataset in the index. Datasets not in the database will be
     logged.
@@ -212,7 +212,7 @@ def index_cmd(index, product_names,
         run_it(dataset_paths)
 
 
-def index_datasets(dss, index, auto_add_lineage, dry_run, archive_less_mature):
+def index_datasets(dss, index, auto_add_lineage, dry_run, archive_less_mature) -> None:
     for dataset in dss:
         _LOG.info('Matched %s', dataset)
         if not dry_run:
@@ -223,7 +223,7 @@ def index_datasets(dss, index, auto_add_lineage, dry_run, archive_less_mature):
                 _LOG.error('Failed to add dataset %s: %s', dataset.local_uri, e)
 
 
-def parse_update_rules(keys_that_can_change):
+def parse_update_rules(keys_that_can_change) -> dict:
     updates_allowed = {}
     for key_str in keys_that_can_change:
         updates_allowed[tuple(key_str.split('.'))] = changes.allow_any
@@ -324,7 +324,7 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
     echo('%d successful, %d failed' % (success, fail))
 
 
-def update_dry_run(index, updates_allowed, dataset):
+def update_dry_run(index, updates_allowed, dataset) -> bool:
     try:
         can_update, safe_changes, unsafe_changes = index.datasets.can_update(dataset, updates_allowed=updates_allowed)
     except ValueError as e:
@@ -376,7 +376,7 @@ def build_dataset_info(index: Index, dataset: Dataset,
     return info
 
 
-def _write_csv(infos):
+def _write_csv(infos) -> None:
     writer = csv.DictWriter(sys.stdout, ['id', 'status', 'product', 'location'], extrasaction='ignore')
     writer.writeheader()
 
@@ -452,7 +452,7 @@ def info_cmd(index: Index, show_sources: bool, show_derived: bool,
               type=click.Choice(list(_OUTPUT_WRITERS)), default='yaml', show_default=True)
 @ui.parsed_search_expressions
 @ui.pass_index()
-def search_cmd(index, limit, f, expressions):
+def search_cmd(index, limit, f, expressions) -> None:
     """
     Search available Datasets
     """
@@ -482,7 +482,7 @@ def _get_derived_set(index: Index, id_: UUID) -> set[Dataset]:
               type=click.Choice(['exact', 'prefix', 'guess']), default='prefix')
 @click.argument('paths', nargs=-1)
 @ui.pass_index()
-def uri_search_cmd(index: Index, paths: list[str], search_mode):
+def uri_search_cmd(index: Index, paths: list[str], search_mode) -> None:
     """
     Search by dataset locations
 
@@ -513,7 +513,7 @@ def uri_search_cmd(index: Index, paths: list[str], search_mode):
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: list[str]):
+def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: list[str]) -> None:
     if not ids and not all_ds:
         click.echo('Error: no datasets provided\n')
         print_help_msg(archive_cmd)
@@ -562,7 +562,7 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: int,
-                dry_run: bool, all_ds: bool, ids: list[str]):
+                dry_run: bool, all_ds: bool, ids: list[str]) -> None:
     if not ids and not all_ds:
         click.echo('Error: no datasets provided\n')
         print_help_msg(restore_cmd)
@@ -614,7 +614,7 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
 )
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: list[str]):
+def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: list[str]) -> None:
     if not ids and not all_ds:
         click.echo('Error: no datasets provided\n')
         print_help_msg(purge_cmd)
@@ -658,7 +658,7 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: list[
               multiple=True)
 @click.argument('fields', nargs=-1)
 @ui.pass_index()
-def find_duplicates(index: Index, product_names, fields):
+def find_duplicates(index: Index, product_names, fields) -> None:
     """
     Find dataset ids of two or more active datasets that have duplicate values in the specified fields.
     If products are specified, search only within those products. Otherwise, search within any products that

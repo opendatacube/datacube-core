@@ -25,7 +25,7 @@ from deprecat import deprecat
 __all__ = ("write_cog", "to_cog")
 
 
-def _adjust_blocksize(block, dim):
+def _adjust_blocksize(block, dim) -> int:
     if block > dim:
         return align_up(dim, 16)
     return align_up(block, 16)

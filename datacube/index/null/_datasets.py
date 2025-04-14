@@ -10,11 +10,11 @@ from typing_extensions import override
 from datacube.migration import ODC2DeprecationWarning
 from datacube.index.abstract import AbstractDatasetResource, DSID
 from datacube.model import Dataset, Product
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 
 class DatasetResource(AbstractDatasetResource):
-    def __init__(self, index):
+    def __init__(self, index) -> None:
         super().__init__(index)
 
     @override
@@ -22,19 +22,19 @@ class DatasetResource(AbstractDatasetResource):
         raise KeyError(id_)
 
     @override
-    def bulk_get(self, ids):
+    def bulk_get(self, ids) -> list:
         return []
 
     @override
-    def get_derived(self, id_):
+    def get_derived(self, id_) -> list:
         return []
 
     @override
-    def has(self, id_):
+    def has(self, id_) -> bool:
         return False
 
     @override
-    def bulk_has(self, ids_):
+    def bulk_has(self, ids_) -> list:
         return [False for id_ in ids_]
 
     @override
@@ -44,11 +44,11 @@ class DatasetResource(AbstractDatasetResource):
         raise NotImplementedError()
 
     @override
-    def search_product_duplicates(self, product: Product, *args):
+    def search_product_duplicates(self, product: Product, *args) -> list:
         return []
 
     @override
-    def can_update(self, dataset, updates_allowed=None):
+    def can_update(self, dataset, updates_allowed=None) -> tuple[bool, Iterable, Iterable]:
         raise NotImplementedError()
 
     @override
@@ -64,11 +64,11 @@ class DatasetResource(AbstractDatasetResource):
         raise NotImplementedError()
 
     @override
-    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False):
+    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Sequence:
         raise NotImplementedError()
 
     @override
-    def get_all_dataset_ids(self, archived: bool):
+    def get_all_dataset_ids(self, archived: bool) -> list:
         return []
 
     @deprecat(
@@ -76,11 +76,12 @@ class DatasetResource(AbstractDatasetResource):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def get_locations(self, id_):
+    @override
+    def get_locations(self, id_) -> list:
         return []
 
     @override
-    def get_location(self, id_):
+    def get_location(self, id_) -> None:
         return None
 
     @deprecat(
@@ -89,7 +90,8 @@ class DatasetResource(AbstractDatasetResource):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def get_archived_locations(self, id_):
+    @override
+    def get_archived_locations(self, id_) -> list:
         return []
 
     @deprecat(
@@ -98,7 +100,8 @@ class DatasetResource(AbstractDatasetResource):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def get_archived_location_times(self, id_):
+    @override
+    def get_archived_location_times(self, id_) -> list:
         return []
 
     @deprecat(
@@ -107,11 +110,12 @@ class DatasetResource(AbstractDatasetResource):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def add_location(self, id_, uri):
+    @override
+    def add_location(self, id_, uri) -> bool:
         raise NotImplementedError()
 
     @override
-    def get_datasets_for_location(self, uri, mode=None):
+    def get_datasets_for_location(self, uri, mode=None) -> list:
         return []
 
     @deprecat(
@@ -120,7 +124,8 @@ class DatasetResource(AbstractDatasetResource):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def remove_location(self, id_, uri):
+    @override
+    def remove_location(self, id_, uri) -> bool:
         raise NotImplementedError()
 
     @deprecat(
@@ -130,7 +135,8 @@ class DatasetResource(AbstractDatasetResource):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def archive_location(self, id_, uri):
+    @override
+    def archive_location(self, id_, uri) -> bool:
         raise NotImplementedError()
 
     @deprecat(
@@ -140,11 +146,12 @@ class DatasetResource(AbstractDatasetResource):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def restore_location(self, id_, uri):
+    @override
+    def restore_location(self, id_, uri) -> bool:
         raise NotImplementedError()
 
     @override
-    def search_by_metadata(self, metadata, archived=False):
+    def search_by_metadata(self, metadata, archived=False) -> list:
         return []
 
     @deprecat(
@@ -157,34 +164,35 @@ class DatasetResource(AbstractDatasetResource):
             }
         }
     )
-    def search(self, limit=None, archived=False, order_by=None, **query):
+    @override
+    def search(self, limit=None, archived=False, order_by=None, **query) -> list:
         return []
 
     @override
-    def search_by_product(self, archived=False, **query):
+    def search_by_product(self, archived=False, **query) -> list:
         return []
 
     @override
     def search_returning(self,
                          field_names=None, custom_offsets=None,
                          limit=None, archived=False, order_by=None,
-                         **query):
+                         **query) -> list:
         return []
 
     @override
-    def count(self, archived=False, **query):
+    def count(self, archived=False, **query) -> int:
         return 0
 
     @override
-    def count_by_product(self, archived=False, **query):
+    def count_by_product(self, archived=False, **query) -> list:
         return []
 
     @override
-    def count_by_product_through_time(self, period, archived=False, **query):
+    def count_by_product_through_time(self, period, archived=False, **query) -> list:
         return []
 
     @override
-    def count_product_through_time(self, period, archived=False, **query):
+    def count_product_through_time(self, period, archived=False, **query) -> list:
         return []
 
     @deprecat(
@@ -193,7 +201,8 @@ class DatasetResource(AbstractDatasetResource):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def search_summaries(self, **query):
+    @override
+    def search_summaries(self, **query) -> list:
         return []
 
     @override
@@ -204,7 +213,7 @@ class DatasetResource(AbstractDatasetResource):
     @override
     def search_returning_datasets_light(self,
                                         field_names: tuple,
-                                        custom_offsets=None, limit=None, archived=False, **query):
+                                        custom_offsets=None, limit=None, archived=False, **query) -> list:
         return []
 
     @override

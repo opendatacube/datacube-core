@@ -26,7 +26,7 @@ def load_drivers(group: str) -> dict[str, Any]:
     :returns: Dictionary String -> Driver Object
     """
 
-    def safe_load(ep):
+    def safe_load(ep) -> dict | None:
         # pylint: disable=broad-except,bare-except
         try:
             driver_init = ep.load()

@@ -17,6 +17,7 @@ import logging
 import re
 from contextlib import contextmanager
 from collections.abc import Callable
+from typing import Iterator
 from typing_extensions import override
 
 from sqlalchemy import event, create_engine
@@ -53,7 +54,7 @@ class PostgresDb:
 
     driver_name = 'postgres'   # Mostly to support parametrised tests
 
-    def __init__(self, engine):
+    def __init__(self, engine) -> None:
         # We don't recommend using this constructor directly as it may change.
         # Use static methods PostgresDb.create() or PostgresDb.from_config()
         self._engine = engine
@@ -62,13 +63,16 @@ class PostgresDb:
     def from_config(cls,
                     config_env: ODCEnvironment,
                     application_name: str | None = None,
-                    validate_connection: bool = True):
+                    validate_connection: bool = True) -> "PostgresDb":
         app_name = cls._expand_app_name(application_name)
 
         return PostgresDb.create(config_env, application_name=app_name, validate=validate_connection)
 
     @classmethod
-    def create(cls, config_env: ODCEnvironment, application_name: str | None = None, validate: bool = True):
+    def create(cls,
+               config_env: ODCEnvironment,
+               application_name: str | None = None,
+               validate: bool = True) -> "PostgresDb":
         url = psql_url_from_config(config_env)
         kwargs = {
             "application_name": application_name,
@@ -93,7 +97,7 @@ class PostgresDb:
         return PostgresDb(engine)
 
     @staticmethod
-    def _create_engine(url, application_name=None, iam_rds_auth=False, iam_rds_timeout=600, pool_timeout=60):
+    def _create_engine(url, application_name=None, iam_rds_auth=False, iam_rds_timeout=600, pool_timeout=60) -> Engine:
         try:
             engine = create_engine(
                 url,
@@ -125,7 +129,7 @@ class PostgresDb:
     def url(self) -> EngineUrl:
         return self._engine.url
 
-    def close(self):
+    def close(self) -> None:
         """
         Close any idle connections in the pool.
 
@@ -141,7 +145,7 @@ class PostgresDb:
         self._engine.dispose()
 
     @classmethod
-    def _expand_app_name(cls, application_name):
+    def _expand_app_name(cls, application_name) -> str:
         """
         >>> PostgresDb._expand_app_name(None) #doctest: +ELLIPSIS
         'odc-...'
@@ -180,7 +184,7 @@ class PostgresDb:
         return is_new
 
     @contextmanager
-    def _connect(self):
+    def _connect(self) -> Iterator:
         """
         Borrow a connection from the pool.
 
@@ -212,7 +216,7 @@ class PostgresDb:
         return _api.get_dataset_fields(metadata_type_definition)
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"PostgresDb<engine={self._engine!r}>"
 
 
@@ -237,12 +241,12 @@ def handle_dynamic_token_authentication(engine: Engine,
         cparams["password"] = last_token[0]
 
 
-def _to_json(o):
+def _to_json(o) -> str:
     # Postgres <=9.5 doesn't support NaN and Infinity
     fixedup = jsonify_document(o)
     return json.dumps(fixedup, default=_json_fallback)
 
 
-def _json_fallback(obj):
+def _json_fallback(obj) -> None:
     """Fallback json serialiser."""
     raise TypeError(f"Type not serializable: {type(obj)}")

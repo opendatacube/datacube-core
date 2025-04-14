@@ -27,7 +27,7 @@ class LineageDirection(Enum):
             return self.SOURCES
 
     @property
-    def label(self):
+    def label(self) -> str:
         if self == self.SOURCES:
             return "sources"
         else:
@@ -61,7 +61,7 @@ class LineageTree:
     home: str | None = None
 
     @override
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not self.children and not other.children:
             children_equal = True
         else:
@@ -253,7 +253,7 @@ class LineageRelation:
     source_id: UUID
     derived_id: UUID
 
-    def ids(self):
+    def ids(self) -> LineageIDPair:
         return LineageIDPair(derived_id=self.derived_id, source_id=self.source_id)
 
 

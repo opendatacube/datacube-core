@@ -118,17 +118,18 @@ class Index(AbstractIndex):
     def from_config(cls,
                     config_env: ODCEnvironment,
                     application_name: str | None = None,
-                    validate_connection: bool = True):
+                    validate_connection: bool = True) -> "Index":
         db = PostgresDb.from_config(config_env, application_name=application_name,
                                     validate_connection=validate_connection)
         return cls(db, config_env)
 
     @classmethod
-    def get_dataset_fields(cls, doc):
+    @override
+    def get_dataset_fields(cls, doc) -> dict:
         return PostgresDb.get_dataset_fields(doc)
 
     @override
-    def init_db(self, with_default_types=True, with_permissions=True):
+    def init_db(self, with_default_types=True, with_permissions=True) -> bool:
         is_new = self._db.init(with_permissions=with_permissions)
 
         if is_new and with_default_types:
@@ -139,7 +140,7 @@ class Index(AbstractIndex):
         return is_new
 
     @override
-    def close(self):
+    def close(self) -> None:
         """
         Close any idle connections database connections.
 
@@ -160,7 +161,7 @@ class Index(AbstractIndex):
         return PostgresTransaction(self._db, self.index_id)
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Index<db={self._db!r}>"
 
     @contextmanager
@@ -231,5 +232,5 @@ class PostgresIndexDriver(AbstractIndexDriver):
         return config_options_for_psql_driver(env)
 
 
-def index_driver_init():
+def index_driver_init() -> PostgresIndexDriver:
     return PostgresIndexDriver()

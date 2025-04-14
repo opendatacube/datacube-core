@@ -74,7 +74,7 @@ def create_netcdf(netcdf_path, **kwargs):
     return nco
 
 
-def append_netcdf(netcdf_path):
+def append_netcdf(netcdf_path) -> Dataset:
     """
     Open a NetCDF file in append mode
 
@@ -164,7 +164,7 @@ def _create_latlon_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
     return crs_var
 
 
-def _write_albers_params(crs_var, crs):
+def _write_albers_params(crs_var, crs) -> None:
     # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
     # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
     cf = crs._crs.to_cf()
@@ -175,14 +175,14 @@ def _write_albers_params(crs_var, crs):
     crs_var.latitude_of_projection_origin = cf['latitude_of_projection_origin']
 
 
-def _write_sinusoidal_params(crs_var, crs):
+def _write_sinusoidal_params(crs_var, crs) -> None:
     cf = crs._crs.to_cf()
 
     crs_var.grid_mapping_name = cf['grid_mapping_name']
     crs_var.longitude_of_central_meridian = cf['longitude_of_projection_origin']
 
 
-def _write_transverse_mercator_params(crs_var, crs):
+def _write_transverse_mercator_params(crs_var, crs) -> None:
     cf = crs._crs.to_cf()
 
     # http://spatialreference.org/ref/epsg/wgs-84-utm-zone-54s/
@@ -192,7 +192,7 @@ def _write_transverse_mercator_params(crs_var, crs):
     crs_var.latitude_of_projection_origin = cf['latitude_of_projection_origin']
 
 
-def _write_lcc2_params(crs_var, crs):
+def _write_lcc2_params(crs_var, crs) -> None:
     cf = crs._crs.to_cf()
 
     # e.g. http://spatialreference.org/ref/sr-org/mexico-inegi-lambert-conformal-conic/
@@ -232,7 +232,7 @@ def _create_projected_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING)
     return crs_var
 
 
-def _write_geographical_extents_attributes(nco, extent):
+def _write_geographical_extents_attributes(nco, extent) -> None:
     geo_extents = extent.to_crs(CRS("EPSG:4326"))
     nco.geospatial_bounds = geo_extents.wkt
     nco.geospatial_bounds_crs = "EPSG:4326"
@@ -256,7 +256,7 @@ class DimensionWrapper:
 
     TODO: Remove this code and pin odc-geo if/when this gets fixed there.
     """
-    def __init__(self, dim):
+    def __init__(self, dim) -> None:
         self.values = dim
 
 
@@ -295,7 +295,7 @@ def create_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
     return crs_var
 
 
-def write_flag_definition(variable, flags_definition):
+def write_flag_definition(variable, flags_definition) -> None:
     # write bitflag info
     # Functions for this are stored in Measurements
     variable.QA_index = describe_flags_def(flags_def=flags_definition)
@@ -316,7 +316,7 @@ def netcdfy_data(data):
         return data
 
 
-def flag_mask_meanings(flags_def):
+def flag_mask_meanings(flags_def) -> tuple[numpy.ndarray, numpy.ndarray, str]:
     # Filter out any multi-bit mask values since we can't handle them yet
     flags_def = {k: v for k, v in flags_def.items() if isinstance(v['bits'], numbers.Integral)}
     max_bit = max([bit_def['bits'] for bit_def in flags_def.values()])

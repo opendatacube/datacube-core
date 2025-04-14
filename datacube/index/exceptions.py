@@ -17,6 +17,6 @@ class IndexSetupError(Exception):
 
 
 class TransactionException(Exception):  # noqa: N818
-    def __init__(self, *args, commit=False, **kwargs):
+    def __init__(self, *args, commit=False, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.commit = commit

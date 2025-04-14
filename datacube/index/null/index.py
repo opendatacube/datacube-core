@@ -90,15 +90,17 @@ class Index(AbstractIndex):
         return UnhandledTransaction(self.index_id)
 
     @classmethod
-    def from_config(cls, config_env, application_name=None, validate_connection=True):
+    @override
+    def from_config(cls, config_env, application_name=None, validate_connection=True) -> "Index":
         return cls(config_env)
 
     @classmethod
-    def get_dataset_fields(cls, doc):
+    @override
+    def get_dataset_fields(cls, doc) -> dict:
         return get_dataset_fields(doc)
 
     @override
-    def init_db(self, with_default_types=True, with_permissions=True):
+    def init_db(self, with_default_types=True, with_permissions=True) -> bool:
         return True
 
     @override
@@ -111,7 +113,7 @@ class Index(AbstractIndex):
         return False
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Index<null>"
 
 
@@ -137,5 +139,5 @@ class NullIndexDriver(AbstractIndexDriver):
                             dataset_search_fields=Index.get_dataset_fields(definition))
 
 
-def index_driver_init():
+def index_driver_init() -> NullIndexDriver:
     return NullIndexDriver()

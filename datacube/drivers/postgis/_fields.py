@@ -45,7 +45,7 @@ class PgField(Field):
                  name: str, description: str,
                  alchemy_column: ColumnElement,
                  indexed: bool,
-                 alchemy_table: FromClause | None = None):
+                 alchemy_table: FromClause | None = None) -> None:
         super().__init__(name, description)
 
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
@@ -322,7 +322,7 @@ class IntDocField(NumericDocField):
     type_name = 'integer'
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> int:
         return int(value)
 
 
@@ -576,7 +576,7 @@ def _number_implies_year(v: int | datetime) -> datetime:
 
 
 class PgExpression(Expression):
-    def __init__(self, field):
+    def __init__(self, field) -> None:
         super(PgExpression, self).__init__()
         #: :type: PgField
         self.field = field
@@ -609,7 +609,7 @@ class ValueBetweenExpression(PgExpression):
 
 
 class RangeBetweenExpression(PgExpression):
-    def __init__(self, field, low_value, high_value, _range_class):
+    def __init__(self, field, low_value, high_value, _range_class) -> None:
         super(RangeBetweenExpression, self).__init__(field)
         self.low_value = low_value
         self.high_value = high_value
@@ -622,7 +622,7 @@ class RangeBetweenExpression(PgExpression):
 
 
 class RangeContainsExpression(PgExpression):
-    def __init__(self, field, value):
+    def __init__(self, field, value) -> None:
         super(RangeContainsExpression, self).__init__(field)
         self.value = value
 

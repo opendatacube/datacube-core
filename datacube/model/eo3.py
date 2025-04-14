@@ -27,7 +27,7 @@ expected_sys_field_values = {
 }
 
 
-def validate_eo3_offset(field_name, mdt_name, offset):
+def validate_eo3_offset(field_name, mdt_name, offset) -> None:
     if not all(isinstance(element, str) for element in offset):
         # Not a simple offset, assume a compound offset
         for element in offset:
@@ -47,7 +47,7 @@ def validate_eo3_offset(field_name, mdt_name, offset):
             f"is not stored in an EO3-compliant location: {offset!r}")
 
 
-def validate_eo3_offsets(field_name, mdt_name, defn):
+def validate_eo3_offsets(field_name, mdt_name, defn) -> None:
     if defn.get("type", "string").endswith("-range"):
         # Range Type
         if "min_offset" in defn:
@@ -66,7 +66,7 @@ def validate_eo3_offsets(field_name, mdt_name, defn):
             raise InvalidDocException(f"No offset supplied for field {field_name} in metadata type {mdt_name}")
 
 
-def validate_eo3_compatible_type(doc):
+def validate_eo3_compatible_type(doc) -> None:
     """
     Validate that a metadata type document is EO3 compatible.
 

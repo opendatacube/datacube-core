@@ -258,10 +258,7 @@ class Dataset:
             return None
 
     @cached_property
-    def key_time(self):
-        """
-        :rtype: datetime.datetime
-        """
+    def key_time(self) -> datetime | None:
         if 'key_time' in self.metadata.fields:
             return self.metadata.key_time
 
@@ -352,7 +349,7 @@ class Dataset:
         """ :returns: valid extent of the dataset or None
         """
 
-        def xytuple(obj):
+        def xytuple(obj: dict) -> tuple[float, float]:
             return obj['x'], obj['y']
 
         # If no projection or crs, they have no extent.
@@ -385,7 +382,7 @@ class Dataset:
         return hash(self.id)
 
     @override
-    def __str__(self):
+    def __str__(self) -> str:
         str_loc = 'not available' if not self.uri else self.uri
         return f"Dataset <id={self.id} product={self.product.name} location={str_loc}>"
 
@@ -425,14 +422,16 @@ class Measurement:
                      'extra_dim', 'dims')
     ATTR_SKIP = ['name', 'dtype', 'aliases', 'resampling_method', 'fuser', 'extra_dim', 'dims', 'extra_dim_index']
 
-    def __init__(self, canonical_name=None, *args, **kwargs):
+    def __init__(self, canonical_name: str | None = None, *args, **kwargs) -> None:
         self._data = {}
 
         missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
         if missing_keys:
             raise ValueError(f"Measurement required keys missing: {missing_keys}")
 
-        self.canonical_name = canonical_name or kwargs.get('name')
+        canonical_name_tmp = canonical_name or kwargs.get('name')
+        assert canonical_name_tmp is not None
+        self.canonical_name: str = canonical_name_tmp
 
         # Handle positional arguments (e.g., Measurement([('a', 1), ('b', 2)]))
         if args:
@@ -472,17 +471,17 @@ class Measurement:
             raise KeyError(f"Measurement() requires key {key}")
         del self._data[key]
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
         return key in self._data
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._data)
 
     def __iter__(self):
         return iter(self._data)
 
     @override
-    def __str__(self):
+    def __str__(self) -> str:
         return repr(self)
 
     def keys(self):
@@ -508,7 +507,7 @@ class Measurement:
             raise KeyError(f"Measurement() requires key {key}")
         return self._data.pop(key, default)
 
-    def update(self, *args, **kwargs):
+    def update(self, *args, **kwargs) -> None:
         if args:
             if len(args) > 1:
                 raise TypeError("update() takes at most 1 positional argument")
@@ -526,7 +525,7 @@ class Measurement:
             self[key] = value
 
     @override
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return isinstance(other, Measurement) and self._data == other._data
 
     @override
@@ -560,7 +559,7 @@ class MetadataType:
     def __init__(self,
                  definition: Mapping[str, Any],
                  dataset_search_fields: Mapping[str, Field] | None = None,
-                 id_: int | None = None):
+                 id_: int | None = None) -> None:
         if dataset_search_fields is None:
             dataset_search_fields = get_dataset_fields(definition)
         self.definition = definition
@@ -579,8 +578,8 @@ class MetadataType:
         return DocReader(self.definition['dataset'], self.dataset_fields, dataset_doc)
 
     @classmethod
-    def validate_eo3(cls, doc):
-        cls.validate(doc)
+    def validate_eo3(cls, doc) -> None:
+        cls.validate(doc)  # type: ignore[attr-defined]
         validate_eo3_compatible_type(doc)
 
     @override
@@ -625,7 +624,7 @@ class Product:
         self._all_measurements: dict[str, Measurement] | None = None
         self._load_hints: dict[str, Any] | None = None
 
-    def _resolve_aliases(self):
+    def _resolve_aliases(self) -> dict[str, Measurement]:
         if self._all_measurements is not None:
             return self._all_measurements
         mm = self.measurements
@@ -678,7 +677,7 @@ class Product:
         """
         # from copy import deepcopy
         if self._canonical_measurements is None:
-            def fix_nodata(m):
+            def fix_nodata(m: dict[str, Any]) -> dict[str, Any]:
                 nodata = m.get('nodata', None)
                 if isinstance(nodata, str):
                     m = dict(**m)
@@ -686,7 +685,7 @@ class Product:
                 return m
 
             self._canonical_measurements = OrderedDict((m['name'], Measurement(**fix_nodata(m)))
-                                                       for m in self.definition.get('measurements', []))
+                                                       for m in self.definition.get('measurements', {}))
 
         return self._canonical_measurements
 
@@ -906,7 +905,7 @@ class Product:
 
         return self._load_hints
 
-    def dataset_reader(self, dataset_doc):
+    def dataset_reader(self, dataset_doc: Mapping[str, Field]) -> DocReader:
         return self.metadata_type.dataset_reader(dataset_doc)
 
     def to_dict(self) -> Mapping[str, Any]:
@@ -1003,7 +1002,7 @@ class GridSpec:
         self.origin = origin or (0.0, 0.0)
 
     @override
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, GridSpec):
             return False
 
@@ -1081,7 +1080,7 @@ class GridSpec:
         :param dict geobox_cache: Optional cache to reuse geoboxes instead of creating new one each time
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
-        def geobox(tile_index):
+        def geobox(tile_index: tuple[int, int]) -> GeoBox:
             if geobox_cache is None:
                 return self.tile_geobox(tile_index)
 

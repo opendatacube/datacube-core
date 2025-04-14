@@ -91,7 +91,7 @@ class ODCConfig:
         paths: GeneralisedPath | None = None,
         raw_dict: ConfigDict | None = None,
         text: str | None = None,
-    ):
+    ) -> None:
         """
         When called with no args, reads the first config file found in the config path list is used.
         The config path list is taken from:
@@ -288,7 +288,7 @@ class ODCEnvironment:
         name: str,
         raw: dict[str, Any],
         allow_env_overrides: bool = True,
-    ):
+    ) -> None:
         self._cfg: ODCConfig = cfg
         check_valid_env_name(name)
         self._name: str = name

@@ -23,15 +23,15 @@ __all__ = ['construct', 'Transformation', 'Measurement']
 class NameResolver:
     """ Apply a mapping from name to callable objects in a recipe. """
 
-    def __init__(self, lookup_table):
+    def __init__(self, lookup_table) -> None:
         self.lookup_table = lookup_table
 
-    def clone(self):
+    def clone(self) -> "NameResolver":
         """ Safely copy the resolver in order to possibly extend it. """
         return NameResolver(copy.deepcopy(self.lookup_table))
 
     @staticmethod
-    def _assert(cond, msg):
+    def _assert(cond, msg) -> None:
         if not cond:
             raise VirtualProductException(msg)
 
@@ -115,7 +115,7 @@ class NameResolver:
 
         raise VirtualProductException(f"could not understand virtual product recipe: {recipe}")
 
-    def register(self, namespace: str, name: str, callable_obj):
+    def register(self, namespace: str, name: str, callable_obj) -> None:
         """ Register a callable to the name resolver. """
         if namespace not in self.lookup_table:
             self.lookup_table[namespace] = {}

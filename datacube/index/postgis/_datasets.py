@@ -11,7 +11,7 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Any, NamedTuple, cast
+from typing import Any, Iterator, NamedTuple, cast
 from typing_extensions import override
 from collections.abc import Iterable, Mapping, Sequence
 from uuid import UUID
@@ -40,15 +40,13 @@ _LOG = logging.getLogger(__name__)
 
 # It's a public api, so we can't reorganise old methods.
 # pylint: disable=too-many-public-methods, too-many-lines
-
-
 class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     """
     :type _db: datacube.drivers.postgis._connections.PostgresDb
     :type products: datacube.index._products.ProductResource
     """
 
-    def __init__(self, db, index):
+    def __init__(self, db, index) -> None:
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
         :type index: datacube.index._products.ProductResource
@@ -84,7 +82,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return self._make(dataset, full_info=True, source_tree=source_tree, derived_tree=derived_tree)
 
     @override
-    def bulk_get(self, ids):
+    def bulk_get(self, ids) -> list:
         def to_uuid(x):
             return x if isinstance(x, UUID) else UUID(x)
 
@@ -98,7 +96,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         reason="The 'get_derived' static method is deprecated in favour of the new lineage API.",
         version='1.9.0',
         category=ODC2DeprecationWarning)
-    def get_derived(self, id_):
+    @override
+    def get_derived(self, id_: UUID | str) -> list[Dataset]:
         """
         Get all derived datasets
 
@@ -114,7 +113,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             ]
 
     @override
-    def has(self, id_):
+    def has(self, id_: UUID | str) -> bool:
         """
         Have we already indexed this dataset?
 
@@ -125,7 +124,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return connection.contains_dataset(id_)
 
     @override
-    def bulk_has(self, ids_):
+    def bulk_has(self, ids_: Iterable[str | UUID]) -> list[bool]:
         """
         Like `has` but operates on a list of ids.
 
@@ -190,7 +189,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return dataset
 
     @override
-    def _init_bulk_add_cache(self):
+    def _init_bulk_add_cache(self) -> dict:
         return {}
 
     @override
@@ -267,7 +266,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
     @override
-    def search_product_duplicates(self, product: Product, *args):
+    def search_product_duplicates(self, product: Product, *args) -> Iterable[tuple[tuple, Iterable]]:
         """
         Find dataset ids who have duplicates of the given set of field names.
 
@@ -293,7 +292,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     yield namedtuple('search_result', record.keys())(**record), set(ids)
 
     @override
-    def can_update(self, dataset, updates_allowed=None):
+    def can_update(self, dataset, updates_allowed=None) -> tuple[bool, list, list]:
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -317,7 +316,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             raise ValueError('Postgis driver does not support multiple locations for a dataset.')
 
         # TODO: figure out (un)safe changes from metadata type?
-        allowed = {
+        allowed: dict = {
             # can always add more metadata
             tuple(): changes.allow_extension,
         }
@@ -329,7 +328,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return not bad_changes, good_changes, bad_changes
 
     @override
-    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=False):
+    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature: int | None = None):
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset to update
@@ -375,7 +374,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return dataset
 
-    def _ensure_new_locations(self, dataset, transaction=None):
+    def _ensure_new_locations(self, dataset, transaction=None) -> None:
         if transaction:
             transaction.insert_dataset_location(dataset.id, dataset.uri)
         else:
@@ -383,7 +382,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 tr.insert_dataset_location(dataset.id, dataset.uri)
 
     @override
-    def archive(self, ids):
+    def archive(self, ids) -> None:
         """
         Mark datasets as archived
 
@@ -394,7 +393,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 transaction.archive_dataset(id_)
 
     @override
-    def restore(self, ids):
+    def restore(self, ids) -> None:
         """
         Mark datasets as not archived
 
@@ -428,7 +427,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return purged
 
     @override
-    def get_all_dataset_ids(self, archived: bool | None = False):
+    def get_all_dataset_ids(self, archived: bool | None = False) -> list:
         """
         Get list of all dataset IDs based only on archived status
 
@@ -446,7 +445,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def get_locations(self, id_):
+    @override
+    def get_locations(self, id_) -> list:
         """
         Get the list of storage locations for the given dataset id
 
@@ -456,7 +456,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return [self.get_location(id_)]
 
     @override
-    def get_location(self, id_):
+    def get_location(self, id_) -> None:
         """
         Get the list of storage locations for the given dataset id
 
@@ -476,7 +476,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def get_archived_locations(self, id_):
+    @override
+    def get_archived_locations(self, id_) -> list:
         """
         Find locations which have been archived for a dataset
 
@@ -491,7 +492,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def get_archived_location_times(self, id_):
+    @override
+    def get_archived_location_times(self, id_) -> list:
         """
         Get each archived location along with the time it was archived.
 
@@ -506,7 +508,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def add_location(self, id_, uri):
+    @override
+    def add_location(self, id_, uri) -> bool:
         """
         Add a location to the dataset if it doesn't already exist.
 
@@ -529,7 +532,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return connection.insert_dataset_location(id_, uri)
 
     @override
-    def get_datasets_for_location(self, uri, mode=None):
+    def get_datasets_for_location(self, uri, mode=None) -> Iterator:
         """
         Find datasets that exist at the given URI
 
@@ -546,7 +549,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def remove_location(self, id_, uri):
+    @override
+    def remove_location(self, id_, uri) -> bool:
         """
         Remove a location from the dataset if it exists.
 
@@ -564,7 +568,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def archive_location(self, id_, uri):
+    @override
+    def archive_location(self, id_, uri) -> bool:
         """
         Archive a location of the dataset if it exists.
 
@@ -580,7 +585,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def restore_location(self, id_, uri):
+    @override
+    def restore_location(self, id_, uri) -> bool:
         """
         Un-archive a location of the dataset if it exists.
 
@@ -592,7 +598,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def _make(self, dataset_res, full_info=False, product=None,
               source_tree: LineageTree | None = None,
-              derived_tree: LineageTree | None = None):
+              derived_tree: LineageTree | None = None) -> Dataset:
         """
         :rtype Dataset
 
@@ -615,14 +621,14 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             **kwargs
         )
 
-    def _make_many(self, query_result, product=None):
+    def _make_many(self, query_result, product=None) -> Iterator:
         """
         :rtype list[Dataset]
         """
         return (self._make(dataset, product=product) for dataset in query_result)
 
     @override
-    def search_by_metadata(self, metadata: JsonDict, archived: bool | None = False):
+    def search_by_metadata(self, metadata: JsonDict, archived: bool | None = False) -> Iterable:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
@@ -647,7 +653,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             }
         }
     )
-    def search(self, limit=None, archived: bool | None = False, order_by=None, **query):
+    def search(self, limit=None, archived: bool | None = False, order_by=None, **query) -> Iterable:
         """
         Perform a search, returning results as Dataset objects.
 
@@ -666,7 +672,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             yield from self._make_many(datasets, product)
 
     @override
-    def search_by_product(self, archived: bool | None = False, **query):
+    def search_by_product(self, archived: bool | None = False, **query) -> Iterable[tuple]:
         """
         Perform a search, returning datasets grouped by product type.
 
@@ -684,7 +690,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                          limit: int | None = None,
                          archived: bool | None = False,
                          order_by: Iterable[Any] | None = None,
-                         **query: QueryField):
+                         **query: QueryField) -> Iterable[tuple]:
         """
         Perform a search, returning only the specified fields.
 
@@ -734,7 +740,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 yield result_type(**kwargs)
 
     @override
-    def count(self, archived: bool | None = False, **query):
+    def count(self, archived: bool | None = False, **query) -> int:
         """
         Perform a search, returning count of results.
 
@@ -750,7 +756,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return result
 
     @override
-    def count_by_product(self, archived: bool | None = False, **query):
+    def count_by_product(self, archived: bool | None = False, **query) -> Iterable[tuple]:
         """
         Perform a search, returning a count of for each matching product type.
 
@@ -761,6 +767,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return self._do_count_by_product(query, archived=archived)
 
+    # FIXME: Missing parameters from super method.
     @override
     def count_by_product_through_time(self, period, **query):
         """
@@ -774,6 +781,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return self._do_time_count(period, query)
 
+    # FIXME: Missing parameters from super method.
     @override
     def count_product_through_time(self, period, **query):
         """
@@ -789,7 +797,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return next(self._do_time_count(period, query, ensure_single=True))[1]
 
-    def _get_product_queries(self, query):
+    def _get_product_queries(self, query) -> Iterator:
         for product, q in self.products.search_robust(**query):
             q['product_id'] = product.id
             yield q, product
@@ -799,7 +807,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                               additional_fields: Mapping[str, Field] | None = None,
                               select_field_names=None,
                               with_source_ids=False, source_filter=None, limit=None,
-                              archived: bool | None = False, order_by=None):
+                              archived: bool | None = False, order_by=None) -> Iterator:
         assert not with_source_ids
         assert source_filter is None
         product_queries = list(self._get_product_queries(query))
@@ -843,7 +851,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                            order_by=order_by
                        ))
 
-    def _do_count_by_product(self, query, archived: bool | None = False):
+    def _do_count_by_product(self, query, archived: bool | None = False) -> Iterator:
         product_queries = self._get_product_queries(query)
 
         for q, product in product_queries:
@@ -856,7 +864,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             if count > 0:
                 yield product, count
 
-    def _do_time_count(self, period, query, ensure_single=False):
+    def _do_time_count(self, period, query, ensure_single=False) -> Iterator:
         if 'time' not in query:
             raise ValueError('Counting through time requires a "time" range query argument')
 
@@ -892,7 +900,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         version="1.9.0",
         category=ODC2DeprecationWarning
     )
-    def search_summaries(self, archived: bool | None = False, **query):
+    def search_summaries(self, archived: bool | None = False, **query) -> Iterable[Mapping[str, Any]]:
         """
         Perform a search, returning just the search fields of each dataset.
 
@@ -915,7 +923,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None,
                                         limit=None, archived: bool | None = False,
-                                        **query):
+                                        **query) -> Iterable[tuple]:
         """
         This is a dataset search function that returns the results as objects of a dynamically
         generated Dataset class that is a subclass of tuple.
@@ -976,7 +984,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
                 yield DatasetLight(**field_values)
 
-    def make_select_fields(self, product, field_names, custom_offsets):
+    def make_select_fields(self, product, field_names, custom_offsets) -> list:
         """
         Parse and generate the list of select fields to be passed to the database API.
         """
@@ -1011,7 +1019,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         return select_fields
 
-    def make_query_expr(self, query, custom_offsets):
+    def make_query_expr(self, query, custom_offsets) -> Iterator:
         """
         Generate query expressions including queries based on custom fields
         """
@@ -1038,7 +1046,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
             yield product, query_exprs + custom_query_exprs
 
-    def get_custom_query_expressions(self, custom_query, custom_offsets):
+    def get_custom_query_expressions(self, custom_query, custom_offsets) -> list:
         """
         Generate query expressions for custom fields. it is assumed that custom fields are to be found
         in metadata doc and their offsets are provided. custom_query is a dict of key fields involving

@@ -18,7 +18,7 @@ class AbstractTransaction(ABC):
     Thread-local storage and locks ensures one active transaction per index per thread.
     """
 
-    def __init__(self, index_id: str):
+    def __init__(self, index_id: str) -> None:
         self._connection: Any = None
         self._tls_id = f"txn-{index_id}"
         self._obj_lock = Lock()

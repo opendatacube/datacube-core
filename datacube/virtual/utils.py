@@ -19,17 +19,17 @@ def select_unique(things):
     return first
 
 
-def select_keys(settings, keys):
+def select_keys(settings, keys) -> dict:
     return {key: value
             for key, value in settings.items() if key in keys}
 
 
-def reject_keys(settings, keys):
+def reject_keys(settings, keys) -> dict:
     return {key: value
             for key, value in settings.items() if key not in keys}
 
 
-def merge_dicts(dicts):
+def merge_dicts(dicts) -> dict:
     """
     Merge a list of dictionaries into one.
     Later entries override the earlier ones.
@@ -46,7 +46,7 @@ def merge_dicts(dicts):
     return result
 
 
-def merge_search_terms(original, override, keys=None):
+def merge_search_terms(original, override, keys=None) -> dict:
     def pick(key, a, b):
         if b is None:
             return a
