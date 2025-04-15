@@ -36,7 +36,7 @@ __all__ = [
     "ExtraDimensions"
 ]
 
-from odc.geo import CRS, BoundingBox, Geometry, wh_, resyx_, yx_
+from odc.geo import CRS, BoundingBox, Geometry, wh_, resyx_, res_, yx_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
 from odc.geo.gridspec import GridSpec as GeoGridSpec
@@ -729,7 +729,10 @@ class Product:
 
         def extract_point(name):
             xx = storage.get(name, None)
-            return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
+            try:
+                return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
+            except TypeError:
+                return xx  # assume xx is following odc-geo conventions
 
         # extract both tile_size and tile_shape for backwards compatibility
         gs_params = {name: extract_point(name)
@@ -741,11 +744,13 @@ class Product:
 
         if gs_params['tile_shape'] is not None:
             # convert origin to XY
-            if gs_params['origin'] is not None:
+            if isinstance(gs_params['origin'], tuple):
                 gs_params['origin'] = yx_(gs_params['origin'])
 
-            if type(gs_params['resolution']) is tuple:
+            if isinstance(gs_params['resolution'], tuple):
                 gs_params['resolution'] = resyx_(*gs_params['resolution'])
+            else:
+                gs_params['resolution'] = res_(gs_params['resolution'])
 
             del gs_params['tile_size']
             return GeoGridSpec(crs=crs, **gs_params)

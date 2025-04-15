@@ -8,6 +8,9 @@ What's New
 Next Version
 ============
 
+- Use odc-geo GridSpec if `tile_shape` in product storage information :pull:`1783`
+
+
 v1.9.3 (15th April 2025)
 ========================
 
