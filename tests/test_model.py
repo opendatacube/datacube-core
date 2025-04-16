@@ -142,6 +142,21 @@ def test_product_dimensions():
         assert product.grid_spec is None
 
 
+def test_product_gridspec():
+    product = mk_sample_product('old_product', with_grid_spec=True)
+    with pytest.deprecated_call():
+        assert product.grid_spec is not None
+    assert product.to_dict()['tile_shape'] == (4000.0, 4000.0)
+
+    storage = {'crs': 'EPSG:3577',
+               'resolution': 25,
+               'tile_shape': {'x': 4000.0, 'y': 4000.0}}
+    product = mk_sample_product('new_product', storage=storage)
+    assert product.grid_spec is not None
+    assert not isinstance(product.grid_spec, GridSpec)
+    assert product.to_dict()['resolution'].xy == (25, -25)
+
+
 def test_product_nodata_nan():
     # When storing .nan to JSON in DB it becomes a string with value "NaN"
     # Make sure it is converted back to real NaN

@@ -177,7 +177,7 @@ def _write_csv(products):
                                          'ancillary_quality', 'latgqa_cep90', 'product_type',
                                          'gqa_abs_iterative_mean_xy', 'gqa_ref_source', 'sat_path',
                                          'gqa_iterative_stddev_xy', 'time', 'sat_row', 'orbit', 'gqa',
-                                         'instrument', 'gqa_abs_xy', 'crs', 'resolution', 'tile_size',
+                                         'instrument', 'gqa_abs_xy', 'crs', 'resolution', 'tile_shape',
                                          'spatial_dimensions'], extrasaction='ignore')
     writer.writeheader()
     writer.writerows(product_dicts)
@@ -208,7 +208,7 @@ def _write_tab(products):
                       'gqa_ref_source', 'sat_path',
                       'gqa_iterative_stddev_xy', 'time', 'sat_row',
                       'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',
-                      'resolution', 'tile_size', 'spatial_dimensions')
+                      'resolution', 'tile_shape', 'spatial_dimensions')
     # If the intersection of desired columns with available columns is empty, just use whatever IS in df
     output_columns = tuple(col for col in output_columns if col in df.columns) or df.columns
     echo(df.to_string(columns=output_columns, justify='left', index=False))
