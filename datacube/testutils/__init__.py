@@ -5,6 +5,8 @@
 """
 Useful methods for tests (particularly: reading/writing and checking files)
 """
+import typing
+
 import atexit
 import math
 import os
@@ -13,6 +15,7 @@ import tempfile
 import json
 import uuid
 import numpy as np
+from numpy.typing import NDArray
 import xarray as xr
 import warnings
 import contextlib
@@ -33,6 +36,13 @@ from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox
 
 _DEFAULT = object()
+
+
+class BandObject(typing.Protocol):
+    """A protocol defining an object with name, values, and nodata attributes."""
+    name: str
+    values: NDArray
+    nodata: typing.Any  # Maybe could be int | float | None
 
 
 def assert_file_structure(
@@ -219,7 +229,7 @@ def mk_sample_product(name,
     return Product(metadata_type, definition)
 
 
-def mk_sample_dataset(bands,
+def mk_sample_dataset(bands: list[dict],
                       uri: str | list[str] | None = 'file:///tmp',
                       product_name='sample',
                       format='GeoTiff',
@@ -401,7 +411,7 @@ def split_test_image(aa):
     return x, y
 
 
-def gen_tiff_dataset(bands,
+def gen_tiff_dataset(bands: list[BandObject],
                      base_folder,
                      prefix='',
                      timestamp='2018-07-19',
@@ -425,8 +435,7 @@ def gen_tiff_dataset(bands,
         bands = (bands,)
 
     # write arrays to disk and construct compatible measurement definitions
-    geobox = None
-    mm = []
+    measurement_defs = []
     for band in bands:
         name = band.name
         fname = prefix + name + '.tiff'
@@ -435,16 +444,16 @@ def gen_tiff_dataset(bands,
                            overwrite=True,
                            **kwargs)
 
-        geobox = meta.geobox
+        geobox: GeoBox = meta.geobox
 
-        mm.append(dict(name=name,
-                       path=fname,
-                       layer=1,
-                       nodata=band.nodata,
-                       dtype=meta.dtype))
+        measurement_defs.append(dict(name=name,
+                                     path=fname,
+                                     layer=1,
+                                     nodata=band.nodata,
+                                     dtype=meta.dtype))
 
     uri = Path(base_folder_of_record/'metadata.yaml').absolute().as_uri()
-    ds = mk_sample_dataset(mm,
+    ds = mk_sample_dataset(measurement_defs,
                            uri=uri,
                            timestamp=timestamp,
                            geobox=geobox)
