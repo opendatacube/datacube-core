@@ -9,7 +9,7 @@ Next Version
 ============
 
 - Use odc-geo GridSpec if `tile_shape` in product storage information :pull:`1783`
-
+- SQL: fix package names type :pull:`1784`
 
 v1.9.3 (15th April 2025)
 ========================
