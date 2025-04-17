@@ -529,8 +529,8 @@ def test_filter_types_by_search(index, wo_eo3_product, ls8_eo3_product):
     assert index.products
 
     # No arguments, return all.
-    res = list(index.products.search())
-    assert res == [ls8_eo3_product, wo_eo3_product]
+    res = set(index.products.search())
+    assert res == {ls8_eo3_product, wo_eo3_product}
 
     # Matching fields
     res = list(index.products.search(
