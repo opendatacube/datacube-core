@@ -11,6 +11,7 @@ Next Version
 - Use odc-geo GridSpec if `tile_shape` in product storage information :pull:`1783`
 - SQL: fix package names type :pull:`1784`
 - Add some type signatures :pull:`1785`
+- Update uv.lock with Dependabot :pull:`1790`
 
 v1.9.3 (15th April 2025)
 ========================
