@@ -15,21 +15,13 @@ from integration_tests.utils import ensure_datasets_are_indexed
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_index_get_product_time_bounds(index, clirunner, example_ls5_dataset_paths):
-    def index_dataset(path):
-        return clirunner(['dataset', 'add', str(path)])
+    valid_uuids = []
+    for uuid, ls5_dataset_path in example_ls5_dataset_paths.items():
+        clirunner(['dataset', 'add', str(ls5_dataset_path)])
+        valid_uuids.append(uuid)
 
-    def index_products():
-        valid_uuids = []
-        for uuid, ls5_dataset_path in example_ls5_dataset_paths.items():
-            valid_uuids.append(uuid)
-            index_dataset(ls5_dataset_path)
-
-        # Ensure that datasets are actually indexed
-        ensure_datasets_are_indexed(index, valid_uuids)
-
-        return valid_uuids
-
-    valid_uuids = index_products()
+    # Ensure that datasets are actually indexed
+    ensure_datasets_are_indexed(index, valid_uuids)
 
     # lets get time values
     dataset_times = list(index.datasets.search_returning(field_names=('time',),
