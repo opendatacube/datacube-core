@@ -510,7 +510,7 @@ def test_detect_cyclic_deps(big_src_lineage_tree, big_src_tree_ids):
         }
     )
     with pytest.raises(InconsistentLineageException) as e:
-        rels2 = LineageRelations(tree=looped_tree)
+        LineageRelations(tree=looped_tree)
     assert "LineageTrees must be acyclic" in str(e.value)
     # Confirm more complex cyclic dependencies can be detected.
     rels = LineageRelations(tree=big_src_lineage_tree)
@@ -563,7 +563,7 @@ def test_bad_diamond(src_lineage_tree_with_bad_diamond, big_src_tree_ids):
     # E.g. If A->B->C->D  and A->E->C->D, the C->D relationship should only be recorded
     # under one branch (B or A) and the other occurrence of C should have no children recorded.
     with pytest.raises(InconsistentLineageException, match="Duplicate nodes in LineageTree"):
-        rels = LineageRelations(tree=src_lineage_tree_with_bad_diamond)
+        LineageRelations(tree=src_lineage_tree_with_bad_diamond)
 
 
 def test_home_mismatch(big_src_lineage_tree):
@@ -571,7 +571,7 @@ def test_home_mismatch(big_src_lineage_tree):
     tree.children["ard"][0].children["atmos_corr"][0].home = "bungalow"
     tree.children["ard"][1].children["atmos_corr"][0].home = "apartment"
     with pytest.raises(InconsistentLineageException, match="Tree contains inconsistent homes"):
-        rels = LineageRelations(tree=tree)
+        LineageRelations(tree=tree)
 
 
 def test_classifier_mismatch(big_src_lineage_tree, classifier_mismatch):
@@ -599,7 +599,7 @@ def test_home_update(src_lineage_tree, src_lineage_tree_diffhome):
 
 def test_mixed_dirs(mixed_dir_lineage_tree):
     with pytest.raises(InconsistentLineageException, match="Tree contains both derived and source nodes"):
-        rels1 = LineageRelations(tree=mixed_dir_lineage_tree)
+        LineageRelations(tree=mixed_dir_lineage_tree)
 
 
 def test_merge_tree_limited_depth(big_src_lineage_tree, big_src_tree_ids):

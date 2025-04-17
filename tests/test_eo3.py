@@ -145,12 +145,12 @@ def test_bad_grids():
     ]
     for bad_grid in bad_grids:
         with pytest.raises(ValueError):
-            grid = EO3Grid(bad_grid)
+            EO3Grid(bad_grid)
 
 
 def test_eo3_grid_spatial_nogrids():
     with pytest.raises(ValueError, match="grids.foo"):
-        oo = eo3_grid_spatial(
+        eo3_grid_spatial(
             {
                 "crs": "EPSG:4326",
                 "grids": {

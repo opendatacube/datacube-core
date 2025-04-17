@@ -84,11 +84,11 @@ def test_parse_text(simple_valid_ini, simple_valid_yaml):
     assert ini["goo"]["baz"] == yaml["goo"]["baz"]
     assert int(ini["foo"]["bat"]) == int(yaml["foo"]["bat"])
 
-    with pytest.raises(ConfigException) as e:
-        ini_as_yaml = parse_text(simple_valid_ini, fmt=CfgFormat.YAML)
+    with pytest.raises(ConfigException):
+        parse_text(simple_valid_ini, fmt=CfgFormat.YAML)
 
-    with pytest.raises(ConfigException) as e:
-        yaml_as_ini = parse_text(simple_valid_yaml, fmt=CfgFormat.INI)
+    with pytest.raises(ConfigException):
+        parse_text(simple_valid_yaml, fmt=CfgFormat.INI)
 
 
 def mk_single_env_config(connector: str) -> str:
@@ -182,12 +182,12 @@ def simple_dict():
 def test_invalid_env():
     from datacube.cfg import ODCConfig, ConfigException
     with pytest.raises(ConfigException):
-        cfg = ODCConfig(text="""
+        ODCConfig(text="""
 default:
     alias: royale_avec_fromage
             """)
     with pytest.raises(ConfigException):
-        cfg = ODCConfig(text="""
+        ODCConfig(text="""
 default:
     alias: legit00
 non_legit:
@@ -215,7 +215,7 @@ def test_invalid_option():
     from datacube.cfg import ODCOptionHandler, ConfigException
     mockenv = MagicMock()
     with pytest.raises(ConfigException):
-        handler = ODCOptionHandler("NO_CAPS", mockenv)
+        ODCOptionHandler("NO_CAPS", mockenv)
 
 
 def test_single_env(single_env_config, single_env_config_no_connector):
@@ -513,16 +513,16 @@ def test_pgurl_from_config(simple_dict):
 def test_multiple_sourcetypes(simple_config, path_to_ini_config, simple_dict):
     from datacube.cfg import ODCConfig, ConfigException
     with pytest.raises(ConfigException) as e:
-        cfg = ODCConfig(paths=path_to_ini_config, raw_dict=simple_dict, text=simple_config)
+        ODCConfig(paths=path_to_ini_config, raw_dict=simple_dict, text=simple_config)
     assert "Can only supply one of" in str(e.value)
     with pytest.raises(ConfigException) as e:
-        cfg = ODCConfig(raw_dict=simple_dict, text=simple_config)
+        ODCConfig(raw_dict=simple_dict, text=simple_config)
     assert "Can only supply one of" in str(e.value)
     with pytest.raises(ConfigException) as e:
-        cfg = ODCConfig(paths=path_to_ini_config, text=simple_config)
+        ODCConfig(paths=path_to_ini_config, text=simple_config)
     assert "Can only supply one of" in str(e.value)
     with pytest.raises(ConfigException) as e:
-        cfg = ODCConfig(paths=path_to_ini_config, raw_dict=simple_dict)
+        ODCConfig(paths=path_to_ini_config, raw_dict=simple_dict)
     assert "Can only supply one of" in str(e.value)
 
 
@@ -530,7 +530,7 @@ def test_get_environment(simple_config):
     from datacube.cfg import ODCConfig, ConfigException
     cfg = ODCConfig(text=simple_config)
     with pytest.raises(ConfigException) as e:
-        cfg2 = ODCConfig.get_environment(config=cfg, raw_config=simple_config)
+        ODCConfig.get_environment(config=cfg, raw_config=simple_config)
     assert "Cannot specify both" in str(e.value)
     env = ODCConfig.get_environment(config=cfg, env="default")
     assert env is cfg[None]
