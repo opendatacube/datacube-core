@@ -322,7 +322,7 @@ class ODCEnvironment:
             IntOptionHandler("dc_load_limit", self, minval=0),
         ]
 
-    def get_all_aliases(self):
+    def get_all_aliases(self) -> list[str]:
         return self._cfg.get_aliases(self._name)
 
     def __getitem__(self, key: str) -> Any:

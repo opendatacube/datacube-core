@@ -17,11 +17,11 @@ from datacube.ui.click import cli, print_help_msg, exit_on_empty_file
 from datacube.utils import read_documents, InvalidDocException
 from datacube.utils.serialise import SafeDatacubeDumper
 
-_LOG = logging.getLogger('datacube-md-type')
+_LOG: logging.Logger = logging.getLogger('datacube-md-type')
 
 
 @cli.group(name='metadata', help='Metadata type commands')
-def this_group():
+def this_group() -> None:
     pass
 
 
@@ -63,7 +63,8 @@ def add_metadata_types(index: Index, allow_exclusive_lock: bool, files: list) ->
               help='Check if everything is ok')
 @click.argument('files', type=str, nargs=-1)
 @ui.pass_index()
-def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: list):
+def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool,
+                          dry_run: bool, files: list) -> None:
     """
     Update existing metadata types.
 
@@ -110,7 +111,7 @@ def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock
               type=click.Choice(['yaml', 'json']), default='yaml', show_default=True)
 @click.argument('metadata_type_name', nargs=-1)
 @ui.pass_index()
-def show_metadata_type(index, metadata_type_name, output_format):
+def show_metadata_type(index: Index, metadata_type_name: str, output_format: str) -> None:
     """
     Show information about a metadata type.
     """
@@ -147,7 +148,7 @@ def show_metadata_type(index, metadata_type_name, output_format):
 
 @this_group.command('list')
 @ui.pass_index()
-def list_metadata_types(index):
+def list_metadata_types(index: Index) -> None:
     """
     List metadata types that are defined in the generic index.
     """

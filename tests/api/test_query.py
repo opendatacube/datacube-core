@@ -35,7 +35,7 @@ def test_geom():
     ], crs="EPSG:4326")
 
 
-def test_query_kwargs(mock_index):
+def test_query_kwargs(mock_index) -> None:
     mock_index.products.get_field_names = lambda: {'product', 'lat', 'sat_path', 'type_id', 'time', 'lon',
                                                    'orbit', 'instrument', 'sat_row', 'platform', 'metadata_type',
                                                    'gsi', 'type', 'id'}
@@ -106,7 +106,7 @@ def test_query_kwargs(mock_index):
     assert query_group_by(group_by=gb) is gb
 
 
-def test_query_kwargs_postgis(mock_index, test_geom):
+def test_query_kwargs_postgis(mock_index, test_geom) -> None:
     mock_index.supports_spatial_indexes = True
 
     query = Query(index=mock_index, latitude=-35, longitude=148)
@@ -183,18 +183,18 @@ testdata = [
 
 
 @pytest.mark.parametrize('time_param,expected', testdata)
-def test_time_handling(time_param, expected):
+def test_time_handling(time_param, expected) -> None:
     query = Query(time=time_param)
     assert 'time' in query.search_terms
     assert query.search_terms['time'] == (expected if isinstance(expected, Range) else expected("now"))
 
 
-def test_time_handling_int():
+def test_time_handling_int() -> None:
     with pytest.raises(TypeError):
         Query(time=2008)
 
 
-def test_solar_day():
+def test_solar_day() -> None:
     _s = SimpleNamespace
     ds = _s(center_time=parse_time('1987-05-22 23:07:44.2270250Z'),
             metadata=_s(lon=Range(begin=150.415,
@@ -218,7 +218,7 @@ def test_solar_day():
     assert solar_day(ds, longitude=0) == np.datetime64('1997-05-23', 'D')
 
 
-def test_solar_offset():
+def test_solar_offset() -> None:
     from odc.geo.geom import point
     from datetime import timedelta
 
@@ -248,7 +248,7 @@ def test_solar_offset():
         solar_offset(ds)
 
 
-def test_dateline_query_building():
+def test_dateline_query_building() -> None:
     lon = Query(x=(618300, 849000),
                 y=(-1876800, -1642500),
                 crs='EPSG:32660').search_terms['lon']
@@ -256,11 +256,11 @@ def test_dateline_query_building():
     assert lon.begin < 180 < lon.end
 
 
-def test_query_issue_1146():
+def test_query_issue_1146() -> None:
     q = Query(k='AB')
     assert q.search['k'] == 'AB'
 
 
-def test_query_multiple_products(mock_index):
+def test_query_multiple_products(mock_index) -> None:
     q = Query(index=mock_index, product=['ls5_nbar_albers', 'ls7_nbar_albers'])
     assert q.product == ['ls5_nbar_albers', 'ls7_nbar_albers']

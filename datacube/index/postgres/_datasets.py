@@ -33,7 +33,7 @@ from datacube.index import fields
 from datacube.drivers.postgres._api import split_uri
 from datacube.migration import ODC2DeprecationWarning
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 # It's a public api, so we can't reorganise old methods.
@@ -92,7 +92,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return datasets[id_][0]
 
     @override
-    def bulk_get(self, ids) -> list:
+    def bulk_get(self, ids: Iterable[str | UUID]) -> list:
         def to_uuid(x) -> UUID:
             return x if isinstance(x, UUID) else UUID(x)
 
@@ -166,8 +166,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :rtype: Dataset
         """
 
-        def process_bunch(dss, main_ds, transaction):
-            edges = []
+        def process_bunch(dss, main_ds, transaction) -> None:
+            edges: list = []
 
             # First insert all new datasets
             for ds in dss:
@@ -193,7 +193,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         _LOG.info('Indexing %s', dataset.id)
 
         if with_lineage:
+            # Tuple return type is only with_depth_grouping=True.
             ds_by_uuid = flatten_datasets(dataset)
+            assert isinstance(ds_by_uuid, dict)  # For typechecker.
             all_uuids = list(ds_by_uuid)
 
             present = {k: v for k, v in zip(all_uuids, self.bulk_has(all_uuids))}
@@ -279,7 +281,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     yield namedtuple('search_result', as_dict.keys())(**as_dict), set(ids)
 
     @override
-    def can_update(self, dataset, updates_allowed=None) -> tuple[bool, list, list]:
+    def can_update(self, dataset: Dataset, updates_allowed=None) -> tuple[bool, list, list]:
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -310,7 +312,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return not bad_changes, good_changes, bad_changes
 
     @override
-    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature: int | None = None):
+    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature: int | None = None) -> Dataset:
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset to update
@@ -361,7 +363,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             old_uris.update(existing._uris)
         new_uris = dataset._uris
 
-        def ensure_locations_in_transaction(old_uris, new_uris, transaction):
+        def ensure_locations_in_transaction(old_uris, new_uris, transaction) -> None:
             if len(old_uris) <= 1 and len(new_uris) == 1 and new_uris[0] not in old_uris:
                 # Only one location, so treat as an update.
                 if len(old_uris):
@@ -379,7 +381,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 ensure_locations_in_transaction(old_uris, new_uris, tr)
 
     @override
-    def archive(self, ids) -> None:
+    def archive(self, ids: Iterable[str | UUID]) -> None:
         """
         Mark datasets as archived
 
@@ -390,7 +392,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 transaction.archive_dataset(id_)
 
     @override
-    def restore(self, ids) -> None:
+    def restore(self, ids: Iterable[str | UUID]) -> None:
         """
         Mark datasets as not archived
 
@@ -454,7 +456,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return connection.get_locations(id_)
 
     @override
-    def get_location(self, id_) -> None:
+    def get_location(self, id_: str | UUID) -> str | None:
         """
         Get the list of storage locations for the given dataset id
 
@@ -524,7 +526,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return connection.insert_dataset_location(id_, uri)
 
     @override
-    def get_datasets_for_location(self, uri, mode=None) -> Iterator:
+    def get_datasets_for_location(self, uri: str, mode: str | None = None) -> Iterator:
         """
         Find datasets that exist at the given URI
 
@@ -594,7 +596,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             was_restored = connection.restore_location(id_, uri)
             return was_restored
 
-    def _make(self, dataset_res, full_info=False, product=None) -> Dataset:
+    def _make(self, dataset_res, full_info: bool = False, product=None) -> Dataset:
         """
         :rtype Dataset
 
@@ -652,7 +654,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             }
         }
     )
-    def search(self, limit=None, source_filter=None, archived: bool | None = False, order_by=None, **query) -> Iterable:
+    def search(self, limit: int | None = None, source_filter=None,
+               archived: bool | None = False, order_by=None, **query) -> Iterable:
         """
         Perform a search, returning results as Dataset objects.
 
@@ -817,11 +820,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             yield q, product
 
     # pylint: disable=too-many-locals
-    def _do_search_by_product(self, query, return_fields=False,
+    def _do_search_by_product(self, query, return_fields: bool = False,
                               additional_fields: Mapping[str, Field] | None = None,
-                              select_field_names=None,
-                              with_source_ids=False, source_filter=None,
-                              limit=None,
+                              select_field_names: Sequence[str] | None = None,
+                              with_source_ids: bool = False, source_filter=None,
+                              limit: int | None = None,
                               archived: bool | None = False,
                               order_by=None) -> Iterator:
         if "geopolygon" in query:
@@ -889,7 +892,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             if count > 0:
                 yield product, count
 
-    def _do_time_count(self, period, query, ensure_single=False) -> Iterator:
+    def _do_time_count(self, period, query, ensure_single: bool = False) -> Iterator:
         if "geopolygon" in query:
             raise NotImplementedError("Spatial index API not supported by this index.")
         if 'time' not in query:
@@ -961,7 +964,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     )
     # pylint: disable=redefined-outer-name
     @override
-    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit=None,
+    def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None, limit: int | None = None,
                                         archived: bool | None = False,
                                         **query) -> Iterable[tuple]:
         """
@@ -1025,7 +1028,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
                 yield DatasetLight(**field_values)
 
-    def make_select_fields(self, product, field_names, custom_offsets) -> list:
+    def make_select_fields(self, product, field_names: Sequence[str], custom_offsets) -> list:
         """
         Parse and generate the list of select fields to be passed to the database API.
         """

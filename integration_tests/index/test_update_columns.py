@@ -52,7 +52,7 @@ def check_trigger(conn, table_name: str) -> bool:
     return 'row_update_time' in trigger_result[0]
 
 
-def drop_column(conn, table: str, column: str):
+def drop_column(conn, table: str, column: str) -> None:
     conn.execute(
         text(
             DROP_COLUMN.format(schema=SCHEMA_NAME, table=table, column=column)
@@ -61,7 +61,7 @@ def drop_column(conn, table: str, column: str):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_added_column(clirunner, uninitialised_postgres_db):
+def test_added_column(clirunner, uninitialised_postgres_db) -> None:
     # Run on an empty database.
     result = clirunner(["--env", "datacube", "system", "init"])
     assert "Created." in result.output
@@ -84,7 +84,7 @@ def test_added_column(clirunner, uninitialised_postgres_db):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_readd_column(clirunner, uninitialised_postgres_db):
+def test_readd_column(clirunner, uninitialised_postgres_db) -> None:
     # Run on an empty database. drop columns and re-add
     result = clirunner(["--env", "datacube", "system", "init"])
     assert "Created." in result.output

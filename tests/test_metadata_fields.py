@@ -104,7 +104,7 @@ x:
 ''')
 
 
-def test_get_dataset_simple_fields():
+def test_get_dataset_simple_fields() -> None:
     xx = get_dataset_fields(METADATA_DOC)
     assert xx['x_default_type'].type_name == 'string'
 
@@ -128,7 +128,7 @@ def test_get_dataset_simple_fields():
         assert f.extract({}) is None
 
 
-def test_get_dataset_range_fields():
+def test_get_dataset_range_fields() -> None:
     xx = get_dataset_fields(METADATA_DOC_RANGES)
     v = xx['x_range'].extract(SAMPLE_DOC_RANGES)
     assert v == Range(1, 4)
@@ -148,7 +148,7 @@ def test_get_dataset_range_fields():
     assert xx['float_range'].type_name == 'numeric-range'
 
 
-def test_metadata_from_doc():
+def test_metadata_from_doc() -> None:
     mm = metadata_from_doc(METADATA_DOC)
     assert mm.definition is METADATA_DOC
 
@@ -159,7 +159,7 @@ def test_metadata_from_doc():
     assert rdr.x_numeric == decimal.Decimal(SAMPLE_DOC['x_numeric_path'])
 
 
-def test_bad_field_definition():
+def test_bad_field_definition() -> None:
     def doc(s):
         return yaml.safe_load(dedent(s))
 
@@ -196,6 +196,6 @@ def test_bad_field_definition():
         '''))
 
 
-def test_expression():
+def test_expression() -> None:
     assert Expression() == Expression()
     assert (Expression() == object()) is False

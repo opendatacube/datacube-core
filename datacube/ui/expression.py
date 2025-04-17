@@ -124,11 +124,11 @@ class TreeToSearchExprs(Transformer):
     def range_upper_bound(self, date):
         return _time_to_search_dims((None, date))
 
-    def date(self, y, m=None, d=None):
+    def date(self, y, m=None, d=None) -> str:
         return "-".join(x for x in [y, m, d] if x is not None)
 
     # Merge everything into a single dict
-    def start(self, *search_exprs):
+    def start(self, *search_exprs) -> dict:
         combined = {}
         for expr in search_exprs:
             combined.update(expr)
@@ -141,7 +141,7 @@ def parse_expressions(*expression_text):
     return TreeToSearchExprs().transform(tree)
 
 
-def main():
+def main() -> None:
     expr_parser = Lark(search_grammar)
 
     sample_inputs = """platform = "LANDSAT_8"

@@ -27,7 +27,7 @@ from datacube.virtual.transformations import fiscal_year
 # Set up some common test data and fixtures
 
 
-def test_formula_parsing():
+def test_formula_parsing() -> None:
     parser = formula_parser()
     evaluator = FormulaEvaluator
     env = dict(x=4, y=2, true=True, false=False)
@@ -269,16 +269,16 @@ def query():
 ##################################
 # Virtual Product Tests Start Here
 
-def test_name_resolution(cloud_free_nbar):
+def test_name_resolution(cloud_free_nbar) -> None:
     for prod in cloud_free_nbar['collate']:
         assert callable(prod['transform'])
 
 
-def test_str(cloud_free_nbar):
+def test_str(cloud_free_nbar) -> None:
     assert str(cloud_free_nbar)
 
 
-def test_output_measurements(cloud_free_nbar, dc):
+def test_output_measurements(cloud_free_nbar, dc) -> None:
     measurements = cloud_free_nbar.output_measurements({product.name: product
                                                         for product in dc.index.products.get_all()})
     assert 'blue' in measurements
@@ -287,7 +287,7 @@ def test_output_measurements(cloud_free_nbar, dc):
     assert 'pixelquality' not in measurements
 
 
-def test_group_datasets(cloud_free_nbar, dc, query):
+def test_group_datasets(cloud_free_nbar, dc, query) -> None:
     bag = cloud_free_nbar.query(dc, **query)
     box = cloud_free_nbar.group(bag, **query)
 
@@ -295,7 +295,7 @@ def test_group_datasets(cloud_free_nbar, dc, query):
     assert time == 2
 
 
-def test_explode(dc, query):
+def test_explode(dc, query) -> None:
     collate = construct_from_yaml("""
         collate:
             - product: ls8_nbar_albers
@@ -322,7 +322,7 @@ def test_explode(dc, query):
         assert len(bag.bag['collate']) == 2
 
 
-def test_load_data(cloud_free_nbar, dc, query):
+def test_load_data(cloud_free_nbar, dc, query) -> None:
     with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
         mock_datacube.load_data = load_data
         mock_datacube.group_datasets = group_datasets
@@ -338,7 +338,7 @@ def test_load_data(cloud_free_nbar, dc, query):
     assert numpy.array_equal(numpy.unique(data.source_index.values), numpy.array([0, 1]))
 
 
-def test_misspelled_product(dc, query):
+def test_misspelled_product(dc, query) -> None:
     ls8_nbar = construct_from_yaml("product: ls8_nbar")
 
     with pytest.raises(VirtualProductException):
@@ -349,7 +349,7 @@ def test_misspelled_product(dc, query):
 #####################################
 
 
-def test_vp_handles_product_aliases(dc, query):
+def test_vp_handles_product_aliases(dc, query) -> None:
     verde = construct_from_yaml("""
         product: ls8_nbar_albers
         measurements: [verde]
@@ -369,7 +369,7 @@ def test_vp_handles_product_aliases(dc, query):
     assert 'green' not in data
 
 
-def test_expressions_transform(dc, query):
+def test_expressions_transform(dc, query) -> None:
     bluegreen = construct_from_yaml("""
         transform: expressions
         output:
@@ -427,7 +427,7 @@ def test_expressions_transform(dc, query):
     assert 'green' not in data
 
 
-def test_aggregate(dc, query, catalog):
+def test_aggregate(dc, query, catalog) -> None:
     aggr = catalog['mean_blue']
 
     measurements = aggr.output_measurements({product.name: product
@@ -443,7 +443,7 @@ def test_aggregate(dc, query, catalog):
     assert data.time.shape == (2,)
 
 
-def test_register(dc, query):
+def test_register(dc, query) -> None:
     class BlueGreen(Transformation):
         def compute(self, data):
             return (data.blue + data.green).to_dataset(name='bluegreen').assign_attrs(data.blue.attrs)
@@ -476,7 +476,7 @@ def test_register(dc, query):
 
 
 @pytest.mark.skip(reason="odc-geo implementation of rio_reproject is a breaking change")
-def test_reproject(dc, query, catalog):
+def test_reproject(dc, query, catalog) -> None:
     reproject_utm = catalog['reproject_utm']
 
     with mock.patch('datacube.virtual.impl.Datacube') as mock_datacube:
@@ -490,7 +490,7 @@ def test_reproject(dc, query, catalog):
     assert data.coords['y'].attrs['resolution'] == 30
 
 
-def test_fiscal_year():
+def test_fiscal_year() -> None:
     """
     Test fiscal year function
     """
@@ -517,7 +517,7 @@ def test_fiscal_year():
     assert (expected == fy.time).all()
 
 
-def test_fiscal_year_multi_time_dimensions():
+def test_fiscal_year_multi_time_dimensions() -> None:
     """
     Test the fiscal year is applied to every
     input time dimension

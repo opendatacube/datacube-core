@@ -35,7 +35,7 @@ nearest_resampling_parametrize = pytest.mark.parametrize(
 )
 
 
-def test_pick_read_scale():
+def test_pick_read_scale() -> None:
     assert pick_read_scale(0.7) == 1
     assert pick_read_scale(1.3) == 1
     assert pick_read_scale(2.3) == 2
@@ -43,7 +43,7 @@ def test_pick_read_scale():
 
 
 @nearest_resampling_parametrize
-def test_read_paste(nearest_resampling, tmpdir):
+def test_read_paste(nearest_resampling, tmpdir) -> None:
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from pathlib import Path
@@ -122,7 +122,7 @@ def test_read_paste(nearest_resampling, tmpdir):
 
 
 @nearest_resampling_parametrize
-def test_read_with_reproject(nearest_resampling, tmpdir):
+def test_read_with_reproject(nearest_resampling, tmpdir) -> None:
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from pathlib import Path
@@ -182,7 +182,7 @@ def test_read_with_reproject(nearest_resampling, tmpdir):
 
 
 @nearest_resampling_parametrize
-def test_read_paste_v2(nearest_resampling, tmpdir):
+def test_read_paste_v2(nearest_resampling, tmpdir) -> None:
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from datacube.testutils.iodriver import open_reader
@@ -268,7 +268,7 @@ def test_read_paste_v2(nearest_resampling, tmpdir):
 
 
 @nearest_resampling_parametrize
-def test_read_with_reproject_v2(nearest_resampling, tmpdir):
+def test_read_with_reproject_v2(nearest_resampling, tmpdir) -> None:
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from datacube.testutils.iodriver import open_reader

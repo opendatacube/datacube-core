@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Collection
+from collections.abc import Collection, Iterable, Mapping
 import warnings
 
 import numpy
@@ -21,7 +21,7 @@ from .expr import formula_parser, evaluate_data, evaluate_nodata_mask, evaluate_
 
 
 def selective_apply_dict(dictionary, apply_to=None, key_map=None, value_map=None):
-    def skip(key):
+    def skip(key) -> bool:
         return apply_to is not None and key not in apply_to
 
     def key_worker(key):
@@ -40,7 +40,7 @@ def selective_apply_dict(dictionary, apply_to=None, key_map=None, value_map=None
             for key, value in dictionary.items()}
 
 
-def selective_apply(data, apply_to=None, key_map=None, value_map=None):
+def selective_apply(data, apply_to=None, key_map=None, value_map=None) -> xarray.Dataset:
     return xarray.Dataset(data_vars=selective_apply_dict(data.data_vars, apply_to=apply_to,
                                                          key_map=key_map, value_map=value_map),
                           coords=data.coords, attrs=data.attrs)
@@ -57,7 +57,7 @@ class MakeMask(Transformation):
     :param flags: definition of the flags for the mask
     """
 
-    def __init__(self, mask_measurement_name, flags):
+    def __init__(self, mask_measurement_name: str, flags) -> None:
         self.mask_measurement_name = mask_measurement_name
         self.flags = flags
 
@@ -96,8 +96,9 @@ class ApplyMask(Transformation):
     :param erosion: the erosion to apply to mask in pixels
     :param dilation: the dilation to apply to mask in pixels
     """
-    def __init__(self, mask_measurement_name, apply_to: Collection[str] | None = None,
-                 preserve_dtype=True, fallback_dtype='float32', erosion: int = 0, dilation: int = 0):
+    def __init__(self, mask_measurement_name: str, apply_to: Collection[str] | None = None,
+                 preserve_dtype: bool = True, fallback_dtype: str = 'float32',
+                 erosion: int = 0, dilation: int = 0) -> None:
         self.mask_measurement_name = mask_measurement_name
         self.apply_to = apply_to
         self.preserve_dtype = preserve_dtype
@@ -197,7 +198,7 @@ class ToFloat(Transformation):
     :param apply_to: list of names of measurements to apply conversion to
     :param dtype: default ``dtype`` for conversion
     """
-    def __init__(self, apply_to=None, dtype='float32'):
+    def __init__(self, apply_to: list[str] | None = None, dtype: str = 'float32') -> None:
         warnings.warn("the `to_float` transform is deprecated, please use `expressions` instead",
                       category=DeprecationWarning)
         self.apply_to = apply_to
@@ -257,7 +258,7 @@ class Rename(Transformation):
 
     :param measurement_names: mapping from INPUT NAME to OUTPUT NAME
     """
-    def __init__(self, measurement_names):
+    def __init__(self, measurement_names: Mapping) -> None:
         warnings.warn("the `rename` transform is deprecated, please use `expressions` instead",
                       category=DeprecationWarning)
         self.measurement_names = measurement_names
@@ -309,7 +310,7 @@ class Select(Transformation):
 
     :param measurement_names: list of measurements to keep
     """
-    def __init__(self, measurement_names):
+    def __init__(self, measurement_names: Iterable) -> None:
         warnings.warn("the `select` transform is deprecated, please use `expressions` instead",
                       category=DeprecationWarning)
         self.measurement_names = measurement_names
@@ -345,7 +346,7 @@ class Expressions(Transformation):
            measurements: [nir, red]
 
     """
-    def __init__(self, output, masked=True):
+    def __init__(self, output: Mapping, masked: bool = True) -> None:
         """
         Initialize transformation.
 
@@ -389,7 +390,7 @@ class Expressions(Transformation):
                 for output_var, output_desc in self.output.items()}
 
     @override
-    def compute(self, data):
+    def compute(self, data) -> xarray.Dataset:
         parser = formula_parser()
 
         def result(output_var, output_desc):
@@ -497,7 +498,7 @@ class XarrayReduction(Transformation):
     Apply an `xarray` reduction method to the data.
     """
 
-    def __init__(self, method=None, apply_to=None, dtype=None, dim='time', **kwargs):
+    def __init__(self, method=None, apply_to=None, dtype=None, dim: str = 'time', **kwargs) -> None:
         if method is None:
             raise VirtualProductException("no method specified in xarray reduction")
 

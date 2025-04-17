@@ -56,7 +56,7 @@ def alter_log_level(logger, level=logging.WARN):
     logger.setLevel(previous_level)
 
 
-def assert_click_command(command, args):
+def assert_click_command(command, args) -> None:
     result = CliRunner().invoke(
         command,
         args=args,
@@ -126,7 +126,7 @@ def _make_geotiffs(tiffs_dir, day_offset, num_bands=NUM_BANDS):
     return tiffs
 
 
-def _make_ls5_scene_datasets(geotiffs, tmpdir):
+def _make_ls5_scene_datasets(geotiffs, tmpdir) -> dict:
     """
 
     Create directory structures like::
@@ -161,16 +161,16 @@ def _make_ls5_scene_datasets(geotiffs, tmpdir):
     return dataset_dirs
 
 
-def load_yaml_file(filename):
+def load_yaml_file(filename) -> list:
     with open(str(filename)) as f:
         return list(load_from_yaml(f, parse_dates=True))
 
 
-def is_geogaphic(storage_type):
+def is_geogaphic(storage_type) -> bool:
     return 'latitude' in storage_type['storage']['resolution']
 
 
-def shrink_storage_type(storage_type, variables, shrink_factors):
+def shrink_storage_type(storage_type: dict, variables, shrink_factors) -> dict:
     storage = storage_type['storage']
     for var in variables:
         storage['resolution'][var] = storage['resolution'][var] * shrink_factors[0]
@@ -183,7 +183,7 @@ def load_test_products(filename, metadata_type=None):
     return [alter_product_for_testing(dataset_type, metadata_type=metadata_type) for dataset_type in dataset_types]
 
 
-def alter_product_for_testing(product, metadata_type=None):
+def alter_product_for_testing(product: dict, metadata_type=None) -> dict:
     limit_num_measurements(product)
     if 'storage' in product:
         spatial_variables = GEOGRAPHIC_VARS if is_geogaphic(product) else PROJECTED_VARS
@@ -195,7 +195,7 @@ def alter_product_for_testing(product, metadata_type=None):
     return product
 
 
-def ensure_datasets_are_indexed(index, valid_uuids):
+def ensure_datasets_are_indexed(index, valid_uuids: list) -> None:
     datasets = list(index.datasets.search(product='ls5_nbar_scene'))
     assert len(datasets) == len(valid_uuids)
     for dataset in datasets:

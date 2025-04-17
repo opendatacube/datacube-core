@@ -70,7 +70,7 @@ _pseudo_telemetry_dataset_type = {
 }
 
 
-def test_archive_datasets(index, ls8_eo3_dataset):
+def test_archive_datasets(index, ls8_eo3_dataset) -> None:
     datasets = list(index.datasets.search())
     assert len(datasets) == 1
     assert not datasets[0].is_archived
@@ -93,7 +93,7 @@ def test_archive_datasets(index, ls8_eo3_dataset):
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_archive_less_mature(index, final_dataset, nrt_dataset, ds_no_region):
+def test_archive_less_mature(index, final_dataset, nrt_dataset, ds_no_region) -> None:
     # case 1: add nrt then final; nrt should get archived
     index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
     assert not index.datasets.get(nrt_dataset.id).is_archived
@@ -110,7 +110,7 @@ def test_archive_less_mature(index, final_dataset, nrt_dataset, ds_no_region):
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_cannot_search_for_less_mature(index, nrt_dataset, ds_no_region):
+def test_cannot_search_for_less_mature(index, nrt_dataset, ds_no_region) -> None:
     # if a dataset is missing a property required for finding less mature datasets,
     # it should error
     index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=0)
@@ -121,7 +121,7 @@ def test_cannot_search_for_less_mature(index, nrt_dataset, ds_no_region):
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_archive_less_mature_approx_timestamp(index, ga_s2am_ard3_final, ga_s2am_ard3_interim):
+def test_archive_less_mature_approx_timestamp(index, ga_s2am_ard3_final, ga_s2am_ard3_interim) -> None:
     # test archive_less_mature where there's a slight difference in timestamps
     index.datasets.add(ga_s2am_ard3_interim, with_lineage=False)
     assert not index.datasets.get(ga_s2am_ard3_interim.id).is_archived
@@ -131,7 +131,7 @@ def test_archive_less_mature_approx_timestamp(index, ga_s2am_ard3_final, ga_s2am
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_dont_archive_less_mature(index, final_dataset, nrt_dataset):
+def test_dont_archive_less_mature(index, final_dataset, nrt_dataset) -> None:
     # ensure datasets aren't archive if no archive_less_mature value is provided
     index.datasets.add(nrt_dataset, with_lineage=False)
     assert not index.datasets.get(nrt_dataset.id).is_archived
@@ -141,7 +141,7 @@ def test_dont_archive_less_mature(index, final_dataset, nrt_dataset):
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_archive_less_mature_bool(index, final_dataset, nrt_dataset):
+def test_archive_less_mature_bool(index, final_dataset, nrt_dataset) -> None:
     # if archive_less_mature value gets passed as a bool via an outdated script
     index.datasets.add(nrt_dataset, with_lineage=False)
     assert not index.datasets.get(nrt_dataset.id).is_archived
@@ -150,7 +150,7 @@ def test_archive_less_mature_bool(index, final_dataset, nrt_dataset):
     assert not index.datasets.get(final_dataset.id).is_archived
 
 
-def test_purge_datasets(index, ls8_eo3_dataset):
+def test_purge_datasets(index, ls8_eo3_dataset) -> None:
     assert index.datasets.has(ls8_eo3_dataset.id)
     datasets = list(index.datasets.search())
     assert len(datasets) == 1
@@ -170,7 +170,7 @@ def test_purge_datasets(index, ls8_eo3_dataset):
     assert index.datasets.get(ls8_eo3_dataset.id) is None
 
 
-def test_purge_datasets_cli(index, ls8_eo3_dataset, clirunner):
+def test_purge_datasets_cli(index, ls8_eo3_dataset, clirunner) -> None:
     dsid = ls8_eo3_dataset.id
 
     # Attempt to purge non-archived dataset should fail
@@ -197,7 +197,7 @@ def test_purge_datasets_cli(index, ls8_eo3_dataset, clirunner):
     clirunner(['dataset', 'purge', str(dsid)], expect_success=False)
 
 
-def test_purge_all_datasets_cli(index, cfg_env, ls8_eo3_dataset, clirunner):
+def test_purge_all_datasets_cli(index, cfg_env, ls8_eo3_dataset, clirunner) -> None:
     dsid = ls8_eo3_dataset.id
 
     # archive all datasets
@@ -263,7 +263,8 @@ def test_get_dataset(index: Index, ls8_eo3_dataset: Dataset) -> None:
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_add_dataset_no_product_id(index: Index, extended_eo3_metadata_type, ls8_eo3_product, eo3_ls8_dataset_doc):
+def test_add_dataset_no_product_id(index: Index, extended_eo3_metadata_type,
+                                   ls8_eo3_product, eo3_ls8_dataset_doc) -> None:
     product_no_id = Product(extended_eo3_metadata_type, ls8_eo3_product.definition)
     assert product_no_id.id is None
     dataset_doc, _ = eo3_ls8_dataset_doc
@@ -341,7 +342,7 @@ def test_transactions_api_manual(index,
                                  extended_eo3_metadata_type_doc,
                                  ls8_eo3_product,
                                  eo3_ls8_dataset_doc,
-                                 eo3_ls8_dataset2_doc):
+                                 eo3_ls8_dataset2_doc) -> None:
     from datacube.index.hl import Doc2Dataset
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
@@ -368,7 +369,7 @@ def test_transactions_api_hybrid(index,
                                  extended_eo3_metadata_type_doc,
                                  ls8_eo3_product,
                                  eo3_ls8_dataset_doc,
-                                 eo3_ls8_dataset2_doc):
+                                 eo3_ls8_dataset2_doc) -> None:
     from datacube.index.hl import Doc2Dataset
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
@@ -415,7 +416,7 @@ def test_get_missing_things(index: Index) -> None:
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_index_dataset_with_sources(index, default_metadata_type):
+def test_index_dataset_with_sources(index, default_metadata_type) -> None:
     type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
 
     parent_doc = _telemetry_dataset.copy()
@@ -444,7 +445,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
 
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_index_dataset_with_lineage(index, ds_with_lineage, ls8_eo3_dataset):
+def test_index_dataset_with_lineage(index, ds_with_lineage, ls8_eo3_dataset) -> None:
     assert ds_with_lineage.source_tree
     index.datasets.add(ds_with_lineage)
     sources = index.lineage.get_source_tree(ds_with_lineage.id).children
@@ -454,7 +455,7 @@ def test_index_dataset_with_lineage(index, ds_with_lineage, ls8_eo3_dataset):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_index_dataset_with_location(index: Index, default_metadata_type: MetadataType):
+def test_index_dataset_with_location(index: Index, default_metadata_type: MetadataType) -> None:
     first_file = Path('/tmp/first/something.yaml').absolute()
     second_file = Path('/tmp/second/something.yaml').absolute()
 
@@ -637,7 +638,7 @@ def test_bulk_reads_transaction(index, extended_eo3_metadata_type_doc,
                                 ls8_eo3_product,
                                 eo3_ls8_dataset_doc,
                                 eo3_ls8_dataset2_doc
-                                ):
+                                ) -> None:
     with pytest.raises(ValueError) as e:
         with index.datasets._db_connection() as conn:
             conn.bulk_simple_dataset_search(batch_size=2)

@@ -19,7 +19,7 @@ from datacube.scripts.dataset import _resolve_uri
 logger = logging.getLogger(__name__)
 
 
-def check_skip_lineage_test(clirunner, index):
+def check_skip_lineage_test(clirunner, index) -> None:
     ds = SimpleDocNav(gen_dataset_test_dag(11, force_tree=True))
 
     prefix = write_files({'agdc-metadata.yml': yaml.safe_dump(ds.doc)})
@@ -37,7 +37,7 @@ def check_skip_lineage_test(clirunner, index):
     assert index.datasets.get(ds.sources['ac'].sources['cd'].id) is None
 
 
-def check_no_product_match(clirunner, index):
+def check_no_product_match(clirunner, index) -> None:
     ds = SimpleDocNav(gen_dataset_test_dag(22, force_tree=True))
 
     prefix = write_files({'agdc-metadata.yml': yaml.safe_dump(ds.doc)})
@@ -69,7 +69,7 @@ def check_no_product_match(clirunner, index):
     assert index.datasets.has(ds.id) is False
 
 
-def check_with_existing_lineage(clirunner, index):
+def check_with_existing_lineage(clirunner, index) -> None:
     """
       A -> B
       |    |
@@ -102,7 +102,7 @@ def check_with_existing_lineage(clirunner, index):
     assert index.datasets.get(ds.id) is not None
 
 
-def check_inconsistent_lineage(clirunner, index):
+def check_inconsistent_lineage(clirunner, index) -> None:
     """
       A -> B
       |    |
@@ -146,7 +146,7 @@ def check_inconsistent_lineage(clirunner, index):
     assert index.datasets.has(ds.sources['ac'].sources['cd'].id)
 
 
-def check_missing_lineage(clirunner, index):
+def check_missing_lineage(clirunner, index) -> None:
     """
       A -> B
       |    |
@@ -181,19 +181,19 @@ def check_missing_lineage(clirunner, index):
     assert index.datasets.has(ds.id)
 
 
-def check_missing_metadata_doc(clirunner):
+def check_missing_metadata_doc(clirunner) -> None:
     prefix = write_files({'im.tiff': ''})
     r = clirunner(['dataset', 'add', str(prefix / 'im.tiff')])
     assert "ERROR No supported metadata docs found for dataset" in r.output
 
 
-def check_bad_yaml(clirunner, index):
+def check_bad_yaml(clirunner, index) -> None:
     prefix = write_files({'broken.yml': '"'})
     r = clirunner(['dataset', 'add', str(prefix / 'broken.yml')])
     assert 'ERROR Failed reading documents from ' in r.output
 
 
-def test_dataset_add_no_id(index, eo3_ls8_dataset3_doc, ls8_eo3_product):
+def test_dataset_add_no_id(index, eo3_ls8_dataset3_doc, ls8_eo3_product) -> None:
     doc, uri = eo3_ls8_dataset3_doc
     del doc["id"]
 
@@ -203,7 +203,7 @@ def test_dataset_add_no_id(index, eo3_ls8_dataset3_doc, ls8_eo3_product):
     assert _err == 'No id defined in dataset doc'
 
 
-def test_dataset_add_not_eo3(index, ls8_eo3_product, eo3_wo_dataset_doc):
+def test_dataset_add_not_eo3(index, ls8_eo3_product, eo3_wo_dataset_doc) -> None:
     from datacube.model.utils import BadMatch
     doc2ds = Doc2Dataset(index)
     _ds, _err = doc2ds(*eo3_wo_dataset_doc)
@@ -211,7 +211,7 @@ def test_dataset_add_not_eo3(index, ls8_eo3_product, eo3_wo_dataset_doc):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_eo3_no_schema(dataset_add_configs, index_empty, clirunner, caplog):
+def test_dataset_eo3_no_schema(dataset_add_configs, index_empty, clirunner, caplog) -> None:
     p = dataset_add_configs
     index = index_empty
     ds = load_dataset_definition(p.datasets_eo3).doc
@@ -235,7 +235,7 @@ def test_dataset_eo3_no_schema(dataset_add_configs, index_empty, clirunner, capl
 
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_add(dataset_add_configs, index_empty, clirunner):
+def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
     p = dataset_add_configs
     index = index_empty
     r = clirunner(['dataset', 'add', p.datasets], expect_success=False)
@@ -314,7 +314,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner):
 
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_add_ambiguous_products(dataset_add_configs, index_empty, clirunner):
+def test_dataset_add_ambiguous_products(dataset_add_configs, index_empty, clirunner) -> None:
     p = dataset_add_configs
     index = index_empty
 
@@ -376,7 +376,7 @@ metadata:
 
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_add_with_nans(dataset_add_configs, index_empty, clirunner):
+def test_dataset_add_with_nans(dataset_add_configs, index_empty, clirunner) -> None:
     p = dataset_add_configs
     index = index_empty
 
@@ -417,7 +417,7 @@ def test_dataset_add_with_nans(dataset_add_configs, index_empty, clirunner):
 
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_add_inconsistent_measurements(dataset_add_configs, index_empty, clirunner):
+def test_dataset_add_inconsistent_measurements(dataset_add_configs, index_empty, clirunner) -> None:
     p = dataset_add_configs
     index = index_empty
     mk = dataset_maker(0)
@@ -497,7 +497,7 @@ def dataset_archive_prep(dataset_add_configs, index_empty, clirunner):
 
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner):
+def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) -> None:
     p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
     non_existent_uuid = '00000000-1036-5607-a62f-fde5e3fec985'
@@ -561,7 +561,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner):
 
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_archive_restore_invalid(dataset_add_configs, index_empty, clirunner):
+def test_dataset_archive_restore_invalid(dataset_add_configs, index_empty, clirunner) -> None:
     p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
     non_existent_uuid = '00000000-1036-5607-a62f-fde5e3fec985'
@@ -583,7 +583,7 @@ def test_dataset_archive_restore_invalid(dataset_add_configs, index_empty, cliru
 
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
+def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner) -> None:
     p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
     # Run for real
@@ -618,7 +618,7 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner):
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_add_http(dataset_add_configs, index: Index, default_metadata_type: MetadataType, httpserver,
-                          clirunner):
+                          clirunner) -> None:
     # pytest-localserver also looks good, it's been around for ages, but httpserver is the new cool
     p = dataset_add_configs
 
@@ -637,12 +637,12 @@ def test_dataset_add_http(dataset_add_configs, index: Index, default_metadata_ty
     assert index.datasets.has(ds.id)
 
 
-def xtest_dataset_add_fails(clirunner, index):
+def xtest_dataset_add_fails(clirunner, index) -> None:
     result = clirunner(['dataset', 'add', 'bad_path.yaml'], expect_success=False)
     assert result.exit_code != 0, "Surely not being able to add a dataset when requested should return an error."
 
 
-def test_resolve_uri():
+def test_resolve_uri() -> None:
     def doc(loc=None):
         return SimpleDocNav(dict(location=loc, id='4d9fd75c-1309-4712-93b5-f0d9c6fdd8ab'))
 

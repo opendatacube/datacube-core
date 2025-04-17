@@ -16,20 +16,20 @@ from datacube.scripts.search_tool import write_csv, write_pretty
 
 
 class MockFile:
-    def __init__(self):
+    def __init__(self) -> None:
         self.vals = []
 
-    def write(self, s):
+    def write(self, s) -> None:
         self.vals.append(s)
 
-    def flush(self):
+    def flush(self) -> None:
         pass
 
     def getvalue(self):
         return ''.join(self.vals)
 
 
-def test_csv_serialise():
+def test_csv_serialise() -> None:
     m = MockFile()
     write_csv(
         m,
@@ -52,7 +52,7 @@ def test_csv_serialise():
     )
 
 
-def test_pretty_serialise():
+def test_pretty_serialise() -> None:
     m = MockFile()
     write_pretty(
         m,

@@ -7,6 +7,7 @@ Methods for managing dynamic dataset field indexes and views.
 """
 
 import logging
+from collections.abc import Sequence
 
 from sqlalchemy import Index, text
 from sqlalchemy import select
@@ -15,10 +16,10 @@ from ._core import schema_qualified
 from ._schema import DATASET, PRODUCT, METADATA_TYPE
 from .sql import pg_exists, CreateView
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def contains_all(d_, *keys) -> bool:
+def contains_all(d_: dict, *keys) -> bool:
     """
     Does the dictionary have values for all of the given keys?
 
@@ -32,7 +33,7 @@ def contains_all(d_, *keys) -> bool:
     return all([d_.get(key) for key in keys])
 
 
-def _ensure_view(conn, fields, name, replace_existing, where_expression, delete=False) -> None:
+def _ensure_view(conn, fields, name: str, replace_existing, where_expression, delete: bool = False) -> None:
     """
     Ensure a view exists for the given fields
     """
@@ -73,8 +74,9 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression, delete=
         conn.execute(text(f'drop view {legacy_name}'))
 
 
-def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_names, fields, name,
-                         rebuild_indexes=False, rebuild_view=False, delete_view=False) -> None:
+def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_names: Sequence[str], fields, name: str,
+                         rebuild_indexes: bool = False, rebuild_view: bool = False,
+                         delete_view: bool = False) -> None:
     """
     Check that we have expected indexes and views for the given fields
     """
@@ -121,8 +123,8 @@ def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_name
 
 
 def _check_field_index(conn, fields, name_prefix, filter_expression,
-                       should_exist=True, concurrently=False,
-                       replace_existing=False, index_type=None) -> None:
+                       should_exist: bool = True, concurrently: bool = False,
+                       replace_existing: bool = False, index_type=None) -> None:
     """
     Check the status of a given index: add or remove it as needed
     """

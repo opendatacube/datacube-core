@@ -21,7 +21,7 @@ from sqlalchemy.sql import func
 from . import sql
 from . import _core
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class Base(DeclarativeBase):
@@ -282,13 +282,14 @@ search_field_map = {
     'float-range': "numeric",
 }
 
-search_field_indexes = {
+search_field_indexes: dict[str,
+                           type[DatasetSearchString | DatasetSearchNumeric | DatasetSearchDateTime]] = {
     'string': DatasetSearchString,
     'numeric': DatasetSearchNumeric,
     'datetime': DatasetSearchDateTime,
 }
 
-search_field_index_map = {
+search_field_index_map: dict[str, type[DatasetSearchDateTime | DatasetSearchNumeric | DatasetSearchString]] = {
     k: search_field_indexes[v] for k, v in search_field_map.items()
 }
 

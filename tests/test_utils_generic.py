@@ -11,7 +11,7 @@ from datacube.utils.generic import (
 )
 
 
-def test_map_with_lookahead():
+def test_map_with_lookahead() -> None:
     def if_one(x):
         return 'one' + str(x)
 
@@ -25,7 +25,7 @@ def test_map_with_lookahead():
     assert list(map_with_lookahead(iter([1]), if_many=if_many)) == [1]
 
 
-def test_qmap():
+def test_qmap() -> None:
     q = Queue(maxsize=100)
     it2q(range(10), q)
     rr = [x for x in qmap(str, q)]
@@ -33,7 +33,7 @@ def test_qmap():
     q.join()  # should not block
 
 
-def test_thread_local_cache():
+def test_thread_local_cache() -> None:
     name = "test_0123394"
     v = {}
 

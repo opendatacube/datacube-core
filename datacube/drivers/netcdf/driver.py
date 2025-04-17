@@ -3,10 +3,12 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from urllib.parse import urlsplit
+from pathlib import Path
 
 from datacube.storage._rio import RasterDatasetDataSource
 from datacube.utils.uris import normalise_path
 from ._write import write_dataset_to_netcdf
+
 
 PROTOCOL = 'file'
 FORMAT = 'NetCDF'
@@ -46,7 +48,7 @@ class NetcdfWriterDriver:
     def uri_scheme(self) -> str:
         return PROTOCOL
 
-    def mk_uri(self, file_path):
+    def mk_uri(self, file_path: Path | str) -> str:
         """
         Constructs a URI from the file_path and storage config.
 

@@ -16,7 +16,7 @@ from datacube import Datacube
 from datacube.model import Range
 
 
-def test_init_memory(in_memory_config: ODCEnvironment):
+def test_init_memory(in_memory_config: ODCEnvironment) -> None:
     from datacube.drivers.indexes import index_cache
     idxs = index_cache()
     assert "default" in idxs._drivers
@@ -26,7 +26,7 @@ def test_init_memory(in_memory_config: ODCEnvironment):
         assert dc.index.environment.index_driver == "memory"
 
 
-def test_mem_user_resource(mem_index_fresh: Datacube):
+def test_mem_user_resource(mem_index_fresh: Datacube) -> None:
     # Test default user
     assert mem_index_fresh.index.users.list_users() == [("local_user", "localuser", "Default user")]
     # Test create_user success
@@ -66,7 +66,7 @@ def test_mem_user_resource(mem_index_fresh: Datacube):
     assert mem_index_fresh.index.users.list_users() == [("local_user", "localuser", "Default user")]
 
 
-def test_mem_metadatatype_resource(mem_index_fresh: Datacube):
+def test_mem_metadatatype_resource(mem_index_fresh: Datacube) -> None:
     assert len(mem_index_fresh.index.metadata_types.by_id) == len(mem_index_fresh.index.metadata_types.by_name)
     assert len(list(mem_index_fresh.index.metadata_types.get_all())) == 3
     mdt = mem_index_fresh.index.metadata_types.get(1)
@@ -102,7 +102,7 @@ def test_mem_product_resource(mem_index_fresh: Datacube,
                               extended_eo3_metadata_type_doc,
                               extended_eo3_product_doc,
                               base_eo3_product_doc
-                              ):
+                              ) -> None:
     eo3 = mem_index_fresh.index.metadata_types.get_by_name("eo3")
     # Test Empty index works as expected:
     assert list(mem_index_fresh.index.products.get_with_fields(("measurements", "extent"))) == []
@@ -173,7 +173,7 @@ def test_mem_product_resource(mem_index_fresh: Datacube,
 # Hand crafted tests with recent real-world eo3 examples
 def test_mem_dataset_add_eo3(mem_index_eo3: Datacube,
                              dataset_with_lineage_doc,
-                             datasets_with_unembedded_lineage_doc):
+                             datasets_with_unembedded_lineage_doc) -> None:
     dc = mem_index_eo3
     assert list(dc.index.datasets.get_all_dataset_ids(True)) == []
     assert list(dc.index.datasets.get_all_dataset_ids(False)) == []
@@ -202,7 +202,7 @@ def test_mem_dataset_add_eo3(mem_index_eo3: Datacube,
     assert list(dc.index.datasets.bulk_has((doc_ls8["id"], doc_wo["id"]))) == [True, True]
 
 
-def test_mem_ds_lineage(mem_eo3_data: tuple):
+def test_mem_ds_lineage(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     wo_ds = dc.index.datasets.get(wo_id, include_sources=True)
     ls8_ds = wo_ds.sources["ard"]
@@ -216,14 +216,14 @@ def test_mem_ds_lineage(mem_eo3_data: tuple):
     assert "cloud_cover" in dc.index.products.get_field_names(ls8_ds.product)
 
 
-def test_mem_ds_search_dups(mem_eo3_data: tuple):
+def test_mem_ds_search_dups(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     ls8_ds = dc.index.datasets.get(ls8_id)
     dup_results = dc.index.datasets.search_product_duplicates(ls8_ds.product, "cloud_cover", "dataset_maturity")
     assert len(dup_results) == 0
 
 
-def test_mem_ds_locations(mem_eo3_data: tuple):
+def test_mem_ds_locations(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     before_test = datetime.datetime.now()
     ls8ds = dc.index.datasets.get(ls8_id)
@@ -269,7 +269,7 @@ def test_mem_ds_locations(mem_eo3_data: tuple):
     assert dc.index.datasets.get_location(ls8_id) is None
 
 
-def test_mem_ds_updates(mem_eo3_data: tuple):
+def test_mem_ds_updates(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     # Test updates
     raw = dc.index.datasets.get(ls8_id)
@@ -297,7 +297,7 @@ def test_mem_ds_updates(mem_eo3_data: tuple):
     assert "file:///update_test_2" in raw._uris
 
 
-def test_mem_ds_expand_periods(mem_index_fresh: Datacube):
+def test_mem_ds_expand_periods(mem_index_fresh: Datacube) -> None:
     periods = list(mem_index_fresh.index.datasets._expand_period(
         "1 day",
         datetime.datetime(2016, 5, 5),
@@ -399,7 +399,7 @@ def test_mem_ds_expand_periods(mem_index_fresh: Datacube):
     ]
 
 
-def test_spatiotemporal_extent(mem_eo3_data: tuple):
+def test_spatiotemporal_extent(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     ls8 = dc.index.datasets.get(ls8_id)
     wo = dc.index.datasets.get(wo_id)
@@ -425,7 +425,7 @@ def test_spatiotemporal_extent(mem_eo3_data: tuple):
     assert dc.index.datasets.spatial_extent([ls8_id, wo_id]) is None
 
 
-def test_mem_ds_archive_purge(mem_eo3_data: tuple):
+def test_mem_ds_archive_purge(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     # Test archiving, restoring and purging datasets
     # Both datasets are not archived
@@ -455,7 +455,7 @@ def test_mem_ds_archive_purge(mem_eo3_data: tuple):
     assert list(dc.index.datasets.get_all_dataset_ids(False)) == []
 
 
-def test_mem_ds_search_and_count(mem_eo3_data: tuple):
+def test_mem_ds_search_and_count(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     # No source_filter; no results
     assert not list(dc.index.datasets.search(platform="deplatformed"))
@@ -497,7 +497,7 @@ def test_mem_ds_search_and_count(mem_eo3_data: tuple):
     assert len(lds) == 2
 
 
-def test_mem_ds_search_and_count_by_product(mem_eo3_data: tuple):
+def test_mem_ds_search_and_count_by_product(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     # No source_filter; no results
     assert not list(dc.index.datasets.search_by_product(platform="deplatformed"))
@@ -512,7 +512,7 @@ def test_mem_ds_search_and_count_by_product(mem_eo3_data: tuple):
         assert count == 1
 
 
-def test_mem_ds_search_returning(mem_eo3_data: tuple):
+def test_mem_ds_search_returning(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     lds = list(dc.index.datasets.search_returning(
         field_names=[
@@ -559,7 +559,7 @@ def test_mem_ds_search_returning(mem_eo3_data: tuple):
             assert res.id in (str(ls8_id), str(wo_id))
 
 
-def test_mem_ds_search_summary(mem_eo3_data: tuple):
+def test_mem_ds_search_summary(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     lds = list(dc.index.datasets.search_returning(platform='landsat-8'))
     assert len(lds) == 2
@@ -568,7 +568,7 @@ def test_mem_ds_search_summary(mem_eo3_data: tuple):
         assert res.id in (str(ls8_id), str(wo_id))
 
 
-def test_mem_ds_search_returning_datasets_light(mem_eo3_data: tuple):
+def test_mem_ds_search_returning_datasets_light(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     lds = list(dc.index.datasets.search_returning_datasets_light(
         field_names=['platform', 'id'],
@@ -590,7 +590,7 @@ def test_mem_ds_search_returning_datasets_light(mem_eo3_data: tuple):
     assert len(lds) == 0
 
 
-def test_mem_ds_search_by_metadata(mem_eo3_data: tuple):
+def test_mem_ds_search_by_metadata(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     lds = list(dc.index.datasets.search_by_metadata({"properties": {"product_family": "ard"}}))
     assert len(lds) == 0
@@ -613,7 +613,7 @@ def test_mem_ds_search_by_metadata(mem_eo3_data: tuple):
     assert len(lds) == 2
 
 
-def test_mem_ds_count_product_through_time(mem_eo3_data: tuple):
+def test_mem_ds_count_product_through_time(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     lds = list(dc.index.datasets.count_by_product_through_time(
         period="1 day",
@@ -639,7 +639,7 @@ def test_mem_ds_count_product_through_time(mem_eo3_data: tuple):
 
 
 # Tests adapted from test_dataset_add
-def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube):
+def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube) -> None:
     idx = mem_index_fresh.index
     # Make sure index is empty
     assert list(idx.products.get_all()) == []
@@ -684,7 +684,7 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube):
     assert ds_from_idx.sources['ac'].sources["cd"].id == ds_.sources['ac'].sources['cd'].id
 
 
-def test_mem_transactions(mem_index_fresh: Datacube):
+def test_mem_transactions(mem_index_fresh: Datacube) -> None:
     trans = mem_index_fresh.index.transaction()
     assert not trans.active
     trans.begin()
@@ -704,7 +704,7 @@ def test_default_clone_bulk_ops(mem_index_fresh: Datacube, index, extended_eo3_m
                                 ls8_eo3_product, wo_eo3_product, africa_s2_eo3_product,
                                 ls8_eo3_dataset, ls8_eo3_dataset2,
                                 ls8_eo3_dataset3, ls8_eo3_dataset4,
-                                wo_eo3_dataset, africa_eo3_dataset):
+                                wo_eo3_dataset, africa_eo3_dataset) -> None:
     mem_index_fresh.index.clone(index)
     assert mem_index_fresh.index.datasets.has(africa_eo3_dataset.id)
     assert mem_index_fresh.index.datasets.has(wo_eo3_dataset.id)
@@ -718,7 +718,7 @@ def test_default_clone_bulk_ops_multiloc(
         ls8_eo3_product, wo_eo3_product, africa_s2_eo3_product,
         ls8_eo3_dataset, ls8_eo3_dataset2,
         ls8_eo3_dataset3, ls8_eo3_dataset4,
-        wo_eo3_dataset, africa_eo3_dataset):
+        wo_eo3_dataset, africa_eo3_dataset) -> None:
     with suppress_deprecations():
         index.datasets.add_location(ls8_eo3_dataset.id, "file:///a/o/fish")
         mem_index_fresh.index.clone(index)
@@ -730,7 +730,7 @@ def test_default_clone_bulk_ops_multiloc(
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_default_clone_bulk_ops_reverse(mem_eo3_data: tuple, index):
+def test_default_clone_bulk_ops_reverse(mem_eo3_data: tuple, index) -> None:
     mem_idx, ls8id, woid = mem_eo3_data
     index.clone(mem_idx.index)
     assert index.datasets.has(ls8id)

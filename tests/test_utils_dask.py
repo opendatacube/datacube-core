@@ -30,7 +30,7 @@ from datacube.utils.aws import (
 )
 
 
-def test_compute_tasks():
+def test_compute_tasks() -> None:
     try:
         client = start_local_dask(threads_per_worker=1,
                                   dashboard_address=None)
@@ -43,7 +43,7 @@ def test_compute_tasks():
         del client
 
 
-def test_start_local_dask_dashboard_link(monkeypatch):
+def test_start_local_dask_dashboard_link(monkeypatch) -> None:
     monkeypatch.setenv('JUPYTERHUB_SERVICE_PREFIX', 'user/test/')
     try:
         client = start_local_dask()
@@ -53,7 +53,7 @@ def test_start_local_dask_dashboard_link(monkeypatch):
         del client
 
 
-def test_partition_map():
+def test_partition_map() -> None:
     tasks = partition_map(10, str, range(101))
     tt = [t for t in tasks]
     assert len(tt) == 11
@@ -65,7 +65,7 @@ def test_partition_map():
     assert len(lump) == 1
 
 
-def test_pmap():
+def test_pmap() -> None:
     try:
         client = start_local_dask(threads_per_worker=1,
                                   dashboard_address=None)
@@ -83,7 +83,7 @@ def test_pmap():
     "some utf8 string",
     b"raw bytes",
 ])
-def test_save_blob_file_direct(tmpdir, blob):
+def test_save_blob_file_direct(tmpdir, blob) -> None:
     tmpdir = Path(str(tmpdir))
     fname = str(tmpdir/"file.txt")
     mode = "rt" if isinstance(blob, str) else "rb"
@@ -99,7 +99,7 @@ def test_save_blob_file_direct(tmpdir, blob):
     "some utf8 string",
     b"raw bytes",
 ])
-def test_save_blob_file(tmpdir, blob, dask_client):
+def test_save_blob_file(tmpdir, blob, dask_client) -> None:
     tmpdir = Path(str(tmpdir))
     fname = str(tmpdir/"file.txt")
     dask_blob = dask.delayed(blob)
@@ -118,7 +118,7 @@ def test_save_blob_file(tmpdir, blob, dask_client):
     "some utf8 string",
     b"raw bytes",
 ])
-def test_save_blob_s3_direct(blob, monkeypatch):
+def test_save_blob_s3_direct(blob, monkeypatch) -> None:
     region_name = "us-west-2"
     blob2 = blob + blob
 
@@ -152,7 +152,7 @@ def test_save_blob_s3_direct(blob, monkeypatch):
     "some utf8 string",
     b"raw bytes",
 ])
-def test_save_blob_s3(blob, monkeypatch, dask_client):
+def test_save_blob_s3(blob, monkeypatch, dask_client) -> None:
     region_name = "us-west-2"
 
     blob2 = blob + blob
@@ -187,7 +187,7 @@ def test_save_blob_s3(blob, monkeypatch, dask_client):
         assert bb2 == blob2
 
 
-def test_memory_functions(monkeypatch):
+def test_memory_functions(monkeypatch) -> None:
     gig = 10**9
 
     total_mem = get_total_available_memory()

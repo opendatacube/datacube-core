@@ -14,7 +14,7 @@ from integration_tests.utils import ensure_datasets_are_indexed
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
-def test_index_get_product_time_bounds(index, clirunner, example_ls5_dataset_paths):
+def test_index_get_product_time_bounds(index, clirunner, example_ls5_dataset_paths) -> None:
     valid_uuids = []
     for uuid, ls5_dataset_path in example_ls5_dataset_paths.items():
         clirunner(['dataset', 'add', str(ls5_dataset_path)])
@@ -39,7 +39,7 @@ def test_index_get_product_time_bounds(index, clirunner, example_ls5_dataset_pat
 
 def test_temporal_extent(
     index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3, ls8_eo3_dataset4
-):
+) -> None:
     with pytest.raises(KeyError):
         start, end = index.products.temporal_extent("orthentick_produckt")
 

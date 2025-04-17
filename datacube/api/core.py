@@ -44,7 +44,7 @@ from ..model import QueryField
 from ..migration import ODC2DeprecationWarning
 from ..storage._load import ProgressFunction, FuserFunction
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 # Either a Pandas dataframe or a list of flat dictionaries.

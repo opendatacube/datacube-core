@@ -18,7 +18,7 @@ from datacube.cfg.exceptions import ConfigException
 from datacube.cfg.utils import ConfigDict, smells_like_ini, SemaphoreCallback
 from datacube.migration import ODC2DeprecationWarning
 
-_DEFAULT_CONFIG_SEARCH_PATH = [
+_DEFAULT_CONFIG_SEARCH_PATH: list[str] = [
     "datacube.conf",      # i.e. in the current working directory.
     expanduser("~/.datacube.conf"),   # i.e. in user's home directory.
     # Check if we are running under a Windows and use Windowsy default paths?

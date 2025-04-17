@@ -10,7 +10,7 @@ from datacube.utils import DatacubeException
 from datacube.storage._hdf5 import HDF5_LOCK
 
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def _get_units(coord) -> str:
@@ -33,7 +33,7 @@ def _get_units(coord) -> str:
     return '1'
 
 
-def create_netcdf_storage_unit(filename,
+def create_netcdf_storage_unit(filename: Path,
                                crs, coordinates, variables, variable_params, global_attributes=None,
                                netcdfparams=None):
     """
@@ -85,7 +85,7 @@ def create_netcdf_storage_unit(filename,
     return nco
 
 
-def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_params=None,
+def write_dataset_to_netcdf(dataset, filename: Path, global_attributes=None, variable_params=None,
                             netcdfparams=None) -> None:
     """
     Write a Data Cube style xarray Dataset to a NetCDF file

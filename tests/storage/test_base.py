@@ -8,7 +8,7 @@ from datacube.testutils import mk_sample_dataset, suppress_deprecations
 from datacube.storage._base import _get_band_and_layer, measurement_paths
 
 
-def test_band_layer():
+def test_band_layer() -> None:
     def t(band=None, layer=None):
         return _get_band_and_layer(dict(band=band, layer=layer))
 
@@ -27,7 +27,7 @@ def test_band_layer():
             t(*bad)
 
 
-def test_band_info():
+def test_band_info() -> None:
     bands = [dict(name=n,
                   dtype='uint8',
                   units='K',
@@ -88,7 +88,7 @@ def test_band_info():
         assert measurement_paths(ds)["b"] == "file:///tmp/b.tiff"
 
 
-def test_band_info_with_url_mangling():
+def test_band_info_with_url_mangling() -> None:
     def url_mangler(raw):
         return raw.replace("tmp", "tmp/mangled")
 

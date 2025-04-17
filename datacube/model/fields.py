@@ -6,8 +6,8 @@
 
 This allows extraction of fields of interest from dataset metadata document.
 """
+from collections.abc import Callable, Mapping
 from typing import Any
-from collections.abc import Mapping
 from typing_extensions import override
 import toolz
 import decimal
@@ -52,7 +52,7 @@ class Expression:
 
 
 class SimpleEqualsExpression(Expression):
-    def __init__(self, field, value):
+    def __init__(self, field, value) -> None:
         self.field = field
         self.value = value
 
@@ -70,7 +70,7 @@ class Field:
     # This should always be one of _AVAILABLE_TYPE_NAMES
     type_name = 'string'
 
-    def __init__(self, name: str, description: str):
+    def __init__(self, name: str, description: str) -> None:
         self.name = name
 
         self.description = description
@@ -105,10 +105,10 @@ class Field:
 class SimpleField(Field):
     def __init__(self,
                  offset: list[str | int],
-                 converter,
-                 type_name,
-                 name='',
-                 description=''):
+                 converter : type | Callable[[Any], Any],
+                 type_name: str,
+                 name: str = '',
+                 description: str = '') -> None:
         self._offset = offset
         self._converter = converter
         self.type_name = type_name
@@ -133,9 +133,9 @@ class RangeField(Field):
                  min_offset,
                  max_offset,
                  base_converter,
-                 type_name,
-                 name='',
-                 description=''):
+                 type_name: str,
+                 name: str = '',
+                 description: str = '') -> None:
         self.type_name = type_name
         self._converter = base_converter
         self._min_offset = min_offset
@@ -145,7 +145,7 @@ class RangeField(Field):
     can_extract = True
 
     @override
-    def extract(self, doc):
+    def extract(self, doc) -> Range | None:
         def extract_raw(paths):
             vv = [toolz.get_in(p, doc, default=None) for p in paths]
             return [self._converter(v) for v in vv if v is not None]
@@ -162,8 +162,8 @@ class RangeField(Field):
         return Range(v_min, v_max)
 
 
-def parse_search_field(doc, name=''):
-    parsers = {
+def parse_search_field(doc, name: str = '') -> RangeField | SimpleField:
+    parsers: dict[str, type | Callable[[Any], Any]] = {
         'string': str,
         'double': float,
         'integer': int,

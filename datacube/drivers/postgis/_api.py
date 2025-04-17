@@ -54,7 +54,7 @@ from ._spatial import geom_alchemy, generate_dataset_spatial_values, extract_geo
 from .sql import escape_pg_identifier
 from ...utils.changes import Offset
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 # Make a function because it's broken
@@ -383,7 +383,7 @@ class PostgisDbAPI:
         )
         return r.rowcount > 0
 
-    def insert_dataset_search_bulk(self, search_type, values):
+    def insert_dataset_search_bulk(self, search_type: str, values):
         search_table = search_field_index_map[search_type]
         r = self._connection.execute(insert(search_table).values(values))
         return r.rowcount
@@ -441,7 +441,7 @@ class PostgisDbAPI:
             return Geometry(json.loads(extent_json), crs=crs)
         return None
 
-    def contains_dataset(self, dataset_id):
+    def contains_dataset(self, dataset_id) -> bool:
         return bool(
             self._connection.execute(
                 select(Dataset.id).where(
@@ -462,7 +462,7 @@ class PostgisDbAPI:
             ).fetchall()
         ]
 
-    def get_datasets_for_location(self, uri, mode=None):
+    def get_datasets_for_location(self, uri, mode: str | None = None):
         scheme, body = split_uri(uri)
 
         if mode is None:
@@ -517,7 +517,7 @@ class PostgisDbAPI:
         )
         return r.rowcount > 0
 
-    def delete_dataset(self, dataset_id):
+    def delete_dataset(self, dataset_id) -> bool:
         for table in search_field_indexes.values():
             self._connection.execute(
                 delete(table).where(table.dataset_ref == dataset_id)
@@ -607,7 +607,8 @@ class PostgisDbAPI:
 
     def search_datasets_query(self,
                               expressions, source_exprs=None,
-                              select_fields=None, with_source_ids=False, limit=None, geom=None,
+                              select_fields=None, with_source_ids: bool = False,
+                              limit: int | None = None, geom=None,
                               archived: bool | None = False, order_by=None):
         """
         :type expressions: Tuple[Expression]
@@ -676,7 +677,7 @@ class PostgisDbAPI:
 
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
-                        with_source_ids=False, limit=None, geom=None,
+                        with_source_ids: bool = False, limit: int | None = None, geom=None,
                         archived: bool | None = False, order_by=None) -> Iterator:
         """
         :type with_source_ids: bool
@@ -699,7 +700,7 @@ class PostgisDbAPI:
         for row in self._connection.execute(select_query):
             yield decode_row(row)
 
-    def bulk_simple_dataset_search(self, products=None, batch_size=0):
+    def bulk_simple_dataset_search(self, products=None, batch_size: int = 0):
         """
         Perform bulk database reads (e.g. for index cloning)
 
@@ -1060,29 +1061,29 @@ class PostgisDbAPI:
             select(Product).where(Product.id == id_)
         ).first()
 
-    def get_metadata_type(self, id_):
+    def get_metadata_type(self, id_: int):
         return self._connection.execute(
             select(MetadataType).where(MetadataType.id == id_)
         ).first()
 
-    def get_product_by_name(self, name):
+    def get_product_by_name(self, name: str):
         return self._connection.execute(
             select(Product).where(Product.name == name)
         ).first()
 
-    def get_metadata_type_by_name(self, name):
+    def get_metadata_type_by_name(self, name: str):
         return self._connection.execute(
             select(MetadataType).where(MetadataType.name == name)
         ).first()
 
     def insert_product(self,
-                       name,
+                       name: str,
                        metadata,
                        metadata_type_id,
                        definition):
 
         res = self._connection.execute(
-            insert(Product.__table__).values(
+            insert(Product.__table__).values(  # type: ignore[arg-type]
                 name=name,
                 metadata=metadata,
                 metadata_type_ref=metadata_type_id,
@@ -1100,13 +1101,13 @@ class PostgisDbAPI:
         return res.rowcount, requested - res.rowcount
 
     def update_product(self,
-                       name,
+                       name: str,
                        metadata,
                        metadata_type_id,
                        definition,
-                       update_metadata_type=False):
+                       update_metadata_type: bool = False):
         res = self._connection.execute(
-            update(Product.__table__).returning(Product.__table__.c.id).where(
+            update(Product.__table__).returning(Product.__table__.c.id).where(  # type: ignore[arg-type]
                 Product.__table__.c.name == name
             ).values(
                 metadata=metadata,
@@ -1121,7 +1122,7 @@ class PostgisDbAPI:
                 raise RuntimeError('Must update metadata types in transaction')
 
             self._connection.execute(
-                update(Dataset.__table__).where(
+                update(Dataset.__table__).where(  # type: ignore[arg-type]
                     Dataset.__table__.c.product_ref == prod_id
                 ).values(
                     metadata_type_ref=metadata_type_id,
@@ -1130,16 +1131,18 @@ class PostgisDbAPI:
 
         return prod_id
 
-    def delete_product(self, name):
+    def delete_product(self, name: str):
         res = self._connection.execute(
-            delete(Product.__table__).returning(Product.__table__.c.id).where(Product.__table__.c.name == name)
+            delete(Product.__table__).returning(Product.__table__.c.id).where(  # type: ignore[arg-type]
+                Product.__table__.c.name == name
+            )
         )
 
         return res.first()[0]
 
-    def insert_metadata_type(self, name, definition):
+    def insert_metadata_type(self, name: str, definition):
         res = self._connection.execute(
-            insert(MetadataType.__table__).values(
+            insert(MetadataType.__table__).values(  # type: ignore[arg-type]
                 name=name,
                 definition=definition
             )
@@ -1155,9 +1158,9 @@ class PostgisDbAPI:
         )
         return res.rowcount, requested - res.rowcount
 
-    def update_metadata_type(self, name, definition):
+    def update_metadata_type(self, name: str, definition):
         res = self._connection.execute(
-            update(MetadataType.__table__).returning(MetadataType.__table__.c.id).where(
+            update(MetadataType.__table__).returning(MetadataType.__table__.c.id).where(  # type: ignore[arg-type]
                 MetadataType.__table__.c.name == name
             ).values(
                 name=name,
@@ -1249,7 +1252,7 @@ class PostgisDbAPI:
         for row in result:
             yield _core.from_pg_role(row.role_name), row.user_name, row.description
 
-    def create_user(self, username, password, role, description=None) -> None:
+    def create_user(self, username: str, password: str, role, description: str | None = None) -> None:
         pg_role = _core.to_pg_role(role)
         username = escape_pg_identifier(self._connection, username)
         sql = text(f'create user {username} password :password in role {pg_role}')

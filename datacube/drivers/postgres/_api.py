@@ -54,7 +54,7 @@ from ._schema import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, P
 from .sql import escape_pg_identifier
 
 PGCODE_FOREIGN_KEY_VIOLATION = '23503'
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def _dataset_uri_field(table):
@@ -321,7 +321,7 @@ class PostgresDbAPI:
         res = self._connection.execute(insert(DATASET_LOCATION), values)
         return res.rowcount, requested - res.rowcount
 
-    def contains_dataset(self, dataset_id):
+    def contains_dataset(self, dataset_id) -> bool:
         return bool(
             self._connection.execute(
                 select(
@@ -342,7 +342,7 @@ class PostgresDbAPI:
                     DATASET.c.id.in_(dataset_ids)
                 )).fetchall()]
 
-    def get_datasets_for_location(self, uri, mode=None):
+    def get_datasets_for_location(self, uri, mode: str | None = None):
         scheme, body = split_uri(uri)
 
         if mode is None:
@@ -537,7 +537,7 @@ class PostgresDbAPI:
 
     @staticmethod
     def search_datasets_query(expressions, source_exprs=None,
-                              select_fields=None, with_source_ids=False, limit=None,
+                              select_fields=None, with_source_ids: bool = False, limit: int | None = None,
                               archived: bool | None = False, order_by=None):
         """
         :type expressions: tuple[Expression]
@@ -676,7 +676,7 @@ class PostgresDbAPI:
 
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
-                        with_source_ids=False, limit=None,
+                        with_source_ids: bool = False, limit: int | None = None,
                         archived: bool | None = False, order_by=None):
         """
         :type with_source_ids: bool
@@ -688,7 +688,7 @@ class PostgresDbAPI:
                                                   archived=archived, order_by=order_by)
         return self._connection.execute(select_query)
 
-    def bulk_simple_dataset_search(self, products=None, batch_size=0) -> list:
+    def bulk_simple_dataset_search(self, products=None, batch_size: int = 0) -> list:
         """
         Perform bulk database reads (e.g. for index cloning)
 
@@ -958,23 +958,23 @@ class PostgresDbAPI:
             METADATA_TYPE.select().where(METADATA_TYPE.c.id == id_)
         ).first()
 
-    def get_product_by_name(self, name):
+    def get_product_by_name(self, name: str):
         return self._connection.execute(
             PRODUCT.select().where(PRODUCT.c.name == name)
         ).first()
 
-    def get_metadata_type_by_name(self, name):
+    def get_metadata_type_by_name(self, name: str):
         return self._connection.execute(
             METADATA_TYPE.select().where(METADATA_TYPE.c.name == name)
         ).first()
 
     def insert_product(self,
-                       name,
+                       name: str,
                        metadata,
                        metadata_type_id,
                        search_fields,
                        definition,
-                       concurrently=True):
+                       concurrently: bool = True):
 
         res = self._connection.execute(
             PRODUCT.insert().values(
@@ -993,11 +993,11 @@ class PostgresDbAPI:
         return type_id
 
     def update_product(self,
-                       name,
+                       name: str,
                        metadata,
                        metadata_type_id,
                        search_fields,
-                       definition, update_metadata_type=False, concurrently=False):
+                       definition, update_metadata_type: bool = False, concurrently: bool = False):
         res = self._connection.execute(
             PRODUCT.update().returning(PRODUCT.c.id).where(
                 PRODUCT.c.name == name
@@ -1027,7 +1027,7 @@ class PostgresDbAPI:
                                    rebuild_view=True)
         return type_id
 
-    def delete_product(self, name, fields, definition):
+    def delete_product(self, name: str, fields, definition):
         res = self._connection.execute(
             PRODUCT.delete().returning(PRODUCT.c.id).where(
                 PRODUCT.c.name == name
@@ -1040,7 +1040,7 @@ class PostgresDbAPI:
 
         return type_id
 
-    def insert_metadata_type(self, name, definition, concurrently=False) -> None:
+    def insert_metadata_type(self, name: str, definition, concurrently: bool = False) -> None:
         res = self._connection.execute(
             METADATA_TYPE.insert().values(
                 name=name,
@@ -1053,7 +1053,7 @@ class PostgresDbAPI:
             type_id, name, definition, concurrently=concurrently
         )
 
-    def update_metadata_type(self, name, definition, concurrently=False):
+    def update_metadata_type(self, name: str, definition, concurrently: bool = False):
         res = self._connection.execute(
             METADATA_TYPE.update().returning(METADATA_TYPE.c.id).where(
                 METADATA_TYPE.c.name == name
@@ -1072,7 +1072,8 @@ class PostgresDbAPI:
 
         return type_id
 
-    def check_dynamic_fields(self, concurrently=False, rebuild_views=False, rebuild_indexes=False) -> None:
+    def check_dynamic_fields(self, concurrently: bool = False, rebuild_views: bool = False,
+                             rebuild_indexes: bool = False) -> None:
         _LOG.info('Checking dynamic views/indexes. (rebuild views=%s, indexes=%s)', rebuild_views, rebuild_indexes)
 
         for metadata_type in self.get_all_metadata_types():
@@ -1085,8 +1086,9 @@ class PostgresDbAPI:
                 concurrently=concurrently,
             )
 
-    def _setup_metadata_type_fields(self, id_, name, definition,
-                                    rebuild_indexes=False, rebuild_views=False, concurrently=True) -> None:
+    def _setup_metadata_type_fields(self, id_, name: str, definition,
+                                    rebuild_indexes: bool = False, rebuild_views: bool = False,
+                                    concurrently: bool = True) -> None:
         # Metadata fields are no longer used (all queries are per-dataset-type): exclude all.
         # This will have the effect of removing any old indexes that still exist.
         fields = get_dataset_fields(definition)
@@ -1108,7 +1110,7 @@ class PostgresDbAPI:
                 concurrently=concurrently
             )
 
-    def _setup_product_fields(self, id_, name, fields, metadata_doc,
+    def _setup_product_fields(self, id_, name: str, fields, metadata_doc,
                               rebuild_indexes: bool = False, rebuild_view: bool = False,
                               concurrently: bool = True, delete: bool = False) -> None:
         dataset_filter = and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == id_)
@@ -1297,7 +1299,7 @@ class PostgresDbAPI:
         for row in result:
             yield _core.from_pg_role(row.role_name), row.user_name, row.description
 
-    def create_user(self, username, password, role, description=None) -> None:
+    def create_user(self, username: str, password: str, role, description: str | None = None) -> None:
         pg_role = _core.to_pg_role(role)
         username = escape_pg_identifier(self._connection, username)
         sql = text(f'create user {username} password :password in role {pg_role}')

@@ -28,7 +28,7 @@ single_coord = dict(time=np.array(["2001-01-01"]))
 @pytest.mark.parametrize(
     "odc_style_xr_dataset", [single_coord, multi_coords], indirect=True
 )
-def test_xr_extension(odc_style_xr_dataset):
+def test_xr_extension(odc_style_xr_dataset) -> None:
     xx = odc_style_xr_dataset
 
     assert (1,) + xx.odc.geobox.shape == xx.B10.shape
@@ -45,7 +45,7 @@ def test_xr_extension(odc_style_xr_dataset):
     npt.assert_allclose(A * (0.5, 1.5), (xx.longitude.data[0], xx.latitude.data[1]))
 
 
-def test_xr_geobox():
+def test_xr_geobox() -> None:
     xy = (10, 111)
     rxy = (10, -100)
     resolution = rxy[::-1]

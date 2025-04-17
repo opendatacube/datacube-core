@@ -32,7 +32,7 @@ from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
 from datacube.utils.dates import tz_aware
 from datacube.utils.documents import metadata_subset, JsonDict
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class DatasetResource(AbstractDatasetResource):
@@ -884,7 +884,7 @@ class DatasetResource(AbstractDatasetResource):
         for ds in self.search(limit=limit, archived=archived, **query):
             yield make_ds_light(ds)
 
-    def clone(self, orig: Dataset, for_save=False, lookup_locations=True) -> Dataset:
+    def clone(self, orig: Dataset, for_save: bool = False, lookup_locations: bool = True) -> Dataset:
         if for_save:
             uris = []
         elif lookup_locations:

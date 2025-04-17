@@ -15,11 +15,11 @@ from datacube.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 
-_LOG = logging.getLogger('datacube-system')
+_LOG: logging.Logger = logging.getLogger('datacube-system')
 
 
 @cli.group(name='spindex', help='Spatial Indexes')
-def system():
+def system() -> None:
     pass
 
 
@@ -33,7 +33,7 @@ def system():
 )
 @click.argument('srids', nargs=-1)
 @ui.pass_index()
-def create(index: Index, update: bool, srids: Sequence[str]):
+def create(index: Index, update: bool, srids: Sequence[str]) -> None:
     if not index.supports_spatial_indexes:
         echo("The active index driver does not support spatial indexes")
         exit(1)
@@ -83,7 +83,7 @@ def create(index: Index, update: bool, srids: Sequence[str]):
     help="List all CRSs for which spatial indexes exist in this index"
 )
 @ui.pass_index()
-def list_spindex(index):
+def list_spindex(index) -> None:
     if not index.supports_spatial_indexes:
         echo("The active index driver does not support spatial indexes")
         exit(1)
@@ -105,7 +105,7 @@ def list_spindex(index):
 )
 @click.argument('srids', nargs=-1)
 @ui.pass_index()
-def update(index: Index, product: Sequence[str], dataset: Sequence[str], srids: Sequence[str]):
+def update(index: Index, product: Sequence[str], dataset: Sequence[str], srids: Sequence[str]) -> None:
     if not index.supports_spatial_indexes:
         echo("The active index driver does not support spatial indexes")
         exit(1)
@@ -149,7 +149,7 @@ def update(index: Index, product: Sequence[str], dataset: Sequence[str], srids: 
 )
 @click.argument('srids', nargs=-1)
 @ui.pass_index()
-def drop(index: Index, force: bool, srids: Sequence[str]):
+def drop(index: Index, force: bool, srids: Sequence[str]) -> None:
     if not index.supports_spatial_indexes:
         echo("The active index driver does not support spatial indexes")
         exit(1)

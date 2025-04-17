@@ -134,7 +134,7 @@ class RIOReader(GeoRasterReader):
                  src: DatasetReader,
                  band_idx: int,
                  pool: ThreadPoolExecutor,
-                 overrides: Overrides = Overrides(None, None, None)):
+                 overrides: Overrides = Overrides(None, None, None)) -> None:
 
         transform = pick(overrides.transform, src.transform)
         if transform is not None and transform.is_identity:
@@ -212,7 +212,7 @@ def _rdr_open(band: BandInfo, ctx: Any, pool: ThreadPoolExecutor) -> RIOReader:
 
 
 class RIORdrDriver(ReaderDriver):
-    def __init__(self, pool: ThreadPoolExecutor, cfg: dict):
+    def __init__(self, pool: ThreadPoolExecutor, cfg: dict) -> None:
         self._pool = pool
         self._cfg = cfg
 

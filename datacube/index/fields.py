@@ -35,7 +35,7 @@ class OrExpression(Expression):
         self.field = exprs[0].field
 
     @override
-    def evaluate(self, ctx):
+    def evaluate(self, ctx) -> bool:
         return any(expr.evaluate(ctx) for expr in self.exprs)
 
 
@@ -46,7 +46,7 @@ class NotExpression(Expression):
         self.field = expr.field
 
     @override
-    def evaluate(self, ctx):
+    def evaluate(self, ctx) -> bool:
         return not self.expr.evaluate(ctx)
 
 

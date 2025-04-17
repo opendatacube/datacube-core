@@ -16,14 +16,14 @@ from datacube.utils.documents import JsonDict
 
 from ._types import BatchStatus
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
-_DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
+_DEFAULT_METADATA_TYPES_PATH: Path = Path(__file__).parent.joinpath('default-metadata-types.yaml')
 
 
-def default_metadata_type_docs(path=_DEFAULT_METADATA_TYPES_PATH) -> list[MetadataType]:
+def default_metadata_type_docs(path: Path = _DEFAULT_METADATA_TYPES_PATH) -> list[dict]:
     """A list of the bare dictionary format of default :class:`datacube.model.MetadataType`"""
-    return [doc for (path, doc) in read_documents(path)]
+    return [doc for (_, doc) in read_documents(path)]
 
 
 class AbstractMetadataTypeResource(ABC):

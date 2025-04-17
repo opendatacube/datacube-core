@@ -9,8 +9,7 @@ import sys
 from collections import OrderedDict
 from textwrap import dedent
 from typing import cast, Any
-from collections.abc import Iterator
-from collections.abc import Iterable, Mapping, MutableMapping
+from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 from uuid import UUID
 
 import click
@@ -30,7 +29,7 @@ from datacube.utils import changes, SimpleDocNav
 from datacube.utils.serialise import SafeDatacubeDumper
 from datacube.utils.uris import uri_resolve
 
-_LOG = logging.getLogger('datacube-dataset')
+_LOG: logging.Logger = logging.getLogger('datacube-dataset')
 
 
 def report_old_options(mapping):
@@ -168,15 +167,16 @@ def load_datasets_for_update(doc_stream, index) -> Iterator:
               is_flag=True, default=False)
 @click.argument('dataset-paths', type=str, nargs=-1)
 @ui.pass_index()
-def index_cmd(index, product_names,
-              exclude_product_names,
+def index_cmd(index: Index,
+              product_names: Sequence[str],
+              exclude_product_names: Sequence[str],
               auto_add_lineage,
               verify_lineage,
               dry_run,
               ignore_lineage,
               confirm_ignore_lineage,
               archive_less_mature,
-              dataset_paths):
+              dataset_paths: list[str]) -> None:
 
     if not dataset_paths:
         click.echo('Error: no datasets provided\n')
@@ -196,7 +196,7 @@ def index_cmd(index, product_names,
         _LOG.error(e)
         sys.exit(2)
 
-    def run_it(dataset_paths):
+    def run_it(dataset_paths) -> None:
         doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
         doc_stream = remap_uri_from_doc(doc_stream)
         dss = dataset_stream(doc_stream, ds_resolve)
@@ -250,13 +250,13 @@ def parse_update_rules(keys_that_can_change) -> dict:
               is_flag=True, default=False)
 @click.argument('dataset-paths', nargs=-1)
 @ui.pass_index()
-def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths, archive_less_mature):
+def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_paths, archive_less_mature) -> None:
     if not dataset_paths:
         click.echo('Error: no datasets provided\n')
         print_help_msg(update_cmd)
         sys.exit(1)
 
-    def loc_action(action, new_ds, existing_ds, action_name):
+    def loc_action(action, new_ds, existing_ds, action_name: str) -> bool | None:
         if existing_ds.uri is None:
             return None
 
@@ -449,7 +449,7 @@ def info_cmd(index: Index, show_sources: bool, show_derived: bool,
               type=click.Choice(list(_OUTPUT_WRITERS)), default='yaml', show_default=True)
 @ui.parsed_search_expressions
 @ui.pass_index()
-def search_cmd(index, limit, f, expressions) -> None:
+def search_cmd(index: Index, limit: int, f: str, expressions) -> None:
     """
     Search available Datasets
     """
@@ -655,7 +655,7 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: list[
               multiple=True)
 @click.argument('fields', nargs=-1)
 @ui.pass_index()
-def find_duplicates(index: Index, product_names, fields) -> None:
+def find_duplicates(index: Index, product_names: Sequence[str], fields: Iterable[str]) -> None:
     """
     Find dataset ids of two or more active datasets that have duplicate values in the specified fields.
     If products are specified, search only within those products. Otherwise, search within any products that

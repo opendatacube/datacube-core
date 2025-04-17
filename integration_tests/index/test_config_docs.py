@@ -57,7 +57,7 @@ _DATASET_METADATA = {
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_metadata_indexes_views_exist(index, default_metadata_type):
+def test_metadata_indexes_views_exist(index, default_metadata_type) -> None:
     """
     :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
     :type default_metadata_type: datacube.model.MetadataType
@@ -70,7 +70,7 @@ def test_metadata_indexes_views_exist(index, default_metadata_type):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_indexes_views_exist(index, ls5_telem_type):
+def test_dataset_indexes_views_exist(index, ls5_telem_type) -> None:
     """
     :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
     :type ls5_telem_type: datacube.model.DatasetType
@@ -93,7 +93,7 @@ def test_dataset_indexes_views_exist(index, ls5_telem_type):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_dataset_composite_indexes_exist(index, ls5_telem_type):
+def test_dataset_composite_indexes_exist(index, ls5_telem_type) -> None:
     # This type has fields named lat/lon/time, so composite indexes should now exist for them:
     # (following the naming conventions)
     assert _object_exists(index, "dix_ls5_telem_test_sat_path_sat_row_time")
@@ -157,7 +157,7 @@ def test_field_expression_unchanged(default_metadata_type: MetadataType, telemet
     )
 
 
-def _object_exists(index, index_name):
+def _object_exists(index, index_name) -> bool:
     if index._db.driver_name == "postgis":
         schema_name = "odc"
     else:
@@ -167,7 +167,7 @@ def _object_exists(index, index_name):
     return val in (index_name, f'{schema_name}.{index_name}')
 
 
-def test_idempotent_add_dataset_type(index, ls8_eo3_product, extended_eo3_product_doc):
+def test_idempotent_add_dataset_type(index, ls8_eo3_product, extended_eo3_product_doc) -> None:
     """
     :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
@@ -187,7 +187,7 @@ def test_idempotent_add_dataset_type(index, ls8_eo3_product, extended_eo3_produc
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
+def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc) -> None:
     """
     :type index: datacube.index.Index
     """
@@ -261,7 +261,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_update_product_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_type_doc):
+def test_update_product_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_type_doc) -> None:
     """
     :type ls5_telem_type: datacube.model.Product
     :type index: datacube.index.Index
@@ -392,7 +392,7 @@ def test_product_update_cli(index: Index,
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_product_delete(index, ls8_eo3_product: Product):
+def test_product_delete(index, ls8_eo3_product: Product) -> None:
     # test that postgres dynamic indexes and views are deleted
     assert index.products.get_by_name(ls8_eo3_product.name) is not None
     assert _object_exists(index, "dix_ga_ls8c_ard_3_region_code")
@@ -452,7 +452,7 @@ def _to_yaml(ls5_telem_doc):
     return yaml.safe_dump(ls5_telem_doc, allow_unicode=True)
 
 
-def test_update_metadata_type(index, default_metadata_type):
+def test_update_metadata_type(index, default_metadata_type) -> None:
     """
     :type default_metadata_type_docs: list[dict]
     :type index: datacube.index.Index
@@ -494,7 +494,7 @@ def test_update_metadata_type(index, default_metadata_type):
     )
 
 
-def test_filter_types_by_fields(index, wo_eo3_product):
+def test_filter_types_by_fields(index, wo_eo3_product) -> None:
     """
     :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
@@ -512,7 +512,7 @@ def test_filter_types_by_fields(index, wo_eo3_product):
     assert len(res) == 0
 
 
-def test_filter_products_by_types(index, wo_eo3_product):
+def test_filter_products_by_types(index, wo_eo3_product) -> None:
     """
     :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
@@ -521,7 +521,7 @@ def test_filter_products_by_types(index, wo_eo3_product):
     assert res == [wo_eo3_product]
 
 
-def test_filter_types_by_search(index, wo_eo3_product, ls8_eo3_product):
+def test_filter_types_by_search(index, wo_eo3_product, ls8_eo3_product) -> None:
     """
     :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
@@ -579,7 +579,7 @@ def test_filter_types_by_search(index, wo_eo3_product, ls8_eo3_product):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_update_metadata_type_doc(index, ls5_telem_type):
+def test_update_metadata_type_doc(index, ls5_telem_type) -> None:
     type_doc = copy.deepcopy(ls5_telem_type.metadata_type.definition)
     type_doc['dataset']['search_fields']['test_indexed'] = {
         'description': 'indexed test field',

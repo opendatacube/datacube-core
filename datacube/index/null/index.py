@@ -3,6 +3,8 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from collections.abc import Mapping
+from typing import Any
 
 from deprecat import deprecat
 from datacube.cfg import ODCEnvironment
@@ -11,13 +13,13 @@ from datacube.index.null._metadata_types import MetadataTypeResource
 from datacube.index.null._products import ProductResource
 from datacube.index.null._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction, NoLineageResource
-from datacube.model import MetadataType
+from datacube.model import Field, MetadataType
 from datacube.model.fields import get_dataset_fields
 from datacube.migration import ODC2DeprecationWarning
 from odc.geo import CRS
 from typing_extensions import override
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class Index(AbstractIndex):
@@ -91,20 +93,21 @@ class Index(AbstractIndex):
 
     @classmethod
     @override
-    def from_config(cls, config_env, application_name=None, validate_connection=True) -> "Index":
+    def from_config(cls, config_env, application_name: str | None = None,
+                    validate_connection: bool = True) -> "Index":
         return cls(config_env)
 
     @classmethod
     @override
-    def get_dataset_fields(cls, doc) -> dict:
+    def get_dataset_fields(cls, doc: Mapping[str, Any]) -> dict[str, Field]:
         return get_dataset_fields(doc)
 
     @override
-    def init_db(self, with_default_types=True, with_permissions=True) -> bool:
+    def init_db(self, with_default_types: bool = True, with_permissions: bool = True) -> bool:
         return True
 
     @override
-    def close(self):
+    def close(self) -> None:
         pass
 
     @override

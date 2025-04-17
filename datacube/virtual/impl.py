@@ -155,7 +155,7 @@ class VirtualDatasetBox:
                                  self.product_definitions,
                                  geopolygon=self.geopolygon)
 
-    def map(self, func, dtype='O'):
+    def map(self, func, dtype: str = 'O'):
         return VirtualDatasetBox(xr_apply(self.box, func, dtype=dtype),
                                  self.geobox,
                                  self.load_natively,
@@ -169,7 +169,7 @@ class VirtualDatasetBox:
         return VirtualDatasetBox(self.box[mask.box], self.geobox, self.load_natively, self.product_definitions,
                                  geopolygon=self.geopolygon)
 
-    def split(self, dim='time'):
+    def split(self, dim: str = 'time'):
         box = self.box
 
         [length] = box[dim].shape
@@ -309,8 +309,8 @@ class VirtualProduct(Mapping):
         raise NotImplementedError
 
     @override
-    def __repr__(self):
-        return yaml.dump(self._reconstruct(), Dumper=SafeDumper,
+    def __repr__(self) -> str:
+        return yaml.dump(self._reconstruct(), Dumper=SafeDumper,  # type: ignore[attr-defined]
                          default_flow_style=False, indent=2)
 
     def load(self, dc: Datacube, **query: dict[str, Any]) -> xarray.Dataset:
@@ -471,10 +471,11 @@ class Transform(VirtualProduct):
         """ The input product of a transform product. """
         return from_validated_recipe(self['input'])
 
-    def _reconstruct(self):
+    def _reconstruct(self) -> dict[str, Any]:
         # pylint: disable=protected-access
         return dict(transform=qualified_name(self['transform']),
-                    input=self._input._reconstruct(), **reject_keys(self, ['input', 'transform']))
+                    input=self._input._reconstruct(),  # type: ignore[attr-defined]
+                    **reject_keys(self, ['input', 'transform']))
 
     @override
     def output_measurements(self, product_definitions: dict[str, Product]) -> dict[str, Measurement]:
@@ -523,11 +524,11 @@ class Aggregate(VirtualProduct):
         """ The input product of a transform product. """
         return from_validated_recipe(self['input'])
 
-    def _reconstruct(self):
+    def _reconstruct(self) -> dict[str, Any]:
         # pylint: disable=protected-access
         return dict(aggregate=qualified_name(self['aggregate']),
                     group_by=qualified_name(self['group_by']),
-                    input=self._input._reconstruct(),
+                    input=self._input._reconstruct(),  # type: ignore[attr-defined]
                     **reject_keys(self, ['input', 'aggregate', 'group_by']))
 
     @override
@@ -786,9 +787,10 @@ class Reproject(VirtualProduct):
         """ The input product of a transform product. """
         return from_validated_recipe(self["input"])
 
-    def _reconstruct(self):
+    def _reconstruct(self) -> dict[str, Any]:
         # pylint: disable=protected-access
-        return dict(input=self._input._reconstruct(), **reject_keys(self, ["input"]))
+        return dict(input=self._input._reconstruct(),  # type: ignore[attr-defined]
+                    **reject_keys(self, ["input"]))
 
     @override
     def output_measurements(self, product_definitions: dict[str, Product]) -> dict[str, Measurement]:
@@ -935,7 +937,7 @@ def reproject_array(src, nodata, s_geobox, d_geobox, resampling):
     return dst
 
 
-def wrap_in_dataarray(reprojected_data, src_band, dst_geobox, dims):
+def wrap_in_dataarray(reprojected_data, src_band, dst_geobox, dims: Sequence[int]) -> xarray.DataArray:
     """ Wrap the reproject numpy array in a `xarray.DataArray` with relevant metadata. """
     non_spatial_shape = src_band.shape[:-2]
     assert all(x == 1 for x in non_spatial_shape)
@@ -951,7 +953,7 @@ def wrap_in_dataarray(reprojected_data, src_band, dst_geobox, dims):
     return result
 
 
-def virtual_product_kind(recipe):
+def virtual_product_kind(recipe: dict[str, Any]) -> str:
     """ One of product, transform, collate, juxtapose, aggregate, or reproject. """
     candidates = [key for key in list(recipe)
                   if key in ['product', 'transform', 'collate', 'juxtapose', 'aggregate', 'reproject']]
@@ -968,7 +970,7 @@ def from_validated_recipe(recipe):
     return lookup[virtual_product_kind(recipe)](recipe)
 
 
-def _fast_slice(array, indexers):
+def _fast_slice(array, indexers) -> xarray.DataArray:
     data = array.values[indexers]
     dims = [dim for dim, indexer in zip(array.dims, indexers) if isinstance(indexer, slice)]
     coords = OrderedDict((dim,

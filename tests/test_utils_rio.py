@@ -17,7 +17,7 @@ from datacube.utils.rio import (
 )
 
 
-def test_rio_env_no_aws():
+def test_rio_env_no_aws() -> None:
     deactivate_rio_env()
 
     # make sure we start without env configured
@@ -40,7 +40,7 @@ def test_rio_env_no_aws():
     assert get_rio_env() == {}
 
 
-def test_rio_env_aws():
+def test_rio_env_aws() -> None:
     deactivate_rio_env()
 
     # make sure we start without env configured
@@ -79,7 +79,7 @@ def test_rio_env_aws():
     assert get_rio_env() == {}
 
 
-def test_rio_env_aws_auto_region(monkeypatch, without_aws_env):
+def test_rio_env_aws_auto_region(monkeypatch, without_aws_env) -> None:
     import datacube.utils.aws
 
     pp = write_files({
@@ -112,7 +112,7 @@ def test_rio_env_aws_auto_region(monkeypatch, without_aws_env):
     assert get_rio_env() == {}
 
 
-def test_rio_env_aws_auto_region_dummy():
+def test_rio_env_aws_auto_region_dummy() -> None:
     "Just call it we don't know if it will succeed"
 
     # at least it should not raise error since we haven't asked for region_name='auto'
@@ -123,7 +123,7 @@ def test_rio_env_aws_auto_region_dummy():
     assert get_rio_env() == {}
 
 
-def test_rio_env_via_config():
+def test_rio_env_via_config() -> None:
     ee = activate_from_config()
     assert ee is not None
 
@@ -141,7 +141,7 @@ def test_rio_env_via_config():
     assert get_rio_env() == {}
 
 
-def test_rio_configure_aws_access(monkeypatch, without_aws_env, dask_client):
+def test_rio_configure_aws_access(monkeypatch, without_aws_env, dask_client) -> None:
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
     monkeypatch.setenv("AWS_DEFAULT_REGION", "fake-region")

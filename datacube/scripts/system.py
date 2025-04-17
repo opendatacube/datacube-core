@@ -15,11 +15,11 @@ from datacube.drivers.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
 
-_LOG = logging.getLogger('datacube-system')
+_LOG: logging.Logger = logging.getLogger('datacube-system')
 
 
 @cli.group(name='system', help='System commands')
-def system():
+def system() -> None:
     pass
 
 
@@ -45,7 +45,7 @@ def system():
     help="Allow table to be locked (eg. while creating missing indexes)"
 )
 @ui.pass_index(expect_initialised=False)
-def database_init(index, default_types, init_users, recreate_views, rebuild, lock_table):
+def database_init(index, default_types, init_users, recreate_views, rebuild, lock_table) -> None:
     echo('Initialising database...')
 
     was_created = index.init_db(with_default_types=default_types,
@@ -67,12 +67,12 @@ def database_init(index, default_types, init_users, recreate_views, rebuild, loc
 
 @system.command('check', help='Check and display current configuration')
 @ui.pass_config
-def check(cfg_env: ODCEnvironment):
+def check(cfg_env: ODCEnvironment) -> None:
     """
     Verify & view current configuration
     """
 
-    def echo_field(name, value):
+    def echo_field(name: str, value) -> None:
         echo('{:<15}'.format(name + ':') + style(str(value), bold=True))
 
     echo_field('Version', datacube.__version__)
@@ -112,7 +112,7 @@ def check(cfg_env: ODCEnvironment):
 )
 @click.argument('source-env', type=str, nargs=1)
 @ui.pass_config
-def clone(env: ODCEnvironment, batch_size: int, skip_lineage: bool, lineage_only: bool, source_env: str):
+def clone(env: ODCEnvironment, batch_size: int, skip_lineage: bool, lineage_only: bool, source_env: str) -> None:
     if skip_lineage and lineage_only:
         echo("Cannot set both lineage-only and skip-lineage")
         exit(1)

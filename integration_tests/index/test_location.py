@@ -9,7 +9,7 @@ from datacube.testutils import suppress_deprecations
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube',))
-def test_legacy_location_behaviour(index, ls8_eo3_dataset):
+def test_legacy_location_behaviour(index, ls8_eo3_dataset) -> None:
     with suppress_deprecations():
         locations = index.datasets.get_locations(ls8_eo3_dataset.id)  # Test of deprecated method
         assert locations == [ls8_eo3_dataset.uri]
@@ -43,7 +43,7 @@ def test_legacy_location_behaviour(index, ls8_eo3_dataset):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
-def test_postgis_no_multiple_locations(index, ls8_eo3_dataset):
+def test_postgis_no_multiple_locations(index, ls8_eo3_dataset) -> None:
     with suppress_deprecations():
         locations = index.datasets.get_locations(ls8_eo3_dataset.id)  # Test of deprecated method
         assert locations == [ls8_eo3_dataset.uri]
@@ -75,7 +75,7 @@ def test_postgis_no_multiple_locations(index, ls8_eo3_dataset):
         assert index.datasets.get_archived_locations(ls8_eo3_dataset.id) == []
 
 
-def test_dataset_tuple_uris(ls8_eo3_product):
+def test_dataset_tuple_uris(ls8_eo3_product) -> None:
     from datacube.index.abstract import DatasetTuple
     dst1 = DatasetTuple(ls8_eo3_product, {"dummy": True}, "file:///uri1")
     dst2 = DatasetTuple(ls8_eo3_product, {"dummy": True}, ["file:///uri1", "https://host.domain/uri1"])

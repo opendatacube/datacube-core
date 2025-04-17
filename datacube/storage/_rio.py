@@ -25,7 +25,7 @@ from ..drivers.datasource import DataSource, GeoRasterReader, RasterShape, Raste
 from ._base import BandInfo
 from ._hdf5 import HDF5_LOCK
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def _rasterio_crs(src):
@@ -49,7 +49,7 @@ class BandDataSource(GeoRasterReader):
     """
 
     def __init__(self, source, nodata=None,
-                 lock: RLock | None = None):
+                 lock: RLock | None = None) -> None:
         self.source = source
         if nodata is None:
             nodata = self.source.ds.nodatavals[self.source.bidx-1]
@@ -96,7 +96,7 @@ class RasterioDataSource(DataSource):
 
     """
 
-    def __init__(self, filename, nodata, lock=None):
+    def __init__(self, filename, nodata, lock=None) -> None:
         self.filename = filename
         self.nodata = nodata
         self._lock = lock
@@ -157,7 +157,7 @@ class RasterioDataSource(DataSource):
 class RasterDatasetDataSource(RasterioDataSource):
     """Data source for reading from a Data Cube Dataset"""
 
-    def __init__(self, band: BandInfo):
+    def __init__(self, band: BandInfo) -> None:
         """
         Initialise for reading from a Data Cube Dataset.
 

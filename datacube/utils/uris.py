@@ -14,7 +14,7 @@ from pathlib import Path
 
 from datacube.migration import ODC2DeprecationWarning
 
-URL_RE = re.compile(r'\A\s*[\w\d\+]+://')
+URL_RE: re.Pattern[str] = re.compile(r'\A\s*[\w\d\+]+://')
 
 
 def split_uri(uri):
@@ -234,7 +234,7 @@ def pick_uri(uris: list[str], scheme: str | None = None) -> str:
     return uris[0]
 
 
-def register_scheme(*schemes):
+def register_scheme(*schemes) -> None:
     """
     Register additional uri schemes as supporting relative offsets (etc), so that band/measurement paths can be
     calculated relative to the base uri.

@@ -3,7 +3,9 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from collections.abc import Mapping
 from threading import Lock
+from typing import Any
 from typing_extensions import override
 
 from deprecat import deprecat
@@ -14,11 +16,11 @@ from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.index.memory._products import ProductResource
 from datacube.index.memory._users import UserResource
 from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction
-from datacube.model import MetadataType
+from datacube.model import Field, MetadataType
 from datacube.migration import ODC2DeprecationWarning
 from odc.geo import CRS
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 counter = 0
@@ -109,19 +111,20 @@ class Index(AbstractIndex):
     def from_config(cls,
                     config_env: ODCEnvironment,
                     application_name: str | None = None,
-                    validate_connection: bool = True):
+                    validate_connection: bool = True) -> "Index":
         return cls(config_env)
 
     @classmethod
-    def get_dataset_fields(cls, doc):
+    @override
+    def get_dataset_fields(cls, doc: Mapping[str, Any]) -> dict[str, Field]:
         return get_dataset_fields(doc)
 
     @override
-    def init_db(self, with_default_types=True, with_permissions=True):
+    def init_db(self, with_default_types: bool = True, with_permissions: bool = True) -> bool:
         return True
 
     @override
-    def close(self):
+    def close(self) -> None:
         pass
 
     @override
@@ -130,7 +133,7 @@ class Index(AbstractIndex):
         return False
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Index<memory>"
 
 
@@ -155,5 +158,5 @@ class MemoryIndexDriver(AbstractIndexDriver):
         return MetadataType(definition, dataset_search_fields=Index.get_dataset_fields(definition))
 
 
-def index_driver_init():
+def index_driver_init() -> MemoryIndexDriver:
     return MemoryIndexDriver()

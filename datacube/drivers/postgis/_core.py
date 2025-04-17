@@ -36,13 +36,13 @@ SQL_NAMING_CONVENTIONS = {
     # tix: test-index, created by hand for testing, particularly in dev.
 }
 
-POSTGIS_DRIVER_DIR = os.path.dirname(__file__)
+POSTGIS_DRIVER_DIR: str = os.path.dirname(__file__)
 
-ALEMBIC_INI_LOCATION = os.path.join(POSTGIS_DRIVER_DIR, "alembic.ini")
+ALEMBIC_INI_LOCATION: str = os.path.join(POSTGIS_DRIVER_DIR, "alembic.ini")
 
 METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def install_timestamp_trigger(connection) -> None:
@@ -60,7 +60,7 @@ def install_timestamp_trigger(connection) -> None:
             connection.execute(text(s.format(schema=SCHEMA_NAME, table=name)))
 
 
-def schema_qualified(name) -> str:
+def schema_qualified(name: str) -> str:
     """
     >>> schema_qualified('dataset')
     'odc.dataset'
@@ -73,7 +73,7 @@ def _get_quoted_connection_info(connection) -> tuple:
     return db, user
 
 
-def ensure_db(engine, with_permissions=True):
+def ensure_db(engine, with_permissions: bool = True) -> bool:
     """
     Initialise the db if needed.
 
@@ -113,7 +113,7 @@ def ensure_db(engine, with_permissions=True):
             from ._schema import orm_registry, ALL_STATIC_TABLES
             _LOG.info('Creating tables.')
             _LOG.info("Dataset indexes: %s", repr(orm_registry.metadata.tables["odc.dataset"].indexes))
-            orm_registry.metadata.create_all(c, tables=ALL_STATIC_TABLES)
+            orm_registry.metadata.create_all(c, tables=ALL_STATIC_TABLES)  # type: ignore[arg-type]
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
             sqla_txn.commit()
@@ -144,7 +144,7 @@ def ensure_db(engine, with_permissions=True):
     return is_new
 
 
-def database_exists(engine):
+def database_exists(engine) -> bool:
     """
     Have they init'd this database?
     """
@@ -205,12 +205,12 @@ def update_schema(engine: Engine) -> None:
         command.upgrade(cfg, "head")
 
 
-def _ensure_extension(conn, extension_name="POSTGIS") -> None:
+def _ensure_extension(conn, extension_name: str = "POSTGIS") -> None:
     sql = text(f'create extension if not exists {extension_name}')
     conn.execute(sql)
 
 
-def _ensure_role(conn, name, inherits_from=None, add_user=False, create_db=False) -> None:
+def _ensure_role(conn, name: str, inherits_from=None, add_user: bool = False, create_db: bool = False) -> None:
     if has_role(conn, name):
         _LOG.debug('Role exists: %s', name)
         return
@@ -234,7 +234,7 @@ def grant_role(conn, role, users) -> None:
     conn.execute(text('grant {role} to {users}'.format(users=', '.join(users), role=role)))
 
 
-def has_role(conn, role_name) -> bool:
+def has_role(conn, role_name: str) -> bool:
     return bool(
         conn.execute(text(f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'")).fetchall()
     )
@@ -251,7 +251,7 @@ def drop_db(connection) -> None:
         connection.execute(DropSchema(SCHEMA_NAME, cascade=True, if_exists=True))
 
 
-def to_pg_role(role):
+def to_pg_role(role) -> str:
     """
     Convert a role name to a name for use in PostgreSQL
 

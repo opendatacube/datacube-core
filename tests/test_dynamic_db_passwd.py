@@ -13,13 +13,13 @@ counter = [0]
 last_base = [None]
 
 
-def next_token(base):
+def next_token(base) -> str:
     counter[0] += 1
     last_base[0] = base
     return f"{base}{counter[0]}"
 
 
-def test_dynamic_password():
+def test_dynamic_password() -> None:
     url = URL.create('postgresql',
                      host="fake_host", database="fake_database", port=6543,
                      username="fake_username", password="fake_password")

@@ -151,7 +151,7 @@ class DatasetResource(AbstractDatasetResource):
         raise NotImplementedError()
 
     @override
-    def search_by_metadata(self, metadata, archived=False) -> list:
+    def search_by_metadata(self, metadata, archived: bool | None = False) -> list:
         return []
 
     @deprecat(
@@ -165,34 +165,34 @@ class DatasetResource(AbstractDatasetResource):
         }
     )
     @override
-    def search(self, limit=None, archived=False, order_by=None, **query) -> list:
+    def search(self, limit: int | None = None, archived: bool | None = False, order_by=None, **query) -> list:
         return []
 
     @override
-    def search_by_product(self, archived=False, **query) -> list:
+    def search_by_product(self, archived: bool | None = False, **query) -> list:
         return []
 
     @override
     def search_returning(self,
-                         field_names=None, custom_offsets=None,
-                         limit=None, archived=False, order_by=None,
+                         field_names: Iterable[str] | None = None, custom_offsets=None,
+                         limit: int | None = None, archived: bool | None = False, order_by=None,
                          **query) -> list:
         return []
 
     @override
-    def count(self, archived=False, **query) -> int:
+    def count(self, archived: bool | None = False, **query) -> int:
         return 0
 
     @override
-    def count_by_product(self, archived=False, **query) -> list:
+    def count_by_product(self, archived: bool | None = False, **query) -> list:
         return []
 
     @override
-    def count_by_product_through_time(self, period, archived=False, **query) -> list:
+    def count_by_product_through_time(self, period: str, archived: bool | None = False, **query) -> list:
         return []
 
     @override
-    def count_product_through_time(self, period, archived=False, **query) -> list:
+    def count_product_through_time(self, period: str, archived: bool | None = False, **query) -> list:
         return []
 
     @deprecat(
@@ -213,7 +213,8 @@ class DatasetResource(AbstractDatasetResource):
     @override
     def search_returning_datasets_light(self,
                                         field_names: tuple,
-                                        custom_offsets=None, limit=None, archived=False, **query) -> list:
+                                        custom_offsets=None, limit: int | None = None,
+                                        archived: bool | None = False, **query) -> list:
         return []
 
     @override

@@ -9,7 +9,7 @@ import pytest
 from datacube.testutils import suppress_deprecations
 
 
-def test_smells_like_ini():
+def test_smells_like_ini() -> None:
     from datacube.cfg.utils import smells_like_ini
     assert smells_like_ini("""[an_ini_file]
 key: value
@@ -51,7 +51,7 @@ aasdfer\\faw043[]]][""")
 
 
 @pytest.fixture
-def simple_valid_ini():
+def simple_valid_ini() -> str:
     return """[foo]
 bar: bell
 bat: 7
@@ -64,7 +64,7 @@ baz: mckenzie
 
 
 @pytest.fixture
-def simple_valid_yaml():
+def simple_valid_yaml() -> str:
     return """foo:
     bar: bell
     bat: 7
@@ -76,7 +76,7 @@ goo:
 """
 
 
-def test_parse_text(simple_valid_ini, simple_valid_yaml):
+def test_parse_text(simple_valid_ini, simple_valid_yaml) -> None:
     from datacube.cfg import ConfigException, parse_text, CfgFormat
     ini = parse_text(simple_valid_ini)
     yaml = parse_text(simple_valid_yaml)
@@ -111,7 +111,7 @@ def single_env_config_no_connector():
 
 
 @pytest.fixture
-def simple_config():
+def simple_config() -> str:
     return """# Simple but thorough test config
 default:
    alias: legacy
@@ -179,7 +179,7 @@ def simple_dict():
     }
 
 
-def test_invalid_env():
+def test_invalid_env() -> None:
     from datacube.cfg import ODCConfig, ConfigException
     with pytest.raises(ConfigException):
         ODCConfig(text="""
@@ -195,7 +195,7 @@ non_legit:
         """)
 
 
-def test_oldstyle_cfg():
+def test_oldstyle_cfg() -> None:
     from datacube.cfg import ODCConfig
     with pytest.warns(UserWarning, match=r'default_environment.*no longer supported'):
         cfg = ODCConfig(text="""
@@ -211,14 +211,14 @@ def test_oldstyle_cfg():
         assert cfg[None]._name == 'default'
 
 
-def test_invalid_option():
+def test_invalid_option() -> None:
     from datacube.cfg import ODCOptionHandler, ConfigException
     mockenv = MagicMock()
     with pytest.raises(ConfigException):
         ODCOptionHandler("NO_CAPS", mockenv)
 
 
-def test_single_env(single_env_config, single_env_config_no_connector):
+def test_single_env(single_env_config, single_env_config_no_connector) -> None:
     from datacube.cfg import ODCConfig
     db_urls = []
     for cfg in [ODCConfig(text=single_env_config),
@@ -235,7 +235,7 @@ def test_single_env(single_env_config, single_env_config_no_connector):
                        "postgresql://foo:bar@server.subdomain.domain/mytestdb"]
 
 
-def assert_simple_aliases(cfg):
+def assert_simple_aliases(cfg) -> None:
     assert cfg['default']._name == 'legacy'
     assert cfg['postgres']._name == 'legacy'
     assert cfg['legacy']._name == 'legacy'
@@ -247,7 +247,7 @@ def assert_simple_aliases(cfg):
     assert cfg[None]._name == 'legacy'
 
 
-def test_aliases(simple_config):
+def test_aliases(simple_config) -> None:
     from datacube.cfg import ODCConfig, ConfigException
     cfg = ODCConfig(text=simple_config)
     assert_simple_aliases(cfg)
@@ -264,7 +264,7 @@ def test_aliases(simple_config):
     assert "invalid_option" in str(e.value)
 
 
-def assert_simple_options(cfg):
+def assert_simple_options(cfg) -> None:
     assert cfg['default']['index_driver'] == 'default'
     assert cfg['default'].db_username == 'foo'
     assert not cfg['default']['db_iam_authentication']
@@ -280,20 +280,20 @@ def assert_simple_options(cfg):
     assert cfg['new2']['db_connection_timeout'] == 60
 
 
-def test_options(simple_config):
+def test_options(simple_config) -> None:
     from datacube.cfg import ODCConfig
     cfg = ODCConfig(text=simple_config)
     assert_simple_options(cfg)
 
 
-def test_rawdict(simple_dict):
+def test_rawdict(simple_dict) -> None:
     from datacube.cfg import ODCConfig
     cfg = ODCConfig(raw_dict=simple_dict)
     assert_simple_aliases(cfg)
     assert_simple_options(cfg)
 
 
-def test_noenv_overrides_in_text(simple_config, monkeypatch):
+def test_noenv_overrides_in_text(simple_config, monkeypatch) -> None:
     monkeypatch.setenv("ODC_LEGACY_DB_USERNAME", "bar")
     monkeypatch.setenv("ODC_NEW_DB_USERNAME", "bar")
     from datacube.cfg import ODCConfig
@@ -321,21 +321,21 @@ def path_to_different_config():
     return os.path.join(os.path.dirname(__file__), "cfg", "different_cfg.yaml")
 
 
-def test_yaml_from_path(path_to_yaml_config):
+def test_yaml_from_path(path_to_yaml_config) -> None:
     from datacube.cfg import ODCConfig
     cfg = ODCConfig(paths=path_to_yaml_config)
     assert_simple_aliases(cfg)
     assert_simple_options(cfg)
 
 
-def test_ini_from_path(path_to_ini_config):
+def test_ini_from_path(path_to_ini_config) -> None:
     from datacube.cfg import ODCConfig
     cfg = ODCConfig(paths=path_to_ini_config)
     assert_simple_aliases(cfg)
     assert_simple_options(cfg)
 
 
-def test_ini_from_paths(path_to_ini_config, path_to_yaml_config, path_to_different_config, monkeypatch):
+def test_ini_from_paths(path_to_ini_config, path_to_yaml_config, path_to_different_config, monkeypatch) -> None:
     from datacube.cfg import ODCConfig, ConfigException
     cfg = ODCConfig(paths=[
         "/non/existent/path.yml",
@@ -392,7 +392,7 @@ def test_ini_from_paths(path_to_ini_config, path_to_yaml_config, path_to_differe
             assert cfg[None]._name == 'legacy'
 
 
-def test_envvar_overrides(path_to_yaml_config, monkeypatch):
+def test_envvar_overrides(path_to_yaml_config, monkeypatch) -> None:
     monkeypatch.setenv("ODC_LEGACY_DB_USERNAME", "bar")
     monkeypatch.setenv("ODC_NEW_DB_USERNAME", "bar")
     monkeypatch.setenv("ODC_NEW2_DB_CONNECTION_TIMEOUT", "20")
@@ -409,7 +409,7 @@ def test_envvar_overrides(path_to_yaml_config, monkeypatch):
         assert cfg["new"].db_username != 'bar'
 
 
-def test_intopt_validation():
+def test_intopt_validation() -> None:
     from datacube.cfg import ODCConfig, ConfigException
     cfg = ODCConfig(text="""
 env1:
@@ -441,7 +441,7 @@ env1:
         assert cfg["env1"].db_hostname == 'localhost'
 
 
-def test_invalid_idx_driver():
+def test_invalid_idx_driver() -> None:
     from datacube.cfg import ODCConfig, ConfigException
     cfg = ODCConfig(raw_dict={
         "default": {"alias": "foo"},
@@ -457,7 +457,7 @@ def test_invalid_idx_driver():
     assert "legacy" in estr
 
 
-def test_invalid_pg_url():
+def test_invalid_pg_url() -> None:
     from datacube.cfg import ODCConfig, ConfigException
     cfg = ODCConfig(raw_dict={
         "default": {"alias": "foo"},
@@ -470,7 +470,7 @@ def test_invalid_pg_url():
         assert cfg["default"].index_driver == "postgres"
 
 
-def test_pgurl_from_config(simple_dict):
+def test_pgurl_from_config(simple_dict) -> None:
     from datacube.cfg import ODCConfig, psql_url_from_config
     cfg = ODCConfig(raw_dict=simple_dict)
     assert psql_url_from_config(
@@ -510,7 +510,7 @@ def test_pgurl_from_config(simple_dict):
     })
 
 
-def test_multiple_sourcetypes(simple_config, path_to_ini_config, simple_dict):
+def test_multiple_sourcetypes(simple_config, path_to_ini_config, simple_dict) -> None:
     from datacube.cfg import ODCConfig, ConfigException
     with pytest.raises(ConfigException) as e:
         ODCConfig(paths=path_to_ini_config, raw_dict=simple_dict, text=simple_config)
@@ -526,7 +526,7 @@ def test_multiple_sourcetypes(simple_config, path_to_ini_config, simple_dict):
     assert "Can only supply one of" in str(e.value)
 
 
-def test_get_environment(simple_config):
+def test_get_environment(simple_config) -> None:
     from datacube.cfg import ODCConfig, ConfigException
     cfg = ODCConfig(text=simple_config)
     with pytest.raises(ConfigException) as e:
@@ -536,7 +536,7 @@ def test_get_environment(simple_config):
     assert env is cfg[None]
 
 
-def test_raw_by_environment(simple_config, monkeypatch):
+def test_raw_by_environment(simple_config, monkeypatch) -> None:
     from datacube.cfg import ODCConfig
     monkeypatch.setenv(
         'ODC_CONFIG',
@@ -546,7 +546,7 @@ def test_raw_by_environment(simple_config, monkeypatch):
     assert cfg[None]._name == 'foo'
 
 
-def test_default_environment(simple_config, monkeypatch):
+def test_default_environment(simple_config, monkeypatch) -> None:
     from datacube.cfg import ODCConfig
     with suppress_deprecations():
         cfg = ODCConfig(text=simple_config)

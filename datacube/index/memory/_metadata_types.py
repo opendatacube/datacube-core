@@ -13,20 +13,21 @@ from datacube.model import MetadataType
 from datacube.index.memory._fields import get_dataset_fields
 from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes
+from datacube.utils.documents import JsonDict
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class MetadataTypeResource(AbstractMetadataTypeResource):
-    def __init__(self):
-        self.by_id = {}
-        self.by_name = {}
+    def __init__(self) -> None:
+        self.by_id: dict = {}
+        self.by_name: dict = {}
         self.next_id = 1
         for doc in default_metadata_type_docs():
             self.add(self.from_doc(doc))
 
     @override
-    def from_doc(self, definition: Mapping[str, Any]) -> MetadataType:
+    def from_doc(self, definition: JsonDict) -> MetadataType:
         MetadataType.validate(definition)  # type: ignore[attr-defined]
         return self._make(definition)
 

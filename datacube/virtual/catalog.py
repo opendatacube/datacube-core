@@ -49,7 +49,7 @@ class Catalog(Mapping):
         return list(self.contents[section])
 
     @override
-    def __getitem__(self, name):
+    def __getitem__(self, name: str):
         """
         Looks up a virtual product or transform by name.
         Returns `None` if not found.
@@ -62,7 +62,7 @@ class Catalog(Mapping):
         # raising a `KeyError` here stops autocompletion from working
         return None
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str):
         return self[name]
 
     @override

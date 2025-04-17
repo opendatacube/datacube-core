@@ -14,12 +14,12 @@ from datacube.model import Range
 import pytest
 
 
-def _assert_same(obj1, obj2):
+def _assert_same(obj1, obj2) -> None:
     assert obj1.__class__ == obj2.__class__
     assert obj1.__dict__ == obj2.__dict__
 
 
-def test_split_uri():
+def test_split_uri() -> None:
     assert split_uri('http://test.com/something.txt') == ('http', '//test.com/something.txt')
     assert split_uri('eods:LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127') == (
         'eods', 'LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127')
@@ -31,7 +31,7 @@ def test_split_uri():
         split_uri('/no/semicolon')
 
 
-def test_get_single_field():
+def test_get_single_field() -> None:
     fields = parse_fields({
         'platform': {
             'description': 'Satellite',
@@ -58,7 +58,7 @@ def test_get_single_field():
     assert field.extract({}) is None
 
 
-def test_get_multi_field():
+def test_get_multi_field() -> None:
     fields = parse_fields({
         'orbit': {
             'description': 'Orbit number',
@@ -92,7 +92,7 @@ def test_get_multi_field():
     assert field.extract({'orbit': 10, 'acquisition': {'platform_orbit': 5}}) == 5
 
 
-def test_get_range_field():
+def test_get_range_field() -> None:
     storage_fields = parse_fields({
         'lat': {
             'type': 'float-range',

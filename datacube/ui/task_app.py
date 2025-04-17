@@ -5,6 +5,8 @@
 import logging
 import os
 import time
+from collections.abc import Sequence
+
 import click
 import functools
 import itertools
@@ -17,7 +19,7 @@ from datacube.ui import click as dc_ui
 from datacube.utils import read_documents
 
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def load_config(index, app_config_file, make_config, make_tasks, *args, **kwargs):
@@ -33,7 +35,7 @@ def load_config(index, app_config_file, make_config, make_tasks, *args, **kwargs
     return config, iter(tasks)
 
 
-def pickle_stream(objs, filename):
+def pickle_stream(objs, filename) -> int:
     idx = 0
     with open(filename, 'wb') as stream:
         for idx, obj in enumerate(objs, start=1):  # noqa: B007
@@ -50,7 +52,7 @@ def unpickle_stream(filename):
                 break
 
 
-def save_tasks(config, tasks, taskfile):
+def save_tasks(config, tasks, taskfile: str) -> int:
     """Saves the config
 
     :param config: dict of configuration options common to all tasks
@@ -109,7 +111,7 @@ def _cell_list_from_file(filename):
                 yield tuple(int(i) for i in match.groups())
 
 
-def cell_list_to_file(filename, cell_list):
+def cell_list_to_file(filename, cell_list) -> None:
     with open(filename, 'w') as cell_file:
         for cell in cell_list:
             cell_file.write('{},{}\n'.format(*cell))
@@ -124,7 +126,7 @@ def validate_cell_list(ctx, param, value):
         raise click.BadParameter('cell_index_list must be a file with lines in the form "14,-11"') from None
 
 
-def validate_cell_index(ctx, param, value):
+def validate_cell_index(ctx, param, value) -> tuple[int, ...] | None:
     try:
         if value is None:
             return None
@@ -215,7 +217,7 @@ def task_app(make_config, make_tasks):
     return decorate
 
 
-def check_existing_files(paths):
+def check_existing_files(paths: Sequence[str | Path]) -> None:
     """Check for existing files and optionally delete them.
 
     :param paths: sequence of path strings or path objects
@@ -242,7 +244,7 @@ def check_existing_files(paths):
                f'valid files, {len(existing_files)} existing paths)')
 
 
-def do_nothing(result):
+def do_nothing(result) -> None:
     pass
 
 

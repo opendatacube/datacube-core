@@ -11,12 +11,13 @@ from datacube.drivers.rio._reader import (
 )
 from datacube.storage import BandInfo
 from datacube.testutils.threads import FakeThreadPoolExecutor
+from datacube.drivers._types import ReaderDriver
 
 NetCDF = 'NetCDF'    # pylint: disable=invalid-name
 GeoTIFF = 'GeoTIFF'  # pylint: disable=invalid-name
 
 
-def mk_rio_driver():
+def mk_rio_driver() -> ReaderDriver:
     pool = FakeThreadPoolExecutor()
     rde = RDEntry()
     return rde.new_instance({'pool': pool,
@@ -56,7 +57,7 @@ def open_reader(path: str,
     return fut.result()
 
 
-def tee_new_load_context(rdr, new_impl):
+def tee_new_load_context(rdr, new_impl) -> None:
     """ When calling rdr.new_load_context(bands, old_ctx) tee data to new_impl
     """
     _real_impl = rdr.new_load_context

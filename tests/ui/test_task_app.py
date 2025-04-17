@@ -28,7 +28,7 @@ def make_test_tasks(index, config, **kwargs):
 
 
 @task_app(make_config=make_test_config, make_tasks=make_test_tasks)
-def my_test_app(index, config, tasks, **kwargs):
+def my_test_app(index, config, tasks, **kwargs) -> None:
     assert index == 'Fake Index'
     assert config['some_item'] == 'make_test_config'
     assert 'app_arg' in kwargs
@@ -37,7 +37,7 @@ def my_test_app(index, config, tasks, **kwargs):
     assert len(task_list) == config['num_tasks']
 
 
-def test_task_app(tmpdir):
+def test_task_app(tmpdir) -> None:
     index = 'Fake Index'
 
     app_config = tmpdir.join("app_config.yaml")
@@ -47,7 +47,7 @@ def test_task_app(tmpdir):
     my_test_app(index, str(app_config), app_arg=True, config_arg=True, task_arg=True)
 
 
-def test_task_app_with_task_file(tmpdir):
+def test_task_app_with_task_file(tmpdir) -> None:
     index = 'Fake Index'
 
     app_config = tmpdir.join("app_config.yaml")
@@ -64,7 +64,7 @@ def test_task_app_with_task_file(tmpdir):
     my_test_app(index, input_tasks_file=str(taskfile), app_arg=True)
 
 
-def test_task_app_with_no_tasks(tmpdir):
+def test_task_app_with_no_tasks(tmpdir) -> None:
     index = 'Fake Index'
 
     app_config = tmpdir.join("app_config.yaml")
@@ -80,7 +80,7 @@ def test_task_app_with_no_tasks(tmpdir):
     assert not taskfile.check()
 
 
-def test_task_app_year_splitting():
+def test_task_app_year_splitting() -> None:
     import pandas as pd
     from datacube.ui.task_app import validate_year, break_query_into_years
     one_millisecond = pd.Timedelta('1 ms')
@@ -139,7 +139,7 @@ def test_task_app_year_splitting():
     assert query[1]['cell_index'] == test_cell_index
 
 
-def test_task_app_cell_index(tmpdir):
+def test_task_app_cell_index(tmpdir) -> None:
     from datacube.ui.task_app import validate_cell_index, validate_cell_list, cell_list_to_file
 
     assert validate_cell_index(None, None, None) is None
@@ -160,7 +160,7 @@ def test_task_app_cell_index(tmpdir):
     assert validate_cell_list(None, None, str(cell_list_file)) == cell_list
 
 
-def test_wrap_task():
+def test_wrap_task() -> None:
     def task_with_args(task, a, b):
         return task, a, b
 

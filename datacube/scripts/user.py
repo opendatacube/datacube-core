@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from collections.abc import Iterable
 
 import click
 import csv
@@ -19,12 +20,12 @@ from datacube.ui.click import cli
 from datacube.utils.serialise import SafeDatacubeDumper
 from datacube.index.abstract import AbstractIndex
 
-_LOG = logging.getLogger('datacube-user')
+_LOG: logging.Logger = logging.getLogger('datacube-user')
 USER_ROLES = ('user', 'manage', 'admin')
 
 
 @cli.group(name='user', help='User management commands')
-def user_cmd():
+def user_cmd() -> None:
     pass
 
 
@@ -40,7 +41,7 @@ def build_user_list(index):
     return lstdct
 
 
-def _write_csv(index):
+def _write_csv(index: Iterable) -> None:
     writer = csv.DictWriter(sys.stdout, ['role', 'user', 'description'], extrasaction='ignore')
     writer.writeheader()
 
@@ -52,7 +53,7 @@ def _write_csv(index):
     writer.writerows(add_first_role(row) for row in index)
 
 
-def _write_yaml(index):
+def _write_yaml(index: Iterable) -> None:
     """
     Dump yaml data with support for OrderedDicts.
 
@@ -74,7 +75,7 @@ _OUTPUT_WRITERS = {
 @click.option('-f', help='Output format',
               type=click.Choice(list(_OUTPUT_WRITERS)), default='yaml', show_default=True)
 @ui.pass_index()
-def list_users(index, f):
+def list_users(index, f: str) -> None:
     """
     List users
     """
@@ -87,7 +88,7 @@ def list_users(index, f):
                 nargs=1)
 @click.argument('users', nargs=-1)
 @ui.pass_index()
-def grant(index, role, users):
+def grant(index, role: str, users: Iterable[str]) -> None:
     """
     Grant a role to users
     """
@@ -120,7 +121,7 @@ def create_user(cfg_env: ODCEnvironment, index: AbstractIndex, role: str, user: 
 @click.argument('users', nargs=-1)
 @ui.pass_index()
 @ui.pass_config
-def delete_user(config, index, users):
+def delete_user(config, index, users: str) -> None:
     """
     Delete a User
     """

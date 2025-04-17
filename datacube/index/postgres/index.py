@@ -22,7 +22,7 @@ from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, Abstract
 from datacube.model import MetadataType
 from datacube.migration import ODC2DeprecationWarning
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class Index(AbstractIndex):
@@ -129,7 +129,7 @@ class Index(AbstractIndex):
         return PostgresDb.get_dataset_fields(doc)
 
     @override
-    def init_db(self, with_default_types=True, with_permissions=True) -> bool:
+    def init_db(self, with_default_types: bool = True, with_permissions: bool = True):
         is_new = self._db.init(with_permissions=with_permissions)
 
         if is_new and with_default_types:

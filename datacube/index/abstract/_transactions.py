@@ -71,7 +71,7 @@ class AbstractTransaction(ABC):
             self._tls_purge()
 
     @property
-    def active(self):
+    def active(self) -> bool:
         """
         :return:  True if the transaction is active.
         """
@@ -104,11 +104,11 @@ class AbstractTransaction(ABC):
         return TransactionException(errmsg, commit=False)
 
     # Context Manager Interface
-    def __enter__(self):
+    def __enter__(self) -> "AbstractTransaction":
         self.begin()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:
         if not self.active:
             # User has already manually committed or rolled back.
             return True

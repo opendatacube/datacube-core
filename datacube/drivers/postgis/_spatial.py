@@ -28,7 +28,7 @@ from ._core import METADATA
 from .sql import SCHEMA_NAME
 from ._schema import Base, orm_registry, Dataset, SpatialIndex, SpatialIndexRecord
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 # In theory, we could just use the SQLAlchemy registry for this, but it is not indexed
@@ -253,7 +253,7 @@ def sanitise_extent(extent, crs) -> Geom:
         return extent.to_crs(crs)
 
 
-def generate_dataset_spatial_values(dataset_id, crs, extent):
+def generate_dataset_spatial_values(dataset_id, crs, extent: Geom | None) -> dict[str, str] | None:
     extent = sanitise_extent(extent, crs)
     if extent is None:
         return None

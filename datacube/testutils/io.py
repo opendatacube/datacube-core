@@ -4,6 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 import numpy as np
 import toolz
+import xarray
+from pathlib import Path
+from typing import Any
 from typing_extensions import override
 
 from . import suppress_deprecations
@@ -22,7 +25,7 @@ from odc.geo.xr import xr_coords
 class RasterFileDataSource(RasterioDataSource):
     """ This is only used in test code
     """
-    def __init__(self, filename, bandnumber, nodata=None, crs=None, transform=None, lock=None):
+    def __init__(self, filename, bandnumber, nodata=None, crs=None, transform=None, lock=None) -> None:
         super().__init__(filename, nodata, lock=lock)
         self.bandnumber = bandnumber
         self.crs = crs
@@ -53,7 +56,7 @@ def _raster_metadata(band):
                                geobox=rdr_geobox(rdr))
 
 
-def get_raster_info(ds: Dataset, measurements=None):
+def get_raster_info(ds: Dataset, measurements: list[str] | None = None) -> dict[str, Any]:
     """
     :param ds: Dataset
     :param measurements: List of band names to load
@@ -83,7 +86,7 @@ def eo3_geobox(ds: Dataset, band: str | None = None, grid: str = "default") -> G
     return GeoBox(parsed.shape, parsed.transform, crs)
 
 
-def native_geobox(ds, measurements=None, basis=None):
+def native_geobox(ds: Dataset, measurements=None, basis: str | None = None):
     """Compute native GeoBox for a set of bands for a given dataset
 
     :param ds: Dataset
@@ -150,11 +153,11 @@ def native_load(ds, measurements=None, basis=None, **kw):
 
 
 def dc_read(path,
-            band=1,
+            band: int = 1,
             geobox=None,
-            resampling='nearest',
+            resampling: str = 'nearest',
             dtype=None,
-            dst_nodata=None,
+            dst_nodata: float | None = None,
             fallback_nodata=None):
     """
     Use default io driver to read file without constructing Dataset object.
@@ -177,16 +180,16 @@ def dc_read(path,
     return im
 
 
-def write_gtiff(fname,
+def write_gtiff(fname: Path,
                 pix,
-                crs='epsg:3857',
+                crs: str = 'epsg:3857',
                 resolution=(10, -10),
-                offset=(0.0, 0.0),
+                offset: tuple[float, float] = (0.0, 0.0),
                 nodata=None,
-                overwrite=False,
-                blocksize=None,
+                overwrite: bool = False,
+                blocksize: int | None = None,
                 geobox=None,
-                **extra_rio_opts):
+                **extra_rio_opts) -> SimpleNamespace:
     """ Write ndarray to GeoTiff file.
 
     Geospatial info can be supplied either via
@@ -203,7 +206,7 @@ def write_gtiff(fname,
     if pix.ndim == 2:
         h, w = pix.shape
         nbands = 1
-        band = 1
+        band: int | tuple[int, ...] = 1
     elif pix.ndim == 3:
         nbands, h, w = pix.shape
         band = tuple(i for i in range(1, nbands+1))
@@ -280,7 +283,7 @@ def rio_geobox(meta):
     return GeoBox(wh_(w, h), transform, crs)
 
 
-def _fix_resampling(kw):
+def _fix_resampling(kw: dict) -> None:
     r = kw.get('resampling', None)
     if isinstance(r, str):
         kw['resampling'] = resampling_s2rio(r)
@@ -373,7 +376,7 @@ def rio_slurp(fname, *args, **kw):
         return rio_slurp_read(fname, *args, **kw)
 
 
-def rio_slurp_xarray(fname, *args, rgb='auto', **kw):
+def rio_slurp_xarray(fname, *args, rgb: str = 'auto', **kw) -> xarray.DataArray:
     """
     Dispatches to either:
 

@@ -5,6 +5,7 @@
 """ Dask Distributed Tools
 
 """
+from pathlib import Path
 from typing import Any
 from collections.abc import Iterable
 from random import randint
@@ -27,10 +28,10 @@ __all__ = [
     "start_local_dask",
 ]
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def get_total_available_memory(check_jupyter_hub=True):
+def get_total_available_memory(check_jupyter_hub: bool = True) -> int:
     """ Figure out how much memory is available
         1. Check MEM_LIMIT environment variable, set by jupyterhub
         2. Use hardware information if that not set
@@ -70,6 +71,7 @@ def compute_memory_per_worker(n_workers: int = 1,
         mem_safety_margin = 0
     else:
         total_bytes = memory_limit
+    assert mem_safety_margin is not None  # For typechecker.
 
     return (total_bytes - mem_safety_margin)//n_workers
 
@@ -116,7 +118,7 @@ def start_local_dask(n_workers: int = 1,
     return client
 
 
-def _randomize(prefix):
+def _randomize(prefix: str) -> str:
     return f'{prefix}-{randint(0, 0xFFFFFFFF):08x}'
 
 
@@ -283,7 +285,7 @@ _save_blob_to_s3_delayed = delayed(_save_blob_to_s3, name='save-to-s3', pure=Fal
 
 def save_blob_to_file(data,
                       fname,
-                      with_deps=None):
+                      with_deps=None) -> tuple[Path, bool]:
     """
     Dump from memory to local filesystem as a dask delayed operation.
 
@@ -314,9 +316,9 @@ def save_blob_to_s3(data,
                     url,
                     profile=None,
                     creds=None,
-                    region_name=None,
+                    region_name: str | None = None,
                     with_deps=None,
-                    **kw):
+                    **kw) -> tuple[str, bool]:
     """
     Dump from memory to S3 as a dask delayed operation.
 

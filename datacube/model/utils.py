@@ -6,6 +6,10 @@ import os
 import platform
 import sys
 import uuid
+from collections.abc import Sequence
+from typing import Literal
+from collections.abc import Mapping
+
 import toolz
 from datetime import datetime, timezone
 
@@ -20,7 +24,7 @@ from datacube.utils import SimpleDocNav, InvalidDocException
 from datacube.utils.py import sorted_items
 
 from odc.geo import CRS
-from odc.geo.geom import point
+from odc.geo.geom import Geometry, point
 
 try:
     from yaml import CSafeDumper as SafeDumper
@@ -32,8 +36,8 @@ class BadMatch(Exception):  # noqa: N818
     pass
 
 
-def machine_info():
-    info = {
+def machine_info() -> dict[str, dict[str, dict[str, str | dict[str, dict[str, str]]]]]:
+    info: dict[str, str | dict[str, dict[str, str]]] = {
         'software_versions': {
             'python': {'version': sys.version},
             'datacube': {'version': datacube.__version__,
@@ -54,14 +58,16 @@ def machine_info():
     return {'lineage': {'machine': info}}
 
 
-def geobox_info(extent, valid_data=None):
+def geobox_info(extent: Geometry,
+                valid_data: Geometry | None = None
+                ) -> dict[str, dict[str, dict[str, str | dict[str, float | dict[str, float]]]]]:
     image_bounds = extent.boundingbox
     data_bounds = valid_data.boundingbox if valid_data else image_bounds
     ul = point(data_bounds.left, data_bounds.top, crs=extent.crs).to_crs(CRS('EPSG:4326'))
     ur = point(data_bounds.right, data_bounds.top, crs=extent.crs).to_crs(CRS('EPSG:4326'))
     lr = point(data_bounds.right, data_bounds.bottom, crs=extent.crs).to_crs(CRS('EPSG:4326'))
     ll = point(data_bounds.left, data_bounds.bottom, crs=extent.crs).to_crs(CRS('EPSG:4326'))
-    doc = {
+    doc: dict[str, dict[str, dict[str, str | dict[str, float | dict[str, float]]]]] = {
         'extent': {
             'coord': {
                 'ul': {'lon': ul.points[0][0], 'lat': ul.points[0][1]},
@@ -87,14 +93,14 @@ def geobox_info(extent, valid_data=None):
     return doc
 
 
-def new_dataset_info():
+def new_dataset_info() -> dict[str, str]:
     return {
         'id': str(uuid.uuid4()),
         'creation_dt': datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
     }
 
 
-def band_info(band_names, band_uris=None):
+def band_info(band_names: Sequence[str], band_uris: dict | None = None) -> dict:
     """
     :param list band_names: names of the bands
     :param dict band_uris: mapping from names to dicts with 'path' and 'layer' specs
@@ -109,7 +115,7 @@ def band_info(band_names, band_uris=None):
     }
 
 
-def time_info(time, start_time=None, end_time=None, key_time=None):
+def time_info(time, start_time=None, end_time=None, key_time=None) -> dict[str, dict[str, str]]:
     time_str = to_datetime(time).isoformat()
     start_time_str = to_datetime(start_time).isoformat() if start_time else time_str
     end_time_str = to_datetime(end_time).isoformat() if end_time else time_str
@@ -170,7 +176,7 @@ def xr_iter(data_array):
         yield i, index, entry
 
 
-def xr_apply(data_array, func, dtype=None, with_numeric_index=False):
+def xr_apply(data_array, func, dtype=None, with_numeric_index: bool = False) -> xarray.DataArray:
     """
     Apply a function to every element of a :class:`xarray.DataArray`
 
@@ -195,8 +201,9 @@ def xr_apply(data_array, func, dtype=None, with_numeric_index=False):
     return xarray.DataArray(data, coords=data_array.coords, dims=data_array.dims)
 
 
-def make_dataset(product, sources, extent, center_time, valid_data=None, uri=None, app_info=None,
-                 band_uris=None, start_time=None, end_time=None):
+def make_dataset(product, sources, extent: Geometry, center_time, valid_data: Geometry | None = None,
+                 uri: str | None = None, app_info=None,
+                 band_uris=None, start_time=None, end_time=None) -> Dataset:
     """
     Create :class:`datacube.model.Dataset` for the data
 
@@ -212,7 +219,7 @@ def make_dataset(product, sources, extent, center_time, valid_data=None, uri=Non
     :param end_time: end time of the dataset (defaults to `center_time`)
     :rtype: class:`Dataset`
     """
-    document = {}
+    document: dict = {}
     merge(document, product.metadata_doc)
     merge(document, new_dataset_info())
     merge(document, machine_info())
@@ -228,7 +235,7 @@ def make_dataset(product, sources, extent, center_time, valid_data=None, uri=Non
                    sources={str(idx): dataset for idx, dataset in enumerate(sources)})
 
 
-def merge(a, b, path=None):
+def merge(a: dict, b: dict, path: list | None = None) -> dict:
     """
     Merge dictionary `b` into dictionary `a`
 
@@ -253,7 +260,8 @@ def merge(a, b, path=None):
     return a
 
 
-def traverse_datasets(ds, cbk, mode='post-order', **kwargs):
+def traverse_datasets(ds: Dataset | SimpleDocNav, cbk,
+                      mode: Literal['post-order', 'pre-order'] = 'post-order', **kwargs) -> None:
     """Perform depth first traversal of lineage tree. Note that we assume it's a
     tree, even though it might be a DAG (Directed Acyclic Graph). If it is a
     DAG it will be treated as if it was a tree with some nodes appearing twice or more
@@ -279,13 +287,13 @@ def traverse_datasets(ds, cbk, mode='post-order', **kwargs):
 
     """
 
-    def visit_pre_order(ds, func, depth=0, name=None):
+    def visit_pre_order(ds: Dataset | SimpleDocNav, func, depth: int = 0, name: str | None = None) -> None:
         func(ds, depth=depth, name=name, **kwargs)
 
         for k, v in sorted_items(ds.sources):
             visit_pre_order(v, func, depth=depth+1, name=k)
 
-    def visit_post_order(ds, func, depth=0, name=None):
+    def visit_post_order(ds: Dataset | SimpleDocNav, func, depth: int = 0, name: str | None = None) -> None:
         for k, v in sorted_items(ds.sources):
             visit_post_order(v, func, depth=depth+1, name=k)
 
@@ -300,7 +308,7 @@ def traverse_datasets(ds, cbk, mode='post-order', **kwargs):
     proc(ds, cbk)
 
 
-def flatten_datasets(ds, with_depth_grouping=False):
+def flatten_datasets(ds: Dataset | SimpleDocNav, with_depth_grouping: bool = False) -> dict | tuple[dict, list]:
     """Build a dictionary mapping from dataset.id to a list of datasets with that
     id appearing in the lineage DAG. When DAG is unrolled into a tree, some
     datasets will be reachable by multiple paths, sometimes these would be
@@ -316,20 +324,20 @@ def flatten_datasets(ds, with_depth_grouping=False):
     If with_depth_grouping=True, also build depth -> [Ds] mapping and return it
     along with Id -> [Ds] mapping. In this case top level is depth=0.
     """
-    def get_list(out, k):
+    def get_list(out: dict, k):
         if k not in out:
             out[k] = []
         return out[k]
 
-    def proc(ds, depth=0, name=None, id_map=None, depth_map=None):
+    def proc(ds, depth: int = 0, name: str | None = None, id_map=None, depth_map=None) -> None:
         k = ds.id
 
         get_list(id_map, k).append(ds)
         if depth_map is not None:
             get_list(depth_map, depth).append(ds)
 
-    id_map = {}
-    depth_map = {} if with_depth_grouping else None
+    id_map: dict = {}
+    depth_map: dict | None = {} if with_depth_grouping else None
 
     traverse_datasets(ds, proc, id_map=id_map, depth_map=depth_map)
 
@@ -344,7 +352,7 @@ def flatten_datasets(ds, with_depth_grouping=False):
     return id_map
 
 
-def remap_lineage_doc(root, mk_node, **kwargs):
+def remap_lineage_doc(root: Mapping | SimpleDocNav, mk_node, **kwargs):
     def visit(ds):
         return mk_node(ds,
                        {k: visit(v) for k, v in sorted_items(ds.sources)},
@@ -362,7 +370,7 @@ def remap_lineage_doc(root, mk_node, **kwargs):
             raise
 
 
-def dedup_lineage(root):
+def dedup_lineage(root: dict | SimpleDocNav):
     """Find duplicate nodes in the lineage tree and replace them with references.
 
     Will raise `ValueError` when duplicate dataset (same uuid, but different
@@ -375,7 +383,7 @@ def dedup_lineage(root):
     with duplicate entries now being aliases rather than copies.
     """
 
-    def check_sources(a, b):
+    def check_sources(a: dict, b: dict) -> bool:
         """ True if two dictionaries contain same objects under the same names.
         same, not just equivalent.
         """

@@ -53,7 +53,7 @@ def gen_test_data(prefix, dask=False, shape=None, dtype="int16", nodata=-999):
         dict(intermediate_compression="deflate"),
     ],
 )
-def test_cog_file(tmpdir, opts):
+def test_cog_file(tmpdir, opts) -> None:
     pp = Path(str(tmpdir))
     xx, ds = gen_test_data(pp)
 
@@ -129,7 +129,7 @@ def test_cog_file(tmpdir, opts):
     assert aa.attrs["nodata"] == "nan" or math.isnan(aa.attrs["nodata"])
 
 
-def test_cog_file_dask(tmpdir):
+def test_cog_file_dask(tmpdir) -> None:
     pp = Path(str(tmpdir))
     xx, ds = gen_test_data(pp, dask=True)
     assert is_dask_collection(xx)
@@ -149,7 +149,7 @@ def test_cog_file_dask(tmpdir):
 
 
 @pytest.mark.parametrize("shape", [None, (1024, 512)])
-def test_cog_mem(tmpdir, shape):
+def test_cog_mem(tmpdir, shape) -> None:
     pp = Path(str(tmpdir))
     xx, ds = gen_test_data(pp, shape=shape)
 
@@ -193,7 +193,7 @@ def test_cog_mem(tmpdir, shape):
     assert yy.nodata == xx.nodata
 
 
-def test_cog_mem_dask(tmpdir):
+def test_cog_mem_dask(tmpdir) -> None:
     pp = Path(str(tmpdir))
     xx, ds = gen_test_data(pp, dask=True)
 
@@ -230,7 +230,7 @@ def test_cog_mem_dask(tmpdir):
 
 
 @pytest.mark.parametrize("use_windowed_writes", [False, True])
-def test_cog_rgba(tmpdir, use_windowed_writes):
+def test_cog_rgba(tmpdir, use_windowed_writes) -> None:
     pp = Path(str(tmpdir))
     xx, ds = gen_test_data(pp)
     pix = np.dstack([xx.values] * 4)

@@ -41,7 +41,7 @@ def check_write_path(fname: Path | str, overwrite: bool) -> Path:
 def write_user_secret_file(text: str | bytes,
                            fname: str | Path,
                            in_home_dir: bool = False,
-                           mode: str = 'w'):
+                           mode: str = 'w') -> None:
     """Write file only readable/writeable by the user"""
 
     fname = _norm_path(fname, in_home_dir)

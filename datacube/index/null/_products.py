@@ -8,23 +8,24 @@ from typing_extensions import override
 
 from datacube.index.abstract import AbstractProductResource
 from datacube.model import Product
+from odc.geo import CRS, Geometry
 
 from collections.abc import Iterable
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class ProductResource(AbstractProductResource):
     @override
-    def add(self, product, allow_table_lock=False):
+    def add(self, product: Product, allow_table_lock: bool = False):
         raise NotImplementedError()
 
     @override
-    def can_update(self, product, allow_unsafe_updates=False, allow_table_lock=False):
+    def can_update(self, product: Product, allow_unsafe_updates: bool = False, allow_table_lock: bool = False):
         raise NotImplementedError()
 
     @override
-    def update(self, product: Product, allow_unsafe_updates=False, allow_table_lock=False):
+    def update(self, product: Product, allow_unsafe_updates: bool = False, allow_table_lock: bool = False):
         raise NotImplementedError()
 
     @override
@@ -32,11 +33,11 @@ class ProductResource(AbstractProductResource):
         raise NotImplementedError()
 
     @override
-    def get_unsafe(self, id_):
+    def get_unsafe(self, id_: int):
         raise KeyError(id_)
 
     @override
-    def get_by_name_unsafe(self, name):
+    def get_by_name_unsafe(self, name: str):
         raise KeyError(name)
 
     @override
@@ -56,7 +57,7 @@ class ProductResource(AbstractProductResource):
         raise KeyError(str(product))
 
     @override
-    def spatial_extent(self, product, crs=None):
+    def spatial_extent(self, product: Product | str, crs: CRS | None = None) -> Geometry | None:
         raise KeyError(str(product))
 
     @override

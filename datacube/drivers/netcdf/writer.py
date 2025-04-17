@@ -10,6 +10,8 @@ import logging
 import numbers
 from datetime import datetime, timezone
 from collections import namedtuple
+from os import PathLike
+from collections.abc import Sequence
 import numpy
 
 from datacube.utils.masking import describe_flags_def
@@ -21,10 +23,10 @@ from odc.geo.math import data_resolution_and_offset
 
 from datacube import __version__
 
-UTC = timezone.utc
+UTC: timezone = timezone.utc
 
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dims', 'units'))
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 DEFAULT_GRID_MAPPING = 'spatial_ref'
 
 _STANDARD_COORDINATES = {
@@ -57,7 +59,7 @@ _STANDARD_COORDINATES = {
 }
 
 
-def create_netcdf(netcdf_path, **kwargs):
+def create_netcdf(netcdf_path: str | PathLike, **kwargs) -> Dataset:
     """
     Create and return an empty NetCDF file
 
@@ -84,7 +86,7 @@ def append_netcdf(netcdf_path) -> Dataset:
     return Dataset(netcdf_path, 'a')
 
 
-def create_coordinate(nco, name, labels, units):
+def create_coordinate(nco, name: str, labels: Sequence[str], units):
     """
     :type nco: netCDF4.Dataset
     :type name: str
@@ -105,7 +107,7 @@ def create_coordinate(nco, name, labels, units):
     return var
 
 
-def create_variable(nco, name, var, grid_mapping=None, attrs=None, **kwargs):
+def create_variable(nco, name: str, var, grid_mapping=None, attrs=None, **kwargs):
     """
     :param nco:
     :param name:
@@ -115,7 +117,7 @@ def create_variable(nco, name, var, grid_mapping=None, attrs=None, **kwargs):
     """
     assert var.dtype.kind != 'U'  # Creates Non CF-Compliant NetCDF File
 
-    def clamp_chunksizes(chunksizes, dim_names):
+    def clamp_chunksizes(chunksizes: Sequence[int] | None, dim_names: Sequence[str]):
         if chunksizes is None:
             return None
 
@@ -153,7 +155,7 @@ def create_variable(nco, name, var, grid_mapping=None, attrs=None, **kwargs):
     return data_var
 
 
-def _create_latlon_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
+def _create_latlon_grid_mapping_variable(nco, crs, name: str = DEFAULT_GRID_MAPPING):
     crs_var = nco.createVariable(name, 'i4')
     crs_var.long_name = crs._crs.name  # "Lon/Lat Coords in WGS84"
 
@@ -216,7 +218,7 @@ CRS_PARAM_WRITERS = {
 }
 
 
-def _create_projected_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
+def _create_projected_grid_mapping_variable(nco, crs, name: str = DEFAULT_GRID_MAPPING):
     cf = crs._crs.to_cf()
     grid_mapping_name = cf['grid_mapping_name']
     if grid_mapping_name not in CRS_PARAM_WRITERS:
@@ -256,11 +258,11 @@ class DimensionWrapper:
 
     TODO: Remove this code and pin odc-geo if/when this gets fixed there.
     """
-    def __init__(self, dim) -> None:
+    def __init__(self, dim: int) -> None:
         self.values = dim
 
 
-def create_grid_mapping_variable(nco, crs, name=DEFAULT_GRID_MAPPING):
+def create_grid_mapping_variable(nco, crs, name: str = DEFAULT_GRID_MAPPING):
     if crs.geographic:
         crs_var = _create_latlon_grid_mapping_variable(nco, crs, name)
     elif crs.projected:

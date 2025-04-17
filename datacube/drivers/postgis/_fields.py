@@ -142,7 +142,7 @@ class NativeField(PgField):
                  join_clause: ColumnExpressionArgument | None = None,
                  alchemy_table: FromClause | None = None,
                  # Should this be selected by default when selecting all fields?
-                 affects_row_selection: bool = False):
+                 affects_row_selection: bool = False) -> None:
         super().__init__(name, description, alchemy_column, indexed=False, alchemy_table=alchemy_table)
         self._expression = alchemy_expression
         self.affects_row_selection = affects_row_selection
@@ -247,7 +247,8 @@ class SimpleDocField(PgDocField):
     A field with a single value (eg. String, int) calculated as an offset inside a (jsonb) document.
     """
 
-    def __init__(self, name, description, alchemy_column, indexed, offset=None, selection='first'):
+    def __init__(self, name: str, description: str, alchemy_column, indexed: bool,
+                 offset=None, selection: str = 'first') -> None:
         super().__init__(name, description, alchemy_column, indexed)
         self.offset = offset
         if selection not in SELECTION_TYPES:
@@ -398,7 +399,8 @@ class RangeDocField(PgDocField):
     """
     FIELD_CLASS = SimpleDocField
 
-    def __init__(self, name, description, alchemy_column, indexed, min_offset=None, max_offset=None):
+    def __init__(self, name: str, description: str, alchemy_column, indexed: bool,
+                 min_offset=None, max_offset=None) -> None:
         super().__init__(name, description, alchemy_column, indexed)
         self.lower = self.FIELD_CLASS(
             name + '_lower',
@@ -437,7 +439,7 @@ class RangeDocField(PgDocField):
     can_extract = True
 
     @override
-    def extract(self, document):
+    def extract(self, document) -> Range | None:
         min_val = self.lower.extract(document)
         max_val = self.greater.extract(document)
         if not min_val and not max_val:
@@ -591,7 +593,7 @@ class PgExpression(Expression):
 
 
 class ValueBetweenExpression(PgExpression):
-    def __init__(self, field, low_value, high_value):
+    def __init__(self, field, low_value, high_value) -> None:
         super().__init__(field)
         self.low_value = low_value
         self.high_value = high_value
@@ -632,7 +634,7 @@ class RangeContainsExpression(PgExpression):
 
 
 class EqualsExpression(PgExpression):
-    def __init__(self, field, value):
+    def __init__(self, field, value) -> None:
         super().__init__(field)
         self.value = value
 
@@ -694,7 +696,7 @@ def parse_fields(doc, table_column):
     # No later field should have overridden string
     assert type_map['string'] == SimpleDocField
 
-    def _get_field(name, descriptor, column):
+    def _get_field(name: str, descriptor: dict, column) -> PgField:
         """
         :type name: str
         :type descriptor: dict

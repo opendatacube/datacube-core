@@ -207,7 +207,7 @@ def is_doc_geo(doc: dict[str, Any], check_eo3: bool = True) -> bool:
 def prep_eo3(doc: dict[str, Any],
              auto_skip: bool = False,
              resolution: float | None = None,
-             remap_lineage=True) -> dict[str, Any]:
+             remap_lineage: bool = True) -> dict[str, Any]:
     """ Modify spatial and lineage sections of eo3 metadata
 
     Should be idempotent:  prep_eo3(doc, **kwargs) == prep_eo3(prep_eo3(doc, **kwargs), **kwargs)
@@ -239,7 +239,7 @@ def prep_eo3(doc: dict[str, Any],
             # Is already in pseudo-embedded rewritten form - keep as is.
             doc['lineage'] = lineage
         else:
-            def lineage_remap(name, uuids) -> dict[str, Any]:
+            def lineage_remap(name: str, uuids) -> dict[str, Any]:
                 """ Turn name, [uuid] -> {name: {id: uuid}}
                 """
                 if len(uuids) == 0:

@@ -11,13 +11,13 @@ from datacube.model.lineage import LineageRelations, LineageIDPair
 from datacube.utils import read_documents
 
 
-def test_directions():
+def test_directions() -> None:
     assert LineageDirection.SOURCES != LineageDirection.DERIVED
     assert LineageDirection.DERIVED == LineageDirection.SOURCES.opposite()
     assert LineageDirection.SOURCES == LineageDirection.DERIVED.opposite()
 
 
-def test_ltree_clsmethods(data_folder):
+def test_ltree_clsmethods(data_folder) -> None:
     root = random_uuid()
     # Minimal tree - root node only
     minimal = LineageTree.from_data(dsid=root)
@@ -108,7 +108,7 @@ def src_lineage_tree(src_tree_ids):
     )
 
 
-def test_lineage_serialisation(src_lineage_tree, src_tree_ids):
+def test_lineage_serialisation(src_lineage_tree, src_tree_ids) -> None:
     ids = src_tree_ids
     serialised = src_lineage_tree.serialise()
     assert serialised == {
@@ -470,13 +470,13 @@ def src_lineage_tree_with_bad_diamond(big_src_tree_ids):
     )
 
 
-def test_child_datasets(big_src_lineage_tree, big_src_tree_ids):
+def test_child_datasets(big_src_lineage_tree, big_src_tree_ids) -> None:
     cds = big_src_lineage_tree.child_datasets()
     for dsid in big_src_tree_ids.values():
         assert dsid == big_src_lineage_tree.dataset_id or dsid in cds
 
 
-def test_lin_rels_lin_tree_conversions(big_src_lineage_tree, big_src_tree_ids):
+def test_lin_rels_lin_tree_conversions(big_src_lineage_tree, big_src_tree_ids) -> None:
     # Create LRS from LT
     rels1 = LineageRelations(tree=big_src_lineage_tree)
     # Extract LT from LRS
@@ -494,7 +494,7 @@ def test_lin_rels_lin_tree_conversions(big_src_lineage_tree, big_src_tree_ids):
         assert rel in rels1.relations
 
 
-def test_detect_cyclic_deps(big_src_lineage_tree, big_src_tree_ids):
+def test_detect_cyclic_deps(big_src_lineage_tree, big_src_tree_ids) -> None:
     # Confirm trivial cyclic dependencies are detected.
     repeated_uuid = random_uuid()
     looped_tree = LineageTree(
@@ -525,7 +525,7 @@ def test_detect_cyclic_deps(big_src_lineage_tree, big_src_tree_ids):
     assert "LineageTrees must be acyclic" in str(e.value)
 
 
-def test_subtree(big_src_lineage_tree, big_src_tree_ids, src_lineage_tree, src_tree_ids):
+def test_subtree(big_src_lineage_tree, big_src_tree_ids, src_lineage_tree, src_tree_ids) -> None:
     sub = big_src_lineage_tree.find_subtree(big_src_tree_ids["root"])
     assert sub == big_src_lineage_tree
 
@@ -540,7 +540,7 @@ def test_subtree(big_src_lineage_tree, big_src_tree_ids, src_lineage_tree, src_t
     assert sub.children is None
 
 
-def test_good_consistency_check(big_src_lineage_tree, src_lineage_tree, big_src_tree_ids):
+def test_good_consistency_check(big_src_lineage_tree, src_lineage_tree, big_src_tree_ids) -> None:
     rels1 = LineageRelations(tree=src_lineage_tree)
     rels2 = LineageRelations(tree=big_src_lineage_tree)
     diff = rels1.relations_diff(rels2)
@@ -554,7 +554,7 @@ def test_good_consistency_check(big_src_lineage_tree, src_lineage_tree, big_src_
     assert LineageIDPair(derived_id=src_lineage_tree.dataset_id, source_id=big_src_tree_ids["ard1"]) in diff[0]
 
 
-def test_bad_diamond(src_lineage_tree_with_bad_diamond, big_src_tree_ids):
+def test_bad_diamond(src_lineage_tree_with_bad_diamond, big_src_tree_ids) -> None:
     # Test detection of trees that have a diamond relationship in which both paths are extended.
     # E.g. If A->B->C->D  and A->E->C->D, the C->D relationship should only be recorded
     # under one branch (B or A) and the other occurrence of C should have no children recorded.
@@ -562,7 +562,7 @@ def test_bad_diamond(src_lineage_tree_with_bad_diamond, big_src_tree_ids):
         LineageRelations(tree=src_lineage_tree_with_bad_diamond)
 
 
-def test_home_mismatch(big_src_lineage_tree):
+def test_home_mismatch(big_src_lineage_tree) -> None:
     tree = big_src_lineage_tree
     tree.children["ard"][0].children["atmos_corr"][0].home = "bungalow"
     tree.children["ard"][1].children["atmos_corr"][0].home = "apartment"
@@ -570,7 +570,7 @@ def test_home_mismatch(big_src_lineage_tree):
         LineageRelations(tree=tree)
 
 
-def test_classifier_mismatch(big_src_lineage_tree, classifier_mismatch):
+def test_classifier_mismatch(big_src_lineage_tree, classifier_mismatch) -> None:
     rels1 = LineageRelations(tree=big_src_lineage_tree)
     rels2 = LineageRelations(tree=classifier_mismatch)
     with pytest.raises(
@@ -579,26 +579,26 @@ def test_classifier_mismatch(big_src_lineage_tree, classifier_mismatch):
         rels1.merge(rels2)
 
 
-def test_classifier_update(big_src_lineage_tree, classifier_mismatch):
+def test_classifier_update(big_src_lineage_tree, classifier_mismatch) -> None:
     rels1 = LineageRelations(tree=big_src_lineage_tree)
     rels2 = LineageRelations(tree=classifier_mismatch)
     diffs = rels1.relations_diff(existing_relations=rels2, allow_updates=True)
     assert len(diffs[1]) > 0
 
 
-def test_home_update(src_lineage_tree, src_lineage_tree_diffhome):
+def test_home_update(src_lineage_tree, src_lineage_tree_diffhome) -> None:
     rels1 = LineageRelations(tree=src_lineage_tree)
     rels2 = LineageRelations(tree=src_lineage_tree_diffhome)
     diffs = rels1.relations_diff(existing_relations=rels2, allow_updates=True)
     assert len(diffs[3]) > 0
 
 
-def test_mixed_dirs(mixed_dir_lineage_tree):
+def test_mixed_dirs(mixed_dir_lineage_tree) -> None:
     with pytest.raises(InconsistentLineageException, match="Tree contains both derived and source nodes"):
         LineageRelations(tree=mixed_dir_lineage_tree)
 
 
-def test_merge_tree_limited_depth(big_src_lineage_tree, big_src_tree_ids):
+def test_merge_tree_limited_depth(big_src_lineage_tree, big_src_tree_ids) -> None:
     ids = big_src_tree_ids
     rels = LineageRelations(tree=big_src_lineage_tree, max_depth=1)
     assert ids["root"] in rels.dataset_ids

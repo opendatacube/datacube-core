@@ -21,11 +21,11 @@ from datacube.utils.changes import get_doc_changes
 from datacube.model import LineageDirection
 from .eo3 import prep_eo3, is_doc_eo3, is_doc_geo
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class ProductRule:
-    def __init__(self, product: Product, signature: Mapping[str, Any]):
+    def __init__(self, product: Product, signature: Mapping[str, Any]) -> None:
         self.product = product
         self.signature = signature
 
@@ -134,7 +134,7 @@ def check_consistent(a: Mapping[str, Any], b: Mapping[str, Any]) -> tuple[bool, 
     if len(diffs) == 0:
         return True, None
 
-    def render_diff(offset, a, b):
+    def render_diff(offset, a, b) -> str:
         offset = '.'.join(map(str, offset))
         return f'{offset}: {a!r}!={b!r}'
 
@@ -377,7 +377,7 @@ class Doc2Dataset:
                  verify_lineage: bool = True,
                  skip_lineage: bool = False,
                  eo3: bool | str = 'auto',
-                 home_index: str | None = None):
+                 home_index: str | None = None) -> None:
         if not index.supports_lineage:
             skip_lineage = True
             verify_lineage = False

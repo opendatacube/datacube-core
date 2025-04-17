@@ -20,11 +20,11 @@ from datacube.ui.click import cli, print_help_msg, exit_on_empty_file
 from datacube.utils import read_documents, InvalidDocException
 from datacube.utils.serialise import SafeDatacubeDumper
 
-_LOG = logging.getLogger('datacube-product')
+_LOG: logging.Logger = logging.getLogger('datacube-product')
 
 
 @cli.group(name='product', help='Product commands')
-def product_cli():
+def product_cli() -> None:
     pass
 
 
@@ -43,7 +43,7 @@ def add_products(index: Index, allow_exclusive_lock: bool, files: list) -> None:
         print_help_msg(add_products)
         sys.exit(1)
 
-    def on_ctrlc(sig, frame):
+    def on_ctrlc(sig, frame) -> None:
         echo('''Can not abort `product add` without leaving database in bad state.
 
 This operation requires constructing a bunch of indexes and this takes time, the
@@ -76,7 +76,7 @@ bigger your database the longer it will take. Just wait a bit.''')
               help='Check if everything is ok')
 @click.argument('files', type=str, nargs=-1)
 @ui.pass_index()
-def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: list):
+def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: list) -> None:
     """
     Update existing products.
 
@@ -136,7 +136,7 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
               help='Check if everything is ok')
 @click.argument('product_names', type=str, nargs=-1)
 @ui.pass_index()
-def delete_products(index: Index, force: bool, dry_run: bool, product_names: list):
+def delete_products(index: Index, force: bool, dry_run: bool, product_names: list) -> None:
     """
     Delete products.
 
@@ -168,7 +168,7 @@ def delete_products(index: Index, force: bool, dry_run: bool, product_names: lis
     click.echo('Completed product deletion.')
 
 
-def _write_csv(products):
+def _write_csv(products) -> None:
     product_dicts = [prod.to_dict() for prod in products]
     writer = csv.DictWriter(sys.stdout, ['id', 'name', 'description',
                                          'ancillary_quality', 'latgqa_cep90', 'product_type',
@@ -180,7 +180,7 @@ def _write_csv(products):
     writer.writerows(product_dicts)
 
 
-def _write_yaml(products):
+def _write_yaml(products: list):
     """
     Dump yaml data with support for OrderedDicts.
 
@@ -193,7 +193,7 @@ def _write_yaml(products):
     return yaml.dump_all(product_dicts, sys.stdout, Dumper=SafeDatacubeDumper, default_flow_style=False, indent=4)
 
 
-def _write_tab(products):
+def _write_tab(products: list) -> None:
     df = pd.DataFrame(prod.to_dict() for prod in products)
 
     if df.empty:
@@ -211,7 +211,7 @@ def _write_tab(products):
     echo(df.to_string(columns=output_columns, justify='left', index=False))
 
 
-def _default_lister(products):
+def _default_lister(products) -> None:
     products = list(products)
     if len(products) == 0:
         return
@@ -235,7 +235,7 @@ LIST_OUTPUT_WRITERS = {
 @click.option('-f', 'output_format', help='Output format',
               type=click.Choice(list(LIST_OUTPUT_WRITERS)), default='default', show_default=True)
 @ui.pass_datacube()
-def list_products(dc, output_format):
+def list_products(dc, output_format) -> None:
     """
     List products that are defined in the generic index.
     """
@@ -251,7 +251,7 @@ def list_products(dc, output_format):
               type=click.Choice(['yaml', 'json']), default='yaml', show_default=True)
 @click.argument('product_name', nargs=-1)
 @ui.pass_datacube()
-def show_product(dc, product_name, output_format):
+def show_product(dc, product_name: str, output_format: str) -> None:
     """
     Show details about a product in the generic index.
     """

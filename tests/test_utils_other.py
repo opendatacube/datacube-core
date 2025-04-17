@@ -38,7 +38,7 @@ from datacube.utils.io import check_write_path
 from datacube.testutils import mk_sample_product, suppress_deprecations
 
 
-def test_stats_dates():
+def test_stats_dates() -> None:
     # Winter for 1990
     winter_1990 = list(date_sequence(start=to_datetime('1990-06-01'), end=to_datetime('1990-09-01'), step_size='3m',
                                      stats_duration='3m'))
@@ -84,7 +84,7 @@ def test_stats_dates():
     # I want the average over 5 years
 
 
-def test_uri_to_local_path():
+def test_uri_to_local_path() -> None:
     if os.name == 'nt':
         assert 'C:\\tmp\\test.tmp' == str(uri_to_local_path('file:///C:/tmp/test.tmp'))
         assert '\\\\remote\\path\\file.txt' == str(uri_to_local_path('file://remote/path/file.txt'))
@@ -108,7 +108,7 @@ def test_uri_to_local_path():
     "wasbs://foo",
     "/vsizip//vsicurl/https://host.tld/some/path",
 ])
-def test_uri_resolve(base):
+def test_uri_resolve(base) -> None:
     abs_path = '/abs/path/to/something'
     some_uri = 'http://example.com/file.txt'
 
@@ -124,7 +124,7 @@ def test_uri_resolve(base):
         assert uri_resolve(base + '/some/dir/file.txt', 'relative/path') == base + '/some/dir/relative/path'
 
 
-def test_pick_uri():
+def test_pick_uri() -> None:
     f, s, h = ('file://a', 's3://b', 'http://c')
 
     with suppress_deprecations():
@@ -147,7 +147,7 @@ def test_pick_uri():
 
 
 @given(integers(min_value=10, max_value=30))
-def test_gen_pass(n_bytes):
+def test_gen_pass(n_bytes) -> None:
     password1 = gen_password(n_bytes)
     password2 = gen_password(n_bytes)
     assert len(password1) >= n_bytes
@@ -156,7 +156,7 @@ def test_gen_pass(n_bytes):
 
 
 @given(text(alphabet=string.digits + string.ascii_letters + ' ,:.![]?', max_size=20))
-def test_write_user_secret_file(txt):
+def test_write_user_secret_file(txt) -> None:
     fname = ".tst-datacube-uefvwr4cfkkl0ijk.txt"
 
     write_user_secret_file(txt, fname)
@@ -166,7 +166,7 @@ def test_write_user_secret_file(txt):
     assert slurp(fname) is None
 
 
-def test_testutils_mk_sample():
+def test_testutils_mk_sample() -> None:
     pp = mk_sample_product('tt', measurements=[('aa', 'int16', -999),
                                                ('bb', 'float32', np.nan)])
     assert set(pp.measurements) == {'aa', 'bb'}
@@ -181,7 +181,7 @@ def test_testutils_mk_sample():
         mk_sample_product('tt', measurements=[None])
 
 
-def test_testutils_write_files():
+def test_testutils_write_files() -> None:
     from datacube.testutils import write_files, assert_file_structure
 
     files = {'a.txt': 'string',
@@ -204,7 +204,7 @@ def test_testutils_write_files():
         write_files({'tt': 3})
 
 
-def test_part_uri():
+def test_part_uri() -> None:
     base = 'file:///foo.txt'
 
     for i in range(10):
@@ -216,7 +216,7 @@ def test_part_uri():
     assert get_part_from_uri('file:///f.txt#part=111') == 111
 
 
-def test_xr_apply():
+def test_xr_apply() -> None:
     src = xr.DataArray(np.asarray([1, 2, 3], dtype='uint8'), dims=['time'])
     dst = xr_apply(src, lambda _, v: v, dtype='float32')
 
@@ -235,7 +235,7 @@ def test_xr_apply():
     assert dst.values.tolist() == [0 + 1, 1 + 2, 2 + 3]
 
 
-def test_sorted_items():
+def test_sorted_items() -> None:
     aa = dict(c=1, b={}, a=[])
 
     assert ''.join(k for k, _ in sorted_items(aa)) == 'abc'
@@ -248,8 +248,8 @@ def test_sorted_items():
     assert sorted_items(None) == []
 
 
-def test_default_base_dir(monkeypatch):
-    def set_pwd(p):
+def test_default_base_dir(monkeypatch) -> None:
+    def set_pwd(p) -> None:
         if p is None:
             monkeypatch.delenv('PWD')
         else:
@@ -286,7 +286,7 @@ def test_default_base_dir(monkeypatch):
     # - make sure that returned path is the same as symlink and different from cwd
 
 
-def test_time_info():
+def test_time_info() -> None:
     from datacube.model.utils import time_info
     from datetime import datetime
 
@@ -305,7 +305,7 @@ def test_time_info():
     assert len(ee['extent']) == 4
 
 
-def test_normalise_path():
+def test_normalise_path() -> None:
     cwd = Path('.').resolve()
     assert normalise_path('.').resolve() == cwd
 
@@ -323,7 +323,7 @@ def test_normalise_path():
         normalise_path(p, 'not/absolute/path')
 
 
-def test_testutils_testimage():
+def test_testutils_testimage() -> None:
     from datacube.testutils import mk_test_image, split_test_image
 
     for dtype in ('uint16', 'uint32', 'int32', 'float32'):
@@ -338,7 +338,7 @@ def test_testutils_testimage():
         assert (yy[63, :] == 63).all()
 
 
-def test_testutils_gtif(tmpdir):
+def test_testutils_gtif(tmpdir) -> None:
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff, rio_slurp
 
@@ -411,7 +411,7 @@ def test_testutils_gtif(tmpdir):
         write_gtiff(fname, np.zeros((3, 4, 5, 6)))
 
 
-def test_testutils_geobox():
+def test_testutils_geobox() -> None:
     from datacube.testutils.io import dc_crs_from_rio, rio_geobox
     from rasterio.crs import CRS
     from affine import Affine
@@ -469,13 +469,13 @@ def test_testutils_geobox():
     ("file+gzip://host.name.com/path/file.txt", True),
     ("bongo:host.name.com/path/file.txt", False),
 ])
-def test_is_url(test_input, expected):
+def test_is_url(test_input, expected) -> None:
     assert is_url(test_input) == expected
     if expected:
         assert as_url(test_input) is test_input
 
 
-def test_valid_mask():
+def test_valid_mask() -> None:
     xx = np.zeros((4, 8), dtype='float32')
     mm = valid_mask(xx, 0)
     assert mm.dtype == 'bool'
@@ -524,7 +524,7 @@ def test_valid_mask():
     assert nn.sum() == 1
 
 
-def test_num2numpy():
+def test_num2numpy() -> None:
     assert num2numpy(None, 'int8') is None
     assert num2numpy(-1, 'int8').dtype == np.dtype('int8')
     assert num2numpy(-1, 'int8').dtype == np.int8(-1)
@@ -551,7 +551,7 @@ def test_num2numpy():
     assert num2numpy(3.3, np.float64).dtype == np.dtype('float64')
 
 
-def test_utils_math():
+def test_utils_math() -> None:
     xx = xr.DataArray(np.zeros((3, 4)),
                       name='xx',
                       dims=('y', 'x'),
@@ -568,7 +568,7 @@ def test_utils_math():
     assert ds.xx.data.shape == (1, 3, 4)
 
 
-def test_check_write_path(tmpdir):
+def test_check_write_path(tmpdir) -> None:
     tmpdir = Path(str(tmpdir))
     some_path = tmpdir/"_should_not_exist-5125177.txt"
     assert not some_path.exists()

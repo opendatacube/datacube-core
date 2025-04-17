@@ -18,7 +18,7 @@ from datacube.testutils.geom import AlbersGS
 from datacube.testutils import mk_sample_dataset, suppress_deprecations
 
 
-def test_grouping_datasets():
+def test_grouping_datasets() -> None:
     def group_func(d):
         return d.time
     dimension = 'time'
@@ -45,7 +45,7 @@ def test_grouping_datasets():
     assert grouped.loc['2016-01-01':'2016-01-15']
 
 
-def test_group_datasets_by_time():
+def test_group_datasets_by_time() -> None:
     bands = [dict(name='a')]
     # Same time instant but one explicitly marked as UTC
     ds1 = mk_sample_dataset(bands, timestamp="2019-01-01T23:24:00Z")
@@ -62,7 +62,7 @@ def test_group_datasets_by_time():
     assert len(xx.data[1]) == 1
 
 
-def test_grouped_datasets_should_be_in_consistent_order():
+def test_grouped_datasets_should_be_in_consistent_order() -> None:
     datasets = [
         {'time': datetime.datetime(2016, 1, 1, 0, 1), 'value': 'foo'},
         {'time': datetime.datetime(2016, 1, 1, 0, 2), 'value': 'flim'},
@@ -92,7 +92,7 @@ def _group_datasets_by_date(datasets):
     return Datacube.group_datasets(datasets, group_by)
 
 
-def test_dask_chunks():
+def test_dask_chunks() -> None:
     coords = {'time': np.arange(10)}
 
     sources = xr.DataArray(coords['time'],
@@ -116,7 +116,7 @@ def test_dask_chunks():
         _calculate_chunk_sizes(sources, geobox, {'zz': 1})
 
 
-def test_index_validation():
+def test_index_validation() -> None:
     index = MagicMock()
     with pytest.raises(ValueError) as e:
         Datacube(index=index, config=["/a/path", "/a/nother/path"], env="prod", app="this_is_me", raw_config="{}")
@@ -124,7 +124,7 @@ def test_index_validation():
     assert "config,raw_config,app,env" in estr
 
 
-def test_output_geobox():
+def test_output_geobox() -> None:
     from odc.geo.crs import CRS as ODCGeoCRS  # noqa: N811
     from odc.geo.geobox import GeoBox as ODCGeoGeoBox
     with suppress_deprecations():

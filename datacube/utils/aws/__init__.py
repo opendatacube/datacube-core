@@ -62,7 +62,7 @@ def s3_url_parse(url: str) -> tuple[str, str]:
     return uu.netloc, uu.path.lstrip('/')
 
 
-def s3_fmt_range(r: ByteRange | None):
+def s3_fmt_range(r: ByteRange | None) -> str | None:
     """ None -> None
         (in, out) -> "bytes={in}-{out-1}"
     """

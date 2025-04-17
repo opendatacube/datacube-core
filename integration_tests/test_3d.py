@@ -92,7 +92,7 @@ GEDI_PRODUCT_IDS = [
 # Product IDs must be in chronological order
 
 
-def custom_dumb_fuser(dst, src):
+def custom_dumb_fuser(dst, src) -> None:
     dst[:] = src[:]
 
 
@@ -230,7 +230,7 @@ def dataset_types(product_with_spectral_map, request):
 
 
 @pytest.mark.usefixtures("default_metadata_type")
-def test_missing_extra_dimensions(clirunner, invalid_dataset_type_paths):
+def test_missing_extra_dimensions(clirunner, invalid_dataset_type_paths) -> None:
     """Test error on invalid product definition."""
     for expected_msg, path in invalid_dataset_type_paths.items():
         with pytest.raises(ValueError) as exc_info:
@@ -240,7 +240,7 @@ def test_missing_extra_dimensions(clirunner, invalid_dataset_type_paths):
 
 @pytest.mark.usefixtures("default_metadata_type")
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_indexing(clirunner, index, product_def):
+def test_indexing(clirunner, index, product_def) -> None:
     """Test indexing features for 2D and 3D products.
 
     A few no-op indexing commands are tested as well as a simple load with shape
@@ -303,7 +303,7 @@ def test_indexing(clirunner, index, product_def):
 
 @pytest.mark.usefixtures("default_metadata_type")
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_indexing_with_spectral_map(clirunner, index, dataset_types):
+def test_indexing_with_spectral_map(clirunner, index, dataset_types) -> None:
     """Test indexing features with spectral map."""
     product_id = GEDI_PRODUCT_IDS[0]
     product_def = GEDI_PRODUCTS["3D"]
@@ -324,7 +324,7 @@ def test_indexing_with_spectral_map(clirunner, index, dataset_types):
 
 @pytest.mark.usefixtures("default_metadata_type")
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_end_to_end_multitime(clirunner, index, product_def, original_data):
+def test_end_to_end_multitime(clirunner, index, product_def, original_data) -> None:
     """Test simple indexing but for multiple measurements and wavelengths."""
     dc = Datacube(index=index)
 
@@ -354,7 +354,7 @@ def test_end_to_end_multitime(clirunner, index, product_def, original_data):
             check_open_with_dc_simple(dc, product_def, GEDI_PRODUCT_IDS, measurement)
 
 
-def check_loaded_vs_original(data, orig, product_def):
+def check_loaded_vs_original(data, orig, product_def) -> None:
     """Check that the `data` against the original data from disk."""
     data_t = data.isel(time=0)  # Only 1 time slice for now
     if product_def.wavelengths:
@@ -408,7 +408,7 @@ def load_with_dc(
     return data
 
 
-def check_open_with_dc_simple(dc, product_def, product_ids, measurement):
+def check_open_with_dc_simple(dc, product_def, product_ids, measurement) -> None:
     """Check data can be loaded and has the right shape.
 
     Only the first of `product_ids` is tested. The actual contents of the loaded
@@ -429,7 +429,7 @@ def check_open_with_dc_simple(dc, product_def, product_ids, measurement):
 
 def check_open_with_dc_contents(
     dc, product_def, product_ids, measurement, original_data
-):
+) -> None:
     """Check simple and dask loads.
 
     Simple load is checked against the original file, loaded from disk. Lazy
@@ -478,12 +478,12 @@ def dataarray_has_valid_data(da):
     return da.size and not (da.values == da.nodata).all()
 
 
-def check_open_with_grid_workflow(index):
+def check_open_with_grid_workflow(index) -> None:
     """Not implemented"""
     pass
 
 
-def check_load_via_dss(dc, product_def, product_ids, measurement, original_data):
+def check_load_via_dss(dc, product_def, product_ids, measurement, original_data) -> None:
     """Check dataset can be searched and loaded, and has the right shape.
 
     Only the first of `product_ids` is tested. The actual contents of the loaded

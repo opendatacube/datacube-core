@@ -12,7 +12,7 @@ DatasourceFactory = Callable[[BandInfo], DataSource]  # pylint: disable=invalid-
 
 
 class ReaderDriverCache:
-    def __init__(self, group: str):
+    def __init__(self, group: str) -> None:
         self._drivers = load_drivers(group)
 
         lookup = {}

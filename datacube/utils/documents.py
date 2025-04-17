@@ -15,10 +15,10 @@ from collections import OrderedDict
 from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlparse
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 from typing import Any
 from typing_extensions import override
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from copy import deepcopy
 from uuid import UUID
 
@@ -39,12 +39,12 @@ JsonAtom = None | bool | str | float | int
 JsonLike = JsonAtom | list["JsonLike"] | dict[str, "JsonLike"]
 JsonDict = dict[str, JsonLike]
 
-PY35 = sys.version_info <= (3, 6)
-_LOG = logging.getLogger(__name__)
+PY35: bool = sys.version_info <= (3, 6)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 @contextmanager
-def _open_from_s3(url):
+def _open_from_s3(url: str):
     o = urlparse(url)
     if o.scheme != 's3':
         raise RuntimeError("Abort abort I don't know how to open non s3 urls")
@@ -53,7 +53,7 @@ def _open_from_s3(url):
     yield s3_open(url)
 
 
-def _open_with_urllib(url):
+def _open_with_urllib(url: str | Request):
     return urlopen(url)
 
 
@@ -66,7 +66,7 @@ _PROTOCOL_OPENERS = {
 }
 
 
-def load_from_yaml(handle, parse_dates=False):
+def load_from_yaml(handle, parse_dates: bool = False) -> Iterator:
     loader = SafeLoader if parse_dates else NoDatesSafeLoader
     yield from yaml.load_all(handle, Loader=loader)
 
@@ -127,7 +127,7 @@ def load_documents(path):
             yield from parser(fh)
 
 
-def read_documents(*paths, uri=False):
+def read_documents(*paths, uri: bool = False):
     """
     Read and parse documents from the filesystem or remote URLs (yaml or json).
 
@@ -175,7 +175,7 @@ def read_documents(*paths, uri=False):
             raise InvalidDocException(f'Failed to load {path}: {e}') from None
 
 
-def netcdf_extract_string(chars):
+def netcdf_extract_string(chars) -> str:
     """
     Convert netcdf S|U chars to Unicode string.
     """
@@ -233,12 +233,12 @@ def validate_document(document, schema, schema_folder=None):
 
 _DOCUMENT_EXTENSIONS = ('.yaml', '.yml', '.json', '.nc')
 _COMPRESSION_EXTENSIONS = ('', '.gz')
-_ALL_SUPPORTED_EXTENSIONS = tuple(doc_type + compression_type
-                                  for doc_type in _DOCUMENT_EXTENSIONS
-                                  for compression_type in _COMPRESSION_EXTENSIONS)
+_ALL_SUPPORTED_EXTENSIONS: tuple[str, ...] = tuple(doc_type + compression_type
+                                                   for doc_type in _DOCUMENT_EXTENSIONS
+                                                   for compression_type in _COMPRESSION_EXTENSIONS)
 
 
-def is_supported_document_type(path):
+def is_supported_document_type(path) -> bool:
     """
     Does a document path look like a supported type?
 
@@ -250,7 +250,7 @@ def is_supported_document_type(path):
 
 class NoDatesSafeLoader(SafeLoader):  # pylint: disable=too-many-ancestors
     @classmethod
-    def remove_implicit_resolver(cls, tag_to_remove):
+    def remove_implicit_resolver(cls, tag_to_remove) -> None:
         """
         Removes implicit resolvers for a particular tag
 
@@ -283,7 +283,7 @@ class UnknownMetadataType(InvalidDocException):
     pass
 
 
-def get_doc_offset(offset, document, default=None):
+def get_doc_offset(offset: list[str | int], document: dict, default=None):
     """
     :type offset: list[str]
     :type document: dict
@@ -345,7 +345,7 @@ def transform_object_tree(f, o, key_transform=lambda k: k):
     return f(o)
 
 
-def metadata_subset(element, document, full_recursion=False) -> bool:
+def metadata_subset(element, document, full_recursion: bool = False) -> bool:
     """
     Recursively check if one metadata document/object is a subset of another
 
@@ -406,7 +406,7 @@ class SimpleDocNav:
 
     """
 
-    def __init__(self, doc, sources_path=None):
+    def __init__(self, doc: Mapping, sources_path=None) -> None:
         if not isinstance(doc, collections.abc.Mapping):
             raise ValueError("")
 
@@ -451,13 +451,13 @@ class SimpleDocNav:
     def location(self):
         return self._doc.get('location', None)
 
-    def without_location(self):
+    def without_location(self) -> "SimpleDocNav":
         if self.location is None:
             return self
         return SimpleDocNav(toolz.dissoc(self._doc, 'location'))
 
 
-def _set_doc_offset(offset, document, value):
+def _set_doc_offset(offset: list[str | int], document: dict, value) -> None:
     """
     :type offset: list[str]
     :type document: dict
@@ -468,7 +468,7 @@ def _set_doc_offset(offset, document, value):
 
 
 class DocReader:
-    def __init__(self, type_definition, search_fields, doc):
+    def __init__(self, type_definition, search_fields, doc) -> None:
         """
         :type system_offsets: dict[str,list[str]]
         :type doc: dict
@@ -487,7 +487,7 @@ class DocReader:
                                             for name, offset in type_definition.items()
                                             if name != 'search_fields'}
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str):
         if name in self.fields.keys():
             return self.fields[name]
         else:
@@ -496,7 +496,7 @@ class DocReader:
             )
 
     @override
-    def __setattr__(self, name, val):
+    def __setattr__(self, name: str, val) -> None:
         offset = self._system_offsets.get(name)
         if offset is None:
             raise AttributeError(
@@ -578,5 +578,5 @@ def schema_validated(schema):
     return decorate
 
 
-def _readable_offset(offset):
+def _readable_offset(offset) -> str:
     return '.'.join(map(str, offset))

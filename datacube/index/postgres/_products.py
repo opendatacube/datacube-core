@@ -2,14 +2,16 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 import datetime
 import logging
 
 from cachetools.func import lru_cache
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from typing_extensions import override
 from collections.abc import Iterable, Mapping, Sequence
 
+from datacube.drivers.postgres import PostgresDb
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
 from datacube.utils.documents import JsonDict
@@ -19,7 +21,11 @@ from datacube.utils import jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
 
-_LOG = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from datacube.index.postgres.index import Index
+
+
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class ProductResource(AbstractProductResource, IndexResourceAddIn):
@@ -27,7 +33,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
     Legacy driver product resource implementation
     """
 
-    def __init__(self, db, index):
+    def __init__(self, db: PostgresDb, index: Index) -> None:
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
         :type index: datacube.index.postgres.index.Index
@@ -35,8 +41,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         super().__init__(index)
         self._db = db
 
-        self.get_unsafe = lru_cache()(self.get_unsafe)
-        self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
+        self.get_unsafe = lru_cache()(self.get_unsafe)  # type: ignore[method-assign]
+        self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)  # type: ignore[method-assign]
 
     def __getstate__(self):
         """
@@ -51,7 +57,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         self.__init__(*state)
 
     @override
-    def add(self, product, allow_table_lock=False):
+    def add(self, product: Product, allow_table_lock: bool = False) -> Product | None:
         """
         Add a Product.
 
@@ -64,7 +70,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         :param Product product: Product to add
         :rtype: Product
         """
-        Product.validate(product.definition)
+        Product.validate(product.definition)  # type: ignore[attr-defined]
 
         existing = self.get_by_name(product.name)
         if existing:
@@ -80,6 +86,10 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
                 metadata_type = self._index.metadata_types.add(product.metadata_type,
                                                                allow_table_lock=allow_table_lock)
+                if metadata_type is None:
+                    _LOG.warning(f'Adding metadata_type {product.metadata_type.name} failed')
+                    return None
+
             with self._db_connection() as connection:
                 if connection.in_transaction and not allow_table_lock:
                     raise ValueError("allow_table_lock must be True if called inside a transaction.")
@@ -148,7 +158,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
     @override
-    def update(self, product: Product, allow_unsafe_updates=False, allow_table_lock=False):
+    def update(self, product: Product, allow_unsafe_updates: bool = False,
+               allow_table_lock: bool = False) -> Product | None:
         """
         Update a product. Unsafe changes will throw a ValueError by default.
 
@@ -222,7 +233,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         return self.get_by_name(product.name)
 
     @override
-    def update_document(self, definition, allow_unsafe_updates=False, allow_table_lock=False):
+    def update_document(self, definition, allow_unsafe_updates: bool = False, allow_table_lock: bool = False):
         """
         Update a Product using its definition
 
@@ -276,7 +287,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden
-    def get_unsafe(self, id_):  # type: ignore
+    @override
+    def get_unsafe(self, id_: int) -> Product:
         with self._db_connection() as connection:
             result = connection.get_product(id_)
         if not result:
@@ -285,7 +297,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden
-    def get_by_name_unsafe(self, name):  # type: ignore
+    @override
+    def get_by_name_unsafe(self, name: str) -> Product:
         with self._db_connection() as connection:
             result = connection.get_product_by_name(name)
         if not result:
@@ -382,7 +395,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         )
 
     @override
-    def spatial_extent(self, product, crs=None):
+    def spatial_extent(self, product: Product | str, crs=None):
         return None
 
     @override
