@@ -88,6 +88,7 @@ dev = [
     # Linting tools
     'pycodestyle',
     'pylint',
+    'ruff',
 
     # Types and type checking
     "boto3-stubs",
@@ -131,6 +132,29 @@ postgres = 'datacube.index.postgres.index:index_driver_init'
 null = 'datacube.index.null.index:index_driver_init'
 memory = 'datacube.index.memory.index:index_driver_init'
 postgis = 'datacube.index.postgis.index:index_driver_init'
+
+[tool.ruff]
+extend-exclude = ["datacube/drivers/postgis/alembic/versions"]
+src = ["datacube", "docs", "examples", "tests", "integration_tests"]
+
+[tool.ruff.lint]
+select = [
+    # "A",  # Don't shadow built-ins
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "T10", # flake8-debugger
+]
+
+[tool.ruff.lint.per-file-ignores]
+# SQLAlchemy has overloaded ==, so use that (or is_) to compare with None.
+"datacube/drivers/postgis/_api.py" = ["E711"]
+"datacube/drivers/postgis/_schema.py" = ["E711"]
+"datacube/drivers/postgres/_api.py" = ["E711"]
+"datacube/drivers/postgres/_schema.py" = ["E711"]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120
 
 [tool.setuptools.packages.find]
 exclude = ['integration_tests', 'tests', 'examples', 'docs']

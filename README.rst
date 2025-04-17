@@ -158,4 +158,3 @@ Build the python virtual environment:
     source "${pyenv}/bin/activate"
     pip install -U pip wheel cython numpy
     pip install -e '.[dev]'
-    pip install flake8 mypy pylint autoflake black

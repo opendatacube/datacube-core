@@ -132,7 +132,7 @@ def geobox_to_gridspatial(geobox: GeoBox | None
     if geobox is None:
         return {}
 
-    l, b, r, t = geobox.extent.boundingbox
+    l, b, r, t = geobox.extent.boundingbox  # noqa: E741
     return {"grid_spatial": {
         "projection": {
             "geo_ref_points": {

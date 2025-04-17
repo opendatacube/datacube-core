@@ -22,10 +22,11 @@ repos:
         hooks:
         -   id: pylint
             language_version: '3.12'  # Reqd of 2025-01-15
-    -   repo: https://github.com/pycqa/flake8
-        rev: '7.2.0'
-        hooks:
-        -   id: flake8
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: v0.11.5
+      hooks:
+      - id: ruff
+        args: [--fix, --show-fixes, --output-format, grouped]
     - repo: https://github.com/Lucas-C/pre-commit-hooks
       rev: v1.5.5
       hooks:
