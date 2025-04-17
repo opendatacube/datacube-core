@@ -29,7 +29,7 @@ def strip_all_spatial_fields_from_query(q: QueryDict) -> QueryDict:
     }
 
 
-def extract_geom_from_query(**q: QueryField | tuple) -> Geometry | None:
+def extract_geom_from_query(**q: QueryField) -> Geometry | None:
     """
     Utility method for index drivers supporting spatial indexes.
 
