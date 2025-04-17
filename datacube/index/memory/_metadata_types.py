@@ -18,12 +18,12 @@ _LOG = logging.getLogger(__name__)
 
 
 class MetadataTypeResource(AbstractMetadataTypeResource):
-    def __init__(self):
-        self.by_id = {}
-        self.by_name = {}
+    def __init__(self) -> None:
+        self.by_id: dict = {}
+        self.by_name: dict = {}
         self.next_id = 1
         for doc in default_metadata_type_docs():
-            self.add(self.from_doc(doc))
+            self.add(doc)
 
     @override
     def from_doc(self, definition: Mapping[str, Any]) -> MetadataType:
