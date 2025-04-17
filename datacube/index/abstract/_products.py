@@ -163,7 +163,7 @@ class AbstractProductResource(ABC):
                     batch.append(prod)
                     n_in_batch += 1
                     batched.add(prod.name)
-            except UnknownMetadataType as e:
+            except UnknownMetadataType:
                 skipped += 1
             except InvalidDocException as e:
                 _LOG.warning("%s: Skipped", str(e))
