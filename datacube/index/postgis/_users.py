@@ -2,21 +2,26 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 from collections.abc import Iterable
 from datacube.index.abstract import AbstractUserResource
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.drivers.postgis import PostGisDb
+from typing import TYPE_CHECKING
 from typing_extensions import override
 
 
+if TYPE_CHECKING:
+    from datacube.index.postgis.index import Index
+
+
 class UserResource(AbstractUserResource, IndexResourceAddIn):
-    def __init__(self, db: PostGisDb, index) -> None:
+    def __init__(self, db: PostGisDb, index: Index) -> None:
         """
         :type db: datacube.drivers.postgis.PostGisDb
         """
-        from datacube.index.postgres.index import Index
         self._db = db
-        self._index: Index = index
+        self._index = index
 
     @override
     def grant_role(self, role: str, *usernames: str) -> None:

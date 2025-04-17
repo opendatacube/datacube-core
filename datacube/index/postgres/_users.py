@@ -2,7 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import cast
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from typing_extensions import override
 from collections.abc import Iterable
 from datacube.index.abstract import AbstractUserResource
@@ -10,17 +11,20 @@ from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.drivers.postgres import PostgresDb
 
 
+if TYPE_CHECKING:
+    from datacube.index.postgres.index import Index
+
+
 class UserResource(AbstractUserResource, IndexResourceAddIn):
     def __init__(self,
                  db: PostgresDb,
-                 index
+                 index: Index
                 ) -> None:
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
         """
-        from datacube.index.postgres.index import Index
         self._db = db
-        self._index: Index = cast(Index, index)
+        self._index = index
 
     @override
     def grant_role(self, role: str, *usernames: str) -> None:
