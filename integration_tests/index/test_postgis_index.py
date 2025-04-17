@@ -119,8 +119,9 @@ def spatial_index_crs_sanitise_helper():
         (178.0, 25.0),
     ), crs=epsg4326)
 
+    # FIXME: assert on something for this item.
     # 4326, crossing the Prime-Meridian, wound counter-clockwise
-    am_4326_cw = polygon((
+    am_4326_cw = polygon((  # noqa: F841
         (178.0, 25.0),
         (-178.0, 25.0),
         (-178.0, 23.0),

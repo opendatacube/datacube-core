@@ -398,7 +398,7 @@ class DatasetResource(AbstractDatasetResource):
             raise ValueError(f"Unsupported query mode: {mode}")
         ids: set[DSID] = set()
         if mode == "exact":
-            test: Callable[[str], bool] = lambda l: l == uri  # noqa: E741
+            test: Callable[[str], bool] = lambda l: l == uri  # noqa: E731,E741
         else:
             test = lambda l: l.startswith(uri)  # noqa: E741,E731
         for id_, locs in self._locations.items():
