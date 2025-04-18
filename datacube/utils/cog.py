@@ -9,6 +9,7 @@ from rasterio.shutil import copy as rio_copy
 import numpy as np
 import xarray as xr
 import dask
+from dask.base import is_dask_collection
 from dask.delayed import Delayed
 from pathlib import Path
 from typing import Any
@@ -293,7 +294,7 @@ def write_cog(
     if geobox is None:
         raise ValueError("Need geo-registered array on input")
 
-    if dask.is_dask_collection(pix):
+    if is_dask_collection(pix):
         real_op = (
             _delayed_write_cog_to_mem
             if fname == ":mem:"

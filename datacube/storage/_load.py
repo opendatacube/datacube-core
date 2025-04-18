@@ -12,7 +12,8 @@ import logging
 import numbers
 from collections import OrderedDict
 import numpy as np
-from xarray.core.dataarray import DataArray as XrDataArray, DataArrayCoordinates
+from xarray.core.coordinates import DataArrayCoordinates
+from xarray.core.dataarray import DataArray as XrDataArray
 from xarray.core.dataset import Dataset as XrDataset
 from typing import (
     Any, cast

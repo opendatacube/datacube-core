@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-from odc.geo.geom import box, CRS
+from odc.geo.crs import CRS
+from odc.geo.geom import box
 
 
 def test_extract_geom():

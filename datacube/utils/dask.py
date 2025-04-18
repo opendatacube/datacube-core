@@ -12,6 +12,7 @@ import toolz
 import queue
 from dask.distributed import Client
 import dask
+from dask.delayed import delayed
 import threading
 import logging
 import os
@@ -148,15 +149,12 @@ def partition_map(n: int, func: Any, its: Iterable[Any],
     def lump_proc(dd):
         return [func(d) for d in dd]
 
-    proc = dask.delayed(lump_proc, nout=1, pure=True)
+    proc = delayed(lump_proc, nout=1, pure=True)
     data_name = _randomize('data_' + name)
     name = _randomize(name)
 
     for i, dd in enumerate(toolz.partition_all(n, its)):
-        lump = dask.delayed(dd,
-                            pure=True,
-                            traverse=False,
-                            name=data_name + str(i))
+        lump = delayed(dd, pure=True, traverse=False, name=data_name + str(i))
         yield proc(lump, dask_key_name=name + str(i))
 
 
@@ -279,8 +277,8 @@ def _save_blob_to_s3(data: bytes | str,
     return url, result
 
 
-_save_blob_to_file_delayed = dask.delayed(_save_blob_to_file, name='save-to-disk', pure=False)
-_save_blob_to_s3_delayed = dask.delayed(_save_blob_to_s3, name='save-to-s3', pure=False)
+_save_blob_to_file_delayed = delayed(_save_blob_to_file, name='save-to-disk', pure=False)
+_save_blob_to_s3_delayed = delayed(_save_blob_to_s3, name='save-to-s3', pure=False)
 
 
 def save_blob_to_file(data,

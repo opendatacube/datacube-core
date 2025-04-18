@@ -8,7 +8,8 @@ import logging
 from time import monotonic
 from cachetools.func import lru_cache
 
-from odc.geo.geom import CRS, Geometry
+from odc.geo.crs import CRS
+from odc.geo.geom import Geometry
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource, BatchStatus
 from datacube.utils.documents import JsonDict

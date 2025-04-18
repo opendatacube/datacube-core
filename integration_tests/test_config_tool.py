@@ -159,10 +159,10 @@ def test_db_init_noop(clirunner, cfg_env, ls8_eo3_product):
 def test_db_init_rebuild(clirunner, cfg_env, ls5_telem_type):
     if cfg_env._name == "datacube":
         from datacube.drivers.postgres import _dynamic
-        from datacube.drivers.postgres._core import SCHEMA_NAME
+        from datacube.drivers.postgres.sql import SCHEMA_NAME
     else:
         from datacube.drivers.postgis import _dynamic
-        from datacube.drivers.postgis._core import SCHEMA_NAME
+        from datacube.drivers.postgis.sql import SCHEMA_NAME
     # We set the field creation logging to debug, as we assert its logging output below.
     _dynamic._LOG.setLevel(logging.DEBUG)
 
