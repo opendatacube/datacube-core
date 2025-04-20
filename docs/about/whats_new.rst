@@ -13,6 +13,7 @@ Next Version
 - Add some type signatures :pull:`1785`
 - tests: use set instead of list :pull:`1792`
 - users: import right index :pull:`1793`
+- dask: assign dictionary key :pull:`1798`
 
 v1.9.3 (15th April 2025)
 ========================

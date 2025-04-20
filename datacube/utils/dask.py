@@ -10,6 +10,7 @@ from collections.abc import Iterable
 from random import randint
 import toolz
 import queue
+from dask.config import config as dask_config
 from dask.distributed import Client
 import dask
 import threading
@@ -97,11 +98,11 @@ def start_local_dask(n_workers: int = 1,
     """
 
     # if dashboard.link set to default value and running behind hub, make dashboard link go via proxy
-    if dask.config.get("distributed.dashboard.link") == '{scheme}://{host}:{port}/status':
+    if dask_config.get("distributed.dashboard.link") == '{scheme}://{host}:{port}/status':
         jup_prefix = os.environ.get('JUPYTERHUB_SERVICE_PREFIX')
         if jup_prefix is not None:
             jup_prefix = jup_prefix.rstrip('/')
-            dask.config.set({"distributed.dashboard.link": f"{jup_prefix}/proxy/{{port}}/status"})
+            dask_config["distributed.dashboard.link"] = f"{jup_prefix}/proxy/{{port}}/status"
 
     memory_limit = compute_memory_per_worker(n_workers=n_workers,
                                              memory_limit=memory_limit,
