@@ -15,6 +15,7 @@ Next Version
 - Update uv.lock with Dependabot :pull:`1790`
 - tests: use set instead of list :pull:`1792`
 - users: import right index :pull:`1793`
+- postgres: use one type for fields :pull:`1795`
 - Remove executable permission on files :pull:`1797`
 
 v1.9.3 (15th April 2025)

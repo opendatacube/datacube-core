@@ -1108,10 +1108,11 @@ class PostgresDbAPI:
             )
 
     def _setup_product_fields(self, id_, name, fields, metadata_doc,
-                              rebuild_indexes=False, rebuild_view=False, concurrently=True, delete=False):
+                              rebuild_indexes: bool = False, rebuild_view: bool = False,
+                              concurrently: bool = True, delete: bool = False) -> None:
         dataset_filter = and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == id_)
         if delete:
-            excluded_field_names = [field.name for field in fields.values()]
+            excluded_field_names = tuple(field.name for field in fields.values())
         else:
             excluded_field_names = tuple(self._get_active_field_names(fields, metadata_doc))
 
