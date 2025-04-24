@@ -104,7 +104,7 @@ class Field:
 
 class SimpleField(Field):
     def __init__(self,
-                 offset,
+                 offset: list[str | int],
                  converter,
                  type_name,
                  name='',

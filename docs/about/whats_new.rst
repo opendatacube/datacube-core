@@ -18,6 +18,7 @@ Next Version
 - postgres: use one type for fields :pull:`1795`
 - Remove executable permission on files :pull:`1797`
 - Import names from defining module :pull:`1799`
+- fields: type annotate offset parameter :pull:`1809`
 - Dependabot: make one pull request for everything :pull:`1816`
 
 v1.9.3 (15th April 2025)
