@@ -14,7 +14,6 @@ from datacube.model.lineage import LineageRelations
 def test_lineage_home_api(index):
     a_uuids = [random_uuid() for i in range(10)]
     b_uuids = [random_uuid() for i in range(10)]
-    all_uuids = a_uuids + b_uuids
     assert index.lineage.get_homes(*a_uuids) == {}
     # Test delete of non-existent entries
     assert index.lineage.clear_home(*a_uuids) == 0

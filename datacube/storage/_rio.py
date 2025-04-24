@@ -126,18 +126,12 @@ class RasterioDataSource(DataSource):
         try:
             _LOG.debug("opening %s", self.filename)
             with rasterio.open(str(self.filename), sharing=False) as src:
-                override = False
-
-                transform = src.transform
-                if transform.is_identity:
-                    override = True
-                    transform = self.get_transform(src.shape)
+                broken = src.transform.is_identity
 
                 try:
-                    crs = _rasterio_crs(src)
+                    _ = _rasterio_crs(src)
                 except ValueError:
-                    override = True
-                    crs = self.get_crs()
+                    broken = True
 
                 bandnumber = self.get_bandnumber(src)
                 band = rasterio.band(src, bandnumber)
@@ -148,7 +142,7 @@ class RasterioDataSource(DataSource):
                     locked = False
                     lock.release()
 
-                if override:
+                if broken:
                     raise RuntimeError(f'Broken/missing geospatial data was found in file "{self.filename}"')
                 yield BandDataSource(band, nodata=nodata, lock=lock)
 

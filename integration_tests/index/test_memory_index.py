@@ -80,7 +80,7 @@ def test_mem_metadatatype_resource(mem_index_fresh: Datacube):
     assert eo3.description != eo3_fresh.description
     assert eo3.definition["dataset"]["measurements"] != eo3_fresh.definition["dataset"]["measurements"]
     # Updating measurements definition is not safe
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         mem_index_fresh.index.metadata_types.update(eo3)
     # Updating descriptions is safe.
     eo3_fresh.definition["description"] = "New description"
@@ -115,7 +115,7 @@ def test_mem_product_resource(mem_index_fresh: Datacube,
     assert wo_prod.name == 'ga_ls_wo_3'
     assert mem_index_fresh.index.products.get_by_name("ga_ls_wo_3").name == "ga_ls_wo_3"
     # Attempt to add a product without a metadata type
-    with pytest.raises(InvalidDocException) as e:
+    with pytest.raises(InvalidDocException):
         ls8_prod = mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
     # Add extended eo3 metadatatype
     eo3ext = mem_index_fresh.index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
@@ -132,7 +132,7 @@ def test_mem_product_resource(mem_index_fresh: Datacube,
     assert ls8_prod.description != ls8_fresh.description
     assert ls8_prod.definition["measurements"][0]["name"] != ls8_fresh.definition["measurements"][0]["name"]
     # Updating measurements definition is not safe
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         mem_index_fresh.index.products.update(ls8_prod)
     # Updating descriptions is safe.
     ls8_fresh.definition["description"] = "New description"
@@ -403,10 +403,10 @@ def test_spatiotemporal_extent(mem_eo3_data: tuple):
     dc, ls8_id, wo_id = mem_eo3_data
     ls8 = dc.index.datasets.get(ls8_id)
     wo = dc.index.datasets.get(wo_id)
-    with pytest.raises(KeyError) as e:
+    with pytest.raises(KeyError):
         dc.index.datasets.temporal_extent(ids=[uuid4()])
 
-    with (suppress_deprecations(), pytest.raises(KeyError) as e):
+    with (suppress_deprecations(), pytest.raises(KeyError)):
         dc.index.datasets.get_product_time_bounds("orthentik_producked")  # Test of deprecated method
 
     # Test get_product_time_bounds

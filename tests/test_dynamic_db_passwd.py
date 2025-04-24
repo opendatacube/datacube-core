@@ -28,6 +28,6 @@ def test_dynamic_password():
     last_base[0] = None
     handle_dynamic_token_authentication(engine, next_token, base="password")
     with pytest.raises(OperationalError):
-        conn = engine.connect()
+        engine.connect()
     assert counter[0] == 1
     assert last_base[0] == "password"

@@ -91,7 +91,7 @@ def test_cli_dataset_subcommand(index, clirunner,
 
     # Insert datasets
     for path in eo3_dataset_paths:
-        result = clirunner(['dataset', 'add', "--ignore-lineage", path])
+        clirunner(['dataset', 'add', "--ignore-lineage", path])
 
     runner = clirunner(['dataset', 'find-duplicates'], verbose_flag=False, expect_success=False)
     assert "Error: must provide field names to match on" in runner.output
@@ -161,7 +161,7 @@ def test_read_and_update_metadata_product_dataset_command(index, clirunner,
                                                           eo3_product_paths,
                                                           eo3_dataset_paths,
                                                           eo3_dataset_update_path):
-    add = clirunner(['metadata', 'add', ext_eo3_mdt_path])
+    clirunner(['metadata', 'add', ext_eo3_mdt_path])
     rerun_add = clirunner(['metadata', 'add', ext_eo3_mdt_path])
     assert "WARNING Metadata Type" in rerun_add.output
     assert "is already in the database" in rerun_add.output
@@ -170,7 +170,7 @@ def test_read_and_update_metadata_product_dataset_command(index, clirunner,
     assert "WARNING No changes detected for metadata type" in update.output
 
     for prod_path in eo3_product_paths:
-        add = clirunner(['product', 'add', prod_path])
+        clirunner(['product', 'add', prod_path])
         rerun_add = clirunner(['product', 'add', prod_path])
         assert "WARNING Product" in rerun_add.output
         assert "is already in the database" in rerun_add.output

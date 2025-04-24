@@ -36,7 +36,6 @@ autobuild
 autoclass
 autoconf
 autodocs
-autoflake
 autofunction
 automake
 automethod
@@ -490,6 +489,7 @@ rst
 rtaib
 rtd
 rtype
+Ruff
 runtime
 rws
 sameuser

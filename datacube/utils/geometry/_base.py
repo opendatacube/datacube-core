@@ -1340,7 +1340,7 @@ def bbox_union(bbs: Iterable[BoundingBox]) -> BoundingBox:
     R = T = float('-inf')
 
     for bb in bbs:
-        l, b, r, t = bb
+        l, b, r, t = bb  # noqa: E741
         L = min(l, L)
         B = min(b, B)
         R = max(r, R)
@@ -1358,7 +1358,7 @@ def bbox_intersection(bbs: Iterable[BoundingBox]) -> BoundingBox:
     R = T = float('+inf')
 
     for bb in bbs:
-        l, b, r, t = bb
+        l, b, r, t = bb  # noqa: E741
         L = max(l, L)
         B = max(b, B)
         R = min(r, R)

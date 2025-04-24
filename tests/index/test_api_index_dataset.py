@@ -233,7 +233,7 @@ def test_index_dataset():
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
     datasets = DatasetResource(mock_db, mock_index)
-    dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
+    datasets.add(_EXAMPLE_NBAR_DATASET)
 
     ids = {d.id for d in mock_db.dataset.values()}
     assert ids == {_nbar_uuid, _ortho_uuid, _telemetry_uuid}
@@ -250,7 +250,7 @@ def test_index_dataset():
     }
 
     # Nothing ingested, because we reported the first as already ingested.
-    dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
+    datasets.add(_EXAMPLE_NBAR_DATASET)
     assert len(mock_db.dataset) == 3
     assert len(mock_db.dataset_source) == 2
 
@@ -259,12 +259,12 @@ def test_index_already_ingested_source_dataset():
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
     datasets = DatasetResource(mock_db, mock_index)
-    dataset = datasets.add(_EXAMPLE_NBAR_DATASET.sources['ortho'])
+    datasets.add(_EXAMPLE_NBAR_DATASET.sources['ortho'])
 
     assert len(mock_db.dataset) == 2
     assert len(mock_db.dataset_source) == 1
 
-    dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
+    datasets.add(_EXAMPLE_NBAR_DATASET)
     assert len(mock_db.dataset) == 3
     assert len(mock_db.dataset_source) == 2
 
@@ -273,11 +273,11 @@ def test_index_two_levels_already_ingested():
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
     datasets = DatasetResource(mock_db, mock_index)
-    dataset = datasets.add(_EXAMPLE_NBAR_DATASET.sources['ortho'].sources['satellite_telemetry_data'])
+    datasets.add(_EXAMPLE_NBAR_DATASET.sources['ortho'].sources['satellite_telemetry_data'])
 
     assert len(mock_db.dataset) == 1
     assert len(mock_db.dataset_source) == 0
 
-    dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
+    datasets.add(_EXAMPLE_NBAR_DATASET)
     assert len(mock_db.dataset) == 3
     assert len(mock_db.dataset_source) == 2

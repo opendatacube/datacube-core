@@ -1455,7 +1455,7 @@ def _make_dask_array(
             dss = tiled_dss.get(idx, None)
 
             if dss is None:
-                val3d = _mk_empty(gbt.chunk_shape(idx).xy)
+                val3d = _mk_empty(gbt.chunk_shape(idx).yx)
                 # 3D case
                 if "extra_dim" in measurement:
                     assert extra_dims is not None  # For type checker
