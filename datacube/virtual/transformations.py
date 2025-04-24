@@ -454,7 +454,7 @@ def year(time):
 
 
 def fiscal_year(time):
-    """"
+    """
     This function supports group-by financial years
     """
     def convert_to_quarters(x):
