@@ -201,7 +201,7 @@ lxml==5.3.1
     #   -r docker/constraints.in
     #   compliance-checker
     #   owslib
-mako==1.3.9
+mako==1.3.10
     # via alembic
 markdown-it-py==3.0.0
     # via rich
