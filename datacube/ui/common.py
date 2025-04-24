@@ -104,7 +104,7 @@ def ui_path_doc_stream(paths, logger=None, uri=True, raw=False):
                 for p, doc in read_documents(fname, uri=uri):
                     yield p, maybe_wrap(doc)
 
-            except InvalidDocException as e:
+            except InvalidDocException:
                 if logger is not None:
                     logger.error('Failed reading documents from %s', str(fname))
 

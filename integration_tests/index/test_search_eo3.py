@@ -486,7 +486,7 @@ def test_search_returning_eo3(index: Index,
 
     my_username = cfg_env.db_username
     if not my_username:
-        my_userename = _DEFAULT_DB_USER
+        my_username = _DEFAULT_DB_USER
 
     # Mixture of document and native fields
     results = list(index.datasets.search_returning(

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information
 #
 # Copyright (c) 2015-2025 ODC Contributors

@@ -534,7 +534,6 @@ def test_search_returning(index: Index,
     ))
     assert len(results) == 1
     id_, path_range, sat_range = results[0]
-    path_range_type = path_range.__class__
     assert id_ == pseudo_ls8_dataset.id
     # TODO: output nicer types?
     assert path_range == SQLARange(lower=Decimal('116'), upper=Decimal('116'), bounds='[]')
