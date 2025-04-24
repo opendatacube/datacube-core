@@ -119,7 +119,7 @@ def test_dask_chunks():
 def test_index_validation():
     index = MagicMock()
     with pytest.raises(ValueError) as e:
-        dc = Datacube(index=index, config=["/a/path", "/a/nother/path"], env="prod", app="this_is_me", raw_config="{}")
+        Datacube(index=index, config=["/a/path", "/a/nother/path"], env="prod", app="this_is_me", raw_config="{}")
     estr = str(e.value)
     assert "config,raw_config,app,env" in estr
 

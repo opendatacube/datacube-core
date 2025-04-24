@@ -103,7 +103,6 @@ class NameResolver:
             input_product = cast(Mapping, get('input'))
             output_crs = recipe['reproject'].get('output_crs')
             resolution = recipe['reproject'].get('resolution')
-            align = recipe['reproject'].get('align')
 
             self._assert(input_product is not None, f"no input for reproject in {recipe}")
             self._assert(output_crs is not None, f"no output_crs for reproject in {recipe}")

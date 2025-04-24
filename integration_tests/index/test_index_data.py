@@ -198,7 +198,6 @@ def test_purge_datasets_cli(index, ls8_eo3_dataset, clirunner):
 
 
 def test_purge_all_datasets_cli(index, cfg_env, ls8_eo3_dataset, clirunner):
-    product = ls8_eo3_dataset.product.id
     dsid = ls8_eo3_dataset.id
 
     # archive all datasets
@@ -314,7 +313,7 @@ def test_transactions_api_ctx_mgr_nested(index,
     ds1, err = resolver(*eo3_ls8_dataset_doc)
     ds2, err = resolver(*eo3_ls8_dataset2_doc)
     with pytest.raises(Exception) as e:
-        with index.transaction() as trans_outer:
+        with index.transaction():
             with index.transaction() as trans:
                 assert index.datasets.get(ds1.id) is None
                 index.datasets.add(ds1, False)
@@ -322,13 +321,13 @@ def test_transactions_api_ctx_mgr_nested(index,
                 raise Exception("Rollback!")
     assert "Rollback!" in str(e.value)
     assert index.datasets.get(ds1.id) is None
-    with index.transaction() as trans_outer:
+    with index.transaction():
         with index.transaction() as trans:
             assert index.datasets.get(ds1.id) is None
             index.datasets.add(ds1, False)
             assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds1.id) is not None
-    with index.transaction() as trans_outer:
+    with index.transaction():
         with index.transaction() as trans:
             index.datasets.add(ds2, False)
             assert index.datasets.get(ds2.id) is not None
