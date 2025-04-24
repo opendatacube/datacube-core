@@ -10,6 +10,8 @@ import time
 import functools
 import botocore
 import botocore.session
+from botocore.client import BaseClient
+from botocore.config import Config
 from botocore.credentials import Credentials, ReadOnlyCredentials
 from botocore.session import Session
 from urllib.request import urlopen
@@ -20,7 +22,7 @@ from typing import Optional, Any, Union, IO
 from datacube.utils.generic import thread_local_cache
 
 ByteRange = Union[slice, tuple[int, int]]       # pylint: disable=invalid-name
-MaybeS3 = Optional[botocore.client.BaseClient]  # pylint: disable=invalid-name
+MaybeS3 = Optional[BaseClient]
 
 __all__ = (
     "s3_url_parse",
@@ -205,7 +207,7 @@ def _mk_s3_client(profile: str | None = None,
                   region_name: str | None = None,
                   session: Session | None = None,
                   use_ssl: bool = True,
-                  **cfg) -> botocore.client.BaseClient:
+                  **cfg) -> BaseClient:
     """ Construct s3 client with configured region_name.
 
     :param profile    : profile name to lookup (only used if session is not supplied)
@@ -236,7 +238,7 @@ def _mk_s3_client(profile: str | None = None,
     return session.create_client('s3',
                                  use_ssl=use_ssl,
                                  **extras,
-                                 config=botocore.client.Config(**cfg))
+                                 config=Config(**cfg))
 
 
 def _aws_unsigned_check_env() -> bool:
@@ -258,7 +260,7 @@ def s3_client(profile: str | None = None,
               aws_unsigned: bool | None = None,
               use_ssl: bool = True,
               cache: bool | str = False,
-              **cfg) -> botocore.client.BaseClient:
+              **cfg) -> BaseClient:
     """ Construct s3 client with configured region_name.
 
     :param profile: profile name to lookup (only used if session is not supplied)

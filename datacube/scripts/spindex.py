@@ -7,7 +7,7 @@ import sys
 from collections.abc import Sequence
 
 import click
-import pyproj
+from pyproj.exceptions import CRSError
 from click import echo, confirm
 from odc.geo import CRS
 
@@ -46,7 +46,7 @@ def create(index: Index, update: bool, srids: Sequence[str]):
     for srid in srids:
         try:
             crs = CRS(srid)
-        except pyproj.exceptions.CRSError:
+        except CRSError:
             failed.append(srid)
             echo(f"{srid} cannot be converted to a valid CRS")
             continue
@@ -118,7 +118,7 @@ def update(index: Index, product: Sequence[str], dataset: Sequence[str], srids: 
     for srid in srids:
         try:
             crs = CRS(srid)
-        except pyproj.exceptions.CRSError:
+        except CRSError:
             echo(f"{srid} is not a valid CRS: skipping")
             cant_update.append(srid)
             continue
@@ -161,7 +161,7 @@ def drop(index: Index, force: bool, srids: Sequence[str]):
     for srid in srids:
         try:
             crs = CRS(srid)
-        except pyproj.exceptions.CRSError:
+        except CRSError:
             echo(f"{srid} is not a valid CRS: skipping")
             errors = True
             continue

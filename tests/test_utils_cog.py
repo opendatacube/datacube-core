@@ -9,7 +9,7 @@ import numpy as np
 import xarray as xr
 from types import SimpleNamespace
 from dask.delayed import Delayed
-import dask
+from dask.base import is_dask_collection
 
 from datacube.testutils import (
     mk_test_image,
@@ -132,7 +132,7 @@ def test_cog_file(tmpdir, opts):
 def test_cog_file_dask(tmpdir):
     pp = Path(str(tmpdir))
     xx, ds = gen_test_data(pp, dask=True)
-    assert dask.is_dask_collection(xx)
+    assert is_dask_collection(xx)
 
     path = pp / "cog.tif"
     with suppress_deprecations():

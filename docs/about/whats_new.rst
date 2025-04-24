@@ -17,6 +17,8 @@ Next Version
 - users: import right index :pull:`1793`
 - postgres: use one type for fields :pull:`1795`
 - Remove executable permission on files :pull:`1797`
+- Import names from defining module :pull:`1799`
+
 
 v1.9.3 (15th April 2025)
 ========================

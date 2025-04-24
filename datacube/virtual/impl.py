@@ -31,8 +31,9 @@ from datacube.model import Measurement, Product
 from datacube.model.utils import xr_apply, xr_iter, SafeDumper
 from datacube.testutils.io import native_geobox
 from odc.geo.geobox import GeoBox, GeoboxTiles, geobox_union_conservative
+from odc.geo.math import is_affine_st
 from odc.geo.warp import rio_reproject, resampling_s2rio
-from odc.geo.overlap import compute_reproject_roi, is_affine_st
+from odc.geo.overlap import compute_reproject_roi
 from odc.geo.xr import xr_coords
 from datacube.api.core import per_band_load_data_settings
 
