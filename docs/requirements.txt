@@ -109,7 +109,7 @@ imagesize==1.4.1
     # via sphinx
 importlib-metadata==8.6.1
     # via dask
-ipython==8.34.0
+ipython==8.35.0
     # via datacube (../setup.py)
 jedi==0.19.2
     # via ipython
