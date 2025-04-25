@@ -110,7 +110,7 @@ cycler==0.12.1
     # via matplotlib
 cython==3.0.12
     # via -r docker/constraints.in
-dask==2025.3.0
+dask==2025.4.1
     # via
     #   -r docker/constraints.in
     #   distributed
@@ -118,7 +118,7 @@ deprecat==2.1.3
     # via -r docker/constraints.in
 dill==0.3.9
     # via pylint
-distributed==2025.3.0
+distributed==2025.4.1
     # via -r docker/constraints.in
 docutils==0.19
     # via
