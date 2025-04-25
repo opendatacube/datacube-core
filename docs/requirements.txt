@@ -240,7 +240,7 @@ pyyaml==6.0.2
     #   datacube (../setup.py)
     #   dask
     #   distributed
-pyzmq==26.3.0
+pyzmq==26.4.0
     # via jupyter-client
 rasterio==1.4.3
     # via datacube (../setup.py)
