@@ -132,7 +132,7 @@ def spindex_for_crs(crs: CRS) -> type[SpatialIndex]:
         return spindex_for_epsg(crs_to_epsg(crs))
     except ValueError:
         # Postgis identifies CRSs by a numeric "SRID" which is equivalent to EPSG number.
-        raise ValueError(f"Cannot create a postgis spatial index for a non-EPSG-style CRS: {str(crs)}")
+        raise ValueError(f"Cannot create a postgis spatial index for a non-EPSG-style CRS: {str(crs)}") from None
 
 
 def spindex_for_record(rec: SpatialIndexRecord) -> type[SpatialIndex]:

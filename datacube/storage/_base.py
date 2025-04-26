@@ -97,7 +97,7 @@ class BandInfo:
         try:
             mp, = ds.product.lookup_measurements([band]).values()
         except KeyError:
-            raise ValueError(f'No such band: {band}')
+            raise ValueError(f'No such band: {band}') from None
 
         mm = ds.measurements.get(mp.canonical_name)
 

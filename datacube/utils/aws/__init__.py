@@ -331,7 +331,7 @@ def s3_open(url: str,
         try:
             kwargs['Range'] = s3_fmt_range(range)
         except Exception:
-            raise ValueError('Bad range passed in: ' + str(range))
+            raise ValueError('Bad range passed in: ' + str(range)) from None
 
     s3 = s3 or s3_client()
     bucket, key = s3_url_parse(url)

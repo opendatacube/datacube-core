@@ -169,7 +169,7 @@ def create_mask_value(bits_def, **flags):
             flag_value = int(flag_value)  # Might be string if coming from DB
         except ValueError:
             raise ValueError('Unknown value %s specified for flag %s' %
-                             (flag_ref, flag_name))
+                             (flag_ref, flag_name)) from None
 
         if isinstance(defn['bits'], collections.abc.Iterable):  # Multi-bit flag
             # Set mask

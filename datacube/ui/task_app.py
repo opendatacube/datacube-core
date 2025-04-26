@@ -121,7 +121,7 @@ def validate_cell_list(ctx, param, value):
             return None
         return list(_cell_list_from_file(value))
     except ValueError:
-        raise click.BadParameter('cell_index_list must be a file with lines in the form "14,-11"')
+        raise click.BadParameter('cell_index_list must be a file with lines in the form "14,-11"') from None
 
 
 def validate_cell_index(ctx, param, value):
@@ -130,7 +130,7 @@ def validate_cell_index(ctx, param, value):
             return None
         return tuple(int(i) for i in value.split(',', 2))
     except ValueError:
-        raise click.BadParameter('cell_index must be specified in the form "14,-11"')
+        raise click.BadParameter('cell_index must be specified in the form "14,-11"') from None
 
 
 def validate_year(ctx, param, value):
@@ -141,7 +141,7 @@ def validate_year(ctx, param, value):
         return years[0].start_time.to_pydatetime(warn=False), years[-1].end_time.to_pydatetime(warn=False)
     except ValueError:
         raise click.BadParameter('year must be specified as a single year (eg 1996) '
-                                 'or as an inclusive range (eg 1996-2001)')
+                                 'or as an inclusive range (eg 1996-2001)') from None
 
 
 def break_query_into_years(time_query, **kwargs):

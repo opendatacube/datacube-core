@@ -349,7 +349,7 @@ class ODCEnvironment:
         try:
             return self[item]
         except KeyError:
-            raise AttributeError(item)
+            raise AttributeError(item) from None
 
     def _handle_option(self, handler: ODCOptionHandler) -> None:
         val = handler.get_val_from_environment()

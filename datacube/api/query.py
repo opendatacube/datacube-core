@@ -222,7 +222,7 @@ def query_group_by(group_by='time', **kwargs) -> GroupBy:
     except KeyError:
         raise LookupError(
             f'No group by function for {group_by}, valid options are: {group_by_map.keys()}',
-        )
+        ) from None
 
 
 def _value_to_range(value) -> tuple[float, float]:
