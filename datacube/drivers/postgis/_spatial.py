@@ -147,7 +147,7 @@ def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> None:
             select(SpatialIndexRecord.srid).where(
                 SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:]))  # type: ignore[arg-type,attr-defined]
         )
-        for result in results:
+        for _ in results:
             # SpatialIndexRecord exists - actual index assumed to exist too.
             return
         # SpatialIndexRecord doesn't exist - create the index table...

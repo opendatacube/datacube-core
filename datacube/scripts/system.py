@@ -88,7 +88,7 @@ def check(cfg_env: ODCEnvironment):
         index = index_connect(config_env=cfg_env)
         echo(style('YES', bold=True))
         if index.url_parts.username:
-            for role, user, description in index.users.list_users():
+            for role, user, _ in index.users.list_users():
                 if user == index.url_parts.username:
                     echo('You have %s privileges.' % style(role.upper(), bold=True))
     except OperationalError as e:

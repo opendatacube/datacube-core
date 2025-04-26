@@ -14,7 +14,7 @@ test_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
 
 
 def empty(iterable):
-    for x in iterable:
+    for _ in iterable:
         return False
     return True
 
