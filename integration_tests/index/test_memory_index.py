@@ -95,7 +95,7 @@ def test_mem_metadatatype_resource(mem_index_fresh: Datacube):
     assert len(ptype_mdts) == 2
     assert eo3 not in ptype_mdts
     pfam_mdts = list(mem_index_fresh.index.metadata_types.get_with_fields(["platform", "product_family"]))
-    pfam_mdts == [eo3]
+    assert pfam_mdts == [eo3]
 
 
 def test_mem_product_resource(mem_index_fresh: Datacube,
