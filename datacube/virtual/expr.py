@@ -75,7 +75,7 @@ class FormulaEvaluator(lark.Transformer):
     from operator import eq, ne, le, ge, lt, gt            # type: ignore[misc]
     from operator import add, sub, mul, truediv, floordiv  # type: ignore[misc]
     from operator import neg, pos, inv                     # type: ignore[misc]
-    from operator import mod, pow, lshift, rshift          # type: ignore[misc]
+    from operator import mod, pow, lshift, rshift          # type: ignore[misc]  # noqa: A004
 
     float_literal = float
     int_literal = int

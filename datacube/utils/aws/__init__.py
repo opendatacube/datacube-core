@@ -318,7 +318,7 @@ def s3_client(profile: str | None = None,
 
 def s3_open(url: str,
             s3: MaybeS3 = None,
-            range: ByteRange | None = None,  # pylint: disable=redefined-builtin
+            range: ByteRange | None = None,  # pylint: disable=redefined-builtin  # noqa: A002
             **kwargs):
     """ Open whole or part of S3 object
 
@@ -370,7 +370,7 @@ def s3_head_object(url: str,
 
 def s3_fetch(url: str,
              s3: MaybeS3 = None,
-             range: ByteRange | None = None,  # pylint: disable=redefined-builtin
+             range: ByteRange | None = None,  # pylint: disable=redefined-builtin  # noqa: A002
              **kwargs) -> bytes:
     """ Read entire or part of object into memory and return as bytes
 
