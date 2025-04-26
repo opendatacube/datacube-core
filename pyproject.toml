@@ -140,6 +140,7 @@ src = ["datacube", "docs", "examples", "tests", "integration_tests"]
 [tool.ruff.lint]
 select = [
     "A",  # Don't shadow built-ins
+    "B007", # flake8-bugbear
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
     "F",  # pyflakes

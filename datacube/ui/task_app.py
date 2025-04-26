@@ -36,7 +36,7 @@ def load_config(index, app_config_file, make_config, make_tasks, *args, **kwargs
 def pickle_stream(objs, filename):
     idx = 0
     with open(filename, 'wb') as stream:
-        for idx, obj in enumerate(objs, start=1):
+        for idx, obj in enumerate(objs, start=1):  # noqa: B007
             pickle.dump(obj, stream, pickle.HIGHEST_PROTOCOL)
     return idx
 
