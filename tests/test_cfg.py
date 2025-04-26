@@ -450,7 +450,7 @@ def test_invalid_idx_driver():
         }
     })
     with pytest.raises(ConfigException) as e:
-        cfg["default"].index_driver
+        _ = cfg["default"].index_driver
     estr = str(e.value)
     assert "Unknown index driver" in estr
     assert "phillips_head" in estr

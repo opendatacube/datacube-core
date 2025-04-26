@@ -140,11 +140,22 @@ src = ["datacube", "docs", "examples", "tests", "integration_tests"]
 [tool.ruff.lint]
 select = [
     "A",  # Don't shadow built-ins
-    "B007", # flake8-bugbear
+    "B",  # flake8-bugbear
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
     "F",  # pyflakes
     "T10", # flake8-debugger
+]
+ignore = [
+    # FIXME: re-enable these rules.
+    "B004",
+    "B008",
+    "B009",
+    "B011",
+    "B022",
+    "B023",
+    "B028",
+    "B905",
 ]
 
 [tool.ruff.lint.per-file-ignores]

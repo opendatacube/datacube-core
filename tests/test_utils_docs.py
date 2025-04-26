@@ -562,7 +562,7 @@ def test_doc_reader():
 
     assert not hasattr(d, 'no_such')
     with pytest.raises(AttributeError):
-        d.no_such
+        _ = d.no_such
 
     with pytest.raises(AttributeError):
         d.no_such = 0
