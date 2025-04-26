@@ -491,7 +491,7 @@ def test_merge():
     assert merge(dict(a=1), dict(b=2)) == dict(a=1, b=2)
     assert merge(dict(a=1, b=2), dict(b=2)) == dict(a=1, b=2)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         merge(dict(a=1, b=2), dict(b=3))
 
 
