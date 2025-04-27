@@ -125,10 +125,10 @@ def test_index_validation():
 
 
 def test_output_geobox():
-    from odc.geo.crs import CRS as ODCGeoCRS
+    from odc.geo.crs import CRS as ODCGeoCRS  # noqa: N811
     from odc.geo.geobox import GeoBox as ODCGeoGeoBox
     with suppress_deprecations():
-        from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox, CRS as LegacyCRS
+        from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox, CRS as LegacyCRS  # noqa: N811
     from odc.geo.xr import xr_zeros
 
     odc_gbox = ODCGeoGeoBox.from_bbox(

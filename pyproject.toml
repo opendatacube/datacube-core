@@ -142,6 +142,7 @@ select = [
     "A",  # Don't shadow built-ins
     "B",  # flake8-bugbear
     "E",  # pycodestyle errors
+    "N",  # pep8-naming
     "W",  # pycodestyle warnings
     "F",  # pyflakes
     "T10", # flake8-debugger
@@ -156,6 +157,12 @@ ignore = [
     "B023",
     "B028",
     "B905",
+]
+
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = [
+    "A", "B", "H", "L", "M", "N", "NX", "NY", "R", "S",
+    "T", "W", "WS", "X", "XX", "XY", "YY", "Y", "Z",
 ]
 
 [tool.ruff.lint.per-file-ignores]

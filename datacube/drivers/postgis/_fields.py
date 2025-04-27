@@ -284,7 +284,7 @@ class SimpleDocField(PgDocField):
         return self.extract(ctx)
 
 
-class UnindexableValue(Exception):
+class UnindexableValue(Exception):  # noqa: N818
     pass
 
 

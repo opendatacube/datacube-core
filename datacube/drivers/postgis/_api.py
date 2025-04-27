@@ -648,7 +648,7 @@ class PostgisDbAPI:
             for f in select_fields
         )
         if geom:
-            SpatialIndex, spatialquery = self.geospatial_query(geom)
+            SpatialIndex, spatialquery = self.geospatial_query(geom)  # noqa: N806
         else:
             spatialquery = None
             SpatialIndex = None  # noqa: N806
@@ -869,7 +869,7 @@ class PostgisDbAPI:
         query = select(func.count(Dataset.id))
 
         if geom:
-            SpatialIndex, spatialquery = self.geospatial_query(geom)
+            SpatialIndex, spatialquery = self.geospatial_query(geom)  # noqa: N806
             where_expressions = and_(where_expressions, spatialquery)
             query = query.join(SpatialIndex)
 

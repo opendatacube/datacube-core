@@ -224,7 +224,7 @@ class LineageTree:
         return child_dsids
 
 
-class InconsistentLineageException(Exception):
+class InconsistentLineageException(Exception):  # noqa: N818
     """
     Raised when a method would result in an inconsistent/invalid LineageTree or LineageRelations collection.
     """
