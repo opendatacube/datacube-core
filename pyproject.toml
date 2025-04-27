@@ -143,6 +143,7 @@ select = [
     "B",  # flake8-bugbear
     "E",  # pycodestyle errors
     "N",  # pep8-naming
+    "RUF", # Ruff-specific rules
     "W",  # pycodestyle warnings
     "F",  # pyflakes
     "T10", # flake8-debugger
@@ -157,6 +158,15 @@ ignore = [
     "B023",
     "B028",
     "B905",
+    "RUF001",
+    "RUF002",
+    "RUF005",
+    "RUF007",
+    "RUF010",
+    "RUF012",
+    "RUF015",
+    "RUF022",
+    "RUF023",
 ]
 
 [tool.ruff.lint.pep8-naming]
