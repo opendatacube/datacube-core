@@ -347,7 +347,7 @@ def solar_offset(geom: Geometry | Dataset,
         lon = _lon
 
     if precision == 'h':
-        return datetime.timedelta(hours=int(round(lon*24/360)))
+        return datetime.timedelta(hours=round(lon*24/360))
 
     # 240 == (24*60*60)/360 (seconds of a day per degree of longitude)
     return datetime.timedelta(seconds=int(lon*240))

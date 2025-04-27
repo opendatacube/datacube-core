@@ -1151,7 +1151,7 @@ class GridSpec:
         if step < 0.0:
             lower, upper, step = -upper, -lower, -step
         assert step > 0.0
-        return range(int(math.floor(lower / step)), int(math.ceil(upper / step)))
+        return range(math.floor(lower / step), math.ceil(upper / step))
 
     @override
     def __str__(self) -> str:
