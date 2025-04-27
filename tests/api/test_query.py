@@ -173,7 +173,10 @@ testdata = [
     ((datetime.date(2008, 1, 1)),
      format_test('2008-01-01T00:00:00', '2008-01-01T23:59:59.999999')),
     ((datetime.date(2008, 1, 1), None),
-     format_test('2008-01-01T00:00:00', datetime.datetime.now().strftime("%Y-%m-%dT23:59:59.999999"))),
+     # Starting the tests before midnight and finishing after will cause test failure
+     # since datetime.now() is evaluated before midnight and the test runs after midnight.
+     # Put the result behind a function that is evaluated inside the test instead.
+     lambda _: format_test('2008-01-01T00:00:00', datetime.datetime.now().strftime("%Y-%m-%dT23:59:59.999999"))),
     ((None, '2008'),
      format_test(datetime.datetime.fromtimestamp(0).strftime("%Y-%m-%dT%H:%M:%S"), '2008-12-31T23:59:59.999999')),
 ]
@@ -183,7 +186,7 @@ testdata = [
 def test_time_handling(time_param, expected):
     query = Query(time=time_param)
     assert 'time' in query.search_terms
-    assert query.search_terms['time'] == expected
+    assert query.search_terms['time'] == (expected if isinstance(expected, Range) else expected("now"))
 
 
 def test_time_handling_int():

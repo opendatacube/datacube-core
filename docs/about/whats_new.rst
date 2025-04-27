@@ -19,6 +19,7 @@ Next Version
 - Remove executable permission on files :pull:`1797`
 - Import names from defining module :pull:`1799`
 - Dependabot: make one pull request for everything :pull:`1816`
+- tests: fix midnight bug :pull:`1825`
 
 v1.9.3 (15th April 2025)
 ========================
