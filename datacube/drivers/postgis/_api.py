@@ -16,7 +16,7 @@ Persistence API implementation for postgis.
 import datetime
 import json
 import logging
-import uuid  # noqa: F401
+import uuid
 from sqlalchemy import (
     cast,
     delete,
