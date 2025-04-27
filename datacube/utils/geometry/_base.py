@@ -200,8 +200,8 @@ class CRS:
     def __getstate__(self):
         return {'crs_str': self._str}
 
-    def __setstate__(self, state):
-        self.__init__(state['crs_str'])
+    def __setstate__(self, state) -> None:
+        self._crs, self._str, self._epsg = _make_crs(state["crs_str"])
 
     def to_wkt(self, pretty: bool = False, version: WktVersion | None = None) -> str:
         """
