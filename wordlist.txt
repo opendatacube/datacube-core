@@ -440,6 +440,7 @@ pwd
 px
 py
 pydata
+pydoc
 pyenv
 PyLint
 pylint

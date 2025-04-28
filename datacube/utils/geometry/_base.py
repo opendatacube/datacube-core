@@ -200,8 +200,8 @@ class CRS:
     def __getstate__(self):
         return {'crs_str': self._str}
 
-    def __setstate__(self, state):
-        self.__init__(state['crs_str'])
+    def __setstate__(self, state) -> None:
+        self._crs, self._str, self._epsg = _make_crs(state["crs_str"])
 
     def to_wkt(self, pretty: bool = False, version: WktVersion | None = None) -> str:
         """
@@ -1017,10 +1017,10 @@ def _align_pix(left: float, right: float, res: float, off: float) -> tuple[float
     if res < 0:
         res = -res
         val = math.ceil((right - off) / res) * res + off
-        width = max(1, int(math.ceil((val - left - 0.1 * res) / res)))
+        width = max(1, math.ceil((val - left - 0.1 * res) / res))
     else:
         val = math.floor((left - off) / res) * res + off
-        width = max(1, int(math.ceil((right - val - 0.1 * res) / res)))
+        width = max(1, math.ceil((right - val - 0.1 * res) / res))
     return val, width
 
 
@@ -1322,7 +1322,7 @@ def scaled_down_geobox(src_geobox: GeoBox, scaler: int) -> GeoBox:
 
 def _round_to_res(value: float, res: float, acc: float = 0.1) -> int:
     res = abs(res)
-    return int(math.ceil((value - 0.1 * res) / res))
+    return math.ceil((value - 0.1 * res) / res)
 
 
 def intersects(a: Geometry, b: Geometry) -> bool:

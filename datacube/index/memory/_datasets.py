@@ -770,7 +770,7 @@ class DatasetResource(AbstractDatasetResource):
         try:
             start, end = cast(Range, query.pop('time'))
         except KeyError:
-            raise ValueError('Must specify "time" range in period-counting query')
+            raise ValueError('Must specify "time" range in period-counting query') from None
         periods = self._expand_period(period, start, end)
         last_product: YieldType | None = None
         for dss, product in self._search_grouped(archived=archived, **query):  # type: ignore[arg-type]

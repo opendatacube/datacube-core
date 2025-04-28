@@ -150,7 +150,7 @@ class LineageTree:
                 state.append(self)
         # Recurse
         if self.children is not None:
-            for classifier, children in self.children.items():
+            for _, children in self.children.items():
                 for child in children:
                     subtree = child.find_subtree(dsid, _state=state)
                     if subtree:
@@ -214,7 +214,7 @@ class LineageTree:
         child_dsids: set[UUID] = set()
         if self.children is None:
             return child_dsids
-        for classifier, children in self.children.items():
+        for _, children in self.children.items():
             for child in children:
                 subchildren = child.child_datasets()
                 subchildren.add(child.dataset_id)
@@ -224,7 +224,7 @@ class LineageTree:
         return child_dsids
 
 
-class InconsistentLineageException(Exception):
+class InconsistentLineageException(Exception):  # noqa: N818
     """
     Raised when a method would result in an inconsistent/invalid LineageTree or LineageRelations collection.
     """

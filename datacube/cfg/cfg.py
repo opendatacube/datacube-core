@@ -126,13 +126,13 @@ def parse_text(cfg_text: str, fmt: CfgFormat = CfgFormat.AUTO) -> ConfigDict:
 
                 raw_config[section] = sect
         except configparser.Error as e:
-            raise ConfigException(f"Invalid INI file: {e}")
+            raise ConfigException(f"Invalid INI file: {e}") from None
     else:
         # YAML/JSON parsing
         import yaml
         try:
             raw_config = yaml.load(cfg_text, Loader=yaml.Loader)
         except yaml.parser.ParserError as e:
-            raise ConfigException(f"Invalid YAML file:{e}")
+            raise ConfigException(f"Invalid YAML file:{e}") from None
 
     return raw_config

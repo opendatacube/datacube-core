@@ -459,7 +459,7 @@ class Transform(VirtualProduct):
         try:
             obj = cls(**{key: value for key, value in self.items() if key not in ['transform', 'input']})
         except TypeError:
-            raise VirtualProductException(f"transformation {cls} could not be instantiated")
+            raise VirtualProductException(f"transformation {cls} could not be instantiated") from None
 
         self._assert(isinstance(obj, Transformation), f"not a transformation object: {obj}")
 
@@ -511,7 +511,7 @@ class Aggregate(VirtualProduct):
             obj = cls(**{key: value for key, value in self.items()
                          if key not in ['aggregate', 'input', 'group_by']})
         except TypeError:
-            raise VirtualProductException(f"transformation {cls} could not be instantiated")
+            raise VirtualProductException(f"transformation {cls} could not be instantiated") from None
 
         self._assert(isinstance(obj, Transformation), f"not a transformation object: {obj}")
 

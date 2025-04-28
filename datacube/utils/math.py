@@ -165,7 +165,7 @@ def iter_slices(shape, chunk_size):
     [(slice(0, 2, None),), (slice(2, 4, None),), (slice(4, 5, None),)]
     """
     assert len(shape) == len(chunk_size)
-    num_grid_chunks = [int(ceil(s / float(c))) for s, c in zip(shape, chunk_size)]
+    num_grid_chunks = [ceil(s / float(c)) for s, c in zip(shape, chunk_size)]
     for grid_index in numpy.ndindex(*num_grid_chunks):
         yield tuple(
             slice(min(d * c, stop), min((d + 1) * c, stop)) for d, c, stop in zip(grid_index, chunk_size, shape))

@@ -95,7 +95,7 @@ def test_mem_metadatatype_resource(mem_index_fresh: Datacube):
     assert len(ptype_mdts) == 2
     assert eo3 not in ptype_mdts
     pfam_mdts = list(mem_index_fresh.index.metadata_types.get_with_fields(["platform", "product_family"]))
-    pfam_mdts == [eo3]
+    assert pfam_mdts == [eo3]
 
 
 def test_mem_product_resource(mem_index_fresh: Datacube,
@@ -145,7 +145,7 @@ def test_mem_product_resource(mem_index_fresh: Datacube,
     # Test search_robust
     search_results = list(mem_index_fresh.index.products.search_robust(region_code="my_backyard"))
     assert len(search_results) == 2
-    for prod, unmatched in search_results:
+    for _, unmatched in search_results:
         assert "region_code" in unmatched
     search_results = list(mem_index_fresh.index.products.search_robust(product_family="the_simpsons"))
     assert len(search_results) == 0
@@ -508,7 +508,7 @@ def test_mem_ds_search_and_count_by_product(mem_eo3_data: tuple):
             assert ds.product.name == product.name
     lds = list(dc.index.datasets.count_by_product(platform='landsat-8'))
     assert len(lds) == 2
-    for prod, count in lds:
+    for _, count in lds:
         assert count == 1
 
 
@@ -619,7 +619,7 @@ def test_mem_ds_count_product_through_time(mem_eo3_data: tuple):
         period="1 day",
         time=[datetime.datetime(2016, 5, 10), datetime.datetime(2016, 5, 15)]
     ))
-    for prod, counts in lds:
+    for _, counts in lds:
         for rng, count in counts:
             if rng.begin == datetime.datetime(2016, 5, 12, tzinfo=datetime.timezone.utc):
                 assert count == 1
@@ -643,27 +643,27 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube):
     idx = mem_index_fresh.index
     # Make sure index is empty
     assert list(idx.products.get_all()) == []
-    for path, metadata_doc in read_documents(dataset_add_configs.metadata):
+    for _, metadata_doc in read_documents(dataset_add_configs.metadata):
         idx.metadata_types.add(idx.metadata_types.from_doc(metadata_doc))
-    for path, product_doc in read_documents(dataset_add_configs.products):
+    for _, product_doc in read_documents(dataset_add_configs.products):
         idx.products.add_document(product_doc)
     ds_ids = set()
     ds_bad_ids = set()
     from datacube.index.hl import Doc2Dataset
     resolver = Doc2Dataset(idx)
-    for path, ds_doc in read_documents(dataset_add_configs.datasets):
+    for _, ds_doc in read_documents(dataset_add_configs.datasets):
         ds, err = resolver(ds_doc, 'file:///fake_uri')
         assert err is None
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
-    for path, ds_doc in read_documents(dataset_add_configs.datasets_bad1):
+    for _, ds_doc in read_documents(dataset_add_configs.datasets_bad1):
         ds, err = resolver(ds_doc, 'file:///fake_bad_uri')
         if err is not None:
             ds_bad_ids.add(ds_doc["id"])
             continue
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
-    for path, ds_doc in read_documents(dataset_add_configs.datasets_eo3):
+    for _, ds_doc in read_documents(dataset_add_configs.datasets_eo3):
         ds, err = resolver(ds_doc, 'file:///fake_eo3_uri')
         assert err is None
         ds_ids.add(ds.id)

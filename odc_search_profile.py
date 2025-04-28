@@ -17,7 +17,7 @@ def benchmark(test, dc, label, n):
         # count, first = test(dc)
         count = 0
         first = None
-        for ds in test(dc):
+        for _ in test(dc):
             if not count:
                 first = monotonic()
             count += 1

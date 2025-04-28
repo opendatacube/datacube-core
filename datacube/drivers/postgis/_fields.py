@@ -73,7 +73,7 @@ class PgField(Field):
         if self.indexed:
             search_table = search_field_index_map[self.type_name]
             return aliased(  # type: ignore[return-value]
-                search_table, name=f"{search_table.__tablename__}-{self.name}")  # type: ignore[attr-defined]
+                search_table, name=f"{search_table.__tablename__}-{self.name}")
         else:
             return self.select_alchemy_table
 
@@ -284,7 +284,7 @@ class SimpleDocField(PgDocField):
         return self.extract(ctx)
 
 
-class UnindexableValue(Exception):
+class UnindexableValue(Exception):  # noqa: N818
     pass
 
 
@@ -716,7 +716,7 @@ def parse_fields(doc, table_column):
         except TypeError as e:
             raise RuntimeError(
                 f'Field {name} has unexpected argument for a {type_name}', e
-            )
+            ) from None
 
     return {name: _get_field(name, descriptor, table_column) for name, descriptor in doc.items()}
 

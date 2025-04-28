@@ -7,7 +7,7 @@ Config reading/loading exceptions
 """
 
 
-class ConfigException(Exception):
+class ConfigException(Exception):  # noqa: N818
     """
     Exception raised in the configuration API
     """

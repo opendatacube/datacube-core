@@ -77,7 +77,7 @@ postgres = ['psycopg2']
 dev = [
     # Test requirements
     'hypothesis',
-    'moto<5.0',  # 5.0 will require changes to some tests.
+    'moto>=5.0',
     'netcdf4',
     'psycopg2',
     'pytest',
@@ -139,11 +139,40 @@ src = ["datacube", "docs", "examples", "tests", "integration_tests"]
 
 [tool.ruff.lint]
 select = [
-    # "A",  # Don't shadow built-ins
+    "A",  # Don't shadow built-ins
+    "B",  # flake8-bugbear
     "E",  # pycodestyle errors
+    "N",  # pep8-naming
+    "RUF", # Ruff-specific rules
     "W",  # pycodestyle warnings
     "F",  # pyflakes
     "T10", # flake8-debugger
+]
+ignore = [
+    # FIXME: re-enable these rules.
+    "B004",
+    "B008",
+    "B009",
+    "B011",
+    "B022",
+    "B023",
+    "B028",
+    "B905",
+    "RUF001",
+    "RUF002",
+    "RUF005",
+    "RUF007",
+    "RUF010",
+    "RUF012",
+    "RUF015",
+    "RUF022",
+    "RUF023",
+]
+
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = [
+    "A", "B", "H", "L", "M", "N", "NX", "NY", "R", "S",
+    "T", "W", "WS", "X", "XX", "XY", "YY", "Y", "Z",
 ]
 
 [tool.ruff.lint.per-file-ignores]

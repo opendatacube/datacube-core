@@ -230,9 +230,9 @@ def dc():
            '9dcfc6f6-aa36-47ef-9501-177fa39e7e7d',
            'dda8b22e-27f5-40a5-99d4-b94810f545d0']
 
-    def example_dataset(product, id, center_time):
+    def example_dataset(product, id_, center_time):
         result = Dataset(example_product(product),
-                         dict(id=id, grid_spatial=example_grid_spatial()),
+                         dict(id=id_, grid_spatial=example_grid_spatial()),
                          uri='file://test.zzz')
         result.center_time = center_time
         return result
