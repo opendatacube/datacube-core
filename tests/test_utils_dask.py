@@ -129,9 +129,9 @@ def test_save_blob_s3_direct(blob, monkeypatch):
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
 
-    with moto.mock_s3():
+    with moto.mock_aws():
         s3 = s3_client(region_name=region_name)
-        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={'LocationConstraint': "fake-region"})
+        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={'LocationConstraint': region_name})
 
         assert _save_blob_to_s3(blob, url, region_name=region_name) == (url, True)
         assert _save_blob_to_s3(blob2, url2, region_name=region_name) == (url2, True)
@@ -167,9 +167,9 @@ def test_save_blob_s3(blob, monkeypatch, dask_client):
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
 
-    with moto.mock_s3():
+    with moto.mock_aws():
         s3 = s3_client(region_name=region_name)
-        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={'LocationConstraint': "fake-region"})
+        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={'LocationConstraint': region_name})
 
         rr = save_blob_to_s3(dask_blob, url, region_name=region_name)
         assert rr.compute() == (url, True)

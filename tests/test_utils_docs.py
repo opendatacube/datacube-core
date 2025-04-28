@@ -177,7 +177,7 @@ def test_read_docs_from_s3(sample_document_files, monkeypatch):
     monkeypatch.setenv('AWS_ACCESS_KEY_ID', 'fake')
     monkeypatch.setenv('AWS_SECRET_ACCESS_KEY', 'fake')
 
-    with moto.mock_s3():
+    with moto.mock_aws():
         s3 = boto3.resource('s3', region_name='us-east-1')
         bucket = s3.create_bucket(Bucket='mybucket')
 

@@ -7,12 +7,14 @@ Tables for indexing the datasets which were ingested into the AGDC.
 """
 
 import logging
+from datetime import datetime
+from uuid import UUID
 
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
-from sqlalchemy.orm import registry, relationship, column_property
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, registry, relationship, column_property
 from sqlalchemy import ForeignKey, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Text, Index, \
     literal
-from sqlalchemy import Column, String, DateTime
+from sqlalchemy import String, DateTime
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
 
@@ -21,11 +23,15 @@ from . import _core
 
 _LOG = logging.getLogger(__name__)
 
-orm_registry = registry()
+
+class Base(DeclarativeBase):
+    pass
 
 
-@orm_registry.mapped
-class MetadataType:
+orm_registry = registry(metadata=Base.metadata)
+
+
+class MetadataType(Base):
     __tablename__ = "metadata_type"
     __table_args__ = (
         _core.METADATA,
@@ -35,20 +41,21 @@ class MetadataType:
             "comment": "Metadata type, defining search fields requiring dynamic indexes",
         }
     )
-    id = Column(SmallInteger, primary_key=True, autoincrement=True)
-    name = Column(String, unique=True, nullable=True, comment="A human-friendly name/label for this metadata type")
-    definition = Column(postgres.JSONB, nullable=False, comment="metadata schema with search fields")
+    id: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=True)
+    name: Mapped[str | None] = mapped_column(String, unique=True,
+                                             comment="A human-friendly name/label for this metadata type")
+    definition = mapped_column(postgres.JSONB, nullable=False, comment="metadata schema with search fields")
     # When it was added and by whom.
-    added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
-    added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
-    updated = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when last updated")
+    added: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), comment="when added")
+    added_by: Mapped[str] = mapped_column(Text, server_default=func.current_user(), comment="added by whom")
+    updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
+                                              comment="when last updated")
 
     products = relationship("Product")
     datasets = relationship("Dataset")
 
 
-@orm_registry.mapped
-class Product:
+class Product(Base):
     __tablename__ = "product"
     __table_args__ = (
         _core.METADATA,
@@ -58,27 +65,27 @@ class Product:
             "comment": "A product or dataset type, family of related datasets."
         }
     )
-    id = Column(SmallInteger, primary_key=True, autoincrement=True)
-    name = Column(String, unique=True, nullable=False, comment="A human-friendly name/label for this product")
+    id: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String, unique=True, comment="A human-friendly name/label for this product")
     # DB column named metadata for (temporary) backwards compatibility,
     # but is forbidden by SQLAlchemy declarative style
-    metadata_doc = Column(name="metadata",
-                          type_=postgres.JSONB, nullable=False,
-                          comment="""The product metadata document (subset of the full definition)
+    metadata_doc = mapped_column(name="metadata",
+                                 type_=postgres.JSONB, nullable=False,
+                                 comment="""The product metadata document (subset of the full definition)
 All datasets of this type should contain these fields.
 (newly-ingested datasets may be matched against these fields to determine the dataset type)""")
-    metadata_type_ref = Column(SmallInteger, ForeignKey(MetadataType.id), nullable=False,
-                               comment="The metadata type - how to interpret the metadata")
-    definition = Column('definition', postgres.JSONB, nullable=False, comment="Full product definition document")
-    added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
-    added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
-    updated = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when last updated")
+    metadata_type_ref: Mapped[int] = mapped_column(SmallInteger, ForeignKey(MetadataType.id),
+                                                   comment="The metadata type - how to interpret the metadata")
+    definition = mapped_column('definition', postgres.JSONB, nullable=False, comment="Full product definition document")
+    added: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), comment="when added")
+    added_by: Mapped[str] = mapped_column(Text, server_default=func.current_user(), comment="added by whom")
+    updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
+                                              comment="when last updated")
 
     datasets = relationship("Dataset")
 
 
-@orm_registry.mapped
-class Dataset:
+class Dataset(Base):
     __tablename__ = "dataset"
     __table_args__ = (
         _core.METADATA,
@@ -87,25 +94,26 @@ class Dataset:
             "comment": "A dataset."
         }
     )
-    id = Column(postgres.UUID(as_uuid=True), primary_key=True)
-    metadata_type_ref = Column(SmallInteger, ForeignKey(MetadataType.id), nullable=False,
-                               comment="The metadata type - how to interpret the metadata")
-    product_ref = Column(SmallInteger, ForeignKey(Product.id), nullable=False,
-                         comment="The product this dataset belongs to")
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    metadata_type_ref: Mapped[int] = mapped_column(SmallInteger, ForeignKey(MetadataType.id),
+                                                   comment="The metadata type - how to interpret the metadata")
+    product_ref: Mapped[int] = mapped_column(SmallInteger, ForeignKey(Product.id),
+                                             comment="The product this dataset belongs to")
     # DB column named metadata for (temporary) backwards compatibility,
     # but is forbidden by SQLAlchemy declarative style
-    metadata_doc = Column(name="metadata", type_=postgres.JSONB, nullable=False,
-                          comment="The dataset metadata document")
-    archived = Column(DateTime(timezone=True), default=None, nullable=True, index=True,
-                      comment="when archived, null if active")
-    added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True, comment="when added")
-    added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
+    metadata_doc = mapped_column(name="metadata", type_=postgres.JSONB, nullable=False,
+                                 comment="The dataset metadata document")
+    archived: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, index=True,
+                                                      comment="when archived, null if active")
+    added: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
+                                            index=True, comment="when added")
+    added_by: Mapped[str] = mapped_column(Text, server_default=func.current_user(), comment="added by whom")
 
-    updated = Column(DateTime(timezone=True), server_default=func.now(), nullable=False,
-                     index=True, comment="when last updated")
+    updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
+                                              index=True, comment="when last updated")
 
-    uri_scheme = Column(String, comment="The scheme of the uri.")
-    uri_body = Column(String, comment="""The body of the uri.
+    uri_scheme: Mapped[str | None] = mapped_column(String, comment="The scheme of the uri.")
+    uri_body: Mapped[str | None] = mapped_column(String, comment="""The body of the uri.
 
 The uri scheme and body make up the base URI to find the dataset.
 
@@ -121,8 +129,7 @@ Index("ix_ds_prod_active", Dataset.product_ref, postgresql_where=(Dataset.archiv
 Index("ix_ds_mdt_active", Dataset.metadata_type_ref, postgresql_where=(Dataset.archived == None))
 
 
-@orm_registry.mapped
-class DatasetLineage:
+class DatasetLineage(Base):
     __tablename__ = "dataset_lineage"
     __table_args__ = (
         _core.METADATA,
@@ -133,22 +140,20 @@ class DatasetLineage:
             "comment": "Represents a source-lineage relationship between two datasets"
         }
     )
-    derived_dataset_ref = Column(
-        postgres.UUID(as_uuid=True),
-        nullable=False, index=True,
+    derived_dataset_ref: Mapped[UUID] = mapped_column(
+        index=True,
         comment="The downstream derived dataset produced from the upstream source dataset."
     )
-    source_dataset_ref = Column(
-        postgres.UUID(as_uuid=True), nullable=False, index=True,
+    source_dataset_ref: Mapped[UUID] = mapped_column(
+        index=True,
         comment="An upstream source dataset that the downstream derived dataset was produced from."
     )
-    classifier = Column(String, nullable=False, comment="""An identifier for this source dataset.
+    classifier: Mapped[str] = mapped_column(String, comment="""An identifier for this source dataset.
 E.g. the dataset type ('ortho', 'nbar'...) if there's only one source of each type, or a datestamp
 for a time-range summary.""")
 
 
-@orm_registry.mapped
-class DatasetHome:
+class DatasetHome(Base):
     __tablename__ = "dataset_home"
     __table_args__ = (
         _core.METADATA,
@@ -157,9 +162,11 @@ class DatasetHome:
             "comment": "Represents an optional 'home index' for an external datasets"
         }
     )
-    dataset_ref = Column(postgres.UUID(as_uuid=True), primary_key=True,
-                         comment="The dataset ID - no referential integrity enforced to dataset table.")
-    home = Column(Text, nullable=False, comment="""The 'home' index where this dataset can be found.
+    dataset_ref: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        comment="The dataset ID - no referential integrity enforced to dataset table."
+    )
+    home: Mapped[str] = mapped_column(Text, comment="""The 'home' index where this dataset can be found.
 Not interpreted directly by ODC, provided as a convenience to database administrators.""")
 
 
@@ -169,8 +176,7 @@ class SpatialIndex:
     """
 
 
-@orm_registry.mapped
-class SpatialIndexRecord:
+class SpatialIndexRecord(Base):
     __tablename__ = "spatial_indicies"
     __table_args__ = (
         _core.METADATA,
@@ -179,16 +185,16 @@ class SpatialIndexRecord:
             "comment": "Record of the existence of a Spatial Index Table for an SRID/CRS",
         }
     )
-    srid = Column(SmallInteger, primary_key=True, autoincrement=False)
-    table_name = Column(String,
-                        unique=True, nullable=True,
-                        comment="The name of the table implementing the index - DO NOT CHANGE")
-    added = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="when added")
-    added_by = Column(Text, server_default=func.current_user(), nullable=False, comment="added by whom")
+    srid: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=False)
+    table_name: Mapped[str | None] = mapped_column(
+        String, unique=True, comment="The name of the table implementing the index - DO NOT CHANGE"
+    )
+    added: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), comment="when added")
+    added_by: Mapped[str] = mapped_column(Text, server_default=func.current_user(), comment="added by whom")
 
     @classmethod
     def from_spindex(cls, spindex: type[SpatialIndex]) -> "SpatialIndexRecord":
-        return cls(  # type: ignore [call-arg]
+        return cls(
             srid=int(spindex.__tablename__[8:]),  # type: ignore [attr-defined]
             table_name=spindex.__tablename__  # type: ignore [attr-defined]
         )
@@ -198,8 +204,7 @@ class SpatialIndexRecord:
 # classes with duped columns for now.
 
 
-@orm_registry.mapped
-class DatasetSearchString:
+class DatasetSearchString(Base):
     __tablename__ = "dataset_search_string"
     __table_args__ = (
         _core.METADATA,
@@ -210,18 +215,16 @@ class DatasetSearchString:
             "comment": "Index for searching datasets by search fields of string type"
         }
     )
-    dataset_ref = Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id), nullable=False, index=True,
-                         comment="The dataset indexed by this search field record.")
-    search_key = Column(String,
-                        nullable=False, index=True,
-                        comment="The name of the search field")
-    search_val = Column(String,
-                        nullable=True,
-                        comment="The value of the string search field")
+    dataset_ref: Mapped[UUID] = mapped_column(ForeignKey(Dataset.id), index=True,
+                                              comment="The dataset indexed by this search field record.")
+    search_key: Mapped[str] = mapped_column(String,
+                                            index=True,
+                                            comment="The name of the search field")
+    search_val: Mapped[str | None] = mapped_column(String,
+                                                   comment="The value of the string search field")
 
 
-@orm_registry.mapped
-class DatasetSearchNumeric:
+class DatasetSearchNumeric(Base):
     __tablename__ = "dataset_search_num"
     __table_args__ = (
         _core.METADATA,
@@ -232,18 +235,17 @@ class DatasetSearchNumeric:
             "comment": "Index for searching datasets by search fields of numeric type"
         }
     )
-    dataset_ref = Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id), nullable=False, index=True,
-                         comment="The dataset indexed by this search field record.")
-    search_key = Column(String,
-                        nullable=False, index=True,
-                        comment="The name of the search field")
-    search_val = Column(NUMRANGE,
-                        nullable=True,
-                        comment="The value of the numeric range search field",)
+    dataset_ref: Mapped[UUID] = mapped_column(ForeignKey(Dataset.id), index=True,
+                                              comment="The dataset indexed by this search field record.")
+    search_key: Mapped[str] = mapped_column(String,
+                                            index=True,
+                                            comment="The name of the search field")
+    search_val = mapped_column(NUMRANGE,
+                               nullable=True,
+                               comment="The value of the numeric range search field")
 
 
-@orm_registry.mapped
-class DatasetSearchDateTime:
+class DatasetSearchDateTime(Base):
     __tablename__ = "dataset_search_datetime"
     __table_args__ = (
         _core.METADATA,
@@ -254,14 +256,14 @@ class DatasetSearchDateTime:
             "comment": "Index for searching datasets by search fields of datetime type"
         }
     )
-    dataset_ref = Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id), nullable=False, index=True,
-                         comment="The dataset indexed by this search field record.")
-    search_key = Column(String,
-                        nullable=False, index=True,
-                        comment="The name of the search field")
-    search_val = Column(TSTZRANGE,
-                        nullable=True,
-                        comment="The value of the datetime search field")
+    dataset_ref: Mapped[UUID] = mapped_column(ForeignKey(Dataset.id), index=True,
+                                              comment="The dataset indexed by this search field record.")
+    search_key: Mapped[str] = mapped_column(String,
+                                            index=True,
+                                            comment="The name of the search field")
+    search_val = mapped_column(TSTZRANGE,
+                               nullable=True,
+                               comment="The value of the datetime search field")
 
 
 search_field_map = {
@@ -291,12 +293,12 @@ search_field_index_map = {
 }
 
 ALL_STATIC_TABLES = [
-    MetadataType.__table__, Product.__table__,  # type: ignore[attr-defined]
-    Dataset.__table__,  # type: ignore[attr-defined]
-    DatasetLineage.__table__, DatasetHome.__table__,  # type: ignore[attr-defined]
-    SpatialIndexRecord.__table__,  # type: ignore[attr-defined]
-    DatasetSearchString.__table__, DatasetSearchNumeric.__table__,  # type: ignore[attr-defined]
-    DatasetSearchDateTime.__table__,  # type: ignore[attr-defined]
+    MetadataType.__table__, Product.__table__,
+    Dataset.__table__,
+    DatasetLineage.__table__, DatasetHome.__table__,
+    SpatialIndexRecord.__table__,
+    DatasetSearchString.__table__, DatasetSearchNumeric.__table__,
+    DatasetSearchDateTime.__table__,
 ]
 
 
