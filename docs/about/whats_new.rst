@@ -22,6 +22,7 @@ Next Version
 - fields: type annotate offset parameter :pull:`1809`
 - postgis: inherit instead of decorate :pull:`1801`
 - Dependabot: make one pull request for everything :pull:`1816`
+- tests: fix midnight bug :pull:`1825`
 - geometry: stop misusing constructor :pull:`1826`
 - Various lint fixes :pull:`1824`
 - CI: use the right project slug :pull:`1823`
