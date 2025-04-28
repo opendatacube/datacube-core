@@ -137,7 +137,7 @@ def spindex_for_crs(crs: CRS) -> type[SpatialIndex]:
 
 def spindex_for_record(rec: SpatialIndexRecord) -> type[SpatialIndex]:
     """Convert a Record of a SpatialIndex created in a particular database to an ORM class"""
-    return spindex_for_epsg(rec.srid)  # type: ignore[arg-type]
+    return spindex_for_epsg(rec.srid)
 
 
 def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> None:
