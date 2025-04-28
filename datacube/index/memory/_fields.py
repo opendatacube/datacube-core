@@ -53,7 +53,7 @@ def get_dataset_fields(metadata_definition: Mapping[str, Any]) -> dict[str, Fiel
 def build_custom_fields(custom_offsets: Mapping[str, Offset]) -> dict[str, Field]:
     return {
         name: SimpleField(
-            offset,
+            list(offset),
             lambda x: x, 'any',
             name=name,
             description=f"Custom field: {name}"

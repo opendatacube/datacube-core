@@ -73,7 +73,7 @@ class PgField(Field):
         if self.indexed:
             search_table = search_field_index_map[self.type_name]
             return aliased(  # type: ignore[return-value]
-                search_table, name=f"{search_table.__tablename__}-{self.name}")  # type: ignore[attr-defined]
+                search_table, name=f"{search_table.__tablename__}-{self.name}")
         else:
             return self.select_alchemy_table
 
