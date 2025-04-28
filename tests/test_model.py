@@ -84,18 +84,18 @@ def test_dataset_basics():
 
 
 def test_dataset_measurement_paths():
-    format = 'GeoTiff'
+    format_ = 'GeoTiff'
 
     ds = mk_sample_dataset([dict(name=n,
                                  path=n+'.tiff')
                             for n in 'a b c'.split(' ')],
                            uri='file:///tmp/datataset.yml',
-                           format=format)
+                           format=format_)
 
     assert ds.local_uri == ds.uri
     assert ds.legacy_uri() == ds.uri
     assert ds.uri_scheme == 'file'
-    assert ds.format == format
+    assert ds.format == format_
     paths = measurement_paths(ds)
 
     for k, v in paths.items():

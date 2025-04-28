@@ -491,7 +491,7 @@ def test_merge():
     assert merge(dict(a=1), dict(b=2)) == dict(a=1, b=2)
     assert merge(dict(a=1, b=2), dict(b=2)) == dict(a=1, b=2)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         merge(dict(a=1, b=2), dict(b=3))
 
 
@@ -562,7 +562,7 @@ def test_doc_reader():
 
     assert not hasattr(d, 'no_such')
     with pytest.raises(AttributeError):
-        d.no_such
+        _ = d.no_such
 
     with pytest.raises(AttributeError):
         d.no_such = 0

@@ -51,7 +51,7 @@ class NameResolver:
                     result = import_function(name)
                 except (ImportError, AttributeError):
                     msg = f"could not resolve {kind} {name} in {recipe}"
-                    raise VirtualProductException(msg)
+                    raise VirtualProductException(msg) from None
 
             self._assert(callable(result), f"{kind} not callable in {recipe}")
 

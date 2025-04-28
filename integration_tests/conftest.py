@@ -67,7 +67,7 @@ EO3_TESTDIR = INTEGRATION_TESTS_DIR / 'data' / 'eo3'
 
 def get_eo3_test_data_doc(path):
     from datacube.utils import read_documents
-    for path, doc in read_documents(EO3_TESTDIR / path):
+    for _, doc in read_documents(EO3_TESTDIR / path):
         return doc
 
 

@@ -1460,7 +1460,7 @@ def _make_dask_array(
                 if "extra_dim" in measurement:
                     assert extra_dims is not None  # For type checker
                     index_subset = extra_dims.measurements_index(measurement.extra_dim)
-                    for result_index, extra_dim_index in numpy.ndenumerate(
+                    for result_index, _ in numpy.ndenumerate(
                         range(*index_subset)
                     ):
                         dsk[key_prefix + result_index + idx] = val3d

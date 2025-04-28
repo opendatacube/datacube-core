@@ -22,13 +22,13 @@ def test_lineage_home_api(index):
     for home in index.lineage.get_homes(*a_uuids).values():
         assert home == "spam"
     # Test update with and without allow_update
-    index.lineage.set_home("eggs", *a_uuids) == 0
-    index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 10
+    assert index.lineage.set_home("eggs", *a_uuids) == 0
+    assert index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 10
     for home in index.lineage.get_homes(*a_uuids).values():
         assert home == "eggs"
     assert index.lineage.get_homes(*b_uuids) == {}
-    index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 0
-    index.lineage.set_home("eggs", *b_uuids, allow_updates=True) == 10
+    assert index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 0
+    assert index.lineage.set_home("eggs", *b_uuids, allow_updates=True) == 10
 
     # Test clear_home with actual work done.
     assert index.lineage.clear_home(*a_uuids) == 10

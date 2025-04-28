@@ -284,7 +284,7 @@ class SimpleDocField(PgDocField):
         return self.extract(ctx)
 
 
-class UnindexableValue(Exception):
+class UnindexableValue(Exception):  # noqa: N818
     pass
 
 
@@ -716,7 +716,7 @@ def parse_fields(doc, table_column):
         except TypeError as e:
             raise RuntimeError(
                 f'Field {name} has unexpected argument for a {type_name}', e
-            )
+            ) from None
 
     return {name: _get_field(name, descriptor, table_column) for name, descriptor in doc.items()}
 

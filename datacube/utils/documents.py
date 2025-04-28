@@ -170,9 +170,9 @@ def read_documents(*paths, uri=False):
         except InvalidDocException as e:
             raise e
         except (yaml.YAMLError, ValueError) as e:
-            raise InvalidDocException('Failed to load %s: %s' % (path, e))
+            raise InvalidDocException('Failed to load %s: %s' % (path, e)) from None
         except Exception as e:
-            raise InvalidDocException('Failed to load %s: %s' % (path, e))
+            raise InvalidDocException('Failed to load %s: %s' % (path, e)) from None
 
 
 def netcdf_extract_string(chars):
@@ -228,7 +228,7 @@ def validate_document(document, schema, schema_folder=None):
         validator = jsonschema.Draft4Validator(schema, registry=registry)
         validator.validate(document)
     except jsonschema.ValidationError as e:
-        raise InvalidDocException(e)
+        raise InvalidDocException(e) from None
 
 
 _DOCUMENT_EXTENSIONS = ('.yaml', '.yml', '.json', '.nc')

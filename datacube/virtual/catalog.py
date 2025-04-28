@@ -21,7 +21,7 @@ class UnappliedTransform:
         self.name_resolver = name_resolver
         self.recipe = recipe
 
-    def __call__(self, input) -> Any:
+    def __call__(self, input) -> Any:  # noqa: A002
         return self.name_resolver.construct(**self.recipe, input=input)
 
     @override

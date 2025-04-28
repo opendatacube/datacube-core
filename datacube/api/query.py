@@ -222,7 +222,7 @@ def query_group_by(group_by='time', **kwargs) -> GroupBy:
     except KeyError:
         raise LookupError(
             f'No group by function for {group_by}, valid options are: {group_by_map.keys()}',
-        )
+        ) from None
 
 
 def _value_to_range(value) -> tuple[float, float]:
@@ -347,7 +347,7 @@ def solar_offset(geom: Geometry | Dataset,
         lon = _lon
 
     if precision == 'h':
-        return datetime.timedelta(hours=int(round(lon*24/360)))
+        return datetime.timedelta(hours=round(lon*24/360))
 
     # 240 == (24*60*60)/360 (seconds of a day per degree of longitude)
     return datetime.timedelta(seconds=int(lon*240))

@@ -412,7 +412,7 @@ def test_product_delete_cli(index: Index,
                             ls8_eo3_dataset, ls8_eo3_dataset2,
                             wo_eo3_product) -> None:
     from pathlib import Path
-    TESTDIR = Path(__file__).parent.parent / "data" / "eo3"
+    TESTDIR = Path(__file__).parent.parent / "data" / "eo3"  # noqa: N806
     # product with some archived and some active datasets
     clirunner(['dataset', 'archive', 'c21648b1-a6fa-4de0-9dc3-9c445d8b295a'])
 

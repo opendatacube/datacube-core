@@ -232,9 +232,9 @@ def mk_sample_product(name,
 def mk_sample_dataset(bands: list[dict],
                       uri: str | list[str] | None = 'file:///tmp',
                       product_name='sample',
-                      format='GeoTiff',
+                      format='GeoTiff',  # noqa: A002
                       timestamp=None,
-                      id: str = '3a1df9e0-8484-44fc-8102-79184eab85dd',
+                      id: str = '3a1df9e0-8484-44fc-8102-79184eab85dd',  # noqa: A002
                       geobox: GeoBox | None = None,
                       product_opts=None) -> Dataset:
     # pylint: disable=redefined-builtin

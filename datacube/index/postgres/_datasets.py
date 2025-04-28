@@ -752,7 +752,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         # This may be optimised into one query in the future.
         result = 0
-        for product_type, count in self._do_count_by_product(query, archived=archived):
+        for _, count in self._do_count_by_product(query, archived=archived):
             result += count
 
         return result
