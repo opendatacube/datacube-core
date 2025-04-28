@@ -22,6 +22,7 @@ Next Version
 - fields: type annotate offset parameter :pull:`1809`
 - postgis: inherit instead of decorate :pull:`1801`
 - Dependabot: make one pull request for everything :pull:`1816`
+- tests: update to moto 5.1.4 :pull:`1821`
 
 v1.9.3 (15th April 2025)
 ========================

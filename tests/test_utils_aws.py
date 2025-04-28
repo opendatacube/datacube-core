@@ -201,9 +201,9 @@ def test_s3_io(monkeypatch, without_aws_env):
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
 
-    with moto.mock_s3():
+    with moto.mock_aws():
         s3 = s3_client(region_name='kk')
-        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={'LocationConstraint': "fake-region"})
+        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={'LocationConstraint': 'kk'})
         assert s3_dump(b"33", url, s3=s3) is True
         assert s3_fetch(url, s3=s3) == b"33"
 
@@ -269,6 +269,6 @@ def test_obtain_new_iam_token(monkeypatch, without_aws_env):
 
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
-    with moto.mock_iam():
+    with moto.mock_aws():
         token = obtain_new_iam_auth_token(url, region_name='us-west-1')
         assert isinstance(token, str)
