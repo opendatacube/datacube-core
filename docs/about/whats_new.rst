@@ -23,6 +23,7 @@ Next Version
 - postgis: inherit instead of decorate :pull:`1801`
 - Dependabot: make one pull request for everything :pull:`1816`
 - Various lint fixes :pull:`1824`
+- CI: use the right project slug :pull:`1823`
 - tests: update to moto 5.1.4 :pull:`1821`
 
 v1.9.3 (15th April 2025)
