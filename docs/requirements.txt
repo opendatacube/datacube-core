@@ -107,7 +107,7 @@ idna==3.10
     # via requests
 imagesize==1.4.1
     # via sphinx
-importlib-metadata==8.6.1
+importlib-metadata==8.7.0
     # via dask
 ipython==8.36.0
     # via datacube (../setup.py)
