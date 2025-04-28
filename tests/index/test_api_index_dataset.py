@@ -173,8 +173,8 @@ class MockDb:
     def rollback(self):
         pass
 
-    def get_dataset(self, id):
-        return self.dataset.get(id, None)
+    def get_dataset(self, id_):
+        return self.dataset.get(id_, None)
 
     def get_locations(self, dataset):
         return ['file:xxx']

@@ -26,7 +26,7 @@ def mk_rio_driver():
 def mk_band(name: str,
             base_uri: str,
             path: str = '',
-            format: str = GeoTIFF,  # pylint: disable=redefined-builtin
+            format: str = GeoTIFF,  # pylint: disable=redefined-builtin  # noqa: A002
             **extras) -> BandInfo:
     """
     **extras**:
@@ -42,7 +42,7 @@ def mk_band(name: str,
 
 def open_reader(path: str,
                 band_name: str = 'b1',
-                format: str = GeoTIFF,  # pylint: disable=redefined-builtin
+                format: str = GeoTIFF,  # pylint: disable=redefined-builtin  # noqa: A002
                 **extras):
     """
     **extras**:

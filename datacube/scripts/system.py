@@ -88,7 +88,7 @@ def check(cfg_env: ODCEnvironment):
         index = index_connect(config_env=cfg_env)
         echo(style('YES', bold=True))
         if index.url_parts.username:
-            for role, user, description in index.users.list_users():
+            for role, user, _ in index.users.list_users():
                 if user == index.url_parts.username:
                     echo('You have %s privileges.' % style(role.upper(), bold=True))
     except OperationalError as e:
@@ -128,7 +128,7 @@ def clone(env: ODCEnvironment, batch_size: int, skip_lineage: bool, lineage_only
     try:
         source_config = env._cfg[source_env]
     except KeyError:
-        raise click.ClickException(f"No datacube config found for '{source_env}'")
+        raise click.ClickException(f"No datacube config found for '{source_env}'") from None
 
     try:
         src_index = index_connect(source_config, validate_connection=True)

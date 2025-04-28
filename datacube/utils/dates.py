@@ -49,7 +49,7 @@ def parse_interval(interval):
     try:
         return count, FREQS[units]
     except KeyError:
-        raise ValueError(f'Invalid interval "{interval}", units not in of: {FREQS.keys}')
+        raise ValueError(f'Invalid interval "{interval}", units not in of: {FREQS.keys}') from None
 
 
 def parse_duration(duration):
@@ -57,7 +57,7 @@ def parse_duration(duration):
     try:
         delta = {DURATIONS[units]: count}
     except KeyError:
-        raise ValueError(f'Duration "{duration}" not in months or years')
+        raise ValueError(f'Duration "{duration}" not in months or years') from None
 
     return relativedelta(**delta)
 
@@ -116,7 +116,7 @@ def parse_time(time: str | datetime) -> datetime:
     """
     if isinstance(time, str):
         try:
-            from ciso8601 import parse_datetime  # pylint: disable=wrong-import-position # noqa: F401
+            from ciso8601 import parse_datetime  # pylint: disable=wrong-import-position
             return parse_datetime(time)
         except (ImportError, ValueError):        # pragma: no cover
             return dateutil.parser.parse(time)

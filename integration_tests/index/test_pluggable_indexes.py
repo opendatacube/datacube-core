@@ -20,4 +20,4 @@ def test_system_init(uninitialised_postgres_db, clirunner):
 
     if result.exit_code != 0:
         print(result.output)
-        assert False
+    assert result.exit_code == 0

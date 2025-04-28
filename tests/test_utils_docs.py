@@ -177,7 +177,7 @@ def test_read_docs_from_s3(sample_document_files, monkeypatch):
     monkeypatch.setenv('AWS_ACCESS_KEY_ID', 'fake')
     monkeypatch.setenv('AWS_SECRET_ACCESS_KEY', 'fake')
 
-    with moto.mock_s3():
+    with moto.mock_aws():
         s3 = boto3.resource('s3', region_name='us-east-1')
         bucket = s3.create_bucket(Bucket='mybucket')
 
@@ -491,7 +491,7 @@ def test_merge():
     assert merge(dict(a=1), dict(b=2)) == dict(a=1, b=2)
     assert merge(dict(a=1, b=2), dict(b=2)) == dict(a=1, b=2)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         merge(dict(a=1, b=2), dict(b=3))
 
 
@@ -562,7 +562,7 @@ def test_doc_reader():
 
     assert not hasattr(d, 'no_such')
     with pytest.raises(AttributeError):
-        d.no_such
+        _ = d.no_such
 
     with pytest.raises(AttributeError):
         d.no_such = 0

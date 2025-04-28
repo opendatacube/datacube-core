@@ -16,7 +16,7 @@ Persistence API implementation for postgis.
 import datetime
 import json
 import logging
-import uuid  # noqa: F401
+import uuid
 from sqlalchemy import (
     cast,
     delete,
@@ -45,7 +45,7 @@ from datacube.utils.uris import split_uri
 from datacube.index.abstract import DSID
 from datacube.model.lineage import LineageRelation, LineageDirection
 from . import _core
-from ._fields import parse_fields, Expression, PgField, PgExpression, DateRangeDocField  # noqa: F401
+from ._fields import parse_fields, PgField, PgExpression, DateRangeDocField
 from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
 from ._schema import MetadataType, Product, Dataset, DatasetLineage, \
     search_field_index_map, search_field_indexes, DatasetHome
@@ -66,7 +66,7 @@ def _base_known_fields() -> dict:
     fields['archived'] = NativeField(
         'archived',
         'Archived date',
-        Dataset.archived
+        Dataset.__table__.c.archived
     )
     return fields
 
@@ -83,7 +83,7 @@ def _dataset_fields() -> tuple:
         NativeField(
             'archived',
             'Archived date',
-            Dataset.archived
+            Dataset.__table__.c.archived
         ),
         native_flds["uri"]
     )
@@ -103,49 +103,49 @@ def get_native_fields() -> dict[str, NativeField]:
         'id': NativeField(
             'id',
             'Dataset UUID',
-            Dataset.id
+            Dataset.__table__.c.id
         ),
         'indexed_time': NativeField(
             'indexed_time',
             'When dataset was indexed',
-            Dataset.added
+            Dataset.__table__.c.added
         ),
         'indexed_by': NativeField(
             'indexed_by',
             'User who indexed the dataset',
-            Dataset.added_by
+            Dataset.__table__.c.added_by
         ),
         'product': NativeField(
             'product',
             'Product name',
-            Product.name,
+            Product.__table__.c.name,
             join_clause=(Product.id == Dataset.product_ref)
         ),
         'product_id': NativeField(
             'product_id',
             'ID of a dataset type',
-            Dataset.product_ref
+            Dataset.__table__.c.product_ref
         ),
         'metadata_type': NativeField(
             'metadata_type',
             'Metadata type name of dataset',
-            MetadataType.name,
+            MetadataType.__table__.c.name,
             join_clause=(MetadataType.id == Dataset.metadata_type_ref),
         ),
         'metadata_type_id': NativeField(
             'metadata_type_id',
             'ID of a metadata type',
-            Dataset.metadata_type_ref
+            Dataset.__table__.c.metadata_type_ref
         ),
         'metadata_doc': NativeField(
             'metadata_doc',
             'Full metadata document',
-            Dataset.metadata_doc
+            Dataset.metadata_doc  # type: ignore[arg-type]
         ),
         'uri': NativeField(
             'uri',
             "Dataset URI",
-            Dataset.uri_body,
+            Dataset.__table__.c.uri_body,
             alchemy_expression=Dataset.uri,
         ),
     }
@@ -294,7 +294,7 @@ class PostgisDbAPI:
         """
         metadata_subquery = select(Product.metadata_type_ref).where(Product.id == product_id).scalar_subquery()
         ret = self._connection.execute(
-            insert(Dataset).values(
+            insert(Dataset.__table__).values(  # type: ignore[arg-type]
                 id=dataset_id,
                 product_ref=product_id,
                 metadata=metadata_doc,
@@ -308,7 +308,7 @@ class PostgisDbAPI:
     def insert_dataset_bulk(self, values) -> tuple:
         requested = len(values)
         res = self._connection.execute(
-            insert(Dataset), values
+            insert(Dataset.__table__), values  # type: ignore[arg-type]
         )
         return res.rowcount, requested - res.rowcount
 
@@ -320,10 +320,10 @@ class PostgisDbAPI:
         :type product_id: int
         """
         res = self._connection.execute(
-            update(Dataset).returning(Dataset.id).where(
-                Dataset.id == dataset_id
+            update(Dataset.__table__).returning(Dataset.__table__.c.id).where(  # type: ignore[arg-type]
+                Dataset.__table__.c.id == dataset_id
             ).where(
-                Dataset.product_ref == product_id
+                Dataset.__table__.c.product_ref == product_id
             ).values(
                 metadata=metadata_doc
             )
@@ -344,8 +344,8 @@ class PostgisDbAPI:
         scheme, body = split_uri(uri)
 
         r = self._connection.execute(
-            update(Dataset).returning(Dataset.uri).where(
-                Dataset.id == dataset_id
+            update(Dataset.__table__).returning(Dataset.uri).where(  # type: ignore[arg-type]
+                Dataset.__table__.c.id == dataset_id
             ).values(
                 uri_scheme=scheme,
                 uri_body=body
@@ -496,10 +496,10 @@ class PostgisDbAPI:
 
     def archive_dataset(self, dataset_id) -> bool:
         r = self._connection.execute(
-            update(Dataset).where(
-                Dataset.id == dataset_id
+            update(Dataset.__table__).where(  # type: ignore[arg-type]
+                Dataset.__table__.c.id == dataset_id
             ).where(
-                Dataset.archived == None
+                Dataset.__table__.c.archived == None
             ).values(
                 archived=func.now()
             )
@@ -508,8 +508,8 @@ class PostgisDbAPI:
 
     def restore_dataset(self, dataset_id) -> bool:
         r = self._connection.execute(
-            update(Dataset).where(
-                Dataset.id == dataset_id
+            update(Dataset.__table__).where(  # type: ignore[arg-type]
+                Dataset.__table__.c.id == dataset_id
             ).values(
                 archived=None
             )
@@ -648,7 +648,7 @@ class PostgisDbAPI:
             for f in select_fields
         )
         if geom:
-            SpatialIndex, spatialquery = self.geospatial_query(geom)
+            SpatialIndex, spatialquery = self.geospatial_query(geom)  # noqa: N806
         else:
             spatialquery = None
             SpatialIndex = None  # noqa: N806
@@ -869,7 +869,7 @@ class PostgisDbAPI:
         query = select(func.count(Dataset.id))
 
         if geom:
-            SpatialIndex, spatialquery = self.geospatial_query(geom)
+            SpatialIndex, spatialquery = self.geospatial_query(geom)  # noqa: N806
             where_expressions = and_(where_expressions, spatialquery)
             query = query.join(SpatialIndex)
 
@@ -1081,7 +1081,7 @@ class PostgisDbAPI:
                        definition):
 
         res = self._connection.execute(
-            insert(Product).values(
+            insert(Product.__table__).values(
                 name=name,
                 metadata=metadata,
                 metadata_type_ref=metadata_type_id,
@@ -1105,8 +1105,8 @@ class PostgisDbAPI:
                        definition,
                        update_metadata_type=False):
         res = self._connection.execute(
-            update(Product).returning(Product.id).where(
-                Product.name == name
+            update(Product.__table__).returning(Product.__table__.c.id).where(
+                Product.__table__.c.name == name
             ).values(
                 metadata=metadata,
                 metadata_type_ref=metadata_type_id,
@@ -1120,8 +1120,8 @@ class PostgisDbAPI:
                 raise RuntimeError('Must update metadata types in transaction')
 
             self._connection.execute(
-                update(Dataset).where(
-                    Dataset.product_ref == prod_id
+                update(Dataset.__table__).where(
+                    Dataset.__table__.c.product_ref == prod_id
                 ).values(
                     metadata_type_ref=metadata_type_id,
                 )
@@ -1131,14 +1131,14 @@ class PostgisDbAPI:
 
     def delete_product(self, name):
         res = self._connection.execute(
-            delete(Product).returning(Product.id).where(Product.name == name)
+            delete(Product.__table__).returning(Product.__table__.c.id).where(Product.__table__.c.name == name)
         )
 
         return res.first()[0]
 
     def insert_metadata_type(self, name, definition):
         res = self._connection.execute(
-            insert(MetadataType).values(
+            insert(MetadataType.__table__).values(
                 name=name,
                 definition=definition
             )
@@ -1148,15 +1148,16 @@ class PostgisDbAPI:
     def insert_metadata_bulk(self, values) -> tuple:
         requested = len(values)
         res = self._connection.execute(
-            insert(MetadataType).on_conflict_do_nothing(index_elements=['id']),
+            insert(MetadataType.__table__  # type: ignore[arg-type]
+                   ).on_conflict_do_nothing(index_elements=['id']),
             values
         )
         return res.rowcount, requested - res.rowcount
 
     def update_metadata_type(self, name, definition):
         res = self._connection.execute(
-            update(MetadataType).returning(MetadataType.id).where(
-                MetadataType.name == name
+            update(MetadataType.__table__).returning(MetadataType.__table__.c.id).where(
+                MetadataType.__table__.c.name == name
             ).values(
                 name=name,
                 definition=definition
@@ -1215,11 +1216,11 @@ class PostgisDbAPI:
         """
         scheme, body = split_uri(uri)
         res = self._connection.execute(
-            update(Dataset).where(
+            update(Dataset.__table__).where(  # type: ignore[arg-type]
                 and_(
-                    Dataset.id == dataset_id,
-                    Dataset.uri_scheme == scheme,
-                    Dataset.uri_body == body
+                    Dataset.__table__.c.id == dataset_id,
+                    Dataset.__table__.c.uri_scheme == scheme,
+                    Dataset.__table__.c.uri_body == body
                 )
             ).values(
                 uri_scheme=None,

@@ -132,12 +132,12 @@ def spindex_for_crs(crs: CRS) -> type[SpatialIndex]:
         return spindex_for_epsg(crs_to_epsg(crs))
     except ValueError:
         # Postgis identifies CRSs by a numeric "SRID" which is equivalent to EPSG number.
-        raise ValueError(f"Cannot create a postgis spatial index for a non-EPSG-style CRS: {str(crs)}")
+        raise ValueError(f"Cannot create a postgis spatial index for a non-EPSG-style CRS: {str(crs)}") from None
 
 
 def spindex_for_record(rec: SpatialIndexRecord) -> type[SpatialIndex]:
     """Convert a Record of a SpatialIndex created in a particular database to an ORM class"""
-    return spindex_for_epsg(rec.srid)  # type: ignore[arg-type]
+    return spindex_for_epsg(rec.srid)
 
 
 def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> None:
@@ -147,7 +147,7 @@ def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> None:
             select(SpatialIndexRecord.srid).where(
                 SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:]))  # type: ignore[arg-type,attr-defined]
         )
-        for result in results:
+        for _ in results:
             # SpatialIndexRecord exists - actual index assumed to exist too.
             return
         # SpatialIndexRecord doesn't exist - create the index table...

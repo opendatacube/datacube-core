@@ -217,7 +217,7 @@ def pass_config(f):
             cfg = ODCConfig(paths=paths, text=text)
             cfg_env = cfg[specific_environment]
         except ConfigException as e:
-            raise click.ClickException(f"Configuration Error: {e}")
+            raise click.ClickException(f"Configuration Error: {e}") from None
 
         _LOG.debug("Loaded datacube config: %r", cfg_env._name)
         return f(cfg_env, *args, **kwargs)

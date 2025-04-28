@@ -395,7 +395,7 @@ class PostgresDbAPI:
             return r.rowcount > 0
         except IntegrityError as e:
             if e.orig.pgcode == PGCODE_FOREIGN_KEY_VIOLATION:
-                raise MissingRecordError("Referenced source dataset doesn't exist")
+                raise MissingRecordError("Referenced source dataset doesn't exist") from None
             raise
 
     def archive_dataset(self, dataset_id) -> None:

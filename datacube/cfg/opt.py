@@ -172,7 +172,7 @@ class IntOptionHandler(ODCOptionHandler):
         try:
             ival = int(value)
         except ValueError:
-            raise ConfigException(f"Config option {self.name} must be an integer")
+            raise ConfigException(f"Config option {self.name} must be an integer") from None
         if self.minval is not None and ival < self.minval:
             raise ConfigException(f"Config option {self.name} must be at least {self.minval}")
         if self.maxval is not None and ival > self.maxval:

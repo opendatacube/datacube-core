@@ -86,7 +86,7 @@ def validate_eo3_compatible_type(doc) -> None:
                     f"Offset for system field {k} ({v!r}) in metadata type {name} does not match EO3 standard"
                 )
         except KeyError:
-            raise InvalidDocException(f"Unexpected system field in metadata type {name}: {k}")
+            raise InvalidDocException(f"Unexpected system field in metadata type {name}: {k}") from None
     # Validate search field offsets
     for k, v in doc["dataset"]["search_fields"].items():
         if k in ["lat", "lon"]:

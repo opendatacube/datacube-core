@@ -18,8 +18,14 @@ Next Version
 - postgres: use one type for fields :pull:`1795`
 - Remove executable permission on files :pull:`1797`
 - Import names from defining module :pull:`1799`
+- virtual: fix pydoc formatting :pull:`1810`
+- fields: type annotate offset parameter :pull:`1809`
+- postgis: inherit instead of decorate :pull:`1801`
 - Dependabot: make one pull request for everything :pull:`1816`
 - geometry: stop misusing constructor :pull:`1826`
+- Various lint fixes :pull:`1824`
+- CI: use the right project slug :pull:`1823`
+- tests: update to moto 5.1.4 :pull:`1821`
 
 v1.9.3 (15th April 2025)
 ========================
