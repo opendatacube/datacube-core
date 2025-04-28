@@ -72,9 +72,8 @@ class SpatialIndexORMRegistry:
 
         Note: Called within registry lock.
         """
-        table_name = f"spatial_{epsg}"
         attributes = {
-            '__tablename__': table_name,
+            '__tablename__': f"spatial_{epsg}",
             '__table_args__': (
                 METADATA,
                 {
@@ -86,11 +85,10 @@ class SpatialIndexORMRegistry:
                                          primary_key=True,
                                          nullable=False,
                                          comment="The dataset being indexed"),
+            "extent": mapped_column(Geometry('MULTIPOLYGON', srid=epsg),
+                                    nullable=False,
+                                    comment="The extent of the dataset")
         }
-        # Add geometry column
-        attributes["extent"] = mapped_column(Geometry('MULTIPOLYGON', srid=epsg),
-                                      nullable=False,
-                                      comment="The extent of the dataset")
         return type(f'SpatialIdx{epsg}', (SpatialIndex, Base), attributes)
 
 
