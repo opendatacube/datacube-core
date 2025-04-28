@@ -32,7 +32,7 @@ lark
 # For Python 3.12 support
 lxml>=5.0.0
 matplotlib
-moto<5
+moto>=5.0
 netcdf4>=1.7.1-post1
 # Numpy 2
 numpy>=2
