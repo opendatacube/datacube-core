@@ -151,7 +151,6 @@ select = [
 ]
 ignore = [
     # FIXME: re-enable these rules.
-    "B004",
     "B008",
     "B009",
     "B011",

@@ -183,7 +183,7 @@ def classify_changes(changes: list[Change], allowed_changes: Mapping[Offset, All
 
         if allowance is None:
             bad_changes.append((offset, old_val, new_val))
-        elif hasattr(allowance, '__call__'):
+        elif callable(allowance):
             if allowance(allowance_offset, offset, old_val, new_val):
                 good_changes.append((offset, old_val, new_val))
             else:
