@@ -802,7 +802,7 @@ class DatasetResource(AbstractDatasetResource):
             archived: bool | None = False,
             **query: QueryField
     ) -> Iterable[tuple[Range, int]]:
-        return list(self._product_period_count(period, archived=archived, single_product_only=True, **query))[0][1]
+        return next(iter(self._product_period_count(period, archived=archived, single_product_only=True, **query)))[1]
 
     @override
     @deprecat(
