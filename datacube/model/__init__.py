@@ -534,7 +534,7 @@ class Measurement:
 
     @override
     def __repr__(self) -> str:
-        return f"Measurement({repr(self._data)})"
+        return f"Measurement({self._data!r})"
 
     def copy(self) -> Measurement:
         """Required as the super class `dict` method returns a `dict`

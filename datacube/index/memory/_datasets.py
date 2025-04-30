@@ -775,7 +775,7 @@ class DatasetResource(AbstractDatasetResource):
         last_product: YieldType | None = None
         for dss, product in self._search_grouped(archived=archived, **query):  # type: ignore[arg-type]
             if last_product and single_product_only:
-                raise ValueError(f"Multiple products match single query search: {repr(query)}")
+                raise ValueError(f"Multiple products match single query search: {query!r}")
             if last_product:
                 yield last_product
             period_counts = []
@@ -791,7 +791,7 @@ class DatasetResource(AbstractDatasetResource):
             last_product = retval
 
         if last_product is None:
-            raise ValueError(f"No products match search terms: {repr(query)}")
+            raise ValueError(f"No products match search terms: {query!r}")
         else:
             yield last_product
 
