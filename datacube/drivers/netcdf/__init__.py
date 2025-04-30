@@ -7,8 +7,8 @@ from . import writer as netcdf_writer
 from .writer import Variable
 
 __all__ = (
-    'create_netcdf_storage_unit',
-    'write_dataset_to_netcdf',
-    'netcdf_writer',
     'Variable',
+    'create_netcdf_storage_unit',
+    'netcdf_writer',
+    'write_dataset_to_netcdf',
 )

@@ -25,20 +25,20 @@ ByteRange: TypeAlias = slice | tuple[int, int]       # pylint: disable=invalid-n
 MaybeS3: TypeAlias = BaseClient | None
 
 __all__ = (
-    "s3_url_parse",
-    "s3_fmt_range",
-    "s3_client",
-    "s3_open",
-    "s3_fetch",
-    "s3_dump",
-    "ec2_metadata",
-    "ec2_current_region",
-    "botocore_default_region",
     "auto_find_region",
+    "botocore_default_region",
+    "configure_s3_access",
+    "ec2_current_region",
+    "ec2_metadata",
+    "get_aws_settings",
     "get_creds_with_retry",
     "mk_boto_session",
-    "get_aws_settings",
-    "configure_s3_access",
+    "s3_client",
+    "s3_dump",
+    "s3_fetch",
+    "s3_fmt_range",
+    "s3_open",
+    "s3_url_parse",
 )
 
 

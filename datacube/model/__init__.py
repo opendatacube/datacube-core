@@ -27,13 +27,23 @@ from .eo3 import validate_eo3_compatible_type
 from .lineage import LineageDirection, LineageTree, LineageRelation, InconsistentLineageException
 
 __all__ = [
-    "Field", "get_dataset_fields",
-    "Range", "ranges_overlap",
-    "LineageDirection", "LineageTree", "LineageRelation", "InconsistentLineageException",
-    "Dataset", "Product", "MetadataType", "Measurement", "GridSpec",
-    "QueryField", "QueryDict",
+    "Dataset",
+    "ExtraDimensions",
+    "Field",
+    "GridSpec",
+    "InconsistentLineageException",
+    "LineageDirection",
+    "LineageRelation",
+    "LineageTree",
+    "Measurement",
+    "MetadataType",
+    "Product",
+    "QueryDict",
+    "QueryField",
+    "Range",
+    "get_dataset_fields",
     "metadata_from_doc",
-    "ExtraDimensions"
+    "ranges_overlap"
 ]
 
 from odc.geo import CRS, BoundingBox, Geometry, wh_, resyx_, res_, yx_

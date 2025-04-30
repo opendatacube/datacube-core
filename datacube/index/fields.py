@@ -13,12 +13,14 @@ from typing_extensions import override
 from datacube.model import Range, Not
 from datacube.model.fields import Expression, Field
 
-__all__ = ['Field',
-           'Expression',
-           'OrExpression',
-           'UnknownFieldError',
-           'to_expressions',
-           'as_expression']
+__all__ = [
+    'Expression',
+    'Field',
+    'OrExpression',
+    'UnknownFieldError',
+    'as_expression',
+    'to_expressions',
+]
 
 
 class UnknownFieldError(Exception):

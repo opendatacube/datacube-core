@@ -17,7 +17,7 @@ from datacube.model import Measurement
 from datacube.utils import import_function
 from datacube.utils.documents import parse_yaml
 
-__all__ = ['construct', 'Transformation', 'Measurement']
+__all__ = ['Measurement', 'Transformation', 'construct']
 
 
 class NameResolver:

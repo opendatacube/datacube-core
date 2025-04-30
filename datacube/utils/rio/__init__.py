@@ -17,10 +17,10 @@ from ._rio import (
 )
 
 __all__ = (
+    'activate_from_config',
     'activate_rio_env',
+    'configure_s3_access',
     'deactivate_rio_env',
     'get_rio_env',
     'set_default_rio_config',
-    'activate_from_config',
-    'configure_s3_access',
 )
