@@ -75,18 +75,20 @@ def measurement_paths(ds: Dataset) -> dict[str, str]:
 
 
 class BandInfo:
-    __slots__ = ('name',
-                 'uri',
-                 'band',
-                 'layer',
-                 'dtype',
-                 'nodata',
-                 'units',
-                 'crs',
-                 'transform',
-                 'format',
-                 'dims',
-                 'driver_data')
+    __slots__ = (
+        'band',
+        'crs',
+        'dims',
+        'driver_data',
+        'dtype',
+        'format',
+        'layer',
+        'name',
+        'nodata',
+        'transform',
+        'units',
+        'uri',
+    )
 
     def __init__(self,
                  ds: Dataset,

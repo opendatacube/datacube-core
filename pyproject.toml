@@ -158,7 +158,6 @@ ignore = [
     "B905",
     "RUF005",
     "RUF012",
-    "RUF023",
 ]
 
 [tool.ruff.lint.pep8-naming]
