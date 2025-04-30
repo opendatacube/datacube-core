@@ -39,7 +39,7 @@ from ._misc import (
 )
 
 
-__all__ = (
+__all__ = [
     "DatacubeException",
     "DocReader",
     "InvalidDocException",
@@ -73,4 +73,4 @@ __all__ = (
     "validate_document",
     "without_lineage_sources",
     "write_user_secret_file"
-)
+]

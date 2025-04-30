@@ -22,8 +22,8 @@ except ImportError:
 from .api import Datacube
 from .utils import xarray_geoextensions
 
-__all__ = (
+__all__ = [
     "Datacube",
     "__version__",
     "xarray_geoextensions",
-)
+]

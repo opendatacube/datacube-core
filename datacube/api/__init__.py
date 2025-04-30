@@ -8,7 +8,7 @@ Modules for the Storage and Access Query API
 
 from .core import Datacube, TerminateCurrentLoad
 
-__all__ = (
+__all__ = [
     'Datacube',
     'TerminateCurrentLoad',
-)
+]

@@ -18,14 +18,14 @@ import logging
 import os
 
 
-__all__ = (
+__all__ = [
     "compute_tasks",
     "partition_map",
     "pmap",
     "save_blob_to_file",
     "save_blob_to_s3",
     "start_local_dask",
-)
+]
 
 _LOG = logging.getLogger(__name__)
 

@@ -24,7 +24,7 @@ from datacube.utils.generic import thread_local_cache
 ByteRange: TypeAlias = slice | tuple[int, int]       # pylint: disable=invalid-name
 MaybeS3: TypeAlias = BaseClient | None
 
-__all__ = (
+__all__ = [
     "auto_find_region",
     "botocore_default_region",
     "configure_s3_access",
@@ -39,7 +39,7 @@ __all__ = (
     "s3_fmt_range",
     "s3_open",
     "s3_url_parse",
-)
+]
 
 
 def _fetch_text(url: str, timeout: float = 0.1) -> str | None:
