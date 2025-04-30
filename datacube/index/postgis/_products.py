@@ -134,7 +134,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         existing = self.get_by_name(product.name)
         if not existing:
-            raise ValueError(f'Unknown product {product.name}, cannot update – did you intend to add it?')
+            raise ValueError(f'Unknown product {product.name}, cannot update - did you intend to add it?')
 
         updates_allowed: Mapping[changes.Offset, changes.AllowPolicy] = {
             ('description',): changes.allow_any,
@@ -355,7 +355,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
         Perform a search using arbitrary metadata, returning results as Product objects.
 
-        Caution – slow! This will usually not use indexes.
+        Caution - slow! This will usually not use indexes.
 
         :param dict metadata:
         :rtype: list[Product]

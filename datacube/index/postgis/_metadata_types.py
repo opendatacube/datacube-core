@@ -104,7 +104,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
         existing = self.get_by_name(metadata_type.name)
         if not existing:
-            raise ValueError(f'Unknown metadata type {metadata_type.name}, cannot update – '
+            raise ValueError(f'Unknown metadata type {metadata_type.name}, cannot update - '
                              'did you intend to add it?')
 
         updates_allowed = {
