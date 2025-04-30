@@ -24,7 +24,7 @@ Next Version
 - Dependabot: make one pull request for everything :pull:`1816`
 - tests: fix midnight bug :pull:`1825`
 - geometry: stop misusing constructor :pull:`1826`
-- Various lint fixes :pull:`1824`
+- Various lint fixes :pull:`1824`, :pull:`1838`
 - CI: use the right project slug :pull:`1823`
 - tests: update to moto 5.1.4 :pull:`1821`
 - Python 3.10 updates :pull:`1839`
