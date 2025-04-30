@@ -92,19 +92,17 @@ def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock
                 allow_unsafe_updates=allow_unsafe,
                 allow_table_lock=allow_exclusive_lock,
             )
-            echo('Updated "%s"' % type_.name)
+            echo(f'Updated "{type_.name}"')
         else:
             can_update, safe_changes, unsafe_changes = index.metadata_types.can_update(
                 type_, allow_unsafe_updates=allow_unsafe
             )
             if can_update:
-                echo('Can update "%s": %s unsafe changes, %s safe changes' % (type_.name,
-                                                                              len(list(unsafe_changes)),
-                                                                              len(list(safe_changes))))
+                echo(f'Can update "{type_.name}": {len(list(unsafe_changes))} unsafe '
+                     f'changes, {len(list(safe_changes))} safe changes')
             else:
-                echo('Cannot update "%s": %s unsafe changes, %s safe changes' % (type_.name,
-                                                                                 len(list(unsafe_changes)),
-                                                                                 len(list(safe_changes))))
+                echo(f'Cannot update "{type_.name}": {len(list(unsafe_changes))} unsafe'
+                     f' changes, {len(list(safe_changes))} safe changes')
 
 
 @this_group.command('show')

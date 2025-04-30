@@ -27,21 +27,18 @@ class CreateView(Executable, ClauseElement):
 
 @compiles(CreateView)
 def visit_create_view(element, compiler, **kw):
-    return "CREATE VIEW %s AS %s" % (
-        element.name,
-        compiler.process(element.select, literal_binds=True)
-    )
+    return f"CREATE VIEW {element.name} AS {compiler.process(element.select, literal_binds=True)}"
 
 
-UPDATE_TIMESTAMP_SQL = """
-create or replace function {schema}.set_row_update_time()
+UPDATE_TIMESTAMP_SQL = f"""
+create or replace function {SCHEMA_NAME}.set_row_update_time()
 returns trigger as $$
 begin
   new.updated = now();
   return new;
 end;
 $$ language plpgsql;
-""".format(schema=SCHEMA_NAME)
+"""
 
 INSTALL_TRIGGER_SQL_TEMPLATE = [
     "drop trigger if exists row_update_time_{table} on {schema}.{table}",
@@ -54,13 +51,13 @@ INSTALL_TRIGGER_SQL_TEMPLATE = [
 ]
 
 TYPES_INIT_SQL = [
-    "drop function if exists {schema}.common_timestamp(text)".format(schema=SCHEMA_NAME),
-    """
-    create type {schema}.float8range as range (
+    f"drop function if exists {SCHEMA_NAME}.common_timestamp(text)",
+    f"""
+    create type {SCHEMA_NAME}.float8range as range (
         subtype = float8,
         subtype_diff = float8mi
     )
-    """.format(schema=SCHEMA_NAME)
+    """
 ]
 
 
@@ -85,7 +82,7 @@ class Float8Range(GenericFunction):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.packagenames = ('%s' % SCHEMA_NAME,)
+        self.packagenames = (f'{SCHEMA_NAME}',)
 
 
 class PGNAME(sqltypes.Text):

@@ -59,12 +59,7 @@ def write_csv(out_f, field_names, search_results) -> None:
     search_results = list(search_results)
     writer = csv.DictWriter(out_f, tuple(sorted(field_names)))
     writer.writeheader()
-    writer.writerows(
-        (
-            printable_values(d) for d in
-            search_results
-        )
-    )
+    writer.writerows(printable_values(d) for d in search_results)
 
 
 OUTPUT_FORMATS = {

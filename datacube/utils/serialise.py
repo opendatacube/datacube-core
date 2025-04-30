@@ -68,11 +68,11 @@ def jsonify_document(doc):
             if math.isnan(v):
                 return "NaN"
             return "-Infinity" if v < 0 else "Infinity"
-        if isinstance(v, (datetime, date)):
+        if isinstance(v, datetime | date):
             return v.isoformat()
         if isinstance(v, numpy.dtype):
             return v.name
-        if isinstance(v, (UUID, Decimal, CRS)):
+        if isinstance(v, UUID | Decimal | CRS):
             return str(v)
         return v
 

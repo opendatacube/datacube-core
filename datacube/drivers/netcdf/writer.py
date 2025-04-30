@@ -323,7 +323,7 @@ def flag_mask_meanings(flags_def) -> tuple[numpy.ndarray, numpy.ndarray, str]:
 
     if max_bit >= 32:
         # GDAL upto and including 2.0 can't support int64 attributes...
-        raise RuntimeError('Bit index too high: %s' % max_bit)
+        raise RuntimeError(f'Bit index too high: {max_bit}')
 
     valid_range = numpy.array([0, (2 ** max_bit - 1) + 2 ** max_bit], dtype='int32')
 

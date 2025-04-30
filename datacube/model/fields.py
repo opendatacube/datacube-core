@@ -79,7 +79,7 @@ class Field:
         # (eg. Does this join other tables that aren't 1:1 with datasets.)
         self.affects_row_selection = False
 
-        assert self.type_name in _AVAILABLE_TYPE_NAMES, "Invalid type name %r" % (self.type_name,)
+        assert self.type_name in _AVAILABLE_TYPE_NAMES, f"Invalid type name {self.type_name!r}"
 
     def __eq__(self, value) -> Expression:  # type: ignore
         """

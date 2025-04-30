@@ -134,7 +134,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         existing = self.get_by_name(product.name)
         if not existing:
-            raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % product.name)
+            raise ValueError(f'Unknown product {product.name}, cannot update – did you intend to add it?')
 
         updates_allowed: Mapping[changes.Offset, changes.AllowPolicy] = {
             ('description',): changes.allow_any,
@@ -286,7 +286,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             result = connection.get_product(id_)
         if not result:
-            raise KeyError('"%s" is not a valid Product id' % id_)
+            raise KeyError(f'"{id_}" is not a valid Product id')
         return self._make(result)
 
     # This is memoized in the constructor
@@ -295,7 +295,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             result = connection.get_product_by_name(name)
         if not result:
-            raise KeyError('"%s" is not a valid Product name' % name)
+            raise KeyError(f'"{name}" is not a valid Product name')
         return self._make(result)
 
     @override
@@ -361,8 +361,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         :rtype: list[Product]
         """
         with self._db_connection() as connection:
-            for product in self._make_many(connection.search_products_by_metadata(metadata)):
-                yield product
+            yield from self._make_many(connection.search_products_by_metadata(metadata))
 
     @override
     def get_all(self) -> Iterable[Product]:

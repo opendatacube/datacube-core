@@ -168,8 +168,7 @@ def create_mask_value(bits_def, **flags):
                             if val_ref == flag_ref)
             flag_value = int(flag_value)  # Might be string if coming from DB
         except ValueError:
-            raise ValueError('Unknown value %s specified for flag %s' %
-                             (flag_ref, flag_name)) from None
+            raise ValueError(f'Unknown value {flag_ref} specified for flag {flag_name}') from None
 
         if isinstance(defn['bits'], collections.abc.Iterable):  # Multi-bit flag
             # Set mask
@@ -283,7 +282,7 @@ def generate_table(rows):
     # - print the header
     header, data = rows[0], rows[1:]
     yield (
-        ' | '.join(format(title, "%ds" % width) for width, title in zip(widths, header))
+        ' | '.join(format(title, f"{width}s") for width, title in zip(widths, header))
     )
 
     # Print the separator
@@ -296,5 +295,5 @@ def generate_table(rows):
         first_col = row[0]
 
         yield (
-            " | ".join(format(cdata, "%ds" % width) for width, cdata in zip(widths, row))
+            " | ".join(format(cdata, f"{width}s") for width, cdata in zip(widths, row))
         )

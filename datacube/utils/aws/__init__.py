@@ -18,11 +18,11 @@ from urllib.request import urlopen
 from urllib.parse import urlparse
 from sqlalchemy.engine.url import URL
 
-from typing import Optional, Any, Union, IO
+from typing import Any, IO, TypeAlias
 from datacube.utils.generic import thread_local_cache
 
-ByteRange = Union[slice, tuple[int, int]]       # pylint: disable=invalid-name
-MaybeS3 = Optional[BaseClient]
+ByteRange: TypeAlias = slice | tuple[int, int]       # pylint: disable=invalid-name
+MaybeS3: TypeAlias = BaseClient | None
 
 __all__ = (
     "s3_url_parse",
@@ -49,7 +49,7 @@ def _fetch_text(url: str, timeout: float = 0.1) -> str | None:
                 return resp.read().decode('utf8')
             else:
                 return None
-    except IOError:
+    except OSError:
         return None
 
 

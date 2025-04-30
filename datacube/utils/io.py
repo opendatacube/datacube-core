@@ -34,7 +34,7 @@ def check_write_path(fname: Path | str, overwrite: bool) -> Path:
         if overwrite:
             fname.unlink()
         else:
-            raise IOError("File exists")
+            raise OSError("File exists")
     return fname
 
 
@@ -66,5 +66,5 @@ def slurp(fname: str | Path,
     try:
         with open(str(fname), mode) as handle:
             return handle.read()
-    except IOError:
+    except OSError:
         return None

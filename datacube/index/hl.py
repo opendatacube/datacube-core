@@ -10,7 +10,7 @@ import logging
 import json
 import toolz
 from uuid import UUID
-from typing import cast, Any, Union
+from typing import TypeAlias, cast, Any
 from collections.abc import Callable, Iterable, Mapping, Sequence, MutableMapping
 
 from datacube.model import Dataset, LineageTree, Product
@@ -39,7 +39,7 @@ def load_rules_from_types(index: AbstractIndex,
         for name in product_names:
             product = index.products.get_by_name(name)
             if not product:
-                return None, 'Supplied product name "%s" not present in the database' % name
+                return None, f'Supplied product name "{name}" not present in the database'
             products.append(product)
     else:
         products += index.products.get_all()
@@ -73,10 +73,8 @@ def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
                 return rule.product
 
             raise BadMatch('Dataset metadata did not match product signature.'
-                           '\nDataset definition:\n %s\n'
-                           '\nProduct signature:\n %s\n'
-                           % (json.dumps(doc, indent=4),
-                              json.dumps(rule.signature, indent=4)))
+                           f'\nDataset definition:\n {json.dumps(doc, indent=4)}\n'
+                           f'\nProduct signature:\n {json.dumps(rule.signature, indent=4)}\n')
 
         return match
 
@@ -92,11 +90,10 @@ def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
         doc_id = doc.get('id', '<missing id>')
 
         if len(matched) == 0:
-            raise BadMatch('No matching Product found for dataset %s' % doc_id)
+            raise BadMatch(f'No matching Product found for dataset {doc_id}')
         else:
-            raise BadMatch('Auto match failed, dataset %s matches several products:\n  %s' % (
-                doc_id,
-                ','.join(p.name for p in matched)))
+            raise BadMatch(f"Auto match failed, dataset {doc_id} matches several products:\n"
+                           f"{','.join(p.name for p in matched)}")
 
     return match
 
@@ -144,10 +141,7 @@ def check_consistent(a: Mapping[str, Any], b: Mapping[str, Any]) -> tuple[bool, 
     return False, ", ".join([render_diff(offset, a, b) for offset, a, b in diffs])
 
 
-DatasetOrError = Union[
-    tuple[Dataset, None],
-    tuple[None, str | Exception]
-]
+DatasetOrError: TypeAlias = tuple[Dataset, None] | tuple[None, str | Exception]
 
 
 def check_intended_eo3(ds: SimpleDocNav, product: Product) -> None:
@@ -240,8 +234,7 @@ def resolve_legacy_lineage(main_ds_doc: SimpleDocNav, uri: str, matcher: Product
     missing_lineage = lineage_uuids - set(db_dss)
 
     if missing_lineage and fail_on_missing_lineage:
-        return None, "Following lineage datasets are missing from DB: %s" % (
-            ','.join(str(m) for m in missing_lineage))
+        return None, f"Following lineage datasets are missing from DB: {','.join(str(m) for m in missing_lineage)}"
 
     if not is_doc_eo3(main_ds.doc):
         if is_doc_geo(main_ds.doc, check_eo3=False):

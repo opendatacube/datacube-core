@@ -42,8 +42,8 @@ def test_between_expression():
         assert k in q
         r = q[k]
         assert isinstance(r, Range)
-        assert isinstance(r.begin, (int, float))
-        assert isinstance(r.end, (int, float))
+        assert isinstance(r.begin, int | float)
+        assert isinstance(r.end, int | float)
         assert r == Range(10, 11.3)
 
 

@@ -107,7 +107,7 @@ def _make_geotiffs(tiffs_dir, day_offset, num_bands=NUM_BANDS):
                               GEOTIFF['ul']['y']]}
 
     for band in range(num_bands):
-        path = str(tiffs_dir.join('band%02d_time%02d.tif' % ((band + 1), day_offset)))
+        path = str(tiffs_dir.join('band%02d_time%02d.tif' % ((band + 1), day_offset)))  # noqa: UP031
         with rasterio.open(path, 'w', **metadata) as dst:
             # Write data in "corners" (rounded down by 100, for a size of 100x100)
             data = np.zeros((height, width), dtype=np.int16)
@@ -147,13 +147,13 @@ def _make_ls5_scene_datasets(geotiffs, tmpdir):
     dataset_dir = tmpdir.mkdir('ls5_dataset')
     for geotiff in geotiffs:
         # Make a directory for the dataset
-        obs_name = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_%s' % geotiff['day']
+        obs_name = f"LS5_TM_NBAR_P54_GANBAR01-002_090_084_{geotiff['day']}"
         obs_dir = dataset_dir.mkdir(obs_name)
         symlink(str(geotiff['path']), str(obs_dir.join('agdc-metadata.yaml')))
 
         scene_dir = obs_dir.mkdir('scene01')
         scene_dir.join('report.txt').write('Example')
-        geotiff_name = '%s_B{}0.tif' % obs_name
+        geotiff_name = f'{obs_name}_B{{}}0.tif'
         for band in range(NUM_BANDS):
             path = scene_dir.join(geotiff_name.format(band + 1))
             symlink(str(geotiff['tiffs'][band]), str(path))

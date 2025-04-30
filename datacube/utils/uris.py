@@ -72,7 +72,7 @@ def uri_to_local_path(local_uri: str | None) -> pathlib.Path | None:
 
     components = urlparse(local_uri)
     if components.scheme != 'file':
-        raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
+        raise ValueError(f'Only file URIs currently supported. Tried {components.scheme!r}.')
 
     path = url2pathname(components.path)
 
@@ -140,7 +140,7 @@ def default_base_dir() -> pathlib.Path:
 
     try:
         pwd_resolved = pwd.resolve()
-    except IOError:
+    except OSError:
         return cwd
 
     if cwd != pwd_resolved:
@@ -158,8 +158,8 @@ def normalise_path(p: str | pathlib.Path,
        user launching the process, including any possible symlinks) will be
        used.
     """
-    assert isinstance(p, (str, pathlib.Path))
-    assert isinstance(base, (str, pathlib.Path, type(None)))
+    assert isinstance(p, str | pathlib.Path)
+    assert isinstance(base, str | pathlib.Path | type(None))
 
     def norm(p):
         return pathlib.Path(os.path.normpath(str(p)))

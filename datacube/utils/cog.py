@@ -373,6 +373,6 @@ def to_cog(
     )
 
     assert isinstance(
-        bb, (bytes, Delayed)
+        bb, bytes | Delayed
     )  # for mypy sake for :mem: output it bytes or delayed bytes
     return bb

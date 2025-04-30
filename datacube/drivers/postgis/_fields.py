@@ -11,7 +11,7 @@ from collections import namedtuple
 from datetime import timezone
 from datetime import datetime, date
 from decimal import Decimal
-from typing import Any, Union
+from typing import Any, TypeAlias
 from typing_extensions import override
 from collections.abc import Callable
 
@@ -143,7 +143,7 @@ class NativeField(PgField):
                  alchemy_table: FromClause | None = None,
                  # Should this be selected by default when selecting all fields?
                  affects_row_selection: bool = False):
-        super(NativeField, self).__init__(name, description, alchemy_column, indexed=False, alchemy_table=alchemy_table)
+        super().__init__(name, description, alchemy_column, indexed=False, alchemy_table=alchemy_table)
         self._expression = alchemy_expression
         self.affects_row_selection = affects_row_selection
         self.join_clause = join_clause
@@ -248,11 +248,11 @@ class SimpleDocField(PgDocField):
     """
 
     def __init__(self, name, description, alchemy_column, indexed, offset=None, selection='first'):
-        super(SimpleDocField, self).__init__(name, description, alchemy_column, indexed)
+        super().__init__(name, description, alchemy_column, indexed)
         self.offset = offset
         if selection not in SELECTION_TYPES:
             raise ValueError(
-                "Unknown field selection type %s. Expected one of: %r" % (selection, (SELECTION_TYPES,),)
+                f"Unknown field selection type {selection}. Expected one of: {(SELECTION_TYPES,)!r}"
             )
         self.aggregation = SELECTION_TYPES[selection]
 
@@ -334,7 +334,7 @@ class DoubleDocField(NumericDocField):
         return float(value)
 
 
-DateFieldLike = Union[datetime, date, str, ColumnElement]
+DateFieldLike: TypeAlias = datetime | date | str | ColumnElement
 
 
 class DateDocField(SimpleDocField):
@@ -345,14 +345,14 @@ class DateDocField(SimpleDocField):
         """
         Wrap a value as needed for this field type.
         """
-        if isinstance(value, (datetime, str)):
+        if isinstance(value, datetime | str):
             return self.normalise_value(value)
         elif isinstance(value, ColumnElement):
             # SQLAlchemy expression or string are parsed in pg as dates.
             # NB: Do not cast here - casting here breaks expected behaviour in other timezones
             return value
         else:
-            raise ValueError("Value not readable as date: %r" % value)
+            raise ValueError(f"Value not readable as date: {value!r}")
 
     @override
     def normalise_value(self, value):
@@ -399,7 +399,7 @@ class RangeDocField(PgDocField):
     FIELD_CLASS = SimpleDocField
 
     def __init__(self, name, description, alchemy_column, indexed, min_offset=None, max_offset=None):
-        super(RangeDocField, self).__init__(name, description, alchemy_column, indexed)
+        super().__init__(name, description, alchemy_column, indexed)
         self.lower = self.FIELD_CLASS(
             name + '_lower',
             description,
@@ -494,9 +494,9 @@ class DateRangeDocField(RangeDocField):
     def value_to_alchemy(self, value):
         low, high = value
         # Is OK to cast, because we are wrapping it in timezone-aware datatype.
-        if isinstance(low, (ColumnElement, str)):
+        if isinstance(low, ColumnElement | str):
             low = cast(low, TIMESTAMP(timezone=True))
-        if isinstance(high, (ColumnElement, str)):
+        if isinstance(high, ColumnElement | str):
             high = cast(high, TIMESTAMP(timezone=True))
         return func.tstzrange(
             low, high,
@@ -545,7 +545,7 @@ class DateRangeDocField(RangeDocField):
             )
         else:
             raise ValueError("Unknown comparison type for date range: "
-                             "expecting datetimes, got: (%r, %r)" % (low, high))
+                             f"expecting datetimes, got: ({low!r}, {high!r})")
 
     @property
     def expression_with_leniency(self):
@@ -577,7 +577,7 @@ def _number_implies_year(v: int | datetime) -> datetime:
 
 class PgExpression(Expression):
     def __init__(self, field) -> None:
-        super(PgExpression, self).__init__()
+        super().__init__()
         #: :type: PgField
         self.field = field
 
@@ -592,7 +592,7 @@ class PgExpression(Expression):
 
 class ValueBetweenExpression(PgExpression):
     def __init__(self, field, low_value, high_value):
-        super(ValueBetweenExpression, self).__init__(field)
+        super().__init__(field)
         self.low_value = low_value
         self.high_value = high_value
 
@@ -610,7 +610,7 @@ class ValueBetweenExpression(PgExpression):
 
 class RangeBetweenExpression(PgExpression):
     def __init__(self, field, low_value, high_value, _range_class) -> None:
-        super(RangeBetweenExpression, self).__init__(field)
+        super().__init__(field)
         self.low_value = low_value
         self.high_value = high_value
         self._range_class = _range_class
@@ -623,7 +623,7 @@ class RangeBetweenExpression(PgExpression):
 
 class RangeContainsExpression(PgExpression):
     def __init__(self, field, value) -> None:
-        super(RangeContainsExpression, self).__init__(field)
+        super().__init__(field)
         self.value = value
 
     @property
@@ -633,7 +633,7 @@ class RangeContainsExpression(PgExpression):
 
 class EqualsExpression(PgExpression):
     def __init__(self, field, value):
-        super(EqualsExpression, self).__init__(field)
+        super().__init__(field)
         self.value = value
 
     @property
@@ -709,8 +709,8 @@ def parse_fields(doc, table_column):
 
         field_class = type_map.get(type_name)
         if not field_class:
-            raise ValueError(('Field %r has unknown type %r.'
-                              ' Available types are: %r') % (name, type_name, list(type_map.keys())))
+            raise ValueError(f'Field {name!r} has unknown type {type_name!r}.'
+                              f' Available types are: {list(type_map.keys())!r}')
         try:
             return field_class(name, description, column, indexed, **ctorargs)
         except TypeError as e:

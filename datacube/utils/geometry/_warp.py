@@ -2,15 +2,15 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Union, Optional
 import rasterio.warp
 import rasterio.crs
 import numpy as np
 from affine import Affine
+from typing import TypeAlias
 from . import GeoBox
 
-Resampling = Union[str, int, rasterio.warp.Resampling]  # pylint: disable=invalid-name
-Nodata = Optional[int | float]  # pylint: disable=invalid-name
+Resampling: TypeAlias = str | int | rasterio.warp.Resampling  # pylint: disable=invalid-name
+Nodata: TypeAlias = int | float | None  # pylint: disable=invalid-name
 _WRP_CRS = rasterio.crs.CRS.from_epsg(3857)  # pylint: disable=c-extension-no-member
 
 

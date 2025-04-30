@@ -17,7 +17,7 @@ import logging
 import re
 from contextlib import contextmanager
 from collections.abc import Callable
-from typing import Iterator
+from collections.abc import Iterator
 from typing_extensions import override
 
 from sqlalchemy import event, create_engine

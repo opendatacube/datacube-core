@@ -170,9 +170,9 @@ def read_documents(*paths, uri=False):
         except InvalidDocException as e:
             raise e
         except (yaml.YAMLError, ValueError) as e:
-            raise InvalidDocException('Failed to load %s: %s' % (path, e)) from None
+            raise InvalidDocException(f'Failed to load {path}: {e}') from None
         except Exception as e:
-            raise InvalidDocException('Failed to load %s: %s' % (path, e)) from None
+            raise InvalidDocException(f'Failed to load {path}: {e}') from None
 
 
 def netcdf_extract_string(chars):
@@ -216,7 +216,7 @@ def validate_document(document, schema, schema_folder=None):
         def doc_reference(path):
             path = Path(schema_folder).joinpath(path)
             if not path.exists():
-                raise ValueError("Reference not found: %s" % path)
+                raise ValueError(f"Reference not found: {path}")
             referenced_schema = next(iter(read_documents(path)))[1]
             return referencing.Resource(referenced_schema, DRAFT4)
 
@@ -492,9 +492,7 @@ class DocReader:
             return self.fields[name]
         else:
             raise AttributeError(
-                'Unknown field %r. Expected one of %r' % (
-                    name, list(self.fields.keys())
-                )
+                f'Unknown field {name!r}. Expected one of {list(self.fields.keys())!r}'
             )
 
     @override
@@ -502,9 +500,7 @@ class DocReader:
         offset = self._system_offsets.get(name)
         if offset is None:
             raise AttributeError(
-                'Unknown field offset %r. Expected one of %r' % (
-                    name, list(self.system_fields.keys())
-                )
+                f'Unknown field offset {name!r}. Expected one of {list(self.system_fields.keys())!r}'
             )
         return _set_doc_offset(offset, self._doc, val)
 

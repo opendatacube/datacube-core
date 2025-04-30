@@ -292,7 +292,7 @@ netcdf_num = 1
 def tmpnetcdf_filename(tmpdir):
     """Return a generated filename for a non-existent netcdf file"""
     global netcdf_num
-    filename = str(tmpdir.join("testfile_np_%s.nc" % netcdf_num))
+    filename = str(tmpdir.join(f"testfile_np_{netcdf_num}.nc"))
     netcdf_num += 1
     return filename
 

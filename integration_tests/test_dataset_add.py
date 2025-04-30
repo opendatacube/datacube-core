@@ -352,7 +352,7 @@ metadata:
     assert len(pp) == 2
 
     for ds, i in zip(dss, (1, 2)):
-        r = clirunner(['dataset', 'add', str(prefix / ('dataset%d.yml' % i))])
+        r = clirunner(['dataset', 'add', str(prefix / f'dataset{i}.yml')])
         assert 'ERROR Auto match failed' in r.output
         assert 'matches several products' in r.output
         assert index.datasets.has(ds.id) is False

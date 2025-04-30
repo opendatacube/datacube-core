@@ -55,5 +55,4 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         :rtype: list[(str, str, str)]
         """
         with self._db_connection() as connection:
-            for role, user, description in connection.list_users():
-                yield role, user, description
+            yield from connection.list_users()

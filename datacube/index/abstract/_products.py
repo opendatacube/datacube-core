@@ -72,7 +72,7 @@ class AbstractProductResource(ABC):
             definition['metadata_type'] = metadata_type.name
 
         if metadata_type is None:
-            raise UnknownMetadataType('Unknown metadata type: %r' % definition['metadata_type'])
+            raise UnknownMetadataType(f"Unknown metadata type: {definition['metadata_type']!r}")
 
         return Product(metadata_type, definition)
 

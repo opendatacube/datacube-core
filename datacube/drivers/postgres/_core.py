@@ -73,7 +73,7 @@ def schema_qualified(name):
     >>> schema_qualified('dataset')
     'agdc.dataset'
     """
-    return '{}.{}'.format(SCHEMA_NAME, name)
+    return f'{SCHEMA_NAME}.{name}'
 
 
 def _get_quoted_connection_info(connection) -> tuple:
@@ -101,9 +101,9 @@ def ensure_db(engine, with_permissions=True):
             _ensure_role(c, 'agdc_manage', inherits_from='agdc_ingest')
             _ensure_role(c, 'agdc_admin', inherits_from='agdc_manage', add_user=True)
 
-            c.execute(text("""
-            grant all on database {db} to agdc_admin;
-            """.format(db=quoted_db_name)))
+            c.execute(text(f"""
+            grant all on database {quoted_db_name} to agdc_admin;
+            """))
             c.commit()
 
         if is_new:
@@ -122,7 +122,7 @@ def ensure_db(engine, with_permissions=True):
             _LOG.info("Creating added column.")
             install_added_column(c)
             if with_permissions:
-                c.execute(text('set role {}'.format(quoted_user)))
+                c.execute(text(f'set role {quoted_user}'))
             c.commit()
 
         if with_permissions:
@@ -211,7 +211,7 @@ def _ensure_role(conn, name, inherits_from=None, add_user=False, create_db=False
         return
 
     sql = [
-        'create role %s nologin inherit' % name,
+        f'create role {name} nologin inherit',
         'createrole' if add_user else 'nocreaterole',
         'createdb' if create_db else 'nocreatedb'
     ]
@@ -222,7 +222,7 @@ def _ensure_role(conn, name, inherits_from=None, add_user=False, create_db=False
 
 def grant_role(conn, role, users) -> None:
     if role not in USER_ROLES:
-        raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
+        raise ValueError(f'Unknown role {role!r}. Expected one of {USER_ROLES!r}')
 
     users = [escape_pg_identifier(conn, user) for user in users]
     conn.execute(text('revoke {roles} from {users}'.format(users=', '.join(users), roles=', '.join(USER_ROLES))))
@@ -264,8 +264,7 @@ def to_pg_role(role):
     pg_role = 'agdc_' + role.lower()
     if pg_role not in USER_ROLES:
         raise ValueError(
-            'Unknown role %r. Expected one of %r' %
-            (role, [r.split('_')[1] for r in USER_ROLES])
+            f"Unknown role {role!r}. Expected one of {[r.split('_')[1] for r in USER_ROLES]!r}"
         )
     return pg_role
 
@@ -282,6 +281,6 @@ def from_pg_role(pg_role):
     ValueError: Not a pg role: 'fake'. Expected one of ...
     """
     if pg_role not in USER_ROLES:
-        raise ValueError('Not a pg role: %r. Expected one of %r' % (pg_role, USER_ROLES))
+        raise ValueError(f'Not a pg role: {pg_role!r}. Expected one of {USER_ROLES!r}')
 
     return pg_role.split('_')[1]

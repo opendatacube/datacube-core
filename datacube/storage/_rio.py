@@ -49,7 +49,7 @@ class BandDataSource(GeoRasterReader):
     """
 
     def __init__(self, source, nodata=None,
-                 lock: "RLock" | None = None):
+                 lock: RLock | None = None):
         self.source = source
         if nodata is None:
             nodata = self.source.ds.nodatavals[self.source.bidx-1]
@@ -169,7 +169,7 @@ class RasterDatasetDataSource(RasterioDataSource):
         self._part = get_part_from_uri(band.uri)
         filename = _url2rasterio(band.uri, band.format, band.layer)
         lock = HDF5_LOCK if self._hdf else None
-        super(RasterDatasetDataSource, self).__init__(filename, nodata=band.nodata, lock=lock)
+        super().__init__(filename, nodata=band.nodata, lock=lock)
 
     @override
     def get_bandnumber(self, src=None) -> int | None:
@@ -226,7 +226,7 @@ def _build_hdf_uri(url_str: str, fmt: str, layer: str) -> str:
             raise ValueError("Expect either URL or /vsi path")
 
         if url.scheme != 'file':
-            raise RuntimeError("Can't access %s over %s" % (fmt, url.scheme))
+            raise RuntimeError(f"Can't access {fmt} over {url.scheme}")
         base = str(uri_to_local_path(url_str))
 
     return f'{fmt}:"{base}":{layer}'

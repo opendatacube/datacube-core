@@ -23,7 +23,7 @@ class RasterFileDataSource(RasterioDataSource):
     """ This is only used in test code
     """
     def __init__(self, filename, bandnumber, nodata=None, crs=None, transform=None, lock=None):
-        super(RasterFileDataSource, self).__init__(filename, nodata, lock=lock)
+        super().__init__(filename, nodata, lock=lock)
         self.bandnumber = bandnumber
         self.crs = crs
         self.transform = transform
@@ -217,7 +217,7 @@ def write_gtiff(fname,
         if overwrite:
             fname.unlink()
         else:
-            raise IOError("File exists")
+            raise OSError("File exists")
 
     if geobox is not None:
         assert geobox.shape == (h, w)

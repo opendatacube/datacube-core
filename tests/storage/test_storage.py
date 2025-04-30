@@ -142,7 +142,7 @@ class FakeBandDataSource:
 class FakeDatasetSource(DataSource):
     def __init__(self, value, bandnumber=1, nodata=-999, shape=(2, 2), crs=None, transform=None,
                  band_source_class=FakeBandDataSource):
-        super(FakeDatasetSource, self).__init__()
+        super().__init__()
         self.value = value
         self.bandnumber = bandnumber
         self.crs = crs
@@ -513,7 +513,7 @@ def make_sample_netcdf(tmpdir):
 
     nco.close()
 
-    return 'NetCDF:"%s":sample' % sample_nc, geobox, sample_data
+    return f'NetCDF:"{sample_nc}":sample', geobox, sample_data
 
 
 @pytest.fixture
@@ -640,7 +640,7 @@ def test_netcdf_multi_part():
         return RasterDatasetDataSource(BandInfo(d, 'green'))
 
     for i in range(3):
-        assert ds('file:///tmp.nc#part=%d' % i).get_bandnumber() == (i+1)
+        assert ds(f'file:///tmp.nc#part={i}').get_bandnumber() == (i+1)
 
     # can't tell without opening file
     assert ds('file:///tmp.nc').get_bandnumber() is None

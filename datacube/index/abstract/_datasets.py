@@ -575,8 +575,7 @@ class AbstractDatasetResource(ABC):
         if products is None:
             products = list(self.products.get_all())
         for product in products:
-            for dstup in self.get_all_docs_for_product(product, batch_size=batch_size):
-                yield dstup
+            yield from self.get_all_docs_for_product(product, batch_size=batch_size)
 
     def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: dict[str, Any]) -> BatchStatus:
         """
