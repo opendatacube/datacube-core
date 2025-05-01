@@ -17,8 +17,8 @@ from geoalchemy2 import Geometry
 from antimeridian import fix_shape
 
 from sqlalchemy.engine import Engine
-from sqlalchemy import Column, text
-from sqlalchemy.orm import Session
+from sqlalchemy import text
+from sqlalchemy.orm import Session, mapped_column
 
 from odc.geo import CRS, Geometry as Geom
 from odc.geo.geom import multipolygon, polygon
@@ -26,7 +26,7 @@ from sqlalchemy.sql.ddl import DropTable
 
 from ._core import METADATA
 from .sql import SCHEMA_NAME
-from ._schema import orm_registry, Dataset, SpatialIndex, SpatialIndexRecord
+from ._schema import Base, orm_registry, Dataset, SpatialIndex, SpatialIndexRecord
 
 _LOG = logging.getLogger(__name__)
 
@@ -72,9 +72,8 @@ class SpatialIndexORMRegistry:
 
         Note: Called within registry lock.
         """
-        table_name = f"spatial_{epsg}"
         attributes = {
-            '__tablename__': table_name,
+            '__tablename__': f"spatial_{epsg}",
             '__table_args__': (
                 METADATA,
                 {
@@ -82,16 +81,15 @@ class SpatialIndexORMRegistry:
                     "comment": "A product or dataset type, family of related datasets."
                 }
             ),
-            "dataset_ref": Column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id),
-                                  primary_key=True,
-                                  nullable=False,
-                                  comment="The dataset being indexed")
+            "dataset_ref": mapped_column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id),
+                                         primary_key=True,
+                                         nullable=False,
+                                         comment="The dataset being indexed"),
+            "extent": mapped_column(Geometry('MULTIPOLYGON', srid=epsg),
+                                    nullable=False,
+                                    comment="The extent of the dataset")
         }
-        # Add geometry column
-        attributes["extent"] = Column(Geometry('MULTIPOLYGON', srid=epsg),
-                                      nullable=False,
-                                      comment="The extent of the dataset")
-        return orm_registry.mapped(type(f'SpatialIdx{epsg}', (SpatialIndex,), attributes))
+        return type(f'SpatialIdx{epsg}', (SpatialIndex, Base), attributes)
 
 
 def is_spindex_table_name(name: str) -> bool:
