@@ -29,7 +29,23 @@ RUN apt-get update -y \
         tini \
     && apt-get clean
 
+# Copy bootstrap script into image.
+COPY --chown=root:root docker/assets/with_bootstrap /usr/local/bin/
+
+# users and groups.
+RUN groupmod ubuntu -n odc  \
+  && usermod ubuntu -l odc \
+  && adduser odc users \
+  && adduser odc sudo \
+  && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
+  && mkdir /env /code \
+  && chown odc:odc /env /code
+
 # Build constrained python environment
+
+USER odc
+
+WORKDIR /env
 
 RUN virtualenv /env
 # Set the locale, this is required for some of the Python packages
@@ -43,36 +59,24 @@ ARG UDUNITS2_XML_PATH=/usr/share/xml/udunits/udunits2-common.xml
 COPY docker/constraints.in /conf/requirements.txt
 COPY docker/constraints.txt docker/nobinary.txt /conf/
 
-
 RUN . /env/bin/activate && python3 -m pip install --upgrade pip setuptools
 RUN . /env/bin/activate && python3 -m pip install -r /conf/requirements.txt \
                            -c /conf/constraints.txt \
                            -c /conf/nobinary.txt
 
 # Copy datacube-core source code into container and install from source (with addons for tests).
-COPY . /code
+COPY --chown=odc:odc . /code
 
 RUN . /env/bin/activate && python3 -m pip install '/code/[all]' \
     && python3 -m pip install /code/examples/io_plugin \
     && python3 -m pip install /code/tests/drivers/fail_drivers
 
-# Copy bootstrap script into image.
-COPY docker/assets/with_bootstrap /usr/local/bin/
+USER root
 
 # prep db
 RUN  install --owner postgres --group postgres -D -d /var/run/postgresql /srv/postgresql \
   && sudo -u postgres "$(find /usr/lib/postgresql/ -type f -name initdb)" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
 
-# users and groups.
-RUN groupmod ubuntu -n odc  \
-  && usermod ubuntu -l odc \
-  && adduser odc users \
-  && adduser odc sudo \
-  && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
-  && chown -R odc:odc /env \
-  && true
-
-USER root
 VOLUME /code
 WORKDIR /code
 

@@ -27,6 +27,7 @@ Next Version
 - Various lint fixes :pull:`1824`
 - CI: use the right project slug :pull:`1823`
 - tests: update to moto 5.1.4 :pull:`1821`
+- Dockerfile: stop running chown :pull:`1835`
 - CI: add security scanner :pull:`1833`
 - postgis: update mapper dynamically :pull:`1831`
 
