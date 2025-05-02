@@ -10,7 +10,7 @@ Next Version
 
 - Use odc-geo GridSpec if `tile_shape` in product storage information :pull:`1783`
 - SQL: fix package names type :pull:`1784`
-- Add some type signatures :pull:`1785`
+- Add some type signatures :pull:`1785`, :pull:`1788`
 - Use Ruff instead of flake8 :pull:`1789`
 - Update uv.lock with Dependabot :pull:`1790`
 - tests: use set instead of list :pull:`1792`
@@ -28,6 +28,8 @@ Next Version
 - CI: use the right project slug :pull:`1823`
 - tests: update to moto 5.1.4 :pull:`1821`
 - Dockerfile: stop running chown :pull:`1835`
+- CI: add security scanner :pull:`1833`
+- postgis: update mapper dynamically :pull:`1831`
 
 v1.9.3 (15th April 2025)
 ========================
