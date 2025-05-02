@@ -18,7 +18,7 @@ from pandas import to_datetime as pandas_to_datetime
 from typing_extensions import override
 import numpy as np
 from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
-from ..model import Range, Dataset
+from ..model import Range, Dataset, QueryField
 from ..utils.dates import normalise_dt, tz_aware
 from odc.geo import Geometry
 from odc.geo.geom import lonlat_bounds, mid_longitude
@@ -181,7 +181,7 @@ def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:
     return normalise_dt(ds.center_time)
 
 
-def query_group_by(group_by='time', **kwargs) -> GroupBy:
+def query_group_by(group_by: str | GroupBy | None = 'time', **kwargs: QueryField) -> GroupBy:
     """
     Group by function for loading datasets
 

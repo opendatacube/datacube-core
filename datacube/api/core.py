@@ -585,7 +585,7 @@ class Datacube:
             geopolygon=cast(Geometry | None, query.pop("geopolygon", None)),
             **query,
         )
-        group_by = query_group_by(**query)
+        group_by = query_group_by(**query)  # type: ignore[arg-type]
         grouped = self.group_datasets(datasets, group_by)
 
         measurement_dicts = datacube_product.lookup_measurements(measurements)
