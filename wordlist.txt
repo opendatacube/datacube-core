@@ -74,6 +74,7 @@ cfg
 Cheatsheet
 cheatsheet
 cheatsheets
+chown
 CircleCI
 CLI
 cli

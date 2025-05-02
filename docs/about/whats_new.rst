@@ -28,6 +28,10 @@ Next Version
 - CI: use the right project slug :pull:`1823`
 - tests: update to moto 5.1.4 :pull:`1821`
 - Python 3.10 updates :pull:`1839`
+- Dependabot: update boto weekly instead :pull:`1837`
+- Dockerfile: stop running chown :pull:`1835`
+- CI: add security scanner :pull:`1833`
+- postgis: update mapper dynamically :pull:`1831`
 
 v1.9.3 (15th April 2025)
 ========================
