@@ -676,7 +676,7 @@ class Collate(VirtualProduct):
                 measurement = Measurement(name=name, dtype='int8', nodata=-1, units='1')
                 shape = select_unique([result[band].shape for band in result.data_vars])
                 array = numpy.full(shape, source_index, dtype=measurement.dtype)
-                first = result[list(result.data_vars)[0]]
+                first = result[next(iter(result.data_vars))]
                 result[name] = xarray.DataArray(array, dims=first.dims, coords=first.coords,
                                                 name=name).assign_attrs(units=measurement.units,
                                                                         nodata=measurement.nodata)
@@ -907,7 +907,7 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
             # next 3 lines to generate the new graph
             dependencies.append(subset_band.data)
             # get the input dask array for the function `reproject_array`
-            band_key = list(flatten(subset_band.data.__dask_keys__()))[0]
+            band_key = next(iter(flatten(subset_band.data.__dask_keys__())))
             # generate a new layer of dask graph with reroject
             new_layer[(dask_name,) + tile_index] = (reproject_array,
                                                     band_key, band.nodata, subset_band.geobox, sub_geobox, resampling)

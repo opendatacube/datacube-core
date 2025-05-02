@@ -13,13 +13,12 @@ from .exceptions import DuplicateRecordError, MissingRecordError, IndexSetupErro
 from datacube.index.abstract import AbstractIndex as Index
 
 __all__ = [
-    'strip_all_spatial_fields_from_query',
-    'extract_geom_from_query',
-    'index_connect',
-    'Index',
-
     'DuplicateRecordError',
+    'Index',
     'IndexSetupError',
     'MissingRecordError',
     'UnknownFieldError',
+    'extract_geom_from_query',
+    'index_connect',
+    'strip_all_spatial_fields_from_query',
 ]

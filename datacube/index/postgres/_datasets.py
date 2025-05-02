@@ -290,7 +290,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         need_sources = dataset.sources is not None
         existing = self.get(dataset.id, include_sources=need_sources)
         if not existing:
-            raise ValueError(f'Unknown dataset {dataset.id}, cannot update – did you intend to add it?')
+            raise ValueError(f'Unknown dataset {dataset.id}, cannot update - did you intend to add it?')
 
         if dataset.product.name != existing.product.name:
             raise ValueError('Changing product is not supported. From '
@@ -632,7 +632,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
-        Caution – slow! This will usually not use indexes.
+        Caution - slow! This will usually not use indexes.
 
         :param dict metadata:
         :param archived: include archived datasets

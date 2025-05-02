@@ -9,13 +9,13 @@ from typing import Any
 EOS = object()
 _LCL = threading.local()
 
-__all__ = (
+__all__ = [
     "EOS",
+    "it2q",
     "map_with_lookahead",
     "qmap",
-    "it2q",
     "thread_local_cache",
-)
+]
 
 
 def map_with_lookahead(it, if_one=None, if_many=None):

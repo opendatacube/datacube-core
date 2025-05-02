@@ -770,7 +770,7 @@ def _make_tiffs_and_yamls(tiffs_dir, config, day_offset):
 @pytest.fixture
 def example_ls5_dataset_path(example_ls5_dataset_paths):
     """Create a single sample raw observation (dataset + geotiff)."""
-    return list(example_ls5_dataset_paths.values())[0]
+    return next(iter(example_ls5_dataset_paths.values()))
 
 
 @pytest.fixture
@@ -794,7 +794,7 @@ def example_ls5_dataset_paths(tmpdir, geotiffs):
 
 @pytest.fixture
 def default_metadata_type_doc():
-    return [doc for doc in default_metadata_type_docs() if doc['name'] == 'eo'][0]
+    return next(doc for doc in default_metadata_type_docs() if doc['name'] == 'eo')
 
 
 @pytest.fixture
@@ -804,12 +804,12 @@ def eo3_metadata_type_docs(eo3_base_metadata_type_doc, extended_eo3_metadata_typ
 
 @pytest.fixture
 def eo3_base_metadata_type_doc():
-    return [doc for doc in default_metadata_type_docs() if doc['name'] == 'eo3'][0]
+    return next(doc for doc in default_metadata_type_docs() if doc['name'] == 'eo3')
 
 
 @pytest.fixture
 def telemetry_metadata_type_doc():
-    return [doc for doc in default_metadata_type_docs() if doc['name'] == 'telemetry'][0]
+    return next(doc for doc in default_metadata_type_docs() if doc['name'] == 'telemetry')
 
 
 @pytest.fixture

@@ -34,8 +34,7 @@ def find_script_callable_from_env(name, env):
 
 def find_script_callable(name):
     from importlib.metadata import entry_points
-    return list(entry_points(
-        group='console_scripts', name=name))[0].load()
+    return next(iter(entry_points(group='console_scripts', name=name))).load()
 
 
 def generate_help_text(command, prefix):

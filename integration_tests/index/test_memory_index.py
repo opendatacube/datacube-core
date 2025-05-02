@@ -245,7 +245,7 @@ def test_mem_ds_locations(mem_eo3_data: tuple):
         assert dc.index.datasets.restore_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method
         assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
         assert list(dc.index.datasets.get_archived_locations(ls8_id)) == []  # Test of deprecated method
-        assert list(dc.index.datasets.get_datasets_for_location("file:///test_loc_1", "exact"))[0].id == ls8_id
+        assert next(iter(dc.index.datasets.get_datasets_for_location("file:///test_loc_1", "exact"))).id == ls8_id
         assert dc.index.datasets.remove_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method
         assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
         assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(ls8_id)  # Test of deprecated method

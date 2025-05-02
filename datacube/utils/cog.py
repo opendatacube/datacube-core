@@ -23,7 +23,7 @@ from odc.geo.warp import Resampling, resampling_s2rio
 
 from deprecat import deprecat
 
-__all__ = ("write_cog", "to_cog")
+__all__ = ["to_cog", "write_cog"]
 
 
 def _adjust_blocksize(block, dim) -> int:

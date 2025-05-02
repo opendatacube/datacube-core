@@ -510,7 +510,7 @@ class AbstractDatasetResource(ABC):
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
-        Caution – slow! This will usually not use indexes.
+        Caution - slow! This will usually not use indexes.
 
         :param metadata: metadata dictionary representing arbitrary search query
         :param archived: False (default): Return active datasets only.

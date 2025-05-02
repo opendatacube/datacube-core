@@ -77,7 +77,7 @@ def assert_file_structure(
         elif isinstance(v, str | Sequence):
             assert f.is_file(), f"{id_} is not a file"
         else:
-            assert False, "Only strings|[strings] and dicts expected when defining a folder structure."
+            raise AssertionError("Only strings|[strings] and dicts expected when defining a folder structure.")
 
 
 def write_files(file_dict: Mapping[str, str | Sequence[str]]) -> pathlib.Path:

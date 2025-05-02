@@ -373,7 +373,7 @@ def check_loaded_vs_original(data, orig, product_def):
         # TODO: When the bug preventing geobox for 2D is fixed, uncomment the
         # following line
         # assert numpy.array_equal(data_t.values, orig.values)
-        _LOG.info(f"\n{str(numpy.array_equal(data_t.values, orig.values)):~^80}\n")
+        _LOG.info(f"\n{numpy.array_equal(data_t.values, orig.values)!s:~^80}\n")
 
 
 def load_with_dc(

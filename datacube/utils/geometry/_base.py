@@ -456,7 +456,7 @@ def densify(coords: CoordList, resolution: float) -> CoordList:
         return (p1[0]**2 + p2[0]**2) < d2
 
     new_coords = [coords[0]]
-    for p1, p2 in zip(coords[:-1], coords[1:]):
+    for p1, p2 in itertools.pairwise(coords):
         if not short_enough(p1, p2):
             segment = geometry.LineString([p1, p2])
             segment_length = segment.length
@@ -973,7 +973,7 @@ def sides(poly: Geometry) -> Iterable[Geometry]:
     """
     XY = poly.exterior.points
     crs = poly.crs
-    for p1, p2 in zip(XY[:-1], XY[1:]):
+    for p1, p2 in itertools.pairwise(XY):
         yield line([p1, p2], crs)
 
 

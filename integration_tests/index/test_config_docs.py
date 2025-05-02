@@ -457,7 +457,7 @@ def test_update_metadata_type(index, default_metadata_type):
     :type default_metadata_type_docs: list[dict]
     :type index: datacube.index.Index
     """
-    mt_doc = [d for d in default_metadata_type_docs() if d['name'] == default_metadata_type.name][0]
+    mt_doc = next(d for d in default_metadata_type_docs() if d['name'] == default_metadata_type.name)
 
     assert index.metadata_types.get_by_name(mt_doc['name']) is not None
 

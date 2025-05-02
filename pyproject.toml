@@ -151,23 +151,13 @@ select = [
 ]
 ignore = [
     # FIXME: re-enable these rules.
-    "B004",
     "B008",
-    "B009",
-    "B011",
     "B022",
     "B023",
     "B028",
     "B905",
-    "RUF001",
-    "RUF002",
     "RUF005",
-    "RUF007",
-    "RUF010",
     "RUF012",
-    "RUF015",
-    "RUF022",
-    "RUF023",
 ]
 
 [tool.ruff.lint.pep8-naming]
