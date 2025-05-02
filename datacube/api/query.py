@@ -226,7 +226,7 @@ def query_group_by(group_by: str | GroupBy | None = 'time', **kwargs: QueryField
 
 
 def _value_to_range(value) -> tuple[float, float]:
-    if isinstance(value, (str, float, int)):
+    if isinstance(value, str | float | int):
         value = float(value)
         return value, value
     else:
@@ -264,7 +264,7 @@ def _time_to_search_dims(time_range):
 
             tr_start, tr_end = tmp[0], tmp[-1]
 
-        if isinstance(tr_start, (int, float)) or isinstance(tr_end, (int, float)):
+        if isinstance(tr_start, int | float) or isinstance(tr_end, int | float):
             raise TypeError("Time dimension must be provided as a datetime or a string")
 
         if tr_start is None:

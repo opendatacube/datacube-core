@@ -8,7 +8,8 @@ import logging
 import sys
 from collections import OrderedDict
 from textwrap import dedent
-from typing import cast, Any, Iterator
+from typing import cast, Any
+from collections.abc import Iterator
 from collections.abc import Iterable, Mapping, MutableMapping
 from uuid import UUID
 
@@ -51,7 +52,7 @@ def _resolve_uri(uri, doc):
     if isinstance(loc, str):
         return loc
 
-    if isinstance(loc, (list, tuple)):
+    if isinstance(loc, list | tuple):
         if len(loc) > 0:
             return loc[0]
 
@@ -311,34 +312,30 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
                                       archive_less_mature=archive_less_mature)
                 update_loc(dataset, existing_ds)
                 success += 1
-                echo('Updated %s' % dataset.id)
+                echo(f'Updated {dataset.id}')
             except ValueError as e:
                 fail += 1
-                echo('Failed to update %s: %s' % (dataset.id, e))
+                echo(f'Failed to update {dataset.id}: {e}')
         else:
             if update_dry_run(index, updates_allowed, dataset):
                 update_loc(dataset, existing_ds)
                 success += 1
             else:
                 fail += 1
-    echo('%d successful, %d failed' % (success, fail))
+    echo(f'{success} successful, {fail} failed')
 
 
 def update_dry_run(index, updates_allowed, dataset) -> bool:
     try:
         can_update, safe_changes, unsafe_changes = index.datasets.can_update(dataset, updates_allowed=updates_allowed)
     except ValueError as e:
-        echo('Cannot update %s: %s' % (dataset.id, e))
+        echo(f'Cannot update {dataset.id}: {e}')
         return False
 
     if can_update:
-        echo('Can update %s: %s unsafe changes, %s safe changes' % (dataset.id,
-                                                                    len(unsafe_changes),
-                                                                    len(safe_changes)))
+        echo(f'Can update {dataset.id}: {len(unsafe_changes)} unsafe changes, {len(safe_changes)} safe changes')
     else:
-        echo('Cannot update %s: %s unsafe changes, %s safe changes' % (dataset.id,
-                                                                       len(unsafe_changes),
-                                                                       len(safe_changes)))
+        echo(f'Cannot update {dataset.id}: {len(unsafe_changes)} unsafe changes, {len(safe_changes)} safe changes')
     return can_update
 
 
@@ -431,7 +428,7 @@ def info_cmd(index: Index, show_sources: bool, show_derived: bool,
             if dataset:
                 yield dataset
             else:
-                click.echo('%s missing' % id_, err=True)
+                click.echo(f'{id_} missing', err=True)
                 missing_datasets[0] += 1
 
     _OUTPUT_WRITERS[f](
@@ -597,7 +594,7 @@ def restore_cmd(index: Index, restore_derived: bool, derived_tolerance_seconds: 
             _LOG.debug("%s selected were archived within the tolerance", len(to_process))
 
         for d in to_process:
-            click.echo('restoring %s %s %s' % (d.product.name, d.id, d.local_uri))
+            click.echo(f'restoring {d.product.name} {d.id} {d.local_uri}')
         if not dry_run:
             index.datasets.restore(d.id for d in to_process)
 

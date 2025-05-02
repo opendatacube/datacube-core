@@ -8,14 +8,12 @@ from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 import numpy as np
 from affine import Affine
-from typing import Union
+from typing import TypeAlias
 from collections.abc import Iterator
 
 
-RasterShape = tuple[int, int]                 # pylint: disable=invalid-name
-RasterWindow = Union[                         # pylint: disable=invalid-name
-    tuple[tuple[int, int], tuple[int, int]],
-    tuple[slice, slice]]
+RasterShape: TypeAlias = tuple[int, int]                 # pylint: disable=invalid-name
+RasterWindow: TypeAlias = tuple[slice, slice] | tuple[tuple[int, int], tuple[int, int]] # pylint: disable=invalid-name
 
 # pylint: disable=pointless-statement
 

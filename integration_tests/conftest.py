@@ -756,7 +756,7 @@ def _make_tiffs_and_yamls(tiffs_dir, config, day_offset):
             dim: abs(GEOTIFF['pixel_size'][dim]) for dim in ('x', 'y')}
         bands[band]['path'] = bands[band]['path'].replace('product/', '').replace(day_orig, day)
 
-    dest_path = str(tiffs_dir.join('agdc-metadata_%s.yaml' % day))
+    dest_path = str(tiffs_dir.join(f'agdc-metadata_{day}.yaml'))
     with open(dest_path, 'w') as dest_yaml:
         yaml.dump(config, dest_yaml)
     return {
@@ -893,7 +893,7 @@ def clirunner(datacube_env_name):
             catch_exceptions=catch_exceptions
         )
         if expect_success:
-            assert 0 == result.exit_code, "Error for %r. output: %r" % (opts, result.output)
+            assert 0 == result.exit_code, f"Error for {opts!r}. output: {result.output!r}"
         return result
 
     return _run_cli
@@ -918,7 +918,7 @@ def clirunner_raw():
             catch_exceptions=catch_exceptions
         )
         if expect_success:
-            assert 0 == result.exit_code, "Error for %r. output: %r" % (opts, result.output)
+            assert 0 == result.exit_code, f"Error for {opts!r}. output: {result.output!r}"
         return result
 
     return _run_cli

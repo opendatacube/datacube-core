@@ -52,7 +52,7 @@ class ODCOptionHandler:
         """
         check_valid_option(name)
         self.name: str = name
-        self.env: "ODCEnvironment" = env
+        self.env: ODCEnvironment = env
         self.default: Any = default
         if legacy_env_aliases:
             self.legacy_env_aliases = legacy_env_aliases

@@ -51,7 +51,7 @@ def create_netcdf_storage_unit(filename,
     """
     filename = Path(filename)
     if filename.exists():
-        raise RuntimeError('Storage Unit already exists: %s' % filename)
+        raise RuntimeError(f'Storage Unit already exists: {filename}')
 
     try:
         filename.parent.mkdir(parents=True)

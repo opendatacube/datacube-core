@@ -76,11 +76,11 @@ class Dataset:
         }
     )
     def __init__(self,
-                 product: "Product",
+                 product: Product,
                  metadata_doc: dict[str, Any],
                  uris: list[str] | None = None,
                  uri: str | None = None,
-                 sources: Mapping[str, 'Dataset'] | None = None,
+                 sources: Mapping[str, Dataset] | None = None,
                  indexed_by: str | None = None,
                  indexed_time: datetime | None = None,
                  archived_time: datetime | None = None,
@@ -170,7 +170,7 @@ class Dataset:
         reason="The 'type' attribute has been deprecated. Please use the 'product' attribute instead.",
         version='1.9.0',
         category=ODC2DeprecationWarning)
-    def type(self) -> "Product":
+    def type(self) -> Product:
         # For compatibility
         return self.product
 
@@ -180,7 +180,7 @@ class Dataset:
         return is_doc_eo3(self.metadata_doc)
 
     @property
-    def metadata_type(self) -> 'MetadataType':
+    def metadata_type(self) -> MetadataType:
         return self.product.metadata_type
 
     @property
@@ -536,7 +536,7 @@ class Measurement:
     def __repr__(self) -> str:
         return f"Measurement({repr(self._data)})"
 
-    def copy(self) -> 'Measurement':
+    def copy(self) -> Measurement:
         """Required as the super class `dict` method returns a `dict`
            and does not preserve Measurement class"""
         return Measurement(**self._data)
@@ -702,7 +702,7 @@ class Product:
         return ('time',) + spatial_dims
 
     @property
-    def extra_dimensions(self) -> "ExtraDimensions":
+    def extra_dimensions(self) -> ExtraDimensions:
         """
         Dictionary of metadata for the third dimension.
         """
@@ -712,7 +712,7 @@ class Product:
         return ExtraDimensions(self._extra_dimensions)
 
     @cached_property
-    def grid_spec(self) -> 'GridSpec' | GeoGridSpec | None:
+    def grid_spec(self) -> GridSpec | GeoGridSpec | None:
         """
         Grid specification for this product
         """
@@ -1155,8 +1155,7 @@ class GridSpec:
 
     @override
     def __str__(self) -> str:
-        return "GridSpec(crs=%s, tile_size=%s, resolution=%s)" % (
-            self.crs, self.tile_size, self.resolution)
+        return f"GridSpec(crs={self.crs}, tile_size={self.tile_size}, resolution={self.resolution})"
 
     @override
     def __repr__(self) -> str:
@@ -1219,7 +1218,7 @@ class ExtraDimensions:
                 return True
         return False
 
-    def __getitem__(self, dim_slices: ExtraDimensionSlices) -> "ExtraDimensions":
+    def __getitem__(self, dim_slices: ExtraDimensionSlices) -> ExtraDimensions:
         """Return a ExtraDimensions subsetted by dim_slices
 
         :param dim_slices: Dict of dimension slices to subset by.

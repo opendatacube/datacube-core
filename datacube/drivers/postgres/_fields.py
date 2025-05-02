@@ -35,7 +35,7 @@ class PgField(Field):
     """
 
     def __init__(self, name, description, alchemy_column, indexed):
-        super(PgField, self).__init__(name, description)
+        super().__init__(name, description)
 
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
         self.alchemy_column = alchemy_column
@@ -91,7 +91,7 @@ class NativeField(PgField):
     def __init__(self, name, description, alchemy_column, alchemy_expression=None,
                  # Should this be selected by default when selecting all fields?
                  affects_row_selection=False):
-        super(NativeField, self).__init__(name, description, alchemy_column, False)
+        super().__init__(name, description, alchemy_column, False)
         self._expression = alchemy_expression
         self.affects_row_selection = affects_row_selection
 
@@ -180,11 +180,11 @@ class SimpleDocField(PgDocField):
     """
 
     def __init__(self, name, description, alchemy_column, indexed, offset=None, selection='first'):
-        super(SimpleDocField, self).__init__(name, description, alchemy_column, indexed)
+        super().__init__(name, description, alchemy_column, indexed)
         self.offset = offset
         if selection not in SELECTION_TYPES:
             raise ValueError(
-                "Unknown field selection type %s. Expected one of: %r" % (selection, (SELECTION_TYPES,),)
+                f"Unknown field selection type {selection}. Expected one of: {(SELECTION_TYPES,)!r}"
             )
         self.aggregation = SELECTION_TYPES[selection]
 
@@ -277,10 +277,10 @@ class DateDocField(SimpleDocField):
         if isinstance(value, datetime):
             return tz_aware(value)
         # SQLAlchemy expression or string are parsed in pg as dates.
-        elif isinstance(value, (ColumnElement, str)):
+        elif isinstance(value, ColumnElement | str):
             return func.agdc.common_timestamp(value)
         else:
-            raise ValueError("Value not readable as date: %r" % (value,))
+            raise ValueError(f"Value not readable as date: {value!r}")
 
     @override
     def between(self, low, high):
@@ -309,7 +309,7 @@ class RangeDocField(PgDocField):
     FIELD_CLASS = SimpleDocField
 
     def __init__(self, name, description, alchemy_column, indexed, min_offset=None, max_offset=None):
-        super(RangeDocField, self).__init__(name, description, alchemy_column, indexed)
+        super().__init__(name, description, alchemy_column, indexed)
         self.lower = self.FIELD_CLASS(
             name + '_lower',
             description,
@@ -456,7 +456,7 @@ class DateRangeDocField(RangeDocField):
             )
         else:
             raise ValueError("Unknown comparison type for date range: "
-                             "expecting datetimes, got: (%r, %r)" % (low, high))
+                             f"expecting datetimes, got: ({low!r}, {high!r})")
 
     @property
     def expression_with_leniency(self):
@@ -487,7 +487,7 @@ def _number_implies_year(v: int | datetime) -> datetime:
 
 class PgExpression(Expression):
     def __init__(self, field):
-        super(PgExpression, self).__init__()
+        super().__init__()
         #: :type: PgField
         self.field = field
 
@@ -502,7 +502,7 @@ class PgExpression(Expression):
 
 class ValueBetweenExpression(PgExpression):
     def __init__(self, field, low_value, high_value):
-        super(ValueBetweenExpression, self).__init__(field)
+        super().__init__(field)
         self.low_value = low_value
         self.high_value = high_value
 
@@ -521,7 +521,7 @@ class ValueBetweenExpression(PgExpression):
 
 class RangeBetweenExpression(PgExpression):
     def __init__(self, field, low_value, high_value, _range_class):
-        super(RangeBetweenExpression, self).__init__(field)
+        super().__init__(field)
         self.low_value = low_value
         self.high_value = high_value
         self._range_class = _range_class
@@ -535,7 +535,7 @@ class RangeBetweenExpression(PgExpression):
 
 class RangeContainsExpression(PgExpression):
     def __init__(self, field, value):
-        super(RangeContainsExpression, self).__init__(field)
+        super().__init__(field)
         self.value = value
 
     @property
@@ -545,7 +545,7 @@ class RangeContainsExpression(PgExpression):
 
 class EqualsExpression(PgExpression):
     def __init__(self, field, value):
-        super(EqualsExpression, self).__init__(field)
+        super().__init__(field)
         self.value = value
 
     @property
@@ -621,8 +621,8 @@ def parse_fields(doc, table_column):
 
         field_class = type_map.get(type_name)
         if not field_class:
-            raise ValueError(('Field %r has unknown type %r.'
-                              ' Available types are: %r') % (name, type_name, list(type_map.keys())))
+            raise ValueError(f'Field {name!r} has unknown type {type_name!r}.'
+                              f' Available types are: {list(type_map.keys())!r}')
         try:
             return field_class(name, description, column, indexed, **ctorargs)
         except TypeError as e:

@@ -104,8 +104,8 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
         existing = self.get_by_name(metadata_type.name)
         if not existing:
-            raise ValueError('Unknown metadata type %s, cannot update – '
-                             'did you intend to add it?' % metadata_type.name)
+            raise ValueError(f'Unknown metadata type {metadata_type.name}, cannot update – '
+                             'did you intend to add it?')
 
         updates_allowed = {
             ('description',): changes.allow_any,
@@ -195,7 +195,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             record = connection.get_metadata_type_by_name(name)
         if not record:
-            raise KeyError('%s is not a valid MetadataType name' % name)
+            raise KeyError(f'{name} is not a valid MetadataType name')
         return self._make_from_query_row(record)
 
     @override
@@ -224,8 +224,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
     @override
     def get_all_docs(self):
         with self._db_connection() as connection:
-            for defn in connection.get_all_metadata_type_defs():
-                yield defn
+            yield from connection.get_all_metadata_type_defs()
 
     def _make_many(self, query_rows):
         """

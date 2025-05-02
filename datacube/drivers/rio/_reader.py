@@ -6,7 +6,7 @@
 """
 from typing import (
     Any,
-    NamedTuple, TypeVar
+    NamedTuple, TypeAlias, TypeVar
 )
 from typing_extensions import override
 from collections.abc import Iterable
@@ -33,11 +33,12 @@ from datacube.drivers._types import (
     RasterWindow,
 )
 
-Overrides = NamedTuple('Overrides', [('crs', CRS | None),
-                                     ('transform', Affine | None),
-                                     ('nodata', float | int | None)])
+class Overrides(NamedTuple):
+    crs: CRS | None
+    transform: Affine | None
+    nodata: float | int | None
 
-RioWindow = tuple[tuple[int, int], tuple[int, int]]  # pylint: disable=invalid-name
+RioWindow: TypeAlias = tuple[tuple[int, int], tuple[int, int]]  # pylint: disable=invalid-name
 T = TypeVar('T')
 
 

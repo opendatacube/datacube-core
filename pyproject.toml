@@ -144,6 +144,7 @@ select = [
     "E",  # pycodestyle errors
     "N",  # pep8-naming
     "RUF", # Ruff-specific rules
+    "UP", # pyupgrade
     "W",  # pycodestyle warnings
     "F",  # pyflakes
     "T10", # flake8-debugger

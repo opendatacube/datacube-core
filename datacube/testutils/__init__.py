@@ -62,20 +62,20 @@ def assert_file_structure(
 
     if expected_filenames != actual_filenames:
         missing_files = expected_filenames - actual_filenames
-        missing_text = 'Missing: %r' % (sorted(list(missing_files)))
+        missing_text = f'Missing: {sorted(list(missing_files))!r}'
         extra_files = actual_filenames - expected_filenames
-        added_text = 'Extra  : %r' % (sorted(list(extra_files)))
-        raise AssertionError('Folder mismatch of %r\n\t%s\n\t%s' % (root, missing_text, added_text))
+        added_text = f'Extra  : {sorted(list(extra_files))!r}'
+        raise AssertionError(f'Folder mismatch of {root!r}\n\t{missing_text}\n\t{added_text}')
 
     for k, v in expected_structure.items():
-        id_ = '%s/%s' % (root, k) if root else k
+        id_ = f'{root}/{k}' if root else k
 
         f = folder.joinpath(k)
         if isinstance(v, Mapping):
-            assert f.is_dir(), "%s is not a dir" % (id_,)
+            assert f.is_dir(), f"{id_} is not a dir"
             assert_file_structure(f, v, id_)
-        elif isinstance(v, (str, Sequence)):
-            assert f.is_file(), "%s is not a file" % (id_,)
+        elif isinstance(v, str | Sequence):
+            assert f.is_file(), f"{id_} is not a file"
         else:
             assert False, "Only strings|[strings] and dicts expected when defining a folder structure."
 
@@ -124,7 +124,7 @@ def _write_files_to_dir(directory_path: str, file_dict: Mapping[str, str | Seque
                 elif isinstance(contents, Sequence):
                     f.writelines(contents)
                 else:
-                    raise ValueError('Unexpected file contents: %s' % type(contents))
+                    raise ValueError(f'Unexpected file contents: {type(contents)}')
 
 
 def isclose(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0) -> float:

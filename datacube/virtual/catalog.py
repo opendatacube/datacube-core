@@ -8,7 +8,8 @@ Catalog of virtual products.
 
 from collections.abc import Mapping
 from itertools import chain
-from typing import Any, Iterable, Iterator
+from typing import Any
+from collections.abc import Iterable, Iterator
 from typing_extensions import override
 
 import yaml

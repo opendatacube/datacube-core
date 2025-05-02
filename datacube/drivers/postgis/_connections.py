@@ -16,7 +16,8 @@ import json
 import logging
 import re
 from contextlib import contextmanager
-from typing import Any, Iterator
+from typing import Any
+from collections.abc import Iterator
 from typing_extensions import override
 from collections.abc import Callable, Iterable, Mapping
 

@@ -16,7 +16,8 @@ Persistence API implementation for postgres.
 import datetime
 import logging
 import uuid  # noqa: F401
-from typing import Any, Iterator
+from typing import Any
+from collections.abc import Iterator
 from typing_extensions import override
 from collections.abc import Iterable
 from typing import cast as type_cast
@@ -352,7 +353,7 @@ class PostgresDbAPI:
         elif mode == 'prefix':
             body_query = DATASET_LOCATION.c.uri_body.startswith(body)
         else:
-            raise ValueError('Unsupported query mode {}'.format(mode))
+            raise ValueError(f'Unsupported query mode {mode}')
 
         return self._connection.execute(
             select(
@@ -1279,7 +1280,7 @@ class PostgresDbAPI:
 
     @override
     def __repr__(self) -> str:
-        return "PostgresDb<connection={!r}>".format(self._connection)
+        return f"PostgresDb<connection={self._connection!r}>"
 
     def list_users(self) -> Iterator:
         result = self._connection.execute(text("""
@@ -1299,15 +1300,15 @@ class PostgresDbAPI:
     def create_user(self, username, password, role, description=None) -> None:
         pg_role = _core.to_pg_role(role)
         username = escape_pg_identifier(self._connection, username)
-        sql = text('create user {username} password :password in role {role}'.format(username=username, role=pg_role))
+        sql = text(f'create user {username} password :password in role {pg_role}')
         self._connection.execute(sql, {"password": password})
         if description:
-            sql = text('comment on role {username} is :description'.format(username=username))
+            sql = text(f'comment on role {username} is :description')
             self._connection.execute(sql, {"description": description})
 
     def drop_users(self, users: Iterable[str]) -> None:
         for username in users:
-            sql = text('drop role {username}'.format(username=escape_pg_identifier(self._connection, username)))
+            sql = text(f'drop role {escape_pg_identifier(self._connection, username)}')
             self._connection.execute(sql)
 
     def grant_role(self, role: str, users: Iterable[str]) -> None:
@@ -1318,7 +1319,7 @@ class PostgresDbAPI:
 
         for user in users:
             if not _core.has_role(self._connection, user):
-                raise ValueError('Unknown user %r' % user)
+                raise ValueError(f'Unknown user {user!r}')
 
         _core.grant_role(self._connection, pg_role, users)
 

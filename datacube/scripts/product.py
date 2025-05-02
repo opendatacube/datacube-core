@@ -108,9 +108,9 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
                     allow_unsafe_updates=allow_unsafe,
                     allow_table_lock=allow_exclusive_lock,
                 )
-                echo('Updated "%s"' % type_.name)
+                echo(f'Updated "{type_.name}"')
             except ValueError as e:
-                echo('Failed to update "%s": %s' % (type_.name, e))
+                echo(f'Failed to update "{type_.name}": {e}')
                 failures += 1
         else:
             can_update, safe_changes, unsafe_changes = index.products.can_update(
@@ -119,13 +119,11 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
             )
 
             if can_update:
-                echo('Can update "%s": %s unsafe changes, %s safe changes' % (type_.name,
-                                                                              len(list(unsafe_changes)),
-                                                                              len(list(safe_changes))))
+                echo(f'Can update "{type_.name}": {len(list(unsafe_changes))} unsafe '
+                     f'changes, {len(list(safe_changes))} safe changes')
             else:
-                echo('Cannot update "%s": %s unsafe changes, %s safe changes' % (type_.name,
-                                                                                 len(list(unsafe_changes)),
-                                                                                 len(list(safe_changes))))
+                echo(f'Cannot update "{type_.name}": {len(list(unsafe_changes))} unsafe'
+                     f'changes, {len(list(safe_changes))} safe changes')
     sys.exit(failures)
 
 

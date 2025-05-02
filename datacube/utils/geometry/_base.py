@@ -7,8 +7,8 @@ import itertools
 import math
 import array
 import warnings
-from collections import namedtuple, OrderedDict
-from typing import Union, Optional, Any
+from collections import OrderedDict
+from typing import Union, Optional, Any, NamedTuple, TypeAlias
 from typing_extensions import override
 from collections.abc import Iterable, Callable, Hashable, Iterator
 from collections.abc import Sequence
@@ -29,11 +29,21 @@ from pyproj.exceptions import CRSError
 from .tools import roi_normalise, roi_shape, is_affine_st
 from ..math import is_almost_int
 
-Coordinate = namedtuple('Coordinate', ('values', 'units', 'resolution'))
-_BoundingBox = namedtuple('BoundingBox', ('left', 'bottom', 'right', 'top'))  # type: ignore[name-match]
-SomeCRS = Union[str, 'CRS', _CRS, dict[str, Any]]
-MaybeCRS = Optional[SomeCRS]
-CoordList = list[tuple[float, float]]
+
+class Coordinate(NamedTuple):
+    values: Any
+    units: Any
+    resolution: Any
+
+
+class _BoundingBox(NamedTuple):
+    left: float
+    bottom: float
+    right: float
+    top: float
+
+
+CoordList: TypeAlias = list[tuple[float, float]]
 
 # pylint: disable=too-many-lines
 
@@ -288,7 +298,7 @@ class CRS:
 
     @override
     def __repr__(self) -> str:
-        return "CRS('%s')" % self._str
+        return f"CRS('{self._str}')"
 
     @override
     def __eq__(self, other: object) -> bool:
@@ -360,6 +370,10 @@ class CRS:
         return result
 
 
+SomeCRS: TypeAlias = str | CRS | _CRS | dict[str, Any]
+MaybeCRS: TypeAlias = SomeCRS | None
+
+
 class CRSMismatchError(ValueError):
     """
     Raised when geometry operation is attempted on geometries in different
@@ -415,7 +429,7 @@ def force_2d(geojson: dict[str, Any]) -> dict[str, Any]:
     assert 'coordinates' in geojson
 
     def is_scalar(x):
-        return isinstance(x, (int, float))
+        return isinstance(x, int | float)
 
     def go(x):
         if is_scalar(x):
@@ -756,11 +770,11 @@ class Geometry:
 
     @override
     def __str__(self):
-        return 'Geometry(%s, %r)' % (self.__geo_interface__, self.crs)
+        return f'Geometry({self.__geo_interface__}, {self.crs!r})'
 
     @override
     def __repr__(self):
-        return 'Geometry(%s, %s)' % (self.geom, self.crs)
+        return f'Geometry({self.geom}, {self.crs})'
 
     # Implement pickle/unpickle
     # It does work without these two methods, but gdal/ogr prints 'ERROR 1: Empty geometries cannot be constructed'

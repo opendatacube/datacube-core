@@ -92,7 +92,7 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
         delta = 0.000001
         if lat is None:
             lat = Range(begin=-90, end=90)
-        elif isinstance(lat, (int, float)):
+        elif isinstance(lat, int | float):
             lat = Range(lat - delta, lat + delta)
         else:
             # Treat as tuple
@@ -101,7 +101,7 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
 
         if lon is None:
             lon = Range(begin=-180, end=180)
-        elif isinstance(lon, (int, float)):
+        elif isinstance(lon, int | float):
             lon = Range(lon - delta, lon + delta)
         else:
             # Treat as tuple

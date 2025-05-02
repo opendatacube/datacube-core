@@ -90,7 +90,7 @@ def check(cfg_env: ODCEnvironment):
         if index.url_parts.username:
             for role, user, _ in index.users.list_users():
                 if user == index.url_parts.username:
-                    echo('You have %s privileges.' % style(role.upper(), bold=True))
+                    echo(f'You have {style(role.upper(), bold=True)} privileges.')
     except OperationalError as e:
         handle_exception('Error Connecting to Database: %s', e)
     except IndexSetupError as e:

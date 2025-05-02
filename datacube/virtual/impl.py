@@ -11,7 +11,8 @@ products implementing the same interface.
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 
-from typing import Any, Iterator, cast
+from typing import Any, cast
+from collections.abc import Iterator
 from typing_extensions import override
 from collections.abc import Hashable
 from collections.abc import Mapping as TypeMapping

@@ -27,7 +27,7 @@ class UnknownFieldError(Exception):
 
 class OrExpression(Expression):
     def __init__(self, *exprs) -> None:
-        super(OrExpression, self).__init__()
+        super().__init__()
         self.exprs = exprs
         # Or expressions built by dc.load are always made up of simple expressions that share the same field.
         self.field = exprs[0].field
@@ -39,7 +39,7 @@ class OrExpression(Expression):
 
 class NotExpression(Expression):
     def __init__(self, expr) -> None:
-        super(NotExpression, self).__init__()
+        super().__init__()
         self.expr = expr
         self.field = expr.field
 
@@ -73,7 +73,7 @@ def as_expression(field: Field, value) -> Expression:
 def _to_expression(get_field, name: str, value) -> Expression:
     field = get_field(name)
     if field is None:
-        raise UnknownFieldError('Unknown field %r' % name)
+        raise UnknownFieldError(f'Unknown field {name!r}')
 
     return as_expression(field, value)
 

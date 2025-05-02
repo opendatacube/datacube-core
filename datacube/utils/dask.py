@@ -247,7 +247,7 @@ def _save_blob_to_file(data: bytes | str,
     try:
         with open(fname, 'wb') as f:
             f.write(data)
-    except IOError:
+    except OSError:
         return fname, False
 
     return fname, True
@@ -271,7 +271,7 @@ def _save_blob_to_s3(data: bytes | str,
                        cache=True)
 
         result = s3_dump(data, url, s3=s3, **kw)
-    except (IOError, BotoCoreError, ClientError):
+    except (OSError, BotoCoreError, ClientError):
         result = False
 
     return url, result

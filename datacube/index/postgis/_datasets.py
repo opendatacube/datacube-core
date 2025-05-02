@@ -11,7 +11,8 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Any, Iterator, NamedTuple, cast
+from typing import Any, NamedTuple, cast
+from collections.abc import Iterator
 from typing_extensions import override
 from collections.abc import Iterable, Mapping, Sequence
 from uuid import UUID
@@ -279,7 +280,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         def load_field(f: str | fields.Field) -> fields.Field:
             if isinstance(f, str):
                 return dataset_fields[f]
-            assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
+            assert isinstance(f, fields.Field), f"Not a field: {f!r}"
             return f
 
         group_fields = [cast(PgField, load_field(f)) for f in args]
@@ -305,12 +306,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         need_sources = False
         existing = self.get(dataset.id, include_sources=need_sources)
         if not existing:
-            raise ValueError('Unknown dataset %s, cannot update – did you intend to add it?' % dataset.id)
+            raise ValueError(f'Unknown dataset {dataset.id}, cannot update – did you intend to add it?')
 
         if dataset.product.name != existing.product.name:
-            raise ValueError('Changing product is not supported. From %s to %s in %s' % (existing.product.name,
-                                                                                         dataset.product.name,
-                                                                                         dataset.id))
+            raise ValueError('Changing product is not supported. From '
+                             f'{existing.product.name} to {dataset.product.name} '
+                             f'in {dataset.id}')
 
         if dataset.has_multiple_uris():
             raise ValueError('Postgis driver does not support multiple locations for a dataset.')
@@ -364,7 +365,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         product = self.products.get_by_name(dataset.product.name)
         with self._db_connection(transaction=True) as transaction:
             if not transaction.update_dataset(dataset.metadata_doc_without_lineage(), dataset.id, product.id):
-                raise ValueError("Failed to update dataset %s..." % dataset.id)
+                raise ValueError(f"Failed to update dataset {dataset.id}...")
             transaction.update_spindex(dsids=[dataset.id])
             transaction.update_search_index(dsids=[dataset.id])
             if archive_less_mature is not None:
@@ -518,7 +519,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :returns bool: Was one added?
         """
         if not uri:
-            warnings.warn("Cannot add empty uri. (dataset %s)" % id_)
+            warnings.warn(f"Cannot add empty uri. (dataset {id_})")
             return False
 
         existing = self.get_location(id_)
@@ -639,8 +640,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :rtype: list[Dataset]
         """
         with self._db_connection() as connection:
-            for dataset in self._make_many(connection.search_datasets_by_metadata(metadata, archived)):
-                yield dataset
+            yield from self._make_many(connection.search_datasets_by_metadata(metadata, archived))
 
     @override
     @deprecat(
@@ -814,7 +814,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         if not product_queries:
             product = query.get('product', None)
             if product is None:
-                raise ValueError('No products match search terms: %r' % query)
+                raise ValueError(f'No products match search terms: {query!r}')
             else:
                 raise ValueError(f"No such product: {product}")
 
@@ -876,10 +876,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         product_queries = list(self._get_product_queries(query))
         if ensure_single:
             if len(product_queries) == 0:
-                raise ValueError('No products match search terms: %r' % query)
+                raise ValueError(f'No products match search terms: {query!r}')
             if len(product_queries) > 1:
-                raise ValueError('Multiple products match single query search: %r' %
-                                 ([dt.name for q, dt in product_queries],))
+                raise ValueError('Multiple products match single query search: '
+                                 f'{[dt.name for _, dt in product_queries]!r}')
 
         for q, product in product_queries:
             dataset_fields = product.metadata_type.dataset_fields
@@ -1037,7 +1037,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             product_queries = list(self._get_product_queries(canonical_query))
 
             if not product_queries:
-                raise ValueError('No products match search terms: %r' % query)
+                raise ValueError(f'No products match search terms: {query!r}')
 
         for q, product in product_queries:
             dataset_fields = product.metadata_type.dataset_fields

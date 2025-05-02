@@ -6,10 +6,10 @@
 Geometric operations on GeoBox class
 """
 
-from typing import Optional
 from collections.abc import Iterable
 import itertools
 import math
+from typing import TypeAlias
 from affine import Affine
 
 from . import Geometry, GeoBox, BoundingBox
@@ -17,8 +17,8 @@ from .tools import align_up
 from odc.geo.math import clamp
 
 # pylint: disable=invalid-name
-MaybeInt = Optional[int]
-MaybeFloat = Optional[float]
+MaybeInt: TypeAlias = int | None
+MaybeFloat: TypeAlias = float | None
 
 
 def flipy(gbox: GeoBox) -> GeoBox:

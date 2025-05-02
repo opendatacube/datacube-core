@@ -8,15 +8,15 @@ Validation of document/dictionary changes.
 import numpy
 
 from itertools import zip_longest
-from typing import cast, Any, Union
+from typing import TypeAlias, cast, Any
 from typing_extensions import override
 from collections.abc import Callable, Mapping, Sequence
 
 # Type that can be checked for changes.
 # (MyPy approximation without recursive references)
-Changeable = Union[str, int, None, Sequence[Any], Mapping[str, Any]]
+Changeable: TypeAlias = str | int | None | Sequence[Any] | Mapping[str, Any]
 # More accurate recursive definition:
-# Changeable = Union[str, int, None, Sequence["Changeable"], Mapping[str, "Changeable"]]
+# Changeable = str | int | None | Sequence["Changeable"] |  Mapping[str, "Changeable"]
 
 
 def contains(v1: Changeable, v2: Changeable, case_sensitive: bool = False) -> bool:
@@ -53,14 +53,14 @@ class MissingSentinel:
 MISSING = MissingSentinel()
 
 # Representation of an offset in a dict structure
-OffsetElem = Union[str, int]
-Offset = tuple[OffsetElem, ...]
+OffsetElem: TypeAlias = str | int
+Offset: TypeAlias = tuple[OffsetElem, ...]
 
 # Representation of a changed value
-ChangedValue = Union[MissingSentinel, Changeable]
+ChangedValue: TypeAlias = MissingSentinel | Changeable
 
 # Representation of a change
-Change = tuple[Offset, ChangedValue, ChangedValue]
+Change: TypeAlias = tuple[Offset, ChangedValue, ChangedValue]
 
 
 def get_doc_changes(original: Changeable,
@@ -189,6 +189,6 @@ def classify_changes(changes: list[Change], allowed_changes: Mapping[Offset, All
             else:
                 bad_changes.append((offset, old_val, new_val))
         else:
-            raise RuntimeError('Unknown change type: expecting validation function at %r' % offset)
+            raise RuntimeError(f'Unknown change type: expecting validation function at {offset!r}')
 
     return good_changes, bad_changes

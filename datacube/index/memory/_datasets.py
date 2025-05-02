@@ -151,7 +151,7 @@ class DatasetResource(AbstractDatasetResource):
         def to_field(f: str | Field) -> Field:
             if isinstance(f, str):
                 f = product.metadata_type.dataset_fields[f]
-            assert isinstance(f, Field), "Not a field: %r" % (f,)
+            assert isinstance(f, Field), f"Not a field: {f!r}"
             return f
 
         fields = [to_field(f) for f in args]

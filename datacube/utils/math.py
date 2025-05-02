@@ -125,7 +125,7 @@ def num2numpy(x, dtype, ignore_range=None):
     if x is None:
         return None
 
-    if isinstance(dtype, (str, type)):
+    if isinstance(dtype, str | type):
         dtype = numpy.dtype(dtype)
 
     if ignore_range or dtype.kind == 'f':

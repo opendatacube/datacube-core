@@ -112,7 +112,7 @@ def _cell_list_from_file(filename):
 def cell_list_to_file(filename, cell_list):
     with open(filename, 'w') as cell_file:
         for cell in cell_list:
-            cell_file.write('{0},{1}\n'.format(*cell))
+            cell_file.write('{},{}\n'.format(*cell))
 
 
 def validate_cell_list(ctx, param, value):
