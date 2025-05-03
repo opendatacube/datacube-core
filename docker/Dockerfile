@@ -66,12 +66,10 @@ ENV PYENV=/env \
 # Needed to build cf-units wheels.
 ARG UDUNITS2_XML_PATH=/usr/share/xml/udunits/udunits2-common.xml
 
-COPY docker/constraints.in /conf/requirements.txt
 COPY docker/constraints.txt docker/nobinary.txt /conf/
 
 RUN . /env/bin/activate && python3 -m pip install --upgrade pip setuptools
-RUN . /env/bin/activate && python3 -m pip install -r /conf/requirements.txt \
-                           -c /conf/constraints.txt \
+RUN . /env/bin/activate && python3 -m pip install -r /conf/constraints.txt \
                            -c /conf/nobinary.txt
 
 # Copy datacube-core source code into container and install from source (with addons for tests).
