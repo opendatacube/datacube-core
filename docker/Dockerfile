@@ -68,16 +68,20 @@ ARG UDUNITS2_XML_PATH=/usr/share/xml/udunits/udunits2-common.xml
 
 COPY docker/constraints.txt docker/nobinary.txt /conf/
 
-RUN . /env/bin/activate && python3 -m pip install --upgrade pip setuptools
-RUN . /env/bin/activate && python3 -m pip install -r /conf/constraints.txt \
+RUN --mount=type=cache,id=odc-python-312-cache,target=/home/odc/.cache \
+    sudo chown odc:odc /home/odc/.cache \
+    && . /env/bin/activate \
+    && python3 -m pip --disable-pip-version-check install --upgrade pip setuptools \
+    && python3 -m pip --disable-pip-version-check install -r /conf/constraints.txt \
                            -c /conf/nobinary.txt
 
 # Copy datacube-core source code into container and install from source (with addons for tests).
 COPY --chown=odc:odc . /code
 
-RUN . /env/bin/activate && python3 -m pip install '/code/[all]' \
-    && python3 -m pip install /code/examples/io_plugin \
-    && python3 -m pip install /code/tests/drivers/fail_drivers
+RUN  --mount=type=cache,id=odc-python-312-cache,target=/home/odc/.cache \
+    . /env/bin/activate && python3 -m pip --disable-pip-version-check install '/code/[all]' \
+    && python3 -m pip --disable-pip-version-check install /code/examples/io_plugin \
+    && python3 -m pip --disable-pip-version-check install /code/tests/drivers/fail_drivers
 
 USER root
 
