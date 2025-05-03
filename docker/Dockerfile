@@ -44,7 +44,7 @@ COPY --chown=root:root docker/assets/with_bootstrap /usr/local/bin/
 
 # users and groups.
 RUN groupmod ubuntu -n odc  \
-  && usermod ubuntu -l odc \
+  && usermod -m -d /home/odc ubuntu -l odc \
   && adduser odc users \
   && adduser odc sudo \
   && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
