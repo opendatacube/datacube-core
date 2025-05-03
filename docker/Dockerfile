@@ -24,9 +24,12 @@ ARG V_PGIS=16-postgis-3
 
 # Update and install Ubuntu packages
 
-USER root
-RUN apt-get update -y \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-change-held-packages --fix-missing --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update -y \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
         git \
         libpq-dev libudunits2-dev libproj-dev \
         libhdf5-dev libnetcdf-dev libgeos-dev libudunits2-dev \
@@ -38,8 +41,7 @@ RUN apt-get update -y \
         postgresql-${V_PG} \
         postgresql-${V_PGIS} \
         sudo make graphviz \
-        tini \
-    && apt-get clean
+        tini
 
 # Copy bootstrap script into image.
 COPY --chown=root:root docker/assets/with_bootstrap /usr/local/bin/
