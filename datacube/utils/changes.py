@@ -42,11 +42,11 @@ def contains(v1: Changeable, v2: Changeable, case_sensitive: bool = False) -> bo
 
 class MissingSentinel:
     @override
-    def __str__(self):
+    def __str__(self) -> str:
         return "missing"
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "missing"
 
 

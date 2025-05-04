@@ -20,17 +20,17 @@ SCHEMA_NAME = 'agdc'
 class CreateView(Executable, ClauseElement):
     inherit_cache = True
 
-    def __init__(self, name, select) -> None:
+    def __init__(self, name: str, select) -> None:
         self.name = name
         self.select = select
 
 
 @compiles(CreateView)
-def visit_create_view(element, compiler, **kw):
+def visit_create_view(element, compiler, **kw) -> str:
     return f"CREATE VIEW {element.name} AS {compiler.process(element.select, literal_binds=True)}"
 
 
-UPDATE_TIMESTAMP_SQL = f"""
+UPDATE_TIMESTAMP_SQL: str = f"""
 create or replace function {SCHEMA_NAME}.set_row_update_time()
 returns trigger as $$
 begin
@@ -70,7 +70,7 @@ INSTALL_TRIGGER_SQL_TEMPLATE = [
     """
 ]
 
-TYPES_INIT_SQL = [
+TYPES_INIT_SQL: list[str] = [
     f"""
     create or replace function {SCHEMA_NAME}.common_timestamp(text)
     returns timestamp with time zone as $$
@@ -135,7 +135,7 @@ def visit_name(element, compiler, **kw) -> str:
     return "NAME"
 
 
-def pg_exists(conn, name) -> bool:
+def pg_exists(conn, name: str) -> bool:
     """
     Does a postgres object exist?
     :rtype bool
@@ -156,7 +156,7 @@ def pg_column_exists(conn, table, column) -> bool:
                         """)).scalar() is not None
 
 
-def escape_pg_identifier(conn, name):
+def escape_pg_identifier(conn, name: str):
     """
     Escape identifiers (tables, fields, roles, etc) for inclusion in SQL statements.
 

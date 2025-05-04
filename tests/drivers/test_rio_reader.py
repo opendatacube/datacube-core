@@ -27,7 +27,7 @@ from datacube.testutils.iodriver import (
 UTC = timezone.utc
 
 
-def test_rio_rd_entry():
+def test_rio_rd_entry() -> None:
     rde = RDEntry()
 
     assert 'file' in rde.protocols
@@ -54,7 +54,7 @@ def test_rio_rd_entry():
     assert rdr._pool is pool
 
 
-def test_rd_internals_crs():
+def test_rd_internals_crs() -> None:
     from rasterio.crs import CRS as RioCRS  # noqa: N811
 
     assert _dc_crs(None) is None
@@ -63,7 +63,7 @@ def test_rd_internals_crs():
     assert _dc_crs(RioCRS.from_wkt(SAMPLE_WKT_WITHOUT_AUTHORITY)).epsg is None
 
 
-def test_rd_internals_roi():
+def test_rd_internals_roi() -> None:
     s_ = np.s_
 
     assert _roi_to_window(None, (1, 1)) is None
@@ -72,7 +72,7 @@ def test_rd_internals_roi():
     assert _roi_to_window(s_[:3, 3:-1], (5, 10)) == ((0, 3), (3, 9))
 
 
-def test_rd_internals_bidx(data_folder):
+def test_rd_internals_bidx(data_folder) -> None:
     base = "file://" + str(data_folder) + "/metadata.yml"
     bi = mk_band('a',
                  base,
@@ -119,7 +119,7 @@ def test_rd_internals_bidx(data_folder):
         assert _rio_band_idx(bi, src) == 1
 
 
-def test_rd_internals_uri():
+def test_rd_internals_uri() -> None:
     base = "file:///some/path/"
 
     bi = mk_band('green', base, path="f.tiff", format=GeoTIFF)
@@ -133,7 +133,7 @@ def test_rd_internals_uri():
     assert _rio_uri(bi) is bi.uri
 
 
-def test_rio_driver_fail_to_open():
+def test_rio_driver_fail_to_open() -> None:
     nosuch_uri = 'file:///this-file-hopefully/doesnot/exist-4718193.tiff'
     rde = RDEntry()
     rdr = rde.new_instance({})
@@ -153,7 +153,7 @@ def test_rio_driver_fail_to_open():
         fut.result()
 
 
-def test_rio_driver_open(data_folder):
+def test_rio_driver_open(data_folder) -> None:
     base = "file://" + str(data_folder) + "/metadata.yml"
 
     rdr = mk_rio_driver()
@@ -209,7 +209,7 @@ def test_rio_driver_open(data_folder):
     assert src.nodata == bi.nodata
 
 
-def test_testutils_iodriver(data_folder):
+def test_testutils_iodriver(data_folder) -> None:
     fpath = str(data_folder) + '/test.tif'
     src = open_reader(fpath)
     assert src is not None

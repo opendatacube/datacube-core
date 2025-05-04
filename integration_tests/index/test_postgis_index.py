@@ -11,12 +11,12 @@ from odc.geo import CRS
 
 
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
-def test_index_environment(index: Index):
+def test_index_environment(index: Index) -> None:
     assert index.environment.index_driver in ("postgis")
 
 
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
-def test_create_drop_spatial_index(index: Index):
+def test_create_drop_spatial_index(index: Index) -> None:
     # Default spatial index for 4326
     assert list(index.spatial_indexes()) == [CRS("epsg:4326")]
     # WKT CRS which cannot be mapped to an EPSG number.
@@ -36,7 +36,7 @@ def test_create_drop_spatial_index(index: Index):
 
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_spatial_index_maintain(index: Index, ls8_eo3_product, eo3_ls8_dataset_doc):
+def test_spatial_index_maintain(index: Index, ls8_eo3_product, eo3_ls8_dataset_doc) -> None:
     index.create_spatial_index(CRS("EPSG:3577"))
     assert set(index.spatial_indexes(refresh=True)) == {CRS("EPSG:3577"), CRS("EPSG:4326")}
     from datacube.index.hl import Doc2Dataset
@@ -57,7 +57,7 @@ def test_spatial_index_populate(index: Index,
                                 wo_eo3_product,
                                 ls8_eo3_dataset, ls8_eo3_dataset2,
                                 ls8_eo3_dataset3, ls8_eo3_dataset4,
-                                wo_eo3_dataset):
+                                wo_eo3_dataset) -> None:
     index.create_spatial_index(CRS("EPSG:3577"))
     assert set(index.spatial_indexes(refresh=True)) == {CRS("EPSG:3577"), CRS("EPSG:4326")}
     assert index.update_spatial_index(
@@ -77,7 +77,7 @@ def test_spatial_index_populate(index: Index,
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
 def test_spatial_index_crs_validity(index: Index,
                                     ls8_eo3_product, ls8_eo3_dataset,
-                                    africa_s2_eo3_product, africa_eo3_dataset):
+                                    africa_s2_eo3_product, africa_eo3_dataset) -> None:
     # TODO: potentially include africa_eo3_dataset2 in this test
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
@@ -86,7 +86,7 @@ def test_spatial_index_crs_validity(index: Index,
     assert index.update_spatial_index(crses=[epsg3577]) == 2
 
 
-def spatial_index_crs_sanitise_helper():
+def spatial_index_crs_sanitise_helper() -> None:
     epsg4326 = CRS("EPSG:4326")
     epsg3857 = CRS("EPSG:3857")
     epsg3832 = CRS("EPSG:3832")
@@ -175,7 +175,7 @@ def spatial_index_crs_sanitise_helper():
     assert sanitise_extent(am_3832, epsg4326).type == "MultiPolygon"
 
 
-def test_spatial_index_crs_sanitise():
+def test_spatial_index_crs_sanitise() -> None:
     import warnings
     from antimeridian import FixWindingWarning
     with warnings.catch_warnings():
@@ -187,7 +187,7 @@ def test_spatial_index_crs_sanitise():
 def test_spatial_extent(index,
                         ls8_eo3_dataset, ls8_eo3_dataset2,
                         ls8_eo3_dataset3, ls8_eo3_dataset4,
-                        africa_s2_eo3_product, africa_eo3_dataset):
+                        africa_s2_eo3_product, africa_eo3_dataset) -> None:
     # TODO: include africa_eo3_dataset2 in this test
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
@@ -240,7 +240,7 @@ def test_spatial_extent(index,
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
 def test_spatial_search(index,
                         ls8_eo3_dataset, ls8_eo3_dataset2,
-                        ls8_eo3_dataset3, ls8_eo3_dataset4):
+                        ls8_eo3_dataset3, ls8_eo3_dataset4) -> None:
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
     index.create_spatial_index(epsg3577)
@@ -285,7 +285,7 @@ def test_spatial_search(index,
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
 def test_temporal_extents(index,
                           ls8_eo3_dataset, ls8_eo3_dataset2,
-                          ls8_eo3_dataset3, ls8_eo3_dataset4):
+                          ls8_eo3_dataset3, ls8_eo3_dataset4) -> None:
     start, end = index.products.temporal_extent(ls8_eo3_dataset.product)
     assert start == datetime.datetime(
         2013, 4, 4, 0, 58, 34, 682275,

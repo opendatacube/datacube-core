@@ -25,5 +25,5 @@ class FakeThreadPoolExecutor:
     def map(self, fn, *iterables, timeout=None, chunksize: int = 1) -> map:
         return map(partial(self.submit, fn), *iterables)
 
-    def shutdown(self, wait=True):
+    def shutdown(self, wait: bool = True) -> None:
         pass

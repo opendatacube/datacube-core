@@ -39,7 +39,7 @@ def mock_urlopen(text, code=200):
     return m
 
 
-def test_ec2_current_region():
+def test_ec2_current_region() -> None:
     tests = [(None, None),
              (_json(region='TT'), 'TT'),
              (_json(x=3), None),
@@ -52,7 +52,7 @@ def test_ec2_current_region():
 
 @mock.patch('datacube.utils.aws.botocore_default_region',
             return_value=None)
-def test_auto_find_region(*mocks):
+def test_auto_find_region(*mocks) -> None:
     with mock.patch('datacube.utils.aws._fetch_text', return_value=None):
         with pytest.raises(ValueError):
             auto_find_region()
@@ -63,11 +63,11 @@ def test_auto_find_region(*mocks):
 
 @mock.patch('datacube.utils.aws.botocore_default_region',
             return_value='tt-from-botocore')
-def test_auto_find_region_2(*mocks):
+def test_auto_find_region_2(*mocks) -> None:
     assert auto_find_region() == 'tt-from-botocore'
 
 
-def test_fetch_text():
+def test_fetch_text() -> None:
     with mock.patch('datacube.utils.aws.urlopen',
                     return_value=mock_urlopen('', 505)):
         assert _fetch_text('http://localhost:8817') is None
@@ -83,7 +83,7 @@ def test_fetch_text():
         assert _fetch_text('http://localhost:8817') is None
 
 
-def test_get_aws_settings(monkeypatch, without_aws_env):
+def test_get_aws_settings(monkeypatch, without_aws_env) -> None:
 
     pp = write_files({
         "config": """
@@ -149,13 +149,13 @@ aws_secret_access_key = fake-fake-fake
 
 
 @mock.patch('datacube.utils.aws.get_creds_with_retry', return_value=None)
-def test_get_aws_settings_no_credentials(without_aws_env):
+def test_get_aws_settings_no_credentials(without_aws_env) -> None:
     # get_aws_settings should fail when credentials are not available
     with pytest.raises(ValueError, match="Couldn't get credentials"):
         aws, creds = get_aws_settings(region_name="fake")
 
 
-def test_creds_with_retry():
+def test_creds_with_retry() -> None:
     session = mock.MagicMock()
     session.get_credentials = mock.MagicMock(return_value=None)
 
@@ -163,7 +163,7 @@ def test_creds_with_retry():
     assert session.get_credentials.call_count == 2
 
 
-def test_s3_basics(without_aws_env):
+def test_s3_basics(without_aws_env) -> None:
     from numpy import s_
     from botocore.credentials import ReadOnlyCredentials
 
@@ -192,7 +192,7 @@ def test_s3_basics(without_aws_env):
     assert s3 is not None
 
 
-def test_s3_io(monkeypatch, without_aws_env):
+def test_s3_io(monkeypatch, without_aws_env) -> None:
     import moto
     from numpy import s_
 
@@ -224,7 +224,7 @@ def test_s3_io(monkeypatch, without_aws_env):
             s3_fetch(url, range=s_[::2], s3=s3)
 
 
-def test_s3_unsigned(monkeypatch, without_aws_env):
+def test_s3_unsigned(monkeypatch, without_aws_env) -> None:
     s3 = s3_client(aws_unsigned=True)
     assert s3._request_signer.signature_version == botocore.UNSIGNED
 
@@ -234,7 +234,7 @@ def test_s3_unsigned(monkeypatch, without_aws_env):
 
 
 @mock.patch('datacube.utils.aws.ec2_current_region', return_value="us-west-2")
-def test_s3_client_cache(monkeypatch, without_aws_env):
+def test_s3_client_cache(monkeypatch, without_aws_env) -> None:
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
 
@@ -258,7 +258,7 @@ def test_s3_client_cache(monkeypatch, without_aws_env):
     assert len(keys) == len(opts)
 
 
-def test_obtain_new_iam_token(monkeypatch, without_aws_env):
+def test_obtain_new_iam_token(monkeypatch, without_aws_env) -> None:
     import moto
     from sqlalchemy.engine.url import URL
     url = URL.create(

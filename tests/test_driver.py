@@ -16,7 +16,7 @@ from datacube.testutils import mk_sample_dataset, suppress_deprecations
 from datacube.model import MetadataType
 
 
-def test_new_datasource_fallback():
+def test_new_datasource_fallback() -> None:
     bands = [dict(name='green',
                   path='')]
     dataset = mk_sample_dataset(bands, 'file:///foo', format='GeoTiff')
@@ -34,30 +34,30 @@ def test_new_datasource_fallback():
     assert isinstance(rdr, RasterDatasetDataSource)
 
 
-def test_reader_drivers():
+def test_reader_drivers() -> None:
     available_drivers = reader_drivers()
     assert isinstance(available_drivers, list)
 
 
-def test_writer_drivers():
+def test_writer_drivers() -> None:
     available_drivers = writer_drivers()
     assert 'netcdf' in available_drivers
     assert 'NetCDF CF' in available_drivers
 
 
-def test_index_drivers():
+def test_index_drivers() -> None:
     available_drivers = index_drivers()
     assert 'default' in available_drivers
     assert 'null' in available_drivers
     assert 'memory' in available_drivers
 
 
-def test_default_injection():
+def test_default_injection() -> None:
     cache = IndexDriverCache('datacube.plugins.index-no-such-prefix')
     assert set(cache.drivers()) == {'default', 'postgres', 'legacy', 'postgis', 'memory'}
 
 
-def test_netcdf_driver_import():
+def test_netcdf_driver_import() -> None:
     try:
         import datacube.drivers.netcdf.driver
     except ImportError:
@@ -66,7 +66,7 @@ def test_netcdf_driver_import():
     assert datacube.drivers.netcdf.driver.reader_driver_init is not None
 
 
-def test_writer_driver_mk_uri():
+def test_writer_driver_mk_uri() -> None:
     from datacube.drivers.netcdf.driver import NetcdfWriterDriver
     writer_driver = NetcdfWriterDriver()
 
@@ -77,7 +77,7 @@ def test_writer_driver_mk_uri():
     assert file_uri == f'file://{file_path}'
 
 
-def test_metadata_type_from_doc():
+def test_metadata_type_from_doc() -> None:
     metadata_doc = yaml.safe_load('''
 name: minimal
 description: minimal metadata definition
@@ -102,7 +102,7 @@ dataset:
             assert 'some_custom_field' in metadata.dataset_fields
 
 
-def test_reader_cache_throws_on_missing_fallback():
+def test_reader_cache_throws_on_missing_fallback() -> None:
     from datacube.drivers.readers import rdr_cache
 
     rdrs = rdr_cache()
@@ -112,7 +112,7 @@ def test_reader_cache_throws_on_missing_fallback():
         rdrs('file', 'aint-such-format')
 
 
-def test_driver_singleton():
+def test_driver_singleton() -> None:
     from datacube.drivers._tools import singleton_setup
     from unittest.mock import MagicMock
 

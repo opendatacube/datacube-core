@@ -4,11 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 from alembic import context
 
-from datacube.cfg import ODCConfig
+from datacube.cfg import ODCConfig, ODCEnvironment
 from datacube.drivers.postgis._connections import PostGisDb
 from datacube.drivers.postgis._schema import MetadataObj
 from datacube.drivers.postgis._spatial import is_spindex_table_name
 from datacube.drivers.postgis.sql import SCHEMA_NAME
+from typing import Literal
+from collections.abc import MutableMapping
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -62,7 +64,10 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def include_name(name, type_, parent_names) -> bool:
+def include_name(name,
+                 type_: Literal['schema', 'table', 'column', 'index', 'unique_constraint', 'foreign_key_constraint'],
+                 parent_names: MutableMapping[
+                     Literal['schema_name', 'table_name', 'schema_qualified_table_name'], str | None]) -> bool:
     if type_ == "table":
         # Ignore postgis system table
         if name == "spatial_ref_sys" and parent_names["schema_name"] is None:
@@ -89,7 +94,7 @@ def include_name(name, type_, parent_names) -> bool:
         return True
 
 
-def get_odc_env():
+def get_odc_env() -> ODCEnvironment:
     # In active Alembic Config?
     cfg = config.attributes.get('cfg')
     env = config.attributes.get('env')

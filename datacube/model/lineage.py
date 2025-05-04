@@ -73,7 +73,7 @@ class LineageTree:
             and children_equal
         )
 
-    def serialise(self, specify_direction_if_empty=True) -> SerialisedTree:
+    def serialise(self, specify_direction_if_empty: bool = True) -> SerialisedTree:
         serial: SerialisedTree = {"id": str(self.dataset_id)}
         if self.home:
             serial["home"] = self.home
@@ -164,8 +164,8 @@ class LineageTree:
 
     @classmethod
     def from_eo3_doc(cls, doc: Mapping[str, Any],
-                     home=None,
-                     home_derived=None) -> "LineageTree":
+                     home: str | None = None,
+                     home_derived: str | None = None) -> "LineageTree":
         """
         Generate a shallow (depth=1) LineageTree from an EO3 dataset document
 

@@ -14,7 +14,7 @@ from datacube.index.fields import to_expressions
 from datacube.model import Range
 
 
-def test_build_query_expressions():
+def test_build_query_expressions() -> None:
     _sat_field = SimpleDocField('platform', None, None, None)
     _sens_field = SimpleDocField('instrument', None, None, None)
     _lat_field = NumericRangeDocField('lat', None, None, None)

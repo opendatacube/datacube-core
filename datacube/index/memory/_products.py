@@ -18,11 +18,11 @@ from datacube.utils import changes, jsonify_document, _readable_offset
 from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes, classify_changes
 from datacube.utils.documents import metadata_subset, JsonDict
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class ProductResource(AbstractProductResource):
-    def __init__(self, index: AbstractIndex):
+    def __init__(self, index: AbstractIndex) -> None:
         from datacube.index.memory.index import Index
         self._index: Index = cast(Index, index)
         self.by_id: dict[int, Product] = {}
@@ -203,7 +203,7 @@ class ProductResource(AbstractProductResource):
         )
 
     @override
-    def spatial_extent(self, product, crs=None):
+    def spatial_extent(self, product: Product | str, crs=None):
         return None
 
     @override

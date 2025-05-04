@@ -55,11 +55,11 @@ from deprecat import deprecat
 
 from ..utils.uris import pick_uri
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
 
-SCHEMA_PATH = Path(__file__).parent / 'schema'
+SCHEMA_PATH: Path = Path(__file__).parent / 'schema'
 
 
 # TODO: Multi-dimension code is has incomplete type hints and significant type issues that will require attention
@@ -95,7 +95,7 @@ class Dataset:
                  indexed_time: datetime | None = None,
                  archived_time: datetime | None = None,
                  source_tree: LineageTree | None = None,
-                 derived_tree: LineageTree | None = None):
+                 derived_tree: LineageTree | None = None) -> None:
         assert isinstance(product, Product)
 
         self.product = product
@@ -388,7 +388,7 @@ class Dataset:
         return False
 
     @override
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.id)
 
     @override
@@ -470,13 +470,13 @@ class Measurement:
         """
         return self._data[key]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         """
         Sets the value associated with the given key.
         """
         self._data[key] = value
 
-    def __delitem__(self, key):
+    def __delitem__(self, key) -> None:
         if key in self.REQUIRED_KEYS:
             raise KeyError(f"Measurement() requires key {key}")
         del self._data[key]
@@ -487,7 +487,7 @@ class Measurement:
     def __len__(self) -> int:
         return len(self._data)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator:
         return iter(self._data)
 
     @override
@@ -539,7 +539,7 @@ class Measurement:
         return isinstance(other, Measurement) and self._data == other._data
 
     @override
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self._data)
 
     @override
@@ -623,7 +623,7 @@ class Product:
     def __init__(self,
                  metadata_type: MetadataType,
                  definition: Mapping[str, Any],
-                 id_: int | None = None):
+                 id_: int | None = None) -> None:
         assert isinstance(metadata_type, MetadataType)
         self.id = id_
         self.metadata_type = metadata_type
@@ -736,7 +736,7 @@ class Product:
 
         crs = CRS(str(crs).strip())
 
-        def extract_point(name):
+        def extract_point(name: str):
             xx = storage.get(name, None)
             try:
                 return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
@@ -768,7 +768,7 @@ class Product:
         return GridSpec(crs=crs, **gs_params)
 
     @staticmethod
-    def validate_extra_dims(definition: Mapping[str, Any]):
+    def validate_extra_dims(definition: Mapping[str, Any]) -> None:
         """Validate 3D metadata in the product definition.
 
         Perform some basic checks for validity of the 3D dataset product definition:
@@ -864,7 +864,7 @@ class Product:
 
         crs = CRS(_load['crs'])
 
-        def extract_point(name):
+        def extract_point(name: str):
             xx = _load.get(name, None)
             return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
 
@@ -962,7 +962,7 @@ class Product:
         return self.name == other.name
 
     @override
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.name)
 
 
@@ -1000,7 +1000,7 @@ class GridSpec:
                  crs: CRS,
                  tile_size: tuple[float, float],
                  resolution: tuple[float, float],
-                 origin: tuple[float, float] | None = None):
+                 origin: tuple[float, float] | None = None) -> None:
         self.crs = crs
         _LOG.warning('In odc-geo GridSpec, tile_size has been renamed tile_shape and should be provided in pixels.')
         self.tile_size = tile_size
@@ -1193,7 +1193,7 @@ class ExtraDimensions:
     the original dimension coordinates.
     """
 
-    def __init__(self, extra_dim: Mapping[str, Any]):
+    def __init__(self, extra_dim: Mapping[str, Any]) -> None:
         """Init function
 
         :param extra_dim: Dimension definition dict, typically retrieved from the product definition's

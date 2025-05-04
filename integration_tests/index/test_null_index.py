@@ -13,13 +13,13 @@ from datacube.testutils import suppress_deprecations
 test_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
 
 
-def empty(iterable):
+def empty(iterable) -> bool:
     for _ in iterable:
         return False
     return True
 
 
-def test_init_null(null_config: ODCEnvironment):
+def test_init_null(null_config: ODCEnvironment) -> None:
     from datacube.drivers.indexes import index_cache
     idxs = index_cache()
     assert "default" in idxs._drivers
@@ -29,7 +29,7 @@ def test_init_null(null_config: ODCEnvironment):
         assert dc.index.environment.index_driver == "null"
 
 
-def test_null_user_resource(null_config: ODCEnvironment):
+def test_null_user_resource(null_config: ODCEnvironment) -> None:
     with Datacube(env=null_config, validate_connection=True) as dc:
         assert empty(dc.index.users.list_users())
         with pytest.raises(NotImplementedError):
@@ -40,7 +40,7 @@ def test_null_user_resource(null_config: ODCEnvironment):
             dc.index.users.grant_role("role1", "user1", "user2")
 
 
-def test_null_metadata_types_resource(null_config: ODCEnvironment):
+def test_null_metadata_types_resource(null_config: ODCEnvironment) -> None:
     with Datacube(env=null_config, validate_connection=True) as dc:
         assert dc.index.metadata_types.get_all() == []
         with pytest.raises(NotImplementedError):
@@ -61,7 +61,7 @@ def test_null_metadata_types_resource(null_config: ODCEnvironment):
             dc.index.metadata_types.check_field_indexes()
 
 
-def test_null_product_resource(null_config: ODCEnvironment):
+def test_null_product_resource(null_config: ODCEnvironment) -> None:
     with Datacube(env=null_config, validate_connection=True) as dc:
         assert dc.index.products.get_all() == []
         assert dc.index.products.search_robust(foo="bar", baz=12) == []
@@ -85,7 +85,7 @@ def test_null_product_resource(null_config: ODCEnvironment):
             dc.index.products.delete(MagicMock())
 
 
-def test_null_dataset_resource(null_config: ODCEnvironment):
+def test_null_dataset_resource(null_config: ODCEnvironment) -> None:
     with Datacube(env=null_config, validate_connection=True) as dc:
         assert dc.index.datasets.get(test_uuid) is None
         assert dc.index.datasets.bulk_get([test_uuid, "foo"]) == []
@@ -146,7 +146,7 @@ def test_null_dataset_resource(null_config: ODCEnvironment):
         assert dc.index.datasets.search_returning_datasets_light(("foo", "baz"), foo="bar", baz=12) == []
 
 
-def test_null_transactions(null_config: ODCEnvironment):
+def test_null_transactions(null_config: ODCEnvironment) -> None:
     with Datacube(env=null_config, validate_connection=True) as dc:
         trans = dc.index.transaction()
         assert not trans.active

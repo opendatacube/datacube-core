@@ -10,9 +10,12 @@ import csv
 import datetime
 import shutil
 import sys
+from collections.abc import Callable, Collection
 from functools import partial
+from typing import Any
 
 import click
+from os import terminal_size as t_size
 from sqlalchemy.dialects.postgresql import Range
 from functools import singledispatch
 
@@ -28,7 +31,8 @@ def printable_values(d) -> dict:
     return {k: printable(v) for k, v in d.items()}
 
 
-def write_pretty(out_f, field_names, search_results, terminal_size=shutil.get_terminal_size()) -> None:
+def write_pretty(out_f, field_names: Collection[str], search_results,
+                 terminal_size: t_size = shutil.get_terminal_size()) -> None:
     """
     Output in a human-readable text format. Inspired by psql's expanded output.
     """
@@ -52,7 +56,7 @@ def write_pretty(out_f, field_names, search_results, terminal_size=shutil.get_te
         record_num += 1
 
 
-def write_csv(out_f, field_names, search_results) -> None:
+def write_csv(out_f: Any, field_names: Collection, search_results: dict) -> None:
     """
     Output as a CSV.
     """
@@ -62,7 +66,7 @@ def write_csv(out_f, field_names, search_results) -> None:
     writer.writerows(printable_values(d) for d in search_results)
 
 
-OUTPUT_FORMATS = {
+OUTPUT_FORMATS: dict[str, Callable[[Any, Collection, dict], None]] = {
     'csv': write_csv,
     'pretty': write_pretty
 }
@@ -75,7 +79,7 @@ OUTPUT_FORMATS = {
               default='pretty', show_default=True,
               help='Output format')
 @click.pass_context
-def cli(ctx, f):
+def cli(ctx, f) -> None:
     ctx.obj['write_results'] = partial(OUTPUT_FORMATS[f], sys.stdout)
 
 
@@ -121,7 +125,7 @@ def printable_none(val) -> str:
 
 
 @printable.register(datetime.datetime)
-def printable_dt(val):
+def printable_dt(val: datetime.datetime) -> str:
     """
     :type val: datetime.datetime
     """

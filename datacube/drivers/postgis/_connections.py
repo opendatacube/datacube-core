@@ -21,7 +21,7 @@ from collections.abc import Iterator
 from typing_extensions import override
 from collections.abc import Callable, Iterable, Mapping
 
-from sqlalchemy import event, create_engine
+from sqlalchemy import Connection, event, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
 
@@ -36,9 +36,9 @@ from ._spatial import ensure_spindex, spindexes, spindex_for_crs, drop_spindex, 
 from ._schema import SpatialIndex
 from ...cfg import ODCEnvironment, psql_url_from_config
 
-_LIB_ID = 'odc-' + str(datacube.__version__)
+_LIB_ID: str = 'odc-' + str(datacube.__version__)
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class PostGisDb:
@@ -102,7 +102,8 @@ class PostGisDb:
         return PostGisDb(engine)
 
     @staticmethod
-    def _create_engine(url, application_name=None, iam_rds_auth=False, iam_rds_timeout=600, pool_timeout=60) -> Engine:
+    def _create_engine(url, application_name: str | None = None, iam_rds_auth: bool = False,
+                       iam_rds_timeout: float | int = 600, pool_timeout: int = 60) -> Engine:
         try:
             engine = create_engine(
                 url,
@@ -150,7 +151,7 @@ class PostGisDb:
         self._engine.dispose()
 
     @classmethod
-    def _expand_app_name(cls, application_name) -> str:
+    def _expand_app_name(cls, application_name: str | None) -> str:
         """
         >>> PostGisDb._expand_app_name(None) #doctest: +ELLIPSIS
         'odc-...'
@@ -234,7 +235,7 @@ class PostGisDb:
     def spatial_index(self, crs: CRS) -> type[SpatialIndex] | None:
         return self.spindexes.get(crs_to_epsg(crs))
 
-    def spatially_indexed_crses(self, refresh=False) -> Iterable[CRS]:
+    def spatially_indexed_crses(self, refresh: bool = False) -> Iterable[CRS]:
         if refresh:
             self._refresh_spindexes()
         return list(CRS(epsg) for epsg in self.spindexes.keys())
@@ -264,7 +265,7 @@ class PostGisDb:
             finally:
                 connection.close()
 
-    def _give_me_a_connection(self):
+    def _give_me_a_connection(self) -> Connection:
         # A Raw connection outside of the pool, caller is responsible for closing.
         # (Used by transaction API)
         return self._engine.connect()

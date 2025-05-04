@@ -15,7 +15,7 @@ from datacube.utils import report_to_user
 
 from ._types import DSID, BatchStatus
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class AbstractLineageResource(ABC):
@@ -178,7 +178,7 @@ class AbstractLineageResource(ABC):
         :return: BatchStatus named tuple, with `safe` set to None.
         """
 
-        def increment_progress():
+        def increment_progress() -> None:
             report_to_user(".", progress_indicator=True)
 
         n_batches = 0

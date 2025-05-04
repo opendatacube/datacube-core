@@ -8,7 +8,7 @@ from odc.geo.crs import CRS
 from odc.geo.geom import box
 
 
-def test_extract_geom():
+def test_extract_geom() -> None:
     p1 = box(-122.2, 44.7, -120.8, 45.0, crs="epsg:4326")
     p2 = box(-102.5, 44.1, -100.2, 46.2, crs="epsg:4326")
     p3 = box(-112.7, 42.4, -109.6, 45.1, crs="epsg:4326")

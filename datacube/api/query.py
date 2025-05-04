@@ -23,7 +23,7 @@ from ..utils.dates import normalise_dt, tz_aware
 from odc.geo import Geometry
 from odc.geo.geom import lonlat_bounds, mid_longitude
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class GroupBy:
@@ -225,7 +225,7 @@ def query_group_by(group_by: str | GroupBy | None = 'time', **kwargs: QueryField
         ) from None
 
 
-def _value_to_range(value) -> tuple[float, float]:
+def _value_to_range(value: str | int | float | list[str | int | float]) -> tuple[float, float]:
     if isinstance(value, str | float | int):
         value = float(value)
         return value, value
@@ -293,7 +293,7 @@ def _time_to_search_dims(time_range):
         return tr
 
 
-def _convert_to_solar_time(utc, longitude):
+def _convert_to_solar_time(utc, longitude: float) -> datetime.datetime:
     seconds_per_degree = 240
     offset_seconds = int(longitude * seconds_per_degree)
     offset = datetime.timedelta(seconds=offset_seconds)

@@ -160,7 +160,7 @@ def _make_crs_transform_key(from_crs, to_crs, always_xy):
 
 
 @cachetools.cached({}, key=_make_crs_transform_key)
-def _make_crs_transform(from_crs, to_crs, always_xy):
+def _make_crs_transform(from_crs, to_crs, always_xy: bool):
     return Transformer.from_crs(from_crs, to_crs, always_xy=always_xy).transform
 
 
@@ -176,7 +176,7 @@ class CRS:
 
     __slots__ = ('_crs', '_epsg', '_str')
 
-    def __init__(self, crs_spec: Any):
+    def __init__(self, crs_spec: Any) -> None:
         if isinstance(crs_spec, str):
             self._crs, self._str, self._epsg = _make_crs(crs_spec)
         elif isinstance(crs_spec, CRS):
@@ -317,7 +317,7 @@ class CRS:
         return self._crs == other._crs
 
     @override
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: object) -> bool:
         return not (self == other)
 
     @property
@@ -348,7 +348,7 @@ class CRS:
         warnings.warn("Please use `str(crs)` instead of `crs.crs_str`", category=DeprecationWarning)
         return self._str
 
-    def transformer_to_crs(self, other: 'CRS', always_xy=True) -> Callable[[Any, Any], tuple[Any, Any]]:
+    def transformer_to_crs(self, other: 'CRS', always_xy: bool = True) -> Callable[[Any, Any], tuple[Any, Any]]:
         """
         Returns a function that maps x, y -> x', y' where x, y are coordinates in
         this stored either as scalars or ndarray objects and x', y' are the same
@@ -397,7 +397,7 @@ def _norm_crs_or_error(crs: MaybeCRS) -> CRS:
     return CRS(crs)
 
 
-def wrap_shapely(suppress_geos_warnings=False):
+def wrap_shapely(suppress_geos_warnings: bool = False):
     """
     Takes a method that expects shapely geometry arguments
     and converts it to a method that operates on `Geometry`
@@ -486,7 +486,7 @@ class Geometry:
 
     def __init__(self,
                  geom: Union[base.BaseGeometry, dict[str, Any], 'Geometry'],
-                 crs: MaybeCRS = None):
+                 crs: MaybeCRS = None) -> None:
         if isinstance(geom, Geometry):
             assert crs is None
             self.crs: CRS | None = geom.crs
@@ -769,11 +769,11 @@ class Geometry:
                 hasattr(other, 'geom') and self.geom == other.geom)
 
     @override
-    def __str__(self):
+    def __str__(self) -> str:
         return f'Geometry({self.__geo_interface__}, {self.crs!r})'
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'Geometry({self.geom}, {self.crs})'
 
     # Implement pickle/unpickle
@@ -818,7 +818,7 @@ def projected_lon(crs: MaybeCRS,
     return line(pts, crs)
 
 
-def clip_lon180(geom: Geometry, tol=1e-6) -> Geometry:
+def clip_lon180(geom: Geometry, tol: float = 1e-6) -> Geometry:
     """
     For every point in the ``lon=180|-180`` band clip to either 180 or -180
     180|-180 is decided based on where the majority of other points lie.
@@ -1041,13 +1041,13 @@ def _align_pix(left: float, right: float, res: float, off: float) -> tuple[float
 class GeoBox:
     """
     Defines the location and resolution of a rectangular grid of data,
-    including it's :py:class:`CRS`.
+    including its :py:class:`CRS`.
 
     :param crs: Coordinate Reference System
     :param affine: Affine transformation defining the location of the geobox
     """
 
-    def __init__(self, width: int, height: int, affine: Affine, crs: MaybeCRS):
+    def __init__(self, width: int, height: int, affine: Affine, crs: MaybeCRS) -> None:
         self.width = width
         self.height = height
         self.affine = affine
@@ -1131,7 +1131,7 @@ class GeoBox:
         return not self.is_empty()
 
     @override
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((*self.shape, self.crs, self.affine))
 
     @property
@@ -1234,15 +1234,15 @@ class GeoBox:
     dims = dimensions
 
     @override
-    def __str__(self):
+    def __str__(self) -> str:
         return f"GeoBox({self.geographic_extent})"
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"GeoBox({self.width}, {self.height}, {self.affine!r}, {self.extent.crs})"
 
     @override
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not isinstance(other, GeoBox):
             return False
 

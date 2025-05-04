@@ -18,7 +18,7 @@ from datacube.testutils.geom import AlbersGS
 from datacube.api.core import output_geobox
 
 
-def test_gridspec():
+def test_gridspec() -> None:
     with suppress_deprecations():
         gs = GridSpec(  # Coverage test of deprecated class
             crs=CRS('EPSG:4326'), tile_size=(1, 1),
@@ -45,7 +45,7 @@ def test_gridspec():
     assert (gs == {}) is False
 
 
-def test_gridspec_upperleft():
+def test_gridspec_upperleft() -> None:
     """ Test to ensure grid indexes can be counted correctly from bottom left or top left
     """
     tile_bbox = BoundingBox(left=1934400.0, top=2414800.0, right=2084400.000, bottom=2264800.000, crs=CRS('EPSG:5070'))
@@ -67,7 +67,7 @@ def test_gridspec_upperleft():
     assert cells[(30, 15)].extent.boundingbox == tile_bbox
 
 
-def test_dataset_basics():
+def test_dataset_basics() -> None:
     ds = mk_sample_dataset([dict(name='a')])
     assert ds == ds
     assert ds != "33"
@@ -83,7 +83,7 @@ def test_dataset_basics():
     assert ds.transform is None
 
 
-def test_dataset_measurement_paths():
+def test_dataset_measurement_paths() -> None:
     format_ = 'GeoTiff'
 
     ds = mk_sample_dataset([dict(name=n,
@@ -108,7 +108,7 @@ def test_dataset_measurement_paths():
         measurement_paths(ds)
 
 
-def test_product_basics():
+def test_product_basics() -> None:
     product = mk_sample_product('test_product')
     assert product.name == 'test_product'
     assert 'test_product' in str(product)
@@ -124,7 +124,7 @@ def test_product_basics():
     assert product.lookup_measurements(['red']) == product.lookup_measurements('red')
 
 
-def test_product_dimensions():
+def test_product_dimensions() -> None:
     product = mk_sample_product('test_product')
     with suppress_deprecations():
         assert product.grid_spec is None
@@ -142,7 +142,7 @@ def test_product_dimensions():
         assert product.grid_spec is None
 
 
-def test_product_gridspec():
+def test_product_gridspec() -> None:
     product = mk_sample_product('old_product', with_grid_spec=True)
     with pytest.deprecated_call():
         assert product.grid_spec is not None
@@ -157,7 +157,7 @@ def test_product_gridspec():
     assert product.to_dict()['resolution'].xy == (25, -25)
 
 
-def test_product_nodata_nan():
+def test_product_nodata_nan() -> None:
     # When storing .nan to JSON in DB it becomes a string with value "NaN"
     # Make sure it is converted back to real NaN
     product = mk_sample_product('test', measurements=[dict(name='_nan',
@@ -178,7 +178,7 @@ def test_product_nodata_nan():
     assert product.measurements['_neg_inf'].nodata == -numpy.inf
 
 
-def test_product_scale_factor():
+def test_product_scale_factor() -> None:
     product = mk_sample_product('test', measurements=[dict(name='red',
                                                            scale_factor=33,
                                                            add_offset=-5)])
@@ -190,7 +190,7 @@ def test_product_scale_factor():
     assert attrs['add_offset'] == -5
 
 
-def test_product_load_hints():
+def test_product_load_hints() -> None:
     product = mk_sample_product('test_product',
                                 load=dict(crs='epsg:3857',
                                           resolution={'x': 10, 'y': -10}))
@@ -270,7 +270,7 @@ def test_product_load_hints():
     assert product.load_hints() == {}
 
 
-def test_measurement():
+def test_measurement() -> None:
     # Can create a measurement
     m = Measurement(name='t', dtype='uint8', nodata=255, units='1')
 
@@ -310,7 +310,7 @@ def test_measurement():
     assert 'dtype' in str(e.value)
 
 
-def test_measurement_equality():
+def test_measurement_equality() -> None:
     m1 = Measurement(name='t', dtype='uint8', nodata=255, units='1')
     m2 = Measurement(name='t', dtype='uint8', nodata=255, units='1')
     assert m1 == m2
@@ -319,7 +319,7 @@ def test_measurement_equality():
 
 
 @pytest.mark.parametrize("protocol", range(pickle.HIGHEST_PROTOCOL))
-def test_measurement_pickling(protocol):
+def test_measurement_pickling(protocol) -> None:
     m = Measurement(name='t', dtype='uint8', nodata=255, units='1')
 
     serialised_m = pickle.dumps(m, protocol=protocol)
@@ -329,7 +329,7 @@ def test_measurement_pickling(protocol):
     assert m == restored_m
 
 
-def test_measurement_cloudpickle():
+def test_measurement_cloudpickle() -> None:
     import cloudpickle
 
     m = Measurement(name='t', dtype='uint8', nodata=255, units='1')
@@ -339,7 +339,7 @@ def test_measurement_cloudpickle():
     assert m == deserialised
 
 
-def test_output_geobox_load_hints():
+def test_output_geobox_load_hints() -> None:
     geobox0 = AlbersGS.tile_geobox((15, -40))
 
     geobox = output_geobox(load_hints={'output_crs': geobox0.crs,
@@ -348,12 +348,12 @@ def test_output_geobox_load_hints():
     assert geobox == geobox0
 
 
-def test_like_geobox():
+def test_like_geobox() -> None:
     geobox = AlbersGS.tile_geobox((15, -40))
     assert output_geobox(like=geobox) is geobox
 
 
-def test_output_geobox_fail_paths():
+def test_output_geobox_fail_paths() -> None:
 
     with pytest.raises(ValueError):
         output_geobox()
@@ -366,7 +366,7 @@ def test_output_geobox_fail_paths():
         output_geobox(output_crs='EPSG:4326', resolution=(1, 1))
 
 
-def test_metadata_type():
+def test_metadata_type() -> None:
     m = MetadataType({'name': 'eo',
                       'dataset': dict(
                           id=['id'],
@@ -392,7 +392,7 @@ def test_metadata_type():
     assert m.dataset_reader({}) is not None
 
 
-def test_ranges_overlap():
+def test_ranges_overlap() -> None:
     assert not ranges_overlap(
         Range(begin=1, end=5),
         Range(begin=11, end=15)

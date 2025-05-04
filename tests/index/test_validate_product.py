@@ -27,14 +27,14 @@ only_mandatory_fields = {
     # With the optional properties
     {'measurements': [{'name': 'band_70', 'dtype': 'int16', 'nodata': -999, 'units': '1'}]}
 ])
-def test_accepts_valid_docs(valid_product_update):
+def test_accepts_valid_docs(valid_product_update) -> None:
     doc = deepcopy(only_mandatory_fields)
     doc.update(valid_product_update)
     # Should have no errors.
     Product.validate(doc)
 
 
-def test_incomplete_product_is_invalid():
+def test_incomplete_product_is_invalid() -> None:
     # Invalid: An empty doc.
     with pytest.raises(InvalidDocException):
         Product.validate({})
@@ -57,7 +57,7 @@ def test_incomplete_product_is_invalid():
     {'mappings': {}},
     {'mappings': ''}
 ])
-def test_rejects_invalid_docs(invalid_product_update):
+def test_rejects_invalid_docs(invalid_product_update) -> None:
     mapping = deepcopy(only_mandatory_fields)
     mapping.update(invalid_product_update)
     with pytest.raises(InvalidDocException):
@@ -80,7 +80,7 @@ def test_rejects_invalid_docs(invalid_product_update):
         # TODO: flags/spectral
     },
 ])
-def test_accepts_valid_measurements(valid_product_measurement):
+def test_accepts_valid_measurements(valid_product_measurement) -> None:
     mapping = deepcopy(only_mandatory_fields)
     mapping['measurements'] = [valid_product_measurement]
     # Should have no errors.
@@ -100,7 +100,7 @@ def test_accepts_valid_measurements(valid_product_measurement):
     # Unknown property
     {'name': 'red', 'asdf': 'asdf'},
 ])
-def test_rejects_invalid_measurements(invalid_product_measurement):
+def test_rejects_invalid_measurements(invalid_product_measurement) -> None:
     mapping = deepcopy(only_mandatory_fields)
     mapping['measurements'] = {'10': invalid_product_measurement}
     with pytest.raises(InvalidDocException):

@@ -7,7 +7,7 @@ from datacube import Datacube
 from datacube.cfg import ODCConfig
 
 
-def test_multiple_environment_config(tmpdir):
+def test_multiple_environment_config(tmpdir) -> None:
     raw_config = """
 [DEFAULT]
 db_username: test_user

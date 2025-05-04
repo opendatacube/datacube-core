@@ -13,7 +13,7 @@ from datacube.testutils import write_files, assert_file_structure
 from datacube.ui.common import get_metadata_path, _find_any_metadata_suffix, ui_path_doc_stream
 
 
-def test_get_metadata_path():
+def test_get_metadata_path() -> None:
     test_file_structure = {
         'directory_dataset': {
             'file1.txt': '',
@@ -56,7 +56,7 @@ def test_get_metadata_path():
         get_metadata_path(out_dir.joinpath('missing-dataset.tif'))
 
 
-def test_find_any_metatadata_suffix():
+def test_find_any_metatadata_suffix() -> None:
     files = write_files({
         'directory_dataset': {
             'file1.txt': '',
@@ -87,7 +87,7 @@ def test_find_any_metatadata_suffix():
         _find_any_metadata_suffix(files.joinpath('ambigous'))
 
 
-def test_ui_path_doc_stream(httpserver):
+def test_ui_path_doc_stream(httpserver) -> None:
     filename = 'dataset_metadata.yaml'
     file_content = ''
     out_dir = write_files({filename: file_content})

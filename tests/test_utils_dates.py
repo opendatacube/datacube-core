@@ -19,7 +19,7 @@ from dateutil.rrule import YEARLY, MONTHLY, DAILY
 from dateutil.relativedelta import relativedelta
 
 
-def test_parse():
+def test_parse() -> None:
     assert parse_duration('1y') == relativedelta(years=1)
     assert parse_duration('3m') == relativedelta(months=3)
     assert parse_duration('13d') == relativedelta(days=13)
@@ -41,7 +41,7 @@ def test_parse():
     assert parse_time("3 Jan 2020") == datetime(2020, 1, 3)
 
 
-def test_normalise_dt():
+def test_normalise_dt() -> None:
     dt_notz = datetime(2020, 2, 14, 10, 33, 11, tzinfo=None)
     assert normalise_dt(dt_notz) is dt_notz
 
@@ -51,7 +51,7 @@ def test_normalise_dt():
     assert normalise_dt('2020-03-26T10:15:32.556793+9:00') == datetime(2020, 3, 26, 1, 15, 32, 556793)
 
 
-def test_tz_aware():
+def test_tz_aware() -> None:
     dt_tz = parse_time('2020-11-15T15:11:56.23456+9:00')
     assert dt_tz.tzinfo is not None
     assert tz_aware(dt_tz) is dt_tz
@@ -62,7 +62,7 @@ def test_tz_aware():
     assert tz_aware(parse_time('2020-11-15T15:11:56.23456'), default=dt_tz.tzinfo).tzinfo == dt_tz.tzinfo
 
 
-def test_mk_time_coord():
+def test_mk_time_coord() -> None:
     t = mk_time_coord(['2020-01-20'])
     assert t.shape == (1,)
     assert 'units' not in t.attrs

@@ -40,7 +40,7 @@ class NameResolver:
 
         get = recipe.get
 
-        def lookup(name, namespace=None, kind='transformation'):
+        def lookup(name, namespace=None, kind: str = 'transformation'):
             if callable(name):
                 return name
 
@@ -140,7 +140,7 @@ DEFAULT_RESOLVER = NameResolver({'transform': dict(make_mask=MakeMask,
                                                             fiscal_year=fiscal_year)})
 
 
-def construct(name_resolver=None, **recipe: Mapping[str, Any]) -> VirtualProduct:
+def construct(name_resolver: NameResolver | None = None, **recipe: Mapping[str, Any]) -> VirtualProduct:
     """
     Create a virtual product from a specification dictionary.
     """
@@ -150,7 +150,7 @@ def construct(name_resolver=None, **recipe: Mapping[str, Any]) -> VirtualProduct
     return name_resolver.construct(**recipe)
 
 
-def construct_from_yaml(recipe: str, name_resolver=None) -> VirtualProduct:
+def construct_from_yaml(recipe: str, name_resolver: NameResolver | None = None) -> VirtualProduct:
     """
     Create a virtual product from a yaml recipe.
     """
@@ -160,7 +160,7 @@ def construct_from_yaml(recipe: str, name_resolver=None) -> VirtualProduct:
     return construct(name_resolver=name_resolver, **parse_yaml(recipe))
 
 
-def catalog_from_yaml(catalog_body: str, name_resolver=None) -> Catalog:
+def catalog_from_yaml(catalog_body: str, name_resolver: NameResolver | None = None) -> Catalog:
     """
     Load a catalog of virtual products from a yaml document.
     """

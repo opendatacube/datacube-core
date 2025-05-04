@@ -75,18 +75,18 @@ doc_changes = [
 
 
 @pytest.mark.parametrize("v1, v2, expected", doc_changes)
-def test_get_doc_changes(v1, v2, expected):
+def test_get_doc_changes(v1, v2, expected) -> None:
     rval = get_doc_changes(v1, v2)
     assert rval == expected
 
 
-def test_get_doc_changes_w_baseprefix():
+def test_get_doc_changes_w_baseprefix() -> None:
     rval = get_doc_changes({}, None, base_prefix=('a',))
     assert rval == [(('a',), {}, None)]
 
 
 @pytest.mark.parametrize("v1, v2, expected", doc_changes)
-def test_check_doc_unchanged(v1, v2, expected):
+def test_check_doc_unchanged(v1, v2, expected) -> None:
     if expected != []:
         with pytest.raises(DocumentMismatchError):
             check_doc_unchanged(v1, v2, 'name')
@@ -95,7 +95,7 @@ def test_check_doc_unchanged(v1, v2, expected):
         check_doc_unchanged(v1, v2, 'name')
 
 
-def test_more_check_doc_unchanged():
+def test_more_check_doc_unchanged() -> None:
     # No exception raised
     check_doc_unchanged({'a': 1}, {'a': 1}, 'Letters')
 
@@ -106,7 +106,7 @@ def test_more_check_doc_unchanged():
         check_doc_unchanged({'a': {'b': 1}}, {'a': {'b': 2}}, 'Letters')
 
 
-def test_without_lineage_sources():
+def test_without_lineage_sources() -> None:
     def mk_sample(v):
         return dict(lineage={'source_datasets': v, 'a': 'a', 'b': 'b'},
                     aa='aa',
@@ -154,20 +154,20 @@ def test_without_lineage_sources():
     assert without_lineage_sources(test_doc, no_sources_type)["lineage"] == {}
 
 
-def test_parse_yaml():
+def test_parse_yaml() -> None:
     assert parse_yaml('a: 10') == {'a': 10}
 
 
-def test_read_docs_from_local_path(sample_document_files):
+def test_read_docs_from_local_path(sample_document_files) -> None:
     _test_read_docs_impl(sample_document_files)
 
 
-def test_read_docs_from_file_uris(sample_document_files):
+def test_read_docs_from_file_uris(sample_document_files) -> None:
     uris = [('file://' + doc, ndocs) for doc, ndocs in sample_document_files]
     _test_read_docs_impl(uris)
 
 
-def test_read_docs_from_s3(sample_document_files, monkeypatch):
+def test_read_docs_from_s3(sample_document_files, monkeypatch) -> None:
     """
     Use a mocked S3 bucket to test reading documents from S3
     """
@@ -198,7 +198,7 @@ def test_read_docs_from_s3(sample_document_files, monkeypatch):
             pass
 
 
-def test_read_docs_from_http(sample_document_files, httpserver):
+def test_read_docs_from_http(sample_document_files, httpserver) -> None:
     http_docs = []
     for abs_fname, ndocs in sample_document_files:
         if abs_fname.endswith('gz') or abs_fname.endswith('nc'):
@@ -211,7 +211,7 @@ def test_read_docs_from_http(sample_document_files, httpserver):
     _test_read_docs_impl(http_docs)
 
 
-def _test_read_docs_impl(sample_documents: Iterable[tuple[str, int]]):
+def _test_read_docs_impl(sample_documents: Iterable[tuple[str, int]]) -> None:
     # Test case for returning URIs pointing to documents
     for doc_url, num_docs in sample_documents:
         all_docs = list(read_documents(doc_url, uri=True))
@@ -230,7 +230,7 @@ def _test_read_docs_impl(sample_documents: Iterable[tuple[str, int]]):
         assert [f for f, _ in all_docs] == expect_uris
 
 
-def test_dataset_maker():
+def test_dataset_maker() -> None:
     mk = dataset_maker(0)
     assert mk('aa') == mk('aa')
 
@@ -252,7 +252,7 @@ def test_dataset_maker():
     assert c.sources['b'].doc is b.doc
 
 
-def test_traverse_datasets():
+def test_traverse_datasets() -> None:
     """
       A -> B
       |    |
@@ -267,7 +267,7 @@ def test_traverse_datasets():
 
     A, *_ = make_graph_abcde(node)
 
-    def visitor(node, name=None, depth=0, out=None):
+    def visitor(node, name=None, depth=0, out=None) -> None:
         s = '{}:{}:{:d}'.format(node.id, name if name else '..', depth)
         out.append(s)
 
@@ -313,7 +313,7 @@ A:..:0
     assert out == ["N:..:0"]
 
 
-def test_simple_doc_nav():
+def test_simple_doc_nav() -> None:
     """
       A -> B
       |    |
@@ -340,7 +340,7 @@ def test_simple_doc_nav():
     assert rdr.sources is rdr.sources
     assert isinstance(rdr.sources_path, tuple)
 
-    def visitor(node, name=None, depth=0, out=None):
+    def visitor(node, name=None, depth=0, out=None) -> None:
         s = '{}:{}:{:d}'.format(un_map[node.id], name if name else '..', depth)
         out.append(s)
 
@@ -398,7 +398,7 @@ A:..:0
         SimpleDocNav([])
 
 
-def test_dedup():
+def test_dedup() -> None:
     ds0 = SimpleDocNav(gen_dataset_test_dag(1, force_tree=True))
 
     # make sure ds0 has duplicate C nodes with equivalent data
@@ -472,7 +472,7 @@ def test_dedup():
         dedup_lineage(ds0)
 
 
-def test_remap_lineage_doc():
+def test_remap_lineage_doc() -> None:
     def mk_node(ds, sources):
         return dict(id=ds.id, **sources)
 
@@ -486,7 +486,7 @@ def test_remap_lineage_doc():
     assert xx['ac']['id'] == ds.sources['ac'].id
 
 
-def test_merge():
+def test_merge() -> None:
     from datacube.model.utils import merge
     assert merge(dict(a=1), dict(b=2)) == dict(a=1, b=2)
     assert merge(dict(a=1, b=2), dict(b=2)) == dict(a=1, b=2)
@@ -496,7 +496,7 @@ def test_merge():
 
 
 @pytest.mark.xfail(True, reason="Merging dictionaries with content of NaN doesn't work currently")
-def test_merge_with_nan():
+def test_merge_with_nan() -> None:
     from datacube.model.utils import merge
 
     _nan = float("nan")
@@ -519,7 +519,7 @@ def sample_document_files(data_folder):
     return files
 
 
-def test_jsonify():
+def test_jsonify() -> None:
     from datetime import datetime
     from uuid import UUID
     from decimal import Decimal
@@ -542,13 +542,13 @@ def test_jsonify():
         'k': '1f231570-e777-11e6-820f-185e0f80a5c0'}
 
 
-def test_netcdf_strings():
+def test_netcdf_strings() -> None:
     assert netcdf_extract_string(np.asarray([b'a', b'b'])) == "ab"
     txt = "some string"
     assert netcdf_extract_string(txt) is txt
 
 
-def test_doc_reader():
+def test_doc_reader() -> None:
     d = DocReader({'lat': ['extent', 'lat']}, {}, doc={'extent': {'lat': 4}})
     assert hasattr(d, 'lat')
     assert d.lat == 4
@@ -573,7 +573,7 @@ def test_doc_reader():
     assert d.platform is None
 
 
-def test_is_supported_doc_type():
+def test_is_supported_doc_type() -> None:
     assert is_supported_document_type(Path('/tmp/something.yaml'))
     assert is_supported_document_type(Path('/tmp/something.YML'))
     assert is_supported_document_type(Path('/tmp/something.yaml.gz'))
@@ -581,7 +581,7 @@ def test_is_supported_doc_type():
     assert not is_supported_document_type(Path('/tmp/something.tif.gz'))
 
 
-def test_doc_offset():
+def test_doc_offset() -> None:
     assert get_doc_offset(['a'], {'a': 4}) == 4
     assert get_doc_offset(['a', 'b'], {'a': {'b': 4}}) == 4
     assert get_doc_offset(['a'], {}) is None
@@ -589,7 +589,7 @@ def test_doc_offset():
     assert get_doc_offset(['a', 'b', 'c'], {'a': {'b': []}}, 11) == 11
 
 
-def test_transform_object_tree():
+def test_transform_object_tree() -> None:
     def add_one(a):
         return a + 1
     assert transform_object_tree(add_one, [1, 2, 3]) == [2, 3, 4]
@@ -601,7 +601,7 @@ def test_transform_object_tree():
         == OrderedDict([('z', 2), ('w', 3), ('y', 4), ('s', 8)])
 
 
-def test_document_subset():
+def test_document_subset() -> None:
     # metadata_subset should emulate behaviour of postgres "contains" (@>) operator.
     assert metadata_subset(37, 37)
     assert metadata_subset(37, [1, 111, 37])
@@ -635,7 +635,7 @@ def test_document_subset():
     assert not metadata_subset([35, 47, 58], {"a": "foo", "b": [35, 47, 52, 58]})
 
 
-def test_document_subset_full_recursion():
+def test_document_subset_full_recursion() -> None:
     # metadata_subset should emulate behaviour of postgres "contains" (@>) operator.
     assert metadata_subset(37, 37, full_recursion=True)
     assert metadata_subset(37, [1, 111, 37], full_recursion=True)
@@ -675,7 +675,7 @@ def test_document_subset_full_recursion():
     assert metadata_subset([35, 47, 58], {"a": "foo", "b": [35, 47, 52, 58]}, full_recursion=True)
 
 
-def test_documents_equal():
+def test_documents_equal() -> None:
     from datacube.utils.documents import documents_equal
     assert not documents_equal(7, "seven")
     assert not documents_equal({"a": "ok", "b": "mediocre"}, {"c": "great", "b": "mediocre", "a": "ok"})

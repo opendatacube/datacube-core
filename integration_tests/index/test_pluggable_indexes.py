@@ -8,12 +8,12 @@ from datacube.index.postgres.index import Index
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_with_standard_index(uninitialised_postgres_db, cfg_env):
+def test_with_standard_index(uninitialised_postgres_db, cfg_env) -> None:
     index = Index(uninitialised_postgres_db, cfg_env)
     index.init_db()
 
 
-def test_system_init(uninitialised_postgres_db, clirunner):
+def test_system_init(uninitialised_postgres_db, clirunner) -> None:
     result = clirunner(['system', 'init'], catch_exceptions=False)
 
     # Question: Should the Index be able to be specified on the command line, or should it come from the config file?

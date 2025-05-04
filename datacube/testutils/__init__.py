@@ -174,13 +174,13 @@ dataset:
     return MetadataType(parse_yaml(eo_yaml))
 
 
-def mk_sample_product(name,
-                      description='Sample',
+def mk_sample_product(name: str,
+                      description: str = 'Sample',
                       measurements=('red', 'green', 'blue'),
-                      with_grid_spec=False,
+                      with_grid_spec: bool = False,
                       metadata_type=None,
                       storage=None,
-                      load=None):
+                      load: bool | None = None):
 
     if storage is None and with_grid_spec is True:
         storage = {'crs': 'EPSG:3577',
@@ -231,8 +231,8 @@ def mk_sample_product(name,
 
 def mk_sample_dataset(bands: list[dict],
                       uri: str | list[str] | None = 'file:///tmp',
-                      product_name='sample',
-                      format='GeoTiff',  # noqa: A002
+                      product_name: str = 'sample',
+                      format: str = 'GeoTiff',  # noqa: A002
                       timestamp=None,
                       id: str = '3a1df9e0-8484-44fc-8102-79184eab85dd',  # noqa: A002
                       geobox: GeoBox | None = None,
@@ -300,7 +300,7 @@ def make_graph_abcde(node) -> tuple[Any, Any, Any, Any, Any]:
     return a, b, c, d, e
 
 
-def dataset_maker(idx, t=None):
+def dataset_maker(idx: int, t=None):
     """ Return function that generates "dataset documents"
 
     (name, sources={}, **kwargs) -> dict
@@ -313,7 +313,7 @@ def dataset_maker(idx, t=None):
 
     t = t.isoformat()
 
-    def make(name, sources=_DEFAULT, **kwargs) -> dict:
+    def make(name: str, sources=_DEFAULT, **kwargs) -> dict:
         if sources is _DEFAULT:
             sources = {}
 
@@ -327,7 +327,7 @@ def dataset_maker(idx, t=None):
     return make
 
 
-def gen_dataset_test_dag(idx, t=None, force_tree: bool = False) -> Any:
+def gen_dataset_test_dag(idx: int, t=None, force_tree: bool = False) -> Any:
     """Build document suitable for consumption by dataset add
 
     when force_tree is True pump the object graph through json
@@ -337,7 +337,7 @@ def gen_dataset_test_dag(idx, t=None, force_tree: bool = False) -> Any:
     def node_maker(n, t):
         mk = dataset_maker(n, t)
 
-        def node(name, **kwargs):
+        def node(name: str, **kwargs):
             return mk(name,
                       product_type=name,
                       sources=kwargs)
@@ -361,9 +361,9 @@ def load_dataset_definition(path):
 
 
 def mk_test_image(w, h,
-                  dtype='int16',
+                  dtype: str = 'int16',
                   nodata=-999,
-                  nodata_width=4):
+                  nodata_width: int = 4):
     """
     Create 2d ndarray where each pixel value is formed by packing x coordinate in
     to the upper half of the pixel value and y coordinate is in the lower part.
@@ -413,8 +413,8 @@ def split_test_image(aa):
 
 def gen_tiff_dataset(bands: list[BandObject],
                      base_folder,
-                     prefix='',
-                     timestamp='2018-07-19',
+                     prefix: str = '',
+                     timestamp: str = '2018-07-19',
                      base_folder_of_record=None,
                      **kwargs) -> tuple[Dataset, GeoBox]:
     """
@@ -460,15 +460,15 @@ def gen_tiff_dataset(bands: list[BandObject],
     return ds, geobox
 
 
-def mk_sample_xr_dataset(crs="EPSG:3578",
+def mk_sample_xr_dataset(crs: str | CRS = "EPSG:3578",
                          shape=(33, 74),
-                         resolution=None,
+                         resolution: tuple[float, float] | None = None,
                          xy=(0, 0),
                          time='2020-02-13T11:12:13.1234567Z',
-                         name='band',
-                         dtype='int16',
+                         name: str = 'band',
+                         dtype: str = 'int16',
                          nodata=-999,
-                         units='1'):
+                         units: str = '1'):
     """ Note that resolution is in Y,X order to match that of GeoBox.
 
         shape (height, width)

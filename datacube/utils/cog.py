@@ -26,7 +26,7 @@ from deprecat import deprecat
 __all__ = ["to_cog", "write_cog"]
 
 
-def _adjust_blocksize(block, dim) -> int:
+def _adjust_blocksize(block, dim: int) -> int:
     if block > dim:
         return align_up(dim, 16)
     return align_up(block, 16)
@@ -152,7 +152,7 @@ def _write_cog(
 
     rio_opts.update(extra_rio_opts)
 
-    def _write(pix, band, dst):
+    def _write(pix, band, dst) -> None:
         if not use_windowed_writes:
             dst.write(pix, band)
             return

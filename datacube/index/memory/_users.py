@@ -9,14 +9,14 @@ from datacube.index.abstract import AbstractUserResource
 
 class User:
     def __init__(self, username: str, password: str, role: str,
-                 description: str | None = None):
+                 description: str | None = None) -> None:
         self.username = username
         self.password = password
         self.default_role = role
         self.roles = [role]
         self.description = description
 
-    def grant_role(self, role: str):
+    def grant_role(self, role: str) -> None:
         if role not in self.roles:
             self.roles.append(role)
 

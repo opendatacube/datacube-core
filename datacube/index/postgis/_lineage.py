@@ -31,7 +31,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
     def get_source_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         return self.get_lineage_tree(id_, LineageDirection.SOURCES, max_depth)
 
-    def get_lineage_tree(self, id_: DSID, direction: LineageDirection, max_depth: int):
+    def get_lineage_tree(self, id_: DSID, direction: LineageDirection, max_depth: int) -> LineageTree:
         id_ = dsid_to_uuid(id_)
         with self._db_connection() as connection:
             # Extract lineage relations into a collection

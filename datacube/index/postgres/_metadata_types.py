@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from collections.abc import Iterable, Mapping
 
 from cachetools.func import lru_cache
 from typing_extensions import override
@@ -11,23 +12,24 @@ from datacube.index.abstract import AbstractMetadataTypeResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.model import MetadataType
 from datacube.utils import jsonify_document, changes, _readable_offset
-from datacube.utils.changes import check_doc_unchanged, get_doc_changes
+from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes
+from datacube.utils.documents import JsonDict
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
-    def __init__(self, db, index):
+    def __init__(self, db, index) -> None:
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
         """
         self._db = db
         self._index = index
 
-        self.get_unsafe = lru_cache()(self.get_unsafe)
-        self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
+        self.get_unsafe = lru_cache()(self.get_unsafe)  # type: ignore[method-assign]
+        self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)  # type: ignore[method-assign]
 
-    def __getstate__(self):
+    def __getstate__(self) -> tuple:
         """
         We define getstate/setstate to avoid pickling the caches
         """
@@ -40,16 +42,16 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         self.__init__(*state)
 
     @override
-    def from_doc(self, definition):
+    def from_doc(self, definition: JsonDict) -> MetadataType:
         """
         :param dict definition:
         :rtype: datacube.model.MetadataType
         """
-        MetadataType.validate(definition)
+        MetadataType.validate(definition)  # type: ignore[attr-defined]
         return self._make(definition)
 
     @override
-    def add(self, metadata_type, allow_table_lock=False):
+    def add(self, metadata_type: MetadataType, allow_table_lock: bool = False):
         """
         :param datacube.model.MetadataType metadata_type:
         :param allow_table_lock:
@@ -61,7 +63,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         :rtype: datacube.model.MetadataType
         """
         # This column duplication is getting out of hand:
-        MetadataType.validate(metadata_type.definition)
+        MetadataType.validate(metadata_type.definition)  # type: ignore[attr-defined]
 
         existing = self.get_by_name(metadata_type.name)
         if existing:
@@ -82,7 +84,8 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         return self.get_by_name(metadata_type.name)
 
     @override
-    def can_update(self, metadata_type, allow_unsafe_updates=False):
+    def can_update(self, metadata_type: MetadataType, allow_unsafe_updates: bool = False
+                   ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         """
         Check if metadata type can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -92,14 +95,14 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :rtype: bool,list[change],list[change]
         """
-        MetadataType.validate(metadata_type.definition)
+        MetadataType.validate(metadata_type.definition)  # type: ignore[attr-defined]
 
         existing = self.get_by_name(metadata_type.name)
         if not existing:
             raise ValueError(f'Unknown metadata type {metadata_type.name}, cannot update - '
                              'did you intend to add it?')
 
-        updates_allowed = {
+        updates_allowed: Mapping[Offset, AllowPolicy] = {
             ('description',): changes.allow_any,
             # You can add new fields safely but not modify existing ones.
             ('dataset',): changes.allow_extension,
@@ -118,7 +121,8 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
     @override
-    def update(self, metadata_type: MetadataType, allow_unsafe_updates=False, allow_table_lock=False):
+    def update(self, metadata_type: MetadataType, allow_unsafe_updates: bool = False,
+               allow_table_lock: bool = False):
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -161,7 +165,10 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         return self.get_by_name(metadata_type.name)
 
     @override
-    def update_document(self, definition, allow_unsafe_updates=False):
+    def update_document(self,
+                        definition: JsonDict,
+                        allow_unsafe_updates: bool = False,
+                        ) -> MetadataType:
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -175,7 +182,8 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden
-    def get_unsafe(self, id_):  # type: ignore
+    @override
+    def get_unsafe(self, id_: int) -> MetadataType:
         with self._db_connection() as connection:
             record = connection.get_metadata_type(id_)
         if record is None:
@@ -184,7 +192,8 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden
-    def get_by_name_unsafe(self, name):  # type: ignore
+    @override
+    def get_by_name_unsafe(self, name: str) -> MetadataType:
         with self._db_connection() as connection:
             record = connection.get_metadata_type_by_name(name)
         if not record:
@@ -192,8 +201,8 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         return self._make_from_query_row(record)
 
     @override
-    def check_field_indexes(self, allow_table_lock=False,
-                            rebuild_views=False, rebuild_indexes=False):
+    def check_field_indexes(self, allow_table_lock: bool = False,
+                            rebuild_views: bool = False, rebuild_indexes: bool = False) -> None:
         """
         Create or replace per-field indexes and views.
         :param allow_table_lock:
@@ -210,7 +219,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
             )
 
     @override
-    def get_all(self):
+    def get_all(self) -> Iterable[MetadataType]:
         """
         Retrieve all Metadata Types
 
@@ -220,24 +229,24 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
             return self._make_many(connection.get_all_metadata_types())
 
     @override
-    def get_all_docs(self):
+    def get_all_docs(self) -> Iterable[JsonDict]:
         with self._db_connection() as connection:
             for row in connection.get_all_metadata_type_docs():
                 yield row[0]
 
-    def _make_many(self, query_rows):
+    def _make_many(self, query_rows) -> list[MetadataType]:
         """
         :rtype: list[datacube.model.MetadataType]
         """
-        return (self._make_from_query_row(c) for c in query_rows)
+        return [self._make_from_query_row(c) for c in query_rows]
 
-    def _make_from_query_row(self, query_row):
+    def _make_from_query_row(self, query_row) -> MetadataType:
         """
         :rtype: datacube.model.MetadataType
         """
         return self._make(query_row.definition, query_row.id)
 
-    def _make(self, definition, id_=None):
+    def _make(self, definition: dict, id_: int | None = None) -> MetadataType:
         """
         :param dict definition:
         :param int id_:

@@ -9,7 +9,7 @@ from datacube.testutils.io import native_geobox
 from odc.geo import xy_
 
 
-def test_fakethreadpool():
+def test_fakethreadpool() -> None:
 
     def tfunc(a: int, b: int = 0, please_fail=False) -> int:
         if please_fail:
@@ -44,7 +44,7 @@ def test_fakethreadpool():
     pool.shutdown()
 
 
-def test_mk_sample_xr():
+def test_mk_sample_xr() -> None:
     xx = mk_sample_xr_dataset()
     assert 'band' in xx.data_vars
     assert list(xx.coords) == ['time', 'y', 'x', 'spatial_ref']
@@ -59,7 +59,7 @@ def test_mk_sample_xr():
     assert mk_sample_xr_dataset(resolution=(1, 100), xy=(3, 55)).odc.geobox.transform*(0, 0) == (3, 55)
 
 
-def test_native_geobox_ingested():
+def test_native_geobox_ingested() -> None:
     from datacube.testutils.io import native_geobox
     from datacube.testutils.geom import AlbersGS
 
@@ -79,7 +79,7 @@ def test_native_geobox_ingested():
         native_geobox(ds)
 
 
-def test_native_geobox_eo3(eo3_dataset_s2):
+def test_native_geobox_eo3(eo3_dataset_s2) -> None:
     ds = eo3_dataset_s2
     assert ds.crs is not None
     assert 'blue' in ds.measurements

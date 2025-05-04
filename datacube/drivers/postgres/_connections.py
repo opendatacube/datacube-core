@@ -32,9 +32,9 @@ from . import _api
 from . import _core
 from ...cfg import ODCEnvironment, psql_url_from_config
 
-_LIB_ID = 'odc-' + str(datacube.__version__)
+_LIB_ID: str = 'odc-' + str(datacube.__version__)
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class PostgresDb:
@@ -97,7 +97,8 @@ class PostgresDb:
         return PostgresDb(engine)
 
     @staticmethod
-    def _create_engine(url, application_name=None, iam_rds_auth=False, iam_rds_timeout=600, pool_timeout=60) -> Engine:
+    def _create_engine(url, application_name: str | None = None, iam_rds_auth: bool = False,
+                       iam_rds_timeout: float | int = 600, pool_timeout: int = 60) -> Engine:
         try:
             engine = create_engine(
                 url,
@@ -145,7 +146,7 @@ class PostgresDb:
         self._engine.dispose()
 
     @classmethod
-    def _expand_app_name(cls, application_name) -> str:
+    def _expand_app_name(cls, application_name: str | None) -> str:
         """
         >>> PostgresDb._expand_app_name(None) #doctest: +ELLIPSIS
         'odc-...'
@@ -171,7 +172,7 @@ class PostgresDb:
             _LOG.warning('Application name is too long: Truncating to %s chars', (64 - len(_LIB_ID) - 1))
         return full_name[-64:]
 
-    def init(self, with_permissions=True):
+    def init(self, with_permissions: bool = True) -> bool:
         """
         Init a new database (if not already set up).
 

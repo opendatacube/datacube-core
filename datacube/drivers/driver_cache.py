@@ -6,7 +6,7 @@ import logging
 from typing import Any
 from collections.abc import Iterable
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def load_drivers(group: str) -> dict[str, Any]:

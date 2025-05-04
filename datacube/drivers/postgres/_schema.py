@@ -16,7 +16,7 @@ from sqlalchemy.sql import func
 from . import sql
 from . import _core
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 METADATA_TYPE = Table(
     'metadata_type', _core.METADATA,

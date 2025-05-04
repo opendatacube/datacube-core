@@ -21,7 +21,7 @@ from ._types import BatchStatus
 if TYPE_CHECKING:
     from ._index import AbstractIndex
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class AbstractProductResource(ABC):
@@ -34,7 +34,7 @@ class AbstractProductResource(ABC):
     (If a particular abstract method is not applicable for a particular implementation
     raise a NotImplementedError)
     """
-    def __init__(self, index: "AbstractIndex"):
+    def __init__(self, index: "AbstractIndex") -> None:
         self._index = index
 
     def from_doc(self, definition: JsonDict,
@@ -80,7 +80,7 @@ class AbstractProductResource(ABC):
     def add(self,
             product: Product,
             allow_table_lock: bool = False
-           ) -> Product:
+           ) -> Product | None:
         """
         Add a product to the index.
 
@@ -217,7 +217,7 @@ class AbstractProductResource(ABC):
                product: Product,
                allow_unsafe_updates: bool = False,
                allow_table_lock: bool = False
-               ) -> Product:
+               ) -> Product | None:
         """
         Persist updates to a product. Unsafe changes will throw a ValueError by default.
 
@@ -238,7 +238,7 @@ class AbstractProductResource(ABC):
                         definition: JsonDict,
                         allow_unsafe_updates: bool = False,
                         allow_table_lock: bool = False
-                        ) -> Product:
+                        ) -> Product | None:
         """
         Update a metadata type from a document. Unsafe changes will throw a ValueError by default.
 
@@ -258,7 +258,7 @@ class AbstractProductResource(ABC):
                            allow_table_lock=allow_table_lock
                           )
 
-    def add_document(self, definition: JsonDict) -> Product:
+    def add_document(self, definition: JsonDict) -> Product | None:
         """
         Add a Product using its definition
 

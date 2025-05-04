@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from collections.abc import Sequence
+from typing import Any
 from datacube.utils.documents import InvalidDocException
 
 required_sys_field_values = [
@@ -27,7 +29,7 @@ expected_sys_field_values = {
 }
 
 
-def validate_eo3_offset(field_name, mdt_name, offset) -> None:
+def validate_eo3_offset(field_name: str, mdt_name: str, offset: Sequence) -> None:
     if not all(isinstance(element, str) for element in offset):
         # Not a simple offset, assume a compound offset
         for element in offset:
@@ -47,7 +49,7 @@ def validate_eo3_offset(field_name, mdt_name, offset) -> None:
             f"is not stored in an EO3-compliant location: {offset!r}")
 
 
-def validate_eo3_offsets(field_name, mdt_name, defn) -> None:
+def validate_eo3_offsets(field_name: str, mdt_name: str, defn: dict[str, Any]) -> None:
     if defn.get("type", "string").endswith("-range"):
         # Range Type
         if "min_offset" in defn:

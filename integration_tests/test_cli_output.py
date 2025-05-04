@@ -5,7 +5,7 @@
 import pytest
 
 
-def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs):
+def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs) -> None:
     runner = clirunner(['product', 'update'], verbose_flag=False, expect_success=False)
     assert "Usage:  [OPTIONS] [FILES]" in runner.output
     assert "Update existing products." in runner.output
@@ -41,7 +41,7 @@ def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs):
     assert runner.exit_code == 1
 
 
-def test_cli_metadata_subcommand(index_empty, clirunner, dataset_add_configs):
+def test_cli_metadata_subcommand(index_empty, clirunner, dataset_add_configs) -> None:
     runner = clirunner(['metadata', 'update'], verbose_flag=False, expect_success=False)
     assert "Usage:  [OPTIONS] [FILES]" in runner.output
     assert "Update existing metadata types." in runner.output
@@ -65,7 +65,7 @@ def test_cli_metadata_subcommand(index_empty, clirunner, dataset_add_configs):
 def test_cli_dataset_subcommand(index, clirunner,
                                 extended_eo3_metadata_type,
                                 ls8_eo3_product, wo_eo3_product, africa_s2_eo3_product,
-                                eo3_dataset_paths):
+                                eo3_dataset_paths) -> None:
     # Tests with no datasets in db
     runner = clirunner(['dataset', 'add'], verbose_flag=False, expect_success=False)
     assert "Indexing datasets  [####################################]  100%" not in runner.output
@@ -160,7 +160,7 @@ def test_read_and_update_metadata_product_dataset_command(index, clirunner,
                                                           ext_eo3_mdt_path,
                                                           eo3_product_paths,
                                                           eo3_dataset_paths,
-                                                          eo3_dataset_update_path):
+                                                          eo3_dataset_update_path) -> None:
     clirunner(['metadata', 'add', ext_eo3_mdt_path])
     rerun_add = clirunner(['metadata', 'add', ext_eo3_mdt_path])
     assert "WARNING Metadata Type" in rerun_add.output

@@ -144,7 +144,7 @@ class GeoboxTiles:
     :param tile_shape: Shape of sub-tiles in pixels (rows, cols)
     """
 
-    def __init__(self, box: GeoBox, tile_shape: tuple[int, int]):
+    def __init__(self, box: GeoBox, tile_shape: tuple[int, int]) -> None:
         self._gbox = box
         self._tile_shape = tile_shape
         self._shape = tuple(

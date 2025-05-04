@@ -26,10 +26,10 @@ from datacube.model import MetadataType
 from datacube.migration import ODC2DeprecationWarning
 from odc.geo import CRS
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
-_DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
+_DEFAULT_METADATA_TYPES_PATH: Path = Path(__file__).parent.joinpath('default-metadata-types.yaml')
 
 
 class Index(AbstractIndex):
@@ -138,7 +138,8 @@ class Index(AbstractIndex):
         return PostGisDb.get_dataset_fields(doc)
 
     @override
-    def init_db(self, with_default_types=True, with_permissions=True, with_default_spatial_index=True) -> bool:
+    def init_db(self, with_default_types: bool = True, with_permissions: bool = True,
+                with_default_spatial_index: bool = True) -> bool:
         is_new = self._db.init(with_permissions=with_permissions)
 
         if is_new and with_default_types:
@@ -178,7 +179,7 @@ class Index(AbstractIndex):
         return sp_idx is not None
 
     @override
-    def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
+    def spatial_indexes(self, refresh: bool = False) -> Iterable[CRS]:
         return self._db.spatially_indexed_crses(refresh)
 
     @override

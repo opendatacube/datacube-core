@@ -19,7 +19,7 @@ from datacube.testutils.iodriver import NetCDF
 from datacube.utils import ignore_exceptions_if
 
 
-def test_load_data(tmpdir):
+def test_load_data(tmpdir) -> None:
     tmpdir = Path(str(tmpdir))
 
     group_by = query_group_by('time')
@@ -56,14 +56,14 @@ def test_load_data(tmpdir):
 
     custom_fuser_call_count = 0
 
-    def custom_fuser(dest, delta):
+    def custom_fuser(dest, delta) -> None:
         nonlocal custom_fuser_call_count
         custom_fuser_call_count += 1
         dest[:] += delta
 
     progress_call_data = []
 
-    def progress_cbk(n, nt):
+    def progress_cbk(n, nt) -> None:
         progress_call_data.append((n, nt))
 
     ds_data = Datacube.load_data(sources2, geobox, mm, fuse_func=custom_fuser,
@@ -79,7 +79,7 @@ def test_load_data(tmpdir):
     np.testing.assert_array_equal(aa, ds_data.aa.values[0])
 
 
-def test_load_data_dask(tmp_path):
+def test_load_data_dask(tmp_path) -> None:
     spatial = dict(resolution=(15, -15),
                    offset=(11230, 1381110),)
 
@@ -112,7 +112,7 @@ def test_load_data_dask(tmp_path):
     np.testing.assert_array_equal(aa, ds_data.aa.values[0, 100:228, 100:228])
 
 
-def test_load_data_with_url_mangling(tmpdir):
+def test_load_data_with_url_mangling(tmpdir) -> None:
     actual_tmpdir = Path(str(tmpdir))
     recorded_tmpdir = Path(str(tmpdir / "not" / "actual" / "location"))
 
@@ -161,14 +161,14 @@ def test_load_data_with_url_mangling(tmpdir):
 
     custom_fuser_call_count = 0
 
-    def custom_fuser(dest, delta):
+    def custom_fuser(dest, delta) -> None:
         nonlocal custom_fuser_call_count
         custom_fuser_call_count += 1
         dest[:] += delta
 
     progress_call_data = []
 
-    def progress_cbk(n, nt):
+    def progress_cbk(n, nt) -> None:
         progress_call_data.append((n, nt))
 
     ds_data = Datacube.load_data(sources2, geobox, mm, fuse_func=custom_fuser,
@@ -180,7 +180,7 @@ def test_load_data_with_url_mangling(tmpdir):
     assert progress_call_data == [(1, 2), (2, 2)]
 
 
-def test_load_data_cbk(tmpdir):
+def test_load_data_cbk(tmpdir) -> None:
     from datacube.api import TerminateCurrentLoad
 
     tmpdir = Path(str(tmpdir))
@@ -212,7 +212,7 @@ def test_load_data_cbk(tmpdir):
     sources = Datacube.group_datasets([ds, ds2], 'time')
     progress_call_data = []
 
-    def progress_cbk(n, nt):
+    def progress_cbk(n, nt) -> None:
         progress_call_data.append((n, nt))
 
     ds_data = Datacube.load_data(sources, geobox, ds.product.measurements,
@@ -248,7 +248,7 @@ def test_load_data_cbk(tmpdir):
     assert progress_call_data == [(1, 4), (2, 4)]
 
 
-def test_hdf5_lock_release_on_failure():
+def test_hdf5_lock_release_on_failure() -> None:
     from datacube.storage._rio import RasterDatasetDataSource, HDF5_LOCK
     from datacube.storage import BandInfo
 
@@ -270,7 +270,7 @@ def test_hdf5_lock_release_on_failure():
     assert not HDF5_LOCK._is_owned()
 
 
-def test_rio_slurp(tmpdir):
+def test_rio_slurp(tmpdir) -> None:
     w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
 
     pp = Path(str(tmpdir))
@@ -334,7 +334,7 @@ def test_rio_slurp(tmpdir):
     np.testing.assert_array_equal(aa, aa0)
 
 
-def test_rio_slurp_with_geobox(tmpdir):
+def test_rio_slurp_with_geobox(tmpdir) -> None:
     w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
 
     pp = Path(str(tmpdir))
@@ -355,7 +355,7 @@ def test_rio_slurp_with_geobox(tmpdir):
     np.testing.assert_array_equal(aa, aa0)
 
 
-def test_missing_file_handling():
+def test_missing_file_handling() -> None:
     with pytest.raises(IOError):
         rio_slurp('no-such-file.tiff')
 
@@ -374,7 +374,7 @@ def test_missing_file_handling():
             rio_slurp('no-such-file.tiff')
 
 
-def test_native_load(tmpdir):
+def test_native_load(tmpdir) -> None:
     from datacube.testutils.io import native_load, native_geobox
 
     tmpdir = Path(str(tmpdir))

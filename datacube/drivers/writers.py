@@ -48,7 +48,7 @@ def writer_drivers() -> list[str]:
     return writer_cache().drivers()
 
 
-def storage_writer_by_name(name):
+def storage_writer_by_name(name: str):
     """
     Lookup writer driver by name
 

@@ -236,7 +236,7 @@ def ls5_dataset_nbar_type(ls5_dataset_w_children: Dataset,
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset):
+def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset) -> None:
     datasets = list(index.datasets.search(
         platform='LANDSAT_8'
     ))
@@ -432,7 +432,7 @@ def test_search_by_product(index: Index,
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2):
+def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2) -> None:
     datasets = list(index.datasets.search())
     assert len(datasets) == 2
     datasets = list(index.datasets.search(limit=1))
@@ -575,7 +575,7 @@ def test_search_returning(index: Index,
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_search_returning_rows(index, pseudo_ls8_type,
                                pseudo_ls8_dataset, pseudo_ls8_dataset2,
-                               indexed_ls5_scene_products):
+                               indexed_ls5_scene_products) -> None:
     dataset = pseudo_ls8_dataset
     with suppress_deprecations():
         index.datasets.remove_location(pseudo_ls8_dataset.id, pseudo_ls8_dataset.uri)  # Test of deprecated method
@@ -709,7 +709,7 @@ def test_search_special_fields(index: Index,
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_search_by_uri(index, ls5_dataset_w_children):
+def test_search_by_uri(index, ls5_dataset_w_children) -> None:
     datasets = list(index.datasets.search(product=ls5_dataset_w_children.product.name,
                                           uri=ls5_dataset_w_children.local_uri))
     assert len(datasets) == 1
@@ -797,7 +797,7 @@ def test_count_by_product_searches(index: Index,
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 @pytest.mark.usefixtures('ga_metadata_type',
                          'indexed_ls5_scene_products')
-def test_source_filter(clirunner, index, example_ls5_dataset_path):
+def test_source_filter(clirunner, index, example_ls5_dataset_path) -> None:
     clirunner(
         [
             'dataset',
@@ -899,7 +899,7 @@ def test_cli_info(index: Index,
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_cli_missing_info(clirunner, index):
+def test_cli_missing_info(clirunner, index) -> None:
     id_ = str(uuid.uuid4())
     result = clirunner(
         [
@@ -917,7 +917,7 @@ def test_cli_missing_info(clirunner, index):
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_find_duplicates(index, pseudo_ls8_type,
                          pseudo_ls8_dataset, pseudo_ls8_dataset2, pseudo_ls8_dataset3, pseudo_ls8_dataset4,
-                         ls5_dataset_w_children):
+                         ls5_dataset_w_children) -> None:
     # Our four ls8 datasets and three ls5.
     all_datasets = list(index.datasets.search())
     assert len(all_datasets) == 7
@@ -1020,21 +1020,21 @@ def test_csv_search_via_cli(clirunner: Any,
 
     # Dataset 2 is the same but on day 2014-7-27
 
-    def matches_both(*args):
+    def matches_both(*args) -> None:
         rows = _cli_csv_search(('datasets',) + args, clirunner)
         assert len(rows) == 2
         assert {rows[0]['id'], rows[1]['id']} == {str(pseudo_ls8_dataset.id), str(pseudo_ls8_dataset2.id)}
 
-    def matches_1(*args):
+    def matches_1(*args) -> None:
         rows = _cli_csv_search(('datasets',) + args, clirunner)
         assert len(rows) == 1
         assert rows[0]['id'] == str(pseudo_ls8_dataset.id)
 
-    def matches_none(*args):
+    def matches_none(*args) -> None:
         rows = _cli_csv_search(('datasets',) + args, clirunner)
         assert len(rows) == 0
 
-    def no_such_product(*args):
+    def no_such_product(*args) -> None:
         with pytest.raises(ValueError):
             _cli_csv_search(('datasets',) + args, clirunner)
 
@@ -1081,7 +1081,7 @@ _EXPECTED_OUTPUT_HEADER = 'creation_time,format,gsi,id,indexed_by,indexed_time,i
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
-                       pseudo_ls8_dataset, pseudo_ls8_dataset2):
+                       pseudo_ls8_dataset, pseudo_ls8_dataset2) -> None:
     output = _csv_search_raw(['datasets', ' lat in [-40, -10]'], clirunner)
     lines = [line.strip() for line in output.split('\n') if line]
     # A header and two dataset rows
@@ -1091,7 +1091,7 @@ def test_csv_structure(clirunner, pseudo_ls8_type, ls5_telem_type,
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_query_dataset_multi_product(index: Index, ls5_dataset_w_children: Dataset):
+def test_query_dataset_multi_product(index: Index, ls5_dataset_w_children: Dataset) -> None:
     # We have one ls5 level1 and its child nbar
     dc = Datacube(index)
 
@@ -1109,7 +1109,7 @@ def test_query_dataset_multi_product(index: Index, ls5_dataset_w_children: Datas
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube',))
-def test_spatial_index_api_defaults(index: Index):
+def test_spatial_index_api_defaults(index: Index) -> None:
     with pytest.raises(NotImplementedError) as e:
         index.spatial_indexes()
     assert "does not support the Spatial Index API" in str(e.value)

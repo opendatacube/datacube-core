@@ -22,7 +22,7 @@ def _sanitize(opts, keys):
     return {k: (v if k not in keys else "xx..xx") for k, v in opts.items()}
 
 
-def _state(purge=False):
+def _state(purge: bool = False):
     """
     .env   None| rasterio.Env
     .epoch -1  | +Int
@@ -32,7 +32,7 @@ def _state(purge=False):
     )
 
 
-def get_rio_env(sanitize=True):
+def get_rio_env(sanitize: bool = True):
     """ Get GDAL params configured by rasterio for the current thread.
 
     :param sanitize: If True replace sensitive Values with 'x'
@@ -48,7 +48,7 @@ def get_rio_env(sanitize=True):
     return opts
 
 
-def deactivate_rio_env():
+def deactivate_rio_env() -> None:
     """ Exit previously configured environment, or do nothing if one wasn't configured.
     """
     state = _state(purge=True)
@@ -57,7 +57,7 @@ def deactivate_rio_env():
         state.env.__exit__(None, None, None)
 
 
-def activate_rio_env(aws=None, cloud_defaults=False, **kwargs):
+def activate_rio_env(aws=None, cloud_defaults: bool = False, **kwargs):
     """ Inject activated rasterio.Env into current thread.
 
     This de-activates previously setup environment.
@@ -133,7 +133,7 @@ def activate_from_config():
     return None
 
 
-def set_default_rio_config(aws=None, cloud_defaults=False, **kwargs):
+def set_default_rio_config(aws=None, cloud_defaults: bool = False, **kwargs) -> None:
     """ Setup default configuration for rasterio/GDAL.
 
     Doesn't actually activate one, just stores configuration for future
@@ -154,11 +154,11 @@ def set_default_rio_config(aws=None, cloud_defaults=False, **kwargs):
 
 
 def configure_s3_access(
-    profile=None,
-    region_name="auto",
-    aws_unsigned=False,
-    requester_pays=False,
-    cloud_defaults=True,
+    profile: str | None = None,
+    region_name: str = "auto",
+    aws_unsigned: bool = False,
+    requester_pays: bool = False,
+    cloud_defaults: bool = True,
     client=None,
     **gdal_opts
 ):

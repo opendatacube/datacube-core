@@ -57,7 +57,7 @@ def polygon_path(x, y=None):
         np.vstack([np.full_like(y, x[0]), y]).T[::-1][1:]]).T
 
 
-def gbox_boundary(gbox, pts_per_side=16):
+def gbox_boundary(gbox, pts_per_side: int = 16):
     """Return points in pixel space along the perimeter of a GeoBox, or a 2d array.
 
     """
@@ -68,7 +68,7 @@ def gbox_boundary(gbox, pts_per_side=16):
     return polygon_path(xx, yy).T[:-1]
 
 
-def roi_boundary(roi, pts_per_side=2):
+def roi_boundary(roi, pts_per_side: int = 2):
     """
     Get boundary points from a 2d roi.
 
@@ -91,12 +91,12 @@ def align_up(x, align):
     return align_down(x+(align-1), align)
 
 
-def scaled_down_roi(roi, scale: int):
+def scaled_down_roi(roi, scale: int) -> tuple[slice, ...]:
     return tuple(slice(s.start//scale,
                        align_up(s.stop, scale)//scale) for s in roi)
 
 
-def scaled_up_roi(roi, scale: int, shape=None):
+def scaled_up_roi(roi, scale: int, shape=None) -> tuple[slice, ...]:
     roi = tuple(slice(s.start*scale,
                       s.stop*scale) for s in roi)
     if shape is not None:
@@ -120,18 +120,18 @@ def roi_shape(roi):
     return tuple(slice_dim(s) for s in roi)
 
 
-def roi_is_empty(roi):
+def roi_is_empty(roi) -> bool:
     return any(d <= 0 for d in roi_shape(roi))
 
 
-def roi_is_full(roi, shape):
+def roi_is_full(roi, shape) -> bool:
     """
     Check if ROI covers the entire region.
 
     :returns: True if roi covers region from (0,..) -> shape
               False otherwise
     """
-    def slice_full(s, n):
+    def slice_full(s, n) -> bool:
         return s.start in (0, None) and s.stop in (n, None)
 
     if isinstance(roi, slice):
@@ -232,7 +232,7 @@ def split_translation(t):
     return tuple(t[0] for t in _tt), tuple(t[1] for t in _tt)
 
 
-def is_affine_st(A, tol=1e-10):
+def is_affine_st(A, tol: float = 1e-10) -> bool:
     """
     True if Affine transform has scale and translation components only.
     """
@@ -296,7 +296,7 @@ def decompose_rws(A):
     return R, W, S
 
 
-def affine_from_pts(X, Y):
+def affine_from_pts(X, Y) -> Affine:
     """
     Given points X,Y compute A, such that: Y = A*X.
 
@@ -437,7 +437,7 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> tuple[slice, s
     return src, dst
 
 
-def box_overlap(src_shape, dst_shape, ST, tol):  # noqa: N803
+def box_overlap(src_shape, dst_shape, ST, tol: float) -> tuple[tuple[slice, slice], tuple[slice, slice]]:  # noqa: N803
     """
     Given two image planes whose coordinate systems are related via scale and
     translation only, find overlapping regions within both.
@@ -536,7 +536,7 @@ def roi_center(roi):
     return tuple(slice_center(s) for s in roi)
 
 
-def roi_from_points(xy, shape, padding=0, align=None):
+def roi_from_points(xy, shape, padding: int = 0, align=None):
     """
     Compute envelope around a bunch of points and return it as roi (tuple of
     row/col slices)
@@ -568,7 +568,7 @@ def roi_from_points(xy, shape, padding=0, align=None):
     return to_roi(yy, xx)
 
 
-def compute_reproject_roi(src, dst, tol=0.05, padding=None, align=None):
+def compute_reproject_roi(src, dst, tol: float = 0.05, padding: int | None = None, align=None) -> SimpleNamespace:
     """Given two GeoBoxes find the region within the source GeoBox that overlaps
     with the destination GeoBox, and also compute the scale factor (>1 means
     shrink). Scale is chosen such that if you apply it to the source image

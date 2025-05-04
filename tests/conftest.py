@@ -316,7 +316,7 @@ def workdir(tmpdir_factory):
 
 
 @pytest.fixture
-def without_aws_env(monkeypatch):
+def without_aws_env(monkeypatch) -> None:
     for e in AWS_ENV_VARS:
         monkeypatch.delenv(e, raising=False)
 

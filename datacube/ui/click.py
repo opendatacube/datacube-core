@@ -25,8 +25,8 @@ from datacube.ui.expression import parse_expressions
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 _LOG_FORMAT_STRING = '%(asctime)s %(process)d %(name)s %(levelname)s %(message)s'
-CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
-_LOG = logging.getLogger(__name__)
+CLICK_SETTINGS: dict[str, list[str]] = dict(help_option_names=['-h', '--help'])
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def _print_version(ctx, param, value) -> None:
@@ -77,7 +77,7 @@ class ColorFormatter(logging.Formatter):
 
 class ClickHandler(logging.Handler):
     @override
-    def emit(self, record) -> None:
+    def emit(self, record: logging.LogRecord) -> None:
         try:
             msg = self.format(record)
             click.echo(msg, err=True)
@@ -225,7 +225,7 @@ def pass_config(f):
     return functools.update_wrapper(new_func, f)
 
 
-def pass_index(app_name=None, expect_initialised=True):
+def pass_index(app_name: str | None = None, expect_initialised: bool = True):
     """Get a connection to the index as the first argument.
 
     :param str app_name:
@@ -262,7 +262,7 @@ def pass_index(app_name=None, expect_initialised=True):
     return decorate
 
 
-def pass_datacube(app_name=None, expect_initialised=True):
+def pass_datacube(app_name: str | None = None, expect_initialised: bool = True):
     """
     Get a DataCube from the current or default local settings.
 

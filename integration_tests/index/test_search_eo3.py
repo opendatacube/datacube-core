@@ -29,7 +29,7 @@ from .search_utils import _cli_csv_search, _csv_search_raw, _load_product_query
 from datacube.utils.dates import tz_as_utc
 
 
-def test_search_by_metadata(index: Index, ls8_eo3_product, wo_eo3_product):
+def test_search_by_metadata(index: Index, ls8_eo3_product, wo_eo3_product) -> None:
     lds = list(index.products.search_by_metadata({"properties": {"product_family": "ard"}}))
     assert len(lds) == 0
     lds = list(index.products.search_by_metadata({"properties": {"odc:product_family": "ard"}}))
@@ -40,7 +40,7 @@ def test_search_by_metadata(index: Index, ls8_eo3_product, wo_eo3_product):
     assert len(lds) == 1
 
 
-def test_find_most_recent_change(index: Index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3):
+def test_find_most_recent_change(index: Index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3) -> None:
     product = ls8_eo3_dataset.product
     dt = index.products.most_recent_change(product)
     assert dt == ls8_eo3_dataset3.indexed_time
@@ -49,7 +49,7 @@ def test_find_most_recent_change(index: Index, ls8_eo3_dataset, ls8_eo3_dataset2
     assert dt == index.datasets.get(ls8_eo3_dataset2.id).archived_time
 
 
-def test_search_dataset_equals_eo3(index: Index, ls8_eo3_dataset: Dataset):
+def test_search_dataset_equals_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
     datasets = list(index.datasets.search(
         platform='landsat-8'
     ))
@@ -76,7 +76,7 @@ def test_search_dataset_range_eo3(index: Index,
                                   ls8_eo3_dataset2: Dataset,
                                   ls8_eo3_dataset3: Dataset,
                                   ls8_eo3_dataset4: Dataset,
-                                  ):
+                                  ) -> None:
     # Less Than
     datasets = list(index.datasets.search(
         product=ls8_eo3_dataset.product.name,
@@ -296,7 +296,7 @@ def test_search_by_product_eo3(index: Index,
         assert dataset.type == dataset.product  # DEPRECATED MEMBER
 
 
-def test_search_limit_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset):
+def test_search_limit_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset) -> None:
     prod = ls8_eo3_dataset.product.name
     datasets = list(index.datasets.search(product=prod))
     assert len(datasets) == 2
@@ -338,7 +338,7 @@ def test_search_limit_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_datas
     assert len(datasets) == 3
 
 
-def test_search_archived_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset):
+def test_search_archived_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset) -> None:
     prod = ls8_eo3_dataset.product.name
     datasets = list(index.datasets.search(archived=False, product=prod))
     assert len(datasets) == 2
@@ -366,7 +366,7 @@ def test_search_archived_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_da
     assert len(datasets) == 2
 
 
-def test_search_order_by_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3):
+def test_search_order_by_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3) -> None:
     # provided as a string
     datasets = list(index.datasets.search(order_by=['id']))
     assert len(datasets) == 3
@@ -519,7 +519,7 @@ def test_search_returning_eo3(index: Index,
 def test_search_returning_rows_eo3(index,
                                    eo3_ls8_dataset_doc,
                                    eo3_ls8_dataset2_doc,
-                                   ls8_eo3_dataset, ls8_eo3_dataset2):
+                                   ls8_eo3_dataset, ls8_eo3_dataset2) -> None:
     dataset = ls8_eo3_dataset
     uri = eo3_ls8_dataset_doc[1]
     uri2 = eo3_ls8_dataset2_doc[1]
@@ -572,7 +572,7 @@ def test_search_returning_rows_eo3(index,
 
 @pytest.mark.parametrize('datacube_env_name', ('postgis', ))
 def test_search_returning_uri(index, eo3_ls8_dataset_doc,
-                              ls8_eo3_dataset):
+                              ls8_eo3_dataset) -> None:
     dataset = ls8_eo3_dataset
     uri = eo3_ls8_dataset_doc[1]
 
@@ -591,7 +591,7 @@ def test_search_returning_uri(index, eo3_ls8_dataset_doc,
 def test_search_returning_uris_legacy(index,
                                       eo3_ls8_dataset_doc,
                                       eo3_ls8_dataset2_doc,
-                                      ls8_eo3_dataset, ls8_eo3_dataset2):
+                                      ls8_eo3_dataset, ls8_eo3_dataset2) -> None:
     dataset = ls8_eo3_dataset
     uri = eo3_ls8_dataset_doc[1]
     uri3 = eo3_ls8_dataset2_doc[1]
@@ -698,7 +698,7 @@ def test_search_special_fields_eo3(index: Index,
         ))
 
 
-def test_search_by_uri_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, eo3_ls8_dataset_doc):
+def test_search_by_uri_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, eo3_ls8_dataset_doc) -> None:
     datasets = list(index.datasets.search(product=ls8_eo3_dataset.product.name,
                                           uri=eo3_ls8_dataset_doc[1]))
     assert len(datasets) == 1
@@ -707,7 +707,7 @@ def test_search_by_uri_eo3(index, ls8_eo3_dataset, ls8_eo3_dataset2, eo3_ls8_dat
     assert len(datasets) == 0
 
 
-def test_search_conflicting_types(index, ls8_eo3_dataset):
+def test_search_conflicting_types(index, ls8_eo3_dataset) -> None:
     # Should return no results.
     with pytest.raises(ValueError):
         next(index.datasets.search(
@@ -961,7 +961,7 @@ def test_cli_info_eo3(index: Index,
 def test_find_duplicates_eo3(index,
                              ls8_eo3_dataset, ls8_eo3_dataset2,
                              ls8_eo3_dataset3, ls8_eo3_dataset4,
-                             wo_eo3_dataset):
+                             wo_eo3_dataset) -> None:
     # Our four ls8 datasets and one wo.
     all_datasets = list(index.datasets.search())
     assert len(all_datasets) == 5
@@ -1002,7 +1002,7 @@ def test_find_duplicates_eo3(index,
     assert sat_res == []
 
 
-def test_find_duplicates_with_time(index, nrt_dataset, final_dataset, ls8_eo3_dataset):
+def test_find_duplicates_with_time(index, nrt_dataset, final_dataset, ls8_eo3_dataset) -> None:
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', FixWindingWarning)
         index.datasets.add(nrt_dataset, with_lineage=False)
@@ -1053,21 +1053,21 @@ def test_csv_search_via_cli_eo3(clirunner: Any,
     """
     Search datasets via the cli with csv output
     """
-    def matches_both(*args):
+    def matches_both(*args) -> None:
         rows = _cli_csv_search(('datasets',) + args, clirunner)
         assert len(rows) == 2
         assert {rows[0]['id'], rows[1]['id']} == {str(ls8_eo3_dataset.id), str(ls8_eo3_dataset2.id)}
 
-    def matches_1(*args):
+    def matches_1(*args) -> None:
         rows = _cli_csv_search(('datasets',) + args, clirunner)
         assert len(rows) == 1
         assert rows[0]['id'] == str(ls8_eo3_dataset.id)
 
-    def matches_none(*args):
+    def matches_none(*args) -> None:
         rows = _cli_csv_search(('datasets',) + args, clirunner)
         assert len(rows) == 0
 
-    def no_such_product(*args):
+    def no_such_product(*args) -> None:
         with pytest.raises(ValueError):
             _cli_csv_search(('datasets',) + args, clirunner)
 
@@ -1125,7 +1125,7 @@ _EXT_AND_BASE_EO3_OUTPUT_HEADER = [
 ]
 
 
-def test_csv_structure_eo3(clirunner, ls8_eo3_dataset, ls8_eo3_dataset2):
+def test_csv_structure_eo3(clirunner, ls8_eo3_dataset, ls8_eo3_dataset2) -> None:
     output = _csv_search_raw(['datasets', ' lat in [-40, -10]'], clirunner)
     lines = [line.strip() for line in output.split('\n') if line]
     # A header and two dataset rows
@@ -1135,7 +1135,7 @@ def test_csv_structure_eo3(clirunner, ls8_eo3_dataset, ls8_eo3_dataset2):
         assert header in header_line
 
 
-def test_query_dataset_multi_product_eo3(index: Index, ls8_eo3_dataset, wo_eo3_dataset):
+def test_query_dataset_multi_product_eo3(index: Index, ls8_eo3_dataset, wo_eo3_dataset) -> None:
     # We have one ls5 level1 and its child nbar
     dc = Datacube(index)
 

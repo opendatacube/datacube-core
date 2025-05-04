@@ -17,7 +17,7 @@ from uuid import uuid4
 import pytest
 import yaml
 from antimeridian import FixWindingWarning
-from click.testing import CliRunner
+from click.testing import CliRunner, Result
 from hypothesis import HealthCheck, settings
 from sqlalchemy import text
 
@@ -534,7 +534,7 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
     return db
 
 
-def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb):
+def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb) -> None:
     with db._engine.connect() as connection:
         if cfg_env._name in ('datacube', 'default', 'postgres'):
             # with db.begin() as c:  # Drop SCHEMA
@@ -623,7 +623,7 @@ def index_empty(cfg_env, uninitialised_postgres_db: PostGisDb | PostgresDb):
     del index
 
 
-def remove_postgres_dynamic_indexes():
+def remove_postgres_dynamic_indexes() -> None:
     """
     Clear any dynamically created postgresql indexes from the schema.
     """
@@ -632,7 +632,7 @@ def remove_postgres_dynamic_indexes():
         table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
 
 
-def remove_postgis_dynamic_indexes():
+def remove_postgis_dynamic_indexes() -> None:
     """
     Clear any dynamically created postgis indexes from the schema.
     """
@@ -871,12 +871,12 @@ def example_ls5_nbar_metadata_doc():
 
 
 @pytest.fixture
-def clirunner(datacube_env_name):
-    def _run_cli(opts, catch_exceptions=False,
-                 expect_success=True, cli_method=datacube.scripts.cli_app.cli,
-                 skip_env=False, skip_config_paths=False,
-                 mix_stderr=True,
-                 verbose_flag='-v'):
+def clirunner(datacube_env_name: str):
+    def _run_cli(opts, catch_exceptions: bool = False,
+                 expect_success: bool = True, cli_method=datacube.scripts.cli_app.cli,
+                 skip_env: bool = False, skip_config_paths: bool = False,
+                 mix_stderr: bool = True,
+                 verbose_flag: str = '-v') -> Result:
         # If raw config passed in, skip default test config
         if not skip_config_paths:
             exe_opts = list(itertools.chain(*(('--config', f) for f in CONFIG_FILE_PATHS)))
@@ -902,10 +902,10 @@ def clirunner(datacube_env_name):
 @pytest.fixture
 def clirunner_raw():
     def _run_cli(opts,
-                 catch_exceptions=False,
-                 expect_success=True,
+                 catch_exceptions: bool = False,
+                 expect_success: bool = True,
                  cli_method=datacube.scripts.cli_app.cli,
-                 verbose_flag='-v'):
+                 verbose_flag: str = '-v') -> Result:
         exe_opts = []
         if verbose_flag:
             exe_opts.append(verbose_flag)

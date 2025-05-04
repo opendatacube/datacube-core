@@ -13,7 +13,7 @@ from datacube.testutils import gen_tiff_dataset, mk_test_image
 odc_loader = pytest.importorskip("odc.loader")
 
 
-def test_with_driver(tmpdir):
+def test_with_driver(tmpdir) -> None:
     tmpdir = Path(str(tmpdir))
 
     spatial = dict(

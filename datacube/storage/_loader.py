@@ -63,7 +63,7 @@ def driver_based_load(
     geobox: GeoBox,
     measurements: Sequence[Measurement],
     dask_chunks=None,
-    skip_broken_datasets=False,
+    skip_broken_datasets: bool = False,
     progress_cbk=None,
     extra_dims: ExtraDimensions | None = None,
     patch_url=None,

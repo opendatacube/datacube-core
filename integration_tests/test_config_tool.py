@@ -25,7 +25,8 @@ def _dataset_type_count(index):
         return len(list(connection.get_all_products()))
 
 
-def test_add_example_dataset_types(clirunner, index, default_metadata_type, eo3_product_paths, ext_eo3_mdt_path):
+def test_add_example_dataset_types(clirunner, index, default_metadata_type,
+                                   eo3_product_paths, ext_eo3_mdt_path) -> None:
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
 
@@ -95,7 +96,7 @@ def test_add_example_dataset_types(clirunner, index, default_metadata_type, eo3_
         assert result.exit_code == 0
 
 
-def test_error_returned_on_invalid(clirunner, index):
+def test_error_returned_on_invalid(clirunner, index) -> None:
     assert _dataset_type_count(index) == 0
 
     for mapping_path in INVALID_MAPPING_DOCS:
@@ -111,7 +112,7 @@ def test_error_returned_on_invalid(clirunner, index):
         assert _dataset_type_count(index) == 0, "Invalid document was added to DB"
 
 
-def test_config_check(clirunner, index, cfg_env):
+def test_config_check(clirunner, index, cfg_env) -> None:
     # This is not a very thorough check, we just check to see that
     # it prints something vaguely related and does not error-out.
     result = clirunner(
@@ -126,7 +127,7 @@ def test_config_check(clirunner, index, cfg_env):
     assert str(cfg_env['dc_load_limit']) in result.output
 
 
-def test_list_users_does_not_fail(clirunner, cfg_env, index):
+def test_list_users_does_not_fail(clirunner, cfg_env, index) -> None:
     """
     """
     # We don't want to make assumptions about available users during test runs.
@@ -140,7 +141,7 @@ def test_list_users_does_not_fail(clirunner, cfg_env, index):
     assert result.exit_code == 0
 
 
-def test_db_init_noop(clirunner, cfg_env, ls8_eo3_product):
+def test_db_init_noop(clirunner, cfg_env, ls8_eo3_product) -> None:
     # Run on an existing database.
     result = clirunner(
         [
@@ -156,7 +157,7 @@ def test_db_init_noop(clirunner, cfg_env, ls8_eo3_product):
 
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
-def test_db_init_rebuild(clirunner, cfg_env, ls5_telem_type):
+def test_db_init_rebuild(clirunner, cfg_env, ls5_telem_type) -> None:
     if cfg_env._name == "datacube":
         from datacube.drivers.postgres import _dynamic
         from datacube.drivers.postgres.sql import SCHEMA_NAME
@@ -180,7 +181,7 @@ def test_db_init_rebuild(clirunner, cfg_env, ls5_telem_type):
     assert f'Creating view: {SCHEMA_NAME}.dv_{ls5_telem_type.name}_dataset' in result.output
 
 
-def test_db_init(clirunner, index):
+def test_db_init(clirunner, index) -> None:
     if index._db.driver_name == "postgis":
         from datacube.drivers.postgis._core import drop_db, has_schema
     else:
@@ -203,7 +204,7 @@ def test_db_init(clirunner, index):
         assert has_schema(index._db._engine)
 
 
-def test_add_no_such_product(clirunner, index):
+def test_add_no_such_product(clirunner, index) -> None:
     result = clirunner(['dataset', 'add', '--dtype', 'no_such_product', '/tmp'], expect_success=False)
     assert result.exit_code != 0
     assert "DEPRECATED option detected" in result.output
@@ -238,7 +239,7 @@ def example_user(clirunner, index, request):
             connection.drop_users([username])
 
 
-def test_user_creation(clirunner, example_user):
+def test_user_creation(clirunner, example_user) -> None:
     """
     Add a user, grant them, delete them.
 
@@ -264,11 +265,11 @@ def test_user_creation(clirunner, example_user):
     assert_no_user(clirunner, username)
 
 
-def assert_user_with_role(clirunner, role, user_name):
+def assert_user_with_role(clirunner, role, user_name) -> None:
     result = clirunner(['user', 'list'])
     assert '{}{}'.format('user: ', user_name) in result.output
 
 
-def assert_no_user(clirunner, username):
+def assert_no_user(clirunner, username) -> None:
     result = clirunner(['user', 'list'])
     assert username not in result.output

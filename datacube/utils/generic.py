@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import itertools
 import threading
+from collections.abc import Iterable, Iterator
 from typing import Any
 
 EOS = object()
@@ -18,7 +19,7 @@ __all__ = [
 ]
 
 
-def map_with_lookahead(it, if_one=None, if_many=None):
+def map_with_lookahead(it, if_one=None, if_many=None) -> Iterable:
     """
     It's like normal map: creates a new generator by applying a function to every
     element of the original generator, but it applies `if_one` transform for
@@ -64,7 +65,7 @@ def qmap(func, q, eos_marker=EOS):
                 q.task_done()
 
 
-def it2q(its, q, eos_marker=EOS):
+def it2q(its: Iterator, q, eos_marker=EOS) -> None:
     """ Convert iterator into a Queue
 
         [1, 2, 3] => [1, 2, 3, eos_marker]

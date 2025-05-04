@@ -24,7 +24,7 @@ from ._lineage import AbstractLineageResource
 from ._datasets import AbstractDatasetResource
 from ._transactions import AbstractTransaction
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class AbstractIndex(ABC):
@@ -162,7 +162,7 @@ class AbstractIndex(ABC):
         else:
             raise NotImplementedError()
 
-    def spatial_indexes(self, refresh=False) -> Iterable[CRS]:
+    def spatial_indexes(self, refresh: bool = False) -> Iterable[CRS]:
         """
         Return the CRSs for which spatial indexes have been created.
 
@@ -349,10 +349,10 @@ class AbstractIndex(ABC):
         """
         return thread_local_cache(f"txn-{self.index_id}", None)
 
-    def __enter__(self):
+    def __enter__(self) -> "AbstractIndex":
         return self
 
-    def __exit__(self):
+    def __exit__(self) -> None:
         self.close()
 
 

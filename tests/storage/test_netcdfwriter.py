@@ -82,18 +82,18 @@ LCC2_PROJ = CRS("""PROJCS["unnamed",
                                PARAMETER["false_northing",0]]""")
 
 
-def _ensure_spheroid(var):
+def _ensure_spheroid(var) -> None:
     assert 'semi_major_axis' in var.ncattrs()
     assert 'semi_minor_axis' in var.ncattrs()
     assert 'inverse_flattening' in var.ncattrs()
 
 
-def _ensure_gdal(var):
+def _ensure_gdal(var) -> None:
     assert 'GeoTransform' in var.ncattrs()
     assert 'spatial_ref' in var.ncattrs()
 
 
-def _ensure_geospatial(nco):
+def _ensure_geospatial(nco) -> None:
     assert 'geospatial_bounds' in nco.ncattrs()
     assert 'geospatial_bounds_crs' in nco.ncattrs()
     assert nco.getncattr('geospatial_bounds_crs') == "EPSG:4326"
@@ -109,7 +109,7 @@ def _ensure_geospatial(nco):
     assert nco.getncattr('geospatial_lon_units') == "degrees_east"
 
 
-def test_create_albers_projection_netcdf(tmpnetcdf_filename):
+def test_create_albers_projection_netcdf(tmpnetcdf_filename) -> None:
     nco = create_netcdf(tmpnetcdf_filename)
     create_coordinate(nco, 'x', numpy.array([1., 2., 3.]), 'm')
     create_coordinate(nco, 'y', numpy.array([1., 2., 3.]), 'm')
@@ -127,7 +127,7 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
         _ensure_geospatial(nco)
 
 
-def test_create_lambert_conformal_conic_2sp_projection_netcdf(tmpnetcdf_filename):
+def test_create_lambert_conformal_conic_2sp_projection_netcdf(tmpnetcdf_filename) -> None:
     nco = create_netcdf(tmpnetcdf_filename)
     create_coordinate(nco, 'x', numpy.array([1., 2., 3.]), 'm')
     create_coordinate(nco, 'y', numpy.array([1., 2., 3.]), 'm')
@@ -147,7 +147,7 @@ def test_create_lambert_conformal_conic_2sp_projection_netcdf(tmpnetcdf_filename
         _ensure_geospatial(nco)
 
 
-def test_create_epsg4326_netcdf(tmpnetcdf_filename):
+def test_create_epsg4326_netcdf(tmpnetcdf_filename) -> None:
     nco = create_netcdf(tmpnetcdf_filename)
     create_coordinate(nco, 'latitude', numpy.array([1., 2., 3.]), 'm')
     create_coordinate(nco, 'longitude', numpy.array([1., 2., 3.]), 'm')
@@ -161,7 +161,7 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
         _ensure_geospatial(nco)
 
 
-def test_create_sinus_netcdf(tmpnetcdf_filename):
+def test_create_sinus_netcdf(tmpnetcdf_filename) -> None:
     nco = create_netcdf(tmpnetcdf_filename)
     create_coordinate(nco, 'x', numpy.array([1., 2., 3.]), 'm')
     create_coordinate(nco, 'y', numpy.array([1., 2., 3.]), 'm')
@@ -183,7 +183,7 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
 @given(s1=text(alphabet=string.printable, max_size=100),
        s2=text(alphabet=string.printable, max_size=100),
        s3=text(alphabet=string.printable, max_size=100))
-def test_create_string_variable(workdir, s1, s2, s3):
+def test_create_string_variable(workdir, s1, s2, s3) -> None:
     tmpnetcdf_filename = workdir.join(f"testfile_np_{uuid4()}.nc")
     str_var = 'str_var'
     nco = create_netcdf(tmpnetcdf_filename)
@@ -204,7 +204,7 @@ def test_create_string_variable(workdir, s1, s2, s3):
         assert returned == expected
 
 
-def test_chunksizes(tmpnetcdf_filename):
+def test_chunksizes(tmpnetcdf_filename) -> None:
     nco = create_netcdf(tmpnetcdf_filename)
 
     x = numpy.arange(3, dtype='float32')
@@ -275,14 +275,14 @@ EXAMPLE_FLAGS_DEF = {
 }
 
 
-def test_measurements_model_netcdfflags():
+def test_measurements_model_netcdfflags() -> None:
     masks, valid_range, meanings = flag_mask_meanings(EXAMPLE_FLAGS_DEF)
     assert ([0, 1023] == valid_range).all()
     assert ([1, 2, 4, 512] == masks).all()
     assert 'no_band_1_saturated no_band_2_saturated no_band_3_saturated land' == meanings
 
 
-def test_useful_error_on_write_empty_dataset(tmpnetcdf_filename):
+def test_useful_error_on_write_empty_dataset(tmpnetcdf_filename) -> None:
     with pytest.raises(DatacubeException) as excinfo:
         ds = xr.Dataset()
         write_dataset_to_netcdf(ds, tmpnetcdf_filename)
@@ -295,7 +295,7 @@ def test_useful_error_on_write_empty_dataset(tmpnetcdf_filename):
 
 
 @pytest.mark.parametrize("odc_style_xr_dataset", [{}], indirect=True)
-def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
+def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset) -> None:
     write_dataset_to_netcdf(odc_style_xr_dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
                             variable_params={'B10': {'attrs': {'abc': 'xyz'}}})
 
@@ -320,7 +320,7 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename, odc_style_xr_dataset):
     assert crs_var not in xx.data_vars
 
 
-def test_write_dataset_with_time_dimension_to_netcdf(tmpnetcdf_filename):
+def test_write_dataset_with_time_dimension_to_netcdf(tmpnetcdf_filename) -> None:
     xx = mk_sample_xr_dataset(name='B10', time='2020-01-01')
     assert 'time' in xx.coords
     assert 'units' not in xx.time.attrs
@@ -351,7 +351,7 @@ def test_write_dataset_with_time_dimension_to_netcdf(tmpnetcdf_filename):
     assert 'time' in yy.coords
 
 
-def test_get_units():
+def test_get_units() -> None:
     assert _get_units(Coordinate([], 'K', None)) == 'K'
     assert _get_units(Coordinate([], None, None)) == '1'
     assert _get_units(Coordinate(numpy.zeros(1, dtype='uint8'), None, None)) == '1'

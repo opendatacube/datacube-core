@@ -31,7 +31,7 @@ from datacube.drivers._types import ReaderDriver
 from ..drivers.datasource import DataSource
 from ._base import BandInfo
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 FuserFunction = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
 ProgressFunction = Callable[[int, int], Any]  # pylint: disable=invalid-name
@@ -54,7 +54,7 @@ def reproject_and_fuse(datasources: list[DataSource],
                        fuse_func: FuserFunction | None = None,
                        skip_broken_datasets: bool = False,
                        progress_cbk: ProgressFunction | None = None,
-                       extra_dim_index: int | None = None):
+                       extra_dim_index: int | None = None) -> np.ndarray:
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 

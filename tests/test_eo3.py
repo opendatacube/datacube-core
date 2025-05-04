@@ -66,7 +66,7 @@ def eo3_product(eo3_metadata):
     return mk_sample_product("eo3_product", metadata_type=eo3_metadata)
 
 
-def test_grid_points():
+def test_grid_points() -> None:
     identity = list(Affine.translation(0, 0))
     grid = EO3Grid({
         "shape": (11, 22),
@@ -95,7 +95,7 @@ def test_grid_points():
             grid = EO3Grid(bad)
 
 
-def test_bad_grids():
+def test_bad_grids() -> None:
     identity = list(Affine.translation(0, 0))
     bad_grids = [
         # No Shape
@@ -148,7 +148,7 @@ def test_bad_grids():
             EO3Grid(bad_grid)
 
 
-def test_eo3_grid_spatial_nogrids():
+def test_eo3_grid_spatial_nogrids() -> None:
     with pytest.raises(ValueError, match="grids.foo"):
         eo3_grid_spatial(
             {
@@ -164,7 +164,7 @@ def test_eo3_grid_spatial_nogrids():
         )
 
 
-def test_is_eo3(sample_doc, sample_doc_180):
+def test_is_eo3(sample_doc, sample_doc_180) -> None:
     assert is_doc_eo3(sample_doc) is True
     assert is_doc_eo3(sample_doc_180) is True
 
@@ -177,7 +177,7 @@ def test_is_eo3(sample_doc, sample_doc_180):
         is_doc_eo3({'$schema': 'https://schemas.opendatacube.org/eo4'})
 
 
-def test_is_geo(sample_doc, sample_doc_180):
+def test_is_geo(sample_doc, sample_doc_180) -> None:
     assert is_doc_geo(sample_doc) is True
     assert is_doc_geo(sample_doc_180) is True
 
@@ -186,7 +186,7 @@ def test_is_geo(sample_doc, sample_doc_180):
     assert is_doc_geo({'crs': 'EPSG:4326', 'extent': "dummy_extent"}) is True
 
 
-def test_add_eo3(sample_doc, sample_doc_180, eo3_product):
+def test_add_eo3(sample_doc, sample_doc_180, eo3_product) -> None:
     doc = add_eo3_parts(sample_doc)
     assert doc is not sample_doc
     ds = Dataset(eo3_product, doc)
@@ -227,7 +227,7 @@ def test_add_eo3(sample_doc, sample_doc_180, eo3_product):
         add_eo3_parts(doc)
 
 
-def test_prep_eo3(sample_doc, sample_doc_180, eo3_metadata):
+def test_prep_eo3(sample_doc, sample_doc_180, eo3_metadata) -> None:
     rdr = eo3_metadata.dataset_reader(prep_eo3(sample_doc))
     assert rdr.grid_spatial is not None
     assert rdr.lat.end > rdr.lat.begin
@@ -252,7 +252,7 @@ def test_prep_eo3(sample_doc, sample_doc_180, eo3_metadata):
         prep_eo3(non_eo3_doc)
 
 
-def test_prep_eo3_idempotency(sample_doc, sample_doc_180):
+def test_prep_eo3_idempotency(sample_doc, sample_doc_180) -> None:
     # without lineage
     call1 = prep_eo3(sample_doc, remap_lineage=False)
     call2 = prep_eo3(call1, remap_lineage=False)
@@ -270,7 +270,7 @@ def test_prep_eo3_idempotency(sample_doc, sample_doc_180):
     assert call1 == call2
 
 
-def test_val_eo3_offset():
+def test_val_eo3_offset() -> None:
     from datacube.model.eo3 import validate_eo3_offset
     # Simple offsets
     validate_eo3_offset("foo", "bar", ["properties", "ns:foo"])
@@ -286,7 +286,7 @@ def test_val_eo3_offset():
         validate_eo3_offset("foo", "bar", [["properties", "nested", "ns:foo"], ["properties", "ns:foo"]])
 
 
-def test_val_eo3_offsets():
+def test_val_eo3_offsets() -> None:
     from datacube.model.eo3 import validate_eo3_offsets
     # Scalar types
     validate_eo3_offsets("foo", "bar", {
@@ -319,7 +319,7 @@ def test_val_eo3_offsets():
         })
 
 
-def test_eo3_compatible_type():
+def test_eo3_compatible_type() -> None:
     from datacube.model.eo3 import validate_eo3_compatible_type
     test_doc = {
         "name": "eo3_test",
@@ -334,7 +334,7 @@ def test_eo3_compatible_type():
     assert "invalid_system_field" in str(e.value)
 
 
-def test_geom_from_eo3_proj():
+def test_geom_from_eo3_proj() -> None:
     from datacube.drivers.postgis._spatial import extract_geometry_from_eo3_projection
     assert extract_geometry_from_eo3_projection({
         "spatial_reference": "EPSG:4326",

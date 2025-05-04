@@ -26,7 +26,7 @@ def simple_var():
                      attrs={'flags_definition': flags})
 
 
-def test_list_flag_names(simple_var):
+def test_list_flag_names(simple_var) -> None:
     flags = list_flag_names(simple_var)
     for flag_name in simple_var.flags_definition.keys():
         assert flag_name in flags
@@ -35,7 +35,7 @@ def test_list_flag_names(simple_var):
         list_flag_names(([], {}))
 
 
-def test_create_mask_value(simple_var):
+def test_create_mask_value(simple_var) -> None:
     bits_def = simple_var.flags_definition
 
     assert create_mask_value(bits_def, contiguous=True) == (256, 256)
@@ -45,7 +45,7 @@ def test_create_mask_value(simple_var):
     assert create_mask_value(bits_def, contiguous=False, land_sea='land') == (768, 512)
 
 
-def test_create_multi_mask_value():
+def test_create_multi_mask_value() -> None:
     multi_var = VariableWithMultiBitFlags()
     multi_flags_def = multi_var.flags_definition
 
@@ -74,13 +74,13 @@ def test_create_multi_mask_value():
         create_mask_value(multi_flags_def, water_confidence='invalid enum value')
 
 
-def test_ga_good_pixel(simple_var):
+def test_ga_good_pixel(simple_var) -> None:
     bits_def = simple_var.flags_definition
 
     assert create_mask_value(bits_def, ga_good_pixel=True) == (16383, 16383)
 
 
-def test_describe_flags(simple_var):
+def test_describe_flags(simple_var) -> None:
     describe_variable_flags(simple_var)
     describe_variable_flags(simple_var, with_pandas=False)
 
@@ -317,7 +317,7 @@ bits_def_json = {
 
 @pytest.mark.parametrize('bits_def', [SimpleVariableWithFlagsDef.flags_definition,
                                       bits_def_json])
-def test_simple_mask_to_dict(bits_def):
+def test_simple_mask_to_dict(bits_def) -> None:
     # All 0. Contiguous should be False, Saturated bits should be true
     test_dict = mask_to_dict(bits_def, 0)
     assert not test_dict['contiguous']
@@ -343,7 +343,7 @@ def test_simple_mask_to_dict(bits_def):
     assert not test_dict['blue_saturated']
 
 
-def test_mask_valid_data():
+def test_mask_valid_data() -> None:
     test_attrs = {
         'one': 1,
         'nodata': -999,
@@ -377,7 +377,7 @@ def test_mask_valid_data():
         mask_invalid_data({})
 
 
-def test_valid_data_mask():
+def test_valid_data_mask() -> None:
     attrs = {
         'nodata': -999,
     }

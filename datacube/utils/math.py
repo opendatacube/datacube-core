@@ -2,12 +2,14 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from collections.abc import Iterator
 from typing import Any
 from math import ceil
 
 import numpy
 import xarray as xr
 import odc.geo.math as geomath
+from odc.geo import SomeResolution
 from odc.geo.xr import spatial_dims as xr_spatial_dims
 
 from datacube.migration import ODC2DeprecationWarning
@@ -60,7 +62,7 @@ def maybe_int(x: float, tol: float) -> int | float:
 
 
 @deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
-def snap_scale(s, tol=1e-6):
+def snap_scale(s, tol: float = 1e-6):
     return geomath.snap_scale(s, tol)
 
 
@@ -139,16 +141,16 @@ def num2numpy(x, dtype, ignore_range=None):
 
 
 @deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
-def data_resolution_and_offset(data, fallback_resolution=None):
+def data_resolution_and_offset(data, fallback_resolution: float | None = None):
     return geomath.data_resolution_and_offset(data, fallback_resolution)
 
 
 @deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
-def affine_from_axis(xx, yy, fallback_resolution=None):
+def affine_from_axis(xx, yy, fallback_resolution: SomeResolution | None = None):
     return geomath.affine_from_axis(xx, yy, fallback_resolution)
 
 
-def iter_slices(shape, chunk_size):
+def iter_slices(shape: tuple[int, ...], chunk_size: tuple[int, ...]) -> Iterator[tuple]:
     """
     Generate slices for a given shape.
 

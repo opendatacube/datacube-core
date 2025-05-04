@@ -15,7 +15,7 @@ from datacube.utils.changes import (
 )
 
 
-def test_changes_contains():
+def test_changes_contains() -> None:
     assert contains("bob", "BOB") is True
     assert contains("bob", "BOB", case_sensitive=True) is False
     assert contains(1, 1) is True
@@ -41,7 +41,7 @@ def test_changes_contains():
     assert contains({"a": {"b": 1}}, {"a": None}) is True
 
 
-def test_classify_changes():
+def test_classify_changes() -> None:
     assert classify_changes([], {}) == ([], [])
     assert classify_changes([(('a',), 1, 2)], {}) == ([], [(('a',), 1, 2)])
     assert classify_changes([(('a',), 1, 2)], {('a',): allow_any}) == ([(('a',), 1, 2)], [])

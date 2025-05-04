@@ -31,7 +31,7 @@ def list_flag_names(variable):
     return sorted(list(flags_def.keys()))
 
 
-def describe_variable_flags(variable, with_pandas=True):
+def describe_variable_flags(variable, with_pandas: bool = True):
     """
     Returns either a Pandas Dataframe (with_pandas=True - default) or a string
     (with_pandas=False) describing the available flags for a masking variable
@@ -57,7 +57,7 @@ def describe_variable_flags(variable, with_pandas=True):
     return pandas.DataFrame.from_dict(flags_def, orient='index')
 
 
-def describe_flags_def(flags_def):
+def describe_flags_def(flags_def) -> str:
     return '\n'.join(generate_table(list(_table_contents(flags_def))))
 
 
@@ -126,7 +126,7 @@ def valid_data_mask(data):
                               output_dtypes=[bool])
 
 
-def mask_invalid_data(data, keep_attrs=True):
+def mask_invalid_data(data, keep_attrs: bool = True):
     """
     Sets all `nodata` values to ``nan``.
 
@@ -153,7 +153,7 @@ def mask_invalid_data(data, keep_attrs=True):
     raise TypeError(f'mask_invalid_data not supported for type {type(data)}')
 
 
-def create_mask_value(bits_def, **flags):
+def create_mask_value(bits_def, **flags) -> tuple[int, int]:
     mask = 0
     value = 0
 

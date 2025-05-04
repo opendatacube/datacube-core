@@ -8,6 +8,7 @@ Date and time utility functions
 Includes sequence generation functions to be used by statistics apps
 
 """
+from collections.abc import Iterator
 from datetime import datetime, tzinfo
 
 import dateutil
@@ -19,11 +20,11 @@ import numpy as np
 import xarray as xr
 
 
-FREQS = {'y': YEARLY, 'm': MONTHLY, 'd': DAILY}
+FREQS: dict[str, int] = {'y': YEARLY, 'm': MONTHLY, 'd': DAILY}
 DURATIONS = {'y': 'years', 'm': 'months', 'd': 'days'}
 
 
-def date_sequence(start, end, stats_duration, step_size):
+def date_sequence(start, end, stats_duration, step_size: str) -> Iterator:
     """
     Generate a sequence of time span tuples
 
@@ -36,9 +37,9 @@ def date_sequence(start, end, stats_duration, step_size):
     :param str step_size: How far apart should the start dates be
     :return: sequence of (start_date, end_date) tuples
     """
-    step_size, freq = parse_interval(step_size)
+    interval, freq = parse_interval(step_size)
     stats_duration = parse_duration(stats_duration)
-    for start_date in rrule(freq, interval=step_size, dtstart=start, until=end):
+    for start_date in rrule(freq, interval=interval, dtstart=start, until=end):
         end_date = start_date + stats_duration
         if end_date <= end:
             yield start_date, start_date + stats_duration
@@ -92,7 +93,7 @@ def tz_as_utc(dt: datetime) -> datetime:
     return dt.astimezone(tzutc())
 
 
-def mk_time_coord(dts, name='time', units=None):
+def mk_time_coord(dts: list[datetime], name: str = 'time', units=None) -> xr.DataArray:
     """ List[datetime] -> time coordinate for xarray
     """
     attrs = {'units': units} if units is not None else {}

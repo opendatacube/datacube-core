@@ -30,7 +30,7 @@ def mk_gbox(shape=(2, 2), transform=identity, crs=epsg4326):
     return GeoBox(wh_(W, H), transform, crs)
 
 
-def test_first_source_is_priority_in_reproject_and_fuse():
+def test_first_source_is_priority_in_reproject_and_fuse() -> None:
     crs = epsg4326
     shape = (2, 2)
     no_data = -1
@@ -45,7 +45,7 @@ def test_first_source_is_priority_in_reproject_and_fuse():
     assert (output_data == 1).all()
 
 
-def test_second_source_used_when_first_is_empty():
+def test_second_source_used_when_first_is_empty() -> None:
     crs = epsg4326
     shape = (2, 2)
     no_data = -1
@@ -60,7 +60,7 @@ def test_second_source_used_when_first_is_empty():
     assert (output_data == 2).all()
 
 
-def test_progress_cbk():
+def test_progress_cbk() -> None:
     crs = epsg4326
     shape = (2, 2)
     no_data = -1
@@ -68,7 +68,7 @@ def test_progress_cbk():
 
     src = FakeDatasetSource([[2, 2], [2, 2]], crs=crs, shape=shape)
 
-    def _cbk(n_so_far, n_total, out):
+    def _cbk(n_so_far, n_total, out) -> None:
         out.append((n_so_far, n_total))
 
     cbk_args = []
@@ -86,7 +86,7 @@ def test_progress_cbk():
     assert cbk_args == [(1, 2), (2, 2)]
 
 
-def test_mixed_result_when_first_source_partially_empty():
+def test_mixed_result_when_first_source_partially_empty() -> None:
     crs = epsg4326
     shape = (2, 2)
     no_data = -1
@@ -101,7 +101,7 @@ def test_mixed_result_when_first_source_partially_empty():
     assert (output_data == [[1, 1], [2, 2]]).all()
 
 
-def test_when_input_empty():
+def test_when_input_empty() -> None:
     shape = (2, 2)
     no_data = -1
     out = np.full(shape, fill_value=no_data, dtype='int16')
@@ -109,7 +109,7 @@ def test_when_input_empty():
     assert (out == no_data).all()
 
 
-def test_mixed_result_when_first_source_partially_empty_with_nan_nodata():
+def test_mixed_result_when_first_source_partially_empty_with_nan_nodata() -> None:
     crs = epsg4326
     shape = (2, 2)
     no_data = np.nan
@@ -125,7 +125,7 @@ def test_mixed_result_when_first_source_partially_empty_with_nan_nodata():
 
 
 class FakeBandDataSource:
-    def __init__(self, value, nodata, shape=(2, 2), *args, **kwargs):
+    def __init__(self, value, nodata, shape=(2, 2), *args, **kwargs) -> None:
         self.value = value
         self.crs = epsg4326
         self.transform = Affine.identity()
@@ -141,7 +141,7 @@ class FakeBandDataSource:
 
 class FakeDatasetSource(DataSource):
     def __init__(self, value, bandnumber=1, nodata=-999, shape=(2, 2), crs=None, transform=None,
-                 band_source_class=FakeBandDataSource):
+                 band_source_class=FakeBandDataSource) -> None:
         super().__init__()
         self.value = value
         self.bandnumber = bandnumber
@@ -175,7 +175,7 @@ class BrokenBandDataSource(FakeBandDataSource):
         raise OSError('Read or write failed')
 
 
-def test_read_from_broken_source():
+def test_read_from_broken_source() -> None:
     crs = epsg4326
     shape = (2, 2)
     no_data = -1
@@ -200,7 +200,7 @@ def test_read_from_broken_source():
 
 
 class FakeDataSource:
-    def __init__(self):
+    def __init__(self) -> None:
         self.crs = epsg4326
         self.transform = Affine(0.25, 0, 100, 0, -0.25, -30)
         self.nodata = -999
@@ -251,7 +251,7 @@ def assert_same_read_results(source, dst_shape, dst_dtype, dst_transform, dst_no
     return result
 
 
-def test_read_from_fake_source():
+def test_read_from_fake_source() -> None:
     data_source = FakeDataSource()
 
     @contextmanager
@@ -406,7 +406,7 @@ def test_read_from_fake_source():
     # TODO: crs change
 
 
-def _read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
+def _read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, resampling) -> None:
     """
     Adapt old signature to new function, so that we can keep old tests at least for now
     """
@@ -421,7 +421,7 @@ class TestRasterDataReading:
     @pytest.mark.parametrize("dst_nodata", [
         np.nan, float("nan"), -999
     ])
-    def xtest_failed_data_read(self, make_sample_geotiff, dst_nodata):
+    def xtest_failed_data_read(self, make_sample_geotiff, dst_nodata) -> None:
         sample_geotiff_path, geobox, written_data = make_sample_geotiff(dst_nodata)
 
         src_transform = Affine(25.0, 0.0, 1200000.0,
@@ -443,7 +443,7 @@ class TestRasterDataReading:
     @pytest.mark.parametrize("dst_nodata", [
         np.nan, float("nan"), -999
     ])
-    def test_read_with_rasterfiledatasource(self, make_sample_geotiff, dst_nodata):
+    def test_read_with_rasterfiledatasource(self, make_sample_geotiff, dst_nodata) -> None:
         sample_geotiff_path, geobox, written_data = make_sample_geotiff(dst_nodata)
 
         source = RasterFileDataSource(str(sample_geotiff_path), 1)
@@ -481,7 +481,7 @@ class TestRasterDataReading:
         Affine(25.0, 0.0, 1273275.0, 0.0, -25.0, -4172325.0),
         Affine(25.0, 0.0, 127327.0, 0.0, -25.0, -417232.0)
     ])
-    def test_read_data_from_outside_file_region(self, make_sample_netcdf, dst_transform):
+    def test_read_data_from_outside_file_region(self, make_sample_netcdf, dst_transform) -> None:
         sample_nc, geobox, written_data = make_sample_netcdf
 
         source = RasterFileDataSource(sample_nc, 1)
@@ -577,7 +577,7 @@ _EXAMPLE_PRODUCT = Product(
 )
 
 
-def test_multiband_support_in_datasetsource(example_gdal_path):
+def test_multiband_support_in_datasetsource(example_gdal_path) -> None:
     defn = {
         "id": '12345678123456781234567812345678',
         "format": {"name": "GeoTiff"},
@@ -618,7 +618,7 @@ def test_multiband_support_in_datasetsource(example_gdal_path):
     assert ds.get_bandnumber(None) == band_num
 
 
-def test_netcdf_multi_part():
+def test_netcdf_multi_part() -> None:
     defn = {
         "id": '12345678123456781234567812345678',
         "format": {"name": "NetCDF CF"},
@@ -646,7 +646,7 @@ def test_netcdf_multi_part():
     assert ds('file:///tmp.nc').get_bandnumber() is None
 
 
-def test_rasterio_nodata(tmpdir):
+def test_rasterio_nodata(tmpdir) -> None:
     from datacube.testutils.io import dc_read, write_gtiff
     from pathlib import Path
 
@@ -683,7 +683,7 @@ def test_rasterio_nodata(tmpdir):
     np.testing.assert_array_equal(xx, yy)
 
 
-def test_rio_driver_specifics():
+def test_rio_driver_specifics() -> None:
     assert _url2rasterio('file:///f.nc', 'NetCDF', 'band') == 'NetCDF:"/f.nc":band'
     assert _url2rasterio('file:///f.nc', 'HDF5', 'band') == 'HDF5:"/f.nc":band'
     assert _url2rasterio('file:///f.nc', 'HDF4_EOS:EOS_GRID', 'band') == 'HDF4_EOS:EOS_GRID:"/f.nc":band'

@@ -156,7 +156,7 @@ DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref
 
 
 class MockDb:
-    def __init__(self):
+    def __init__(self) -> None:
         self.dataset = {}
         self.dataset_source = set()
 
@@ -164,13 +164,13 @@ class MockDb:
     def _connect(self):
         yield self
 
-    def begin(self):
+    def begin(self) -> None:
         pass
 
-    def commit(self):
+    def commit(self) -> None:
         pass
 
-    def rollback(self):
+    def rollback(self) -> None:
         pass
 
     def get_dataset(self, id_):
@@ -182,10 +182,10 @@ class MockDb:
     def datasets_intersection(self, ids):
         return [k for k in ids if k in self.dataset]
 
-    def insert_dataset_location(self, *args, **kwargs):
+    def insert_dataset_location(self, *args, **kwargs) -> None:
         return
 
-    def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):
+    def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id) -> bool:
         # Will we pretend this one was already ingested?
         if dataset_id in self.dataset:
             raise DuplicateRecordError('already ingested')
@@ -194,12 +194,12 @@ class MockDb:
                                                  None, None, None, None)
         return True
 
-    def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
+    def insert_dataset_source(self, classifier, dataset_id, source_dataset_id) -> None:
         self.dataset_source.add((classifier, dataset_id, source_dataset_id))
 
 
 class MockTypesResource:
-    def __init__(self, type_):
+    def __init__(self, type_) -> None:
         self.type = type_
 
     def get(self, *args, **kwargs):
@@ -217,7 +217,7 @@ class MockTypesResource:
 
 
 class MockIndex:
-    def __init__(self, db, product):
+    def __init__(self, db, product) -> None:
         self._db = db
         self.products = MockTypesResource(product)
 
@@ -229,7 +229,7 @@ class MockIndex:
         yield self._db
 
 
-def test_index_dataset():
+def test_index_dataset() -> None:
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
     datasets = DatasetResource(mock_db, mock_index)
@@ -255,7 +255,7 @@ def test_index_dataset():
     assert len(mock_db.dataset_source) == 2
 
 
-def test_index_already_ingested_source_dataset():
+def test_index_already_ingested_source_dataset() -> None:
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
     datasets = DatasetResource(mock_db, mock_index)
@@ -269,7 +269,7 @@ def test_index_already_ingested_source_dataset():
     assert len(mock_db.dataset_source) == 2
 
 
-def test_index_two_levels_already_ingested():
+def test_index_two_levels_already_ingested() -> None:
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
     datasets = DatasetResource(mock_db, mock_index)

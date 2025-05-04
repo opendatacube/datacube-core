@@ -36,7 +36,7 @@ from datacube.utils.changes import get_doc_changes, Offset
 from odc.geo import CRS, Geometry
 from datacube.index import fields, extract_geom_from_query, strip_all_spatial_fields_from_query
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 # It's a public api, so we can't reorganise old methods.
@@ -262,8 +262,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 crs_values = batch.spatial_indexes[crs]
                 if crs_values:
                     connection.insert_dataset_spatial_bulk(crs, crs_values)
-            for search_type, values in batch.search_indexes.items():
-                connection.insert_dataset_search_bulk(search_type, values)
+            for search_type, search_values in batch.search_indexes.items():
+                connection.insert_dataset_search_bulk(search_type, search_values)
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
     @override
@@ -293,7 +293,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     yield namedtuple('search_result', record.keys())(**record), set(ids)
 
     @override
-    def can_update(self, dataset, updates_allowed=None) -> tuple[bool, list, list]:
+    def can_update(self, dataset: Dataset, updates_allowed=None) -> tuple[bool, list, list]:
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -329,7 +329,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return not bad_changes, good_changes, bad_changes
 
     @override
-    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature: int | None = None):
+    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature: int | None = None) -> Dataset:
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset to update
@@ -383,7 +383,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 tr.insert_dataset_location(dataset.id, dataset.uri)
 
     @override
-    def archive(self, ids) -> None:
+    def archive(self, ids: Iterable[str | UUID]) -> None:
         """
         Mark datasets as archived
 
@@ -394,7 +394,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 transaction.archive_dataset(id_)
 
     @override
-    def restore(self, ids) -> None:
+    def restore(self, ids: Iterable[str | UUID]) -> None:
         """
         Mark datasets as not archived
 
@@ -457,7 +457,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return [self.get_location(id_)]
 
     @override
-    def get_location(self, id_) -> None:
+    def get_location(self, id_: str | UUID) -> str | None:
         """
         Get the list of storage locations for the given dataset id
 
@@ -533,7 +533,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return connection.insert_dataset_location(id_, uri)
 
     @override
-    def get_datasets_for_location(self, uri, mode=None) -> Iterator:
+    def get_datasets_for_location(self, uri: str, mode: str | None = None) -> Iterator:
         """
         Find datasets that exist at the given URI
 
@@ -597,7 +597,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return False
 
-    def _make(self, dataset_res, full_info=False, product=None,
+    def _make(self, dataset_res, full_info: bool = False, product=None,
               source_tree: LineageTree | None = None,
               derived_tree: LineageTree | None = None) -> Dataset:
         """
@@ -653,7 +653,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             }
         }
     )
-    def search(self, limit=None, archived: bool | None = False, order_by=None, **query) -> Iterable:
+    def search(self, limit: int | None = None, archived: bool | None = False, order_by=None, **query) -> Iterable:
         """
         Perform a search, returning results as Dataset objects.
 
@@ -803,10 +803,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             yield q, product
 
     # pylint: disable=too-many-locals
-    def _do_search_by_product(self, query, return_fields=False,
+    def _do_search_by_product(self, query, return_fields: bool = False,
                               additional_fields: Mapping[str, Field] | None = None,
-                              select_field_names=None,
-                              with_source_ids=False, source_filter=None, limit=None,
+                              select_field_names: Sequence[str] | None = None,
+                              with_source_ids: bool = False, source_filter=None, limit: int | None = None,
                               archived: bool | None = False, order_by=None) -> Iterator:
         assert not with_source_ids
         assert source_filter is None
@@ -864,7 +864,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             if count > 0:
                 yield product, count
 
-    def _do_time_count(self, period, query, ensure_single=False) -> Iterator:
+    def _do_time_count(self, period, query, ensure_single: bool = False) -> Iterator:
         if 'time' not in query:
             raise ValueError('Counting through time requires a "time" range query argument')
 
@@ -922,7 +922,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     )
     # pylint: disable=redefined-outer-name
     def search_returning_datasets_light(self, field_names: tuple, custom_offsets=None,
-                                        limit=None, archived: bool | None = False,
+                                        limit: int | None = None, archived: bool | None = False,
                                         **query) -> Iterable[tuple]:
         """
         This is a dataset search function that returns the results as objects of a dynamically
@@ -984,7 +984,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
                 yield DatasetLight(**field_values)
 
-    def make_select_fields(self, product, field_names, custom_offsets) -> list:
+    def make_select_fields(self, product, field_names: Sequence[str], custom_offsets) -> list:
         """
         Parse and generate the list of select fields to be passed to the database API.
         """

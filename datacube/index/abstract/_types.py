@@ -60,13 +60,13 @@ class DatasetTuple(NamedTuple):
     uri_: str | list[str]
 
     @property
-    def uri_is_string(self):
+    def uri_is_string(self) -> bool:
         if isinstance(self.uri_, str):
             return True
         return False
 
     @property
-    def is_legacy(self):
+    def is_legacy(self) -> bool:
         return not isinstance(self.uri_, str) and len(self.uri_) > 1
 
     @property

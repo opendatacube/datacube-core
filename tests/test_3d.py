@@ -28,7 +28,7 @@ def cover_z_product():
     # pytest will raise an error if nothing was yielded
 
 
-def test_extra_dimensions(eo3_metadata, cover_z_product):
+def test_extra_dimensions(eo3_metadata, cover_z_product) -> None:
     """Check the ExtraDimensions class."""
     product = Product(eo3_metadata, cover_z_product)
 
@@ -73,7 +73,7 @@ def test_extra_dimensions(eo3_metadata, cover_z_product):
     assert str(product.extra_dimensions) == f"{product.extra_dimensions!r}"
 
 
-def test_extra_dimensions_exceptions(eo3_metadata, cover_z_product):
+def test_extra_dimensions_exceptions(eo3_metadata, cover_z_product) -> None:
     """Test exceptions on invalid input."""
     product = Product(eo3_metadata, cover_z_product)
 

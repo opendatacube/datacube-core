@@ -22,7 +22,7 @@ from datacube.utils.documents import JsonDict
 
 from ._types import DSID, DatasetTuple, BatchStatus
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class AbstractDatasetResource(ABC):
@@ -36,7 +36,7 @@ class AbstractDatasetResource(ABC):
     raise a NotImplementedError)
     """
 
-    def __init__(self, index):
+    def __init__(self, index) -> None:
         self._index = index
         self.products = self._index.products
         self.types = self.products  # types is compatibility alias for products
@@ -630,7 +630,7 @@ class AbstractDatasetResource(ABC):
         :param batch_size: Number of datasets to add per batch (default 1000)
         :return: BatchStatus named tuple, with `safe` set to None.
         """
-        def increment_progress():
+        def increment_progress() -> None:
             report_to_user(".", progress_indicator=True)
         n_batches = 0
         n_in_batch = 0
