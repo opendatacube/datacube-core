@@ -32,6 +32,7 @@ Next Version
 - Dockerfile: stop running chown :pull:`1835`
 - CI: add security scanner :pull:`1833`
 - postgis: update mapper dynamically :pull:`1831`
+- pytest: configure in pyproject.toml :pull:`1844`
 
 v1.9.3 (15th April 2025)
 ========================
