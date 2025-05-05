@@ -3,8 +3,11 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
+from collections.abc import Generator, Hashable
 import logging
 import typing
+from typing_extensions import override
+from odc.geo.gridspec import GridSpec
 import xarray as xr
 from collections import OrderedDict
 import pandas as pd
@@ -70,7 +73,7 @@ class Tile:
         self.geobox: GeoBox = geobox
 
     @property
-    def dims(self) -> tuple[str, ...]:
+    def dims(self) -> tuple[Hashable, ...]:
         """Names of the dimensions, eg ``('time', 'y', 'x')``
         """
         return self.sources.dims + self.geobox.dimensions
@@ -95,7 +98,7 @@ class Tile:
         return Tile(sources, geobox)
 
     # TODO(csiro) Split on time range
-    def split(self, dim: str, step: int = 1) -> tuple(key, Tile):
+    def split(self, dim: str, step: int = 1) -> Generator[tuple[str, Tile]]:
         """
         Splits along a non-spatial dimension into Tile objects with a length of 1 or more in the `dim` dimension.
 
@@ -109,7 +112,7 @@ class Tile:
             indexer[axis] = slice(i, min(size, i + step))
             yield self.sources[dim].values[i], self[tuple(indexer)]
 
-    def split_by_time(self, freq: str = "A", time_dim: str = "time", **kwargs) -> Generator[tuple(str, Tile)]:
+    def split_by_time(self, freq: str = "A", time_dim: str = "time", **kwargs) -> Generator[tuple[str, Tile]]:
         """
         Splits along the `time` dimension, into periods, using pandas offsets, such as:
         :
@@ -133,9 +136,11 @@ class Tile:
             ]
             yield str(p), Tile(sources=sources_slice, geobox=self.geobox)
 
+    @override
     def __str__(self):
         return f"Tile<sources={self.sources!r},\n\tgeobox={self.geobox!r}>"
 
+    @override
     def __repr__(self):
         return self.__str__()
 
@@ -447,8 +452,10 @@ class GridWorkflow:
             )
         return tile
 
+    @override
     def __str__(self):
         return f"GridWorkflow<index={self.index!r},\n\tgridspec={self.grid_spec!r}>"
 
+    @override
     def __repr__(self):
         return self.__str__()
