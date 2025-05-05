@@ -208,8 +208,8 @@ def test_gridworkflow_loading(sample_grid_workflow):
     fakedataset2.product = fakedataset.product
 
     with patch("datacube.api.core.Datacube.load_data") as loader:
-        data = GridWorkflow.load(tile)
-        data2 = GridWorkflow.load(padded_tile)
+        _ = GridWorkflow.load(tile)
+        _ = GridWorkflow.load(padded_tile)
 
     assert loader.call_count == 2
 
@@ -217,7 +217,7 @@ def test_gridworkflow_loading(sample_grid_workflow):
         args = list(args)
         assert args[0] is loadable.sources
         assert args[1] is loadable.geobox
-        assert list(args[2].values())[0] is measurement
+        assert next(iter(args[2].values())) is measurement
         assert "resampling" in kwargs
 
 
@@ -284,10 +284,10 @@ def test_gridworkflow_with_time_depth():
     query = dict(product="fake_product_name")
 
     cells = gw.list_cells(**query)
-    for cell_index, cell in cells.items():
+    for _, cell in cells.items():
 
         #  test Tile.split()
-        for label, tile in cell.split("time"):
+        for _, tile in cell.split("time"):
             assert tile.shape == (1, 10, 10)
 
         #  test Tile.split_by_time()

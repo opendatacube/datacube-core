@@ -175,7 +175,7 @@ dataset:
 
 def mk_sample_product(name: str,
                       description: str='Sample',
-                      measurements: Sequence[str] = ('red', 'green', 'blue'),
+                      measurements: Sequence[str|tuple|dict] = ('red', 'green', 'blue'),
                       with_grid_spec: bool = False,
                       metadata_type=None,
                       storage=None,
