@@ -33,6 +33,7 @@ Next Version
 - CI: add security scanner :pull:`1833`
 - postgis: update mapper dynamically :pull:`1831`
 - pytest: configure in pyproject.toml :pull:`1844`
+- Remove executable permission :pull:`1846`
 
 v1.9.3 (15th April 2025)
 ========================
