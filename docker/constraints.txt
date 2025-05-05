@@ -293,7 +293,7 @@ pygments==2.19.1
     #   readme-renderer
     #   rich
     #   sphinx
-pylint==3.3.6
+pylint==3.3.7
     # via -r docker/constraints.in
 pyparsing==3.2.3
     # via
