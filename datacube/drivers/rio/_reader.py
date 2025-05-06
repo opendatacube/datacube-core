@@ -4,34 +4,33 @@
 # SPDX-License-Identifier: Apache-2.0
 """ reader
 """
-from typing import (
-    Any,
-    NamedTuple, TypeAlias, TypeVar
-)
-from typing_extensions import override
 from collections.abc import Iterable
-import numpy as np
-from affine import Affine
 from concurrent.futures import ThreadPoolExecutor
-import rasterio
-from rasterio.io import DatasetReader
-import rasterio.crs
+from typing import Any, NamedTuple, TypeAlias, TypeVar
 
-from datacube.storage import BandInfo
+import numpy as np
+import rasterio
+import rasterio.crs
+from affine import Affine
 from odc.geo import CRS
-from datacube.utils import (
-    uri_to_local_path,
-    get_part_from_uri,
-)
+from rasterio.io import DatasetReader
+from typing_extensions import override
+
 from datacube.drivers._types import (
-    ReaderDriverEntry,
-    ReaderDriver,
-    GeoRasterReader,
     FutureGeoRasterReader,
     FutureNdarray,
+    GeoRasterReader,
     RasterShape,
     RasterWindow,
+    ReaderDriver,
+    ReaderDriverEntry,
 )
+from datacube.storage import BandInfo
+from datacube.utils import (
+    get_part_from_uri,
+    uri_to_local_path,
+)
+
 
 class Overrides(NamedTuple):
     crs: CRS | None

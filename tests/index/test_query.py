@@ -8,8 +8,12 @@ Module
 
 from sqlalchemy.dialects.postgresql import Range as PgRange
 
-from datacube.drivers.postgres._fields import SimpleDocField, RangeBetweenExpression, EqualsExpression, \
-    NumericRangeDocField
+from datacube.drivers.postgres._fields import (
+    EqualsExpression,
+    NumericRangeDocField,
+    RangeBetweenExpression,
+    SimpleDocField,
+)
 from datacube.index.fields import to_expressions
 from datacube.model import Range
 

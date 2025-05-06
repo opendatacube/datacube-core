@@ -7,12 +7,12 @@ Custom types for postgres & sqlalchemy
 """
 
 from sqlalchemy import text
-from sqlalchemy.types import Double
 from sqlalchemy.dialects.postgresql.ranges import AbstractRange, Range
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import sqltypes
-from sqlalchemy.sql.expression import Executable, ClauseElement
+from sqlalchemy.sql.expression import ClauseElement, Executable
 from sqlalchemy.sql.functions import GenericFunction
+from sqlalchemy.types import Double
 
 SCHEMA_NAME = 'odc'
 

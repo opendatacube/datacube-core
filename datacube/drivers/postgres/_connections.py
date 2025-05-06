@@ -15,22 +15,20 @@ Postgres connection and setup
 import json
 import logging
 import re
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from collections.abc import Callable
-from collections.abc import Iterator
-from typing_extensions import override
 
-from sqlalchemy import event, create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
+from typing_extensions import override
 
 import datacube
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
 
-from . import _api
-from . import _core
 from ...cfg import ODCEnvironment, psql_url_from_config
+from . import _api, _core
 
 _LIB_ID: str = 'odc-' + str(datacube.__version__)
 
@@ -233,7 +231,7 @@ def handle_dynamic_token_authentication(engine: Engine,
         # Handle IAM authentication
         # Importing here because the function `clock_gettime` is not available on Windows
         # which shouldn't be a problem, because boto3 auth is mostly used on AWS.
-        from time import clock_gettime, CLOCK_REALTIME
+        from time import CLOCK_REALTIME, clock_gettime
 
         now = clock_gettime(CLOCK_REALTIME)
         if now - last_token_time[0] > timeout:

@@ -2,20 +2,31 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import pytest
-import numpy
 import pickle
 from copy import deepcopy
-from datacube.testutils import mk_sample_dataset, mk_sample_product
-from datacube.model import (Product, GridSpec, Measurement,
-                            MetadataType, Range, ranges_overlap)
+
+import numpy
+import pytest
 from odc.geo import CRS, BoundingBox
 from odc.geo.geom import polygon
-from datacube.utils.documents import InvalidDocException
-from datacube.storage import measurement_paths
-from datacube.testutils import suppress_deprecations
-from datacube.testutils.geom import AlbersGS
+
 from datacube.api.core import output_geobox
+from datacube.model import (
+    GridSpec,
+    Measurement,
+    MetadataType,
+    Product,
+    Range,
+    ranges_overlap,
+)
+from datacube.storage import measurement_paths
+from datacube.testutils import (
+    mk_sample_dataset,
+    mk_sample_product,
+    suppress_deprecations,
+)
+from datacube.testutils.geom import AlbersGS
+from datacube.utils.documents import InvalidDocException
 
 
 def test_gridspec() -> None:

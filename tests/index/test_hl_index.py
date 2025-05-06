@@ -2,9 +2,9 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import pytest
-
 from unittest.mock import MagicMock
+
+import pytest
 
 from datacube.index.hl import Doc2Dataset
 

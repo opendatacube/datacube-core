@@ -6,21 +6,24 @@
 Driver implementation for Rasterio based reader.
 """
 from __future__ import annotations
-import logging
+
 import contextlib
+import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
 from threading import RLock
-import numpy as np
-from affine import Affine
-from typing_extensions import override
-import rasterio
 from urllib.parse import urlparse
-from collections.abc import Iterator
 
+import numpy as np
+import rasterio
+from affine import Affine
 from odc.geo import CRS
+from typing_extensions import override
+
+from datacube.utils import get_part_from_uri, is_vsipath, uri_to_local_path
 from datacube.utils.math import num2numpy
-from datacube.utils import uri_to_local_path, get_part_from_uri, is_vsipath
 from datacube.utils.rio import activate_from_config
+
 from ..drivers.datasource import DataSource, GeoRasterReader, RasterShape, RasterWindow
 from ._base import BandInfo
 from ._hdf5 import HDF5_LOCK

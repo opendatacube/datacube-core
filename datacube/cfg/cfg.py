@@ -15,7 +15,7 @@ from os import PathLike
 from os.path import expanduser
 
 from datacube.cfg.exceptions import ConfigException
-from datacube.cfg.utils import ConfigDict, smells_like_ini, SemaphoreCallback
+from datacube.cfg.utils import ConfigDict, SemaphoreCallback, smells_like_ini
 from datacube.migration import ODC2DeprecationWarning
 
 _DEFAULT_CONFIG_SEARCH_PATH: list[str] = [

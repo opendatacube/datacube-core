@@ -9,19 +9,22 @@ Core SQL schema settings.
 import logging
 import os
 
+from alembic import command, config
+from alembic.migration import MigrationContext
+from alembic.runtime.environment import EnvironmentContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import MetaData, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.sql.ddl import DropSchema
-from alembic import command, config
-from alembic.migration import MigrationContext
-from alembic.script import ScriptDirectory
-from alembic.runtime.environment import EnvironmentContext
 
-from datacube.drivers.postgis.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
-                                          SCHEMA_NAME, TYPES_INIT_SQL,
-                                          UPDATE_TIMESTAMP_SQL,
-                                          escape_pg_identifier)
+from datacube.drivers.postgis.sql import (
+    INSTALL_TRIGGER_SQL_TEMPLATE,
+    SCHEMA_NAME,
+    TYPES_INIT_SQL,
+    UPDATE_TIMESTAMP_SQL,
+    escape_pg_identifier,
+)
 
 USER_ROLES = ('odc_user', 'odc_manage', 'odc_admin')
 
@@ -110,7 +113,7 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             _LOG.info('Creating types.')
             for s in TYPES_INIT_SQL:
                 c.execute(text(s))
-            from ._schema import orm_registry, ALL_STATIC_TABLES
+            from ._schema import ALL_STATIC_TABLES, orm_registry
             _LOG.info('Creating tables.')
             _LOG.info("Dataset indexes: %s", repr(orm_registry.metadata.tables["odc.dataset"].indexes))
             orm_registry.metadata.create_all(c, tables=ALL_STATIC_TABLES)  # type: ignore[arg-type]

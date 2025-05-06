@@ -3,15 +3,16 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import pytest
+
 from datacube.utils.changes import (
-    contains,
-    classify_changes,
-    allow_any,
-    allow_removal,
-    allow_addition,
-    allow_extension,
-    allow_truncation,
     MISSING,
+    allow_addition,
+    allow_any,
+    allow_extension,
+    allow_removal,
+    allow_truncation,
+    classify_changes,
+    contains,
 )
 
 

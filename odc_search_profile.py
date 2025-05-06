@@ -1,11 +1,11 @@
 import sys
-
+from datetime import datetime, timezone
 from time import monotonic
+
+from odc.geo.geom import CRS, polygon
+
 from datacube import Datacube
 from datacube.model import Range
-from datetime import timezone
-from datetime import datetime
-from odc.geo.geom import CRS, polygon
 
 
 def benchmark(test, dc, label, n):

@@ -2,9 +2,10 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import pytest
 from unittest.mock import MagicMock
 from uuid import UUID
+
+import pytest
 
 from datacube import Datacube
 from datacube.cfg import ODCEnvironment

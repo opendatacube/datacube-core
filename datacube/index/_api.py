@@ -9,6 +9,7 @@ Access methods for indexing datasets & products.
 import logging
 
 from datacube.cfg import ODCConfig, ODCEnvironment
+
 from .abstract import AbstractIndex as Index
 
 _LOG: logging.Logger = logging.getLogger(__name__)

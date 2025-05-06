@@ -35,6 +35,7 @@ Next Version
 - Dockerfile: use uv-generated constraints :pull:`1842`
 - pytest: configure in pyproject.toml :pull:`1844`
 - Remove executable permission :pull:`1846`
+- Sort imports with Ruff :pull:`1858`
 
 v1.9.3 (15th April 2025)
 ========================

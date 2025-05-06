@@ -2,13 +2,13 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from pathlib import Path
 import logging
+from pathlib import Path
+
+from datacube.storage._hdf5 import HDF5_LOCK
+from datacube.utils import DatacubeException
 
 from . import writer as netcdf_writer
-from datacube.utils import DatacubeException
-from datacube.storage._hdf5 import HDF5_LOCK
-
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -5,21 +5,26 @@
 """
 High level indexing operations/utilities
 """
-import logging
-
 import json
-import toolz
+import logging
+from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
+from typing import Any, TypeAlias, cast
 from uuid import UUID
-from typing import TypeAlias, cast, Any
-from collections.abc import Callable, Iterable, Mapping, Sequence, MutableMapping
 
-from datacube.model import Dataset, LineageTree, Product
+import toolz
+
 from datacube.index.abstract import AbstractIndex
-from datacube.utils import changes, InvalidDocException, SimpleDocNav, jsonify_document
-from datacube.model.utils import BadMatch, dedup_lineage, remap_lineage_doc, flatten_datasets
+from datacube.model import Dataset, LineageDirection, LineageTree, Product
+from datacube.model.utils import (
+    BadMatch,
+    dedup_lineage,
+    flatten_datasets,
+    remap_lineage_doc,
+)
+from datacube.utils import InvalidDocException, SimpleDocNav, changes, jsonify_document
 from datacube.utils.changes import get_doc_changes
-from datacube.model import LineageDirection
-from .eo3 import prep_eo3, is_doc_eo3, is_doc_geo
+
+from .eo3 import is_doc_eo3, is_doc_geo, prep_eo3
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

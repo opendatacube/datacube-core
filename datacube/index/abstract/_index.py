@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Mapping, Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from urllib.parse import ParseResult, urlparse
 
 from deprecat import deprecat
@@ -16,13 +16,13 @@ from datacube.model import Field, MetadataType
 from datacube.utils import cached_property, report_to_user
 from datacube.utils.generic import thread_local_cache
 
-from ._types import DSID, BatchStatus
-from ._users import AbstractUserResource
+from ._datasets import AbstractDatasetResource
+from ._lineage import AbstractLineageResource
 from ._metadata_types import AbstractMetadataTypeResource
 from ._products import AbstractProductResource
-from ._lineage import AbstractLineageResource
-from ._datasets import AbstractDatasetResource
 from ._transactions import AbstractTransaction
+from ._types import DSID, BatchStatus
+from ._users import AbstractUserResource
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

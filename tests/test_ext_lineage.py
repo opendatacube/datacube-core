@@ -3,11 +3,12 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import os
-import pytest
 from uuid import uuid4 as random_uuid
 
-from datacube.model import LineageDirection, LineageTree, InconsistentLineageException
-from datacube.model.lineage import LineageRelations, LineageIDPair
+import pytest
+
+from datacube.model import InconsistentLineageException, LineageDirection, LineageTree
+from datacube.model.lineage import LineageIDPair, LineageRelations
 from datacube.utils import read_documents
 
 

@@ -8,13 +8,23 @@ Tables for indexing the datasets which were ingested into the AGDC.
 
 import logging
 
-from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger, Index
-from sqlalchemy import Table, Column, Integer, String, DateTime
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    PrimaryKeyConstraint,
+    SmallInteger,
+    String,
+    Table,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
 
-from . import sql
-from . import _core
+from . import _core, sql
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

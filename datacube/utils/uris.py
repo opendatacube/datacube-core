@@ -3,14 +3,14 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import os
-
 import pathlib
 import re
-from deprecat import deprecat
 import urllib.parse
-from urllib.parse import urlparse, parse_qsl, urljoin
-from urllib.request import url2pathname
 from pathlib import Path
+from urllib.parse import parse_qsl, urljoin, urlparse
+from urllib.request import url2pathname
+
+from deprecat import deprecat
 
 from datacube.migration import ODC2DeprecationWarning
 

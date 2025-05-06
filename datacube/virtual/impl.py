@@ -8,38 +8,40 @@ to query and to load data, and combinators to combine multiple products into "vi
 products implementing the same interface.
 """
 
-from abc import ABC, abstractmethod
-from collections.abc import Mapping, Sequence
-
-from typing import Any, cast
-from collections.abc import Iterator
-from typing_extensions import override
-from collections.abc import Hashable
-from collections.abc import Mapping as TypeMapping
-
 import uuid
+from abc import ABC, abstractmethod
+from collections import OrderedDict
+from collections.abc import Hashable, Iterator, Mapping, Sequence
+from collections.abc import Mapping as TypeMapping
+from typing import Any, cast
+
+import dask.array
 import numpy
 import xarray
-import dask.array
-from dask.core import flatten
 import yaml
-from collections import OrderedDict
-
-from datacube import Datacube
-from datacube.api.core import output_geobox
-from datacube.api.query import Query, query_group_by
-from datacube.model import Measurement, Product
-from datacube.model.utils import xr_apply, xr_iter, SafeDumper
-from datacube.testutils.io import native_geobox
+from dask.core import flatten
 from odc.geo.geobox import GeoBox, GeoboxTiles, geobox_union_conservative
 from odc.geo.math import is_affine_st
-from odc.geo.warp import rio_reproject, resampling_s2rio
 from odc.geo.overlap import compute_reproject_roi
+from odc.geo.warp import resampling_s2rio, rio_reproject
 from odc.geo.xr import xr_coords
-from datacube.api.core import per_band_load_data_settings
+from typing_extensions import override
 
-from .utils import qualified_name, merge_dicts
-from .utils import select_unique, select_keys, reject_keys, merge_search_terms
+from datacube import Datacube
+from datacube.api.core import output_geobox, per_band_load_data_settings
+from datacube.api.query import Query, query_group_by
+from datacube.model import Measurement, Product
+from datacube.model.utils import SafeDumper, xr_apply, xr_iter
+from datacube.testutils.io import native_geobox
+
+from .utils import (
+    merge_dicts,
+    merge_search_terms,
+    qualified_name,
+    reject_keys,
+    select_keys,
+    select_unique,
+)
 
 
 class VirtualProductException(Exception):  # noqa: N818

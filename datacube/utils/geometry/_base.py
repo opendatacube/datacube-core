@@ -2,32 +2,31 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import array
 import functools
 import itertools
 import math
-import array
 import warnings
 from collections import OrderedDict
-from typing import Union, Optional, Any, NamedTuple, TypeAlias
-from typing_extensions import override
-from collections.abc import Iterable, Callable, Hashable, Iterator
-from collections.abc import Sequence
-from packaging.version import Version
+from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
+from typing import Any, NamedTuple, Optional, TypeAlias, Union
 
 import cachetools
 import numpy
+import rasterio
 import xarray as xr
 from affine import Affine
-import rasterio
-from shapely import geometry, ops, from_wkt
-from shapely.geometry import base
+from packaging.version import Version
 from pyproj import CRS as _CRS
 from pyproj.enums import WktVersion
-from pyproj.transformer import Transformer
 from pyproj.exceptions import CRSError
+from pyproj.transformer import Transformer
+from shapely import from_wkt, geometry, ops
+from shapely.geometry import base
+from typing_extensions import override
 
-from .tools import roi_normalise, roi_shape, is_affine_st
 from ..math import is_almost_int
+from .tools import is_affine_st, roi_normalise, roi_shape
 
 
 class Coordinate(NamedTuple):

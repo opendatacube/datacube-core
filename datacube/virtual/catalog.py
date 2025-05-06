@@ -6,13 +6,12 @@
 Catalog of virtual products.
 """
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from itertools import chain
 from typing import Any
-from collections.abc import Iterable, Iterator
-from typing_extensions import override
 
 import yaml
+from typing_extensions import override
 
 from datacube.model.utils import SafeDumper
 

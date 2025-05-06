@@ -2,17 +2,17 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import yaml
-import pytest
-from xarray import DataArray, Dataset
 import numpy as np
+import pytest
+import yaml
+from xarray import DataArray, Dataset
 
 from datacube.utils.masking import (
-    list_flag_names,
     create_mask_value,
     describe_variable_flags,
-    mask_to_dict,
+    list_flag_names,
     mask_invalid_data,
+    mask_to_dict,
     valid_data_mask,
 )
 

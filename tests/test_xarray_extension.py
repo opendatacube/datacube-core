@@ -2,13 +2,14 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import numpy as np
 import numpy.testing as npt
+import pandas as pd
 import pytest
 import xarray as xr
-import pandas as pd
-import numpy as np
-from datacube.testutils.geom import epsg4326, epsg3857
+
 from datacube.testutils import mk_sample_xr_dataset, remove_crs
+from datacube.testutils.geom import epsg3857, epsg4326
 from datacube.utils.xarray_geoextensions import _xarray_affine
 
 multi_coords = xr.DataArray(

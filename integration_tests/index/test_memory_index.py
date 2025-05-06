@@ -7,13 +7,11 @@ from uuid import uuid4
 
 import pytest
 
-from datacube.cfg import ODCEnvironment
-from datacube.testutils import gen_dataset_test_dag, suppress_deprecations
-
-from datacube.utils import InvalidDocException, read_documents, SimpleDocNav
-
 from datacube import Datacube
+from datacube.cfg import ODCEnvironment
 from datacube.model import Range
+from datacube.testutils import gen_dataset_test_dag, suppress_deprecations
+from datacube.utils import InvalidDocException, SimpleDocNav, read_documents
 
 
 def test_init_memory(in_memory_config: ODCEnvironment) -> None:

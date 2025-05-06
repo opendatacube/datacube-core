@@ -2,22 +2,19 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import pytest
 import math
 from pathlib import Path
-import numpy as np
-import xarray as xr
 from types import SimpleNamespace
-from dask.delayed import Delayed
-from dask.base import is_dask_collection
 
-from datacube.testutils import (
-    mk_test_image,
-    gen_tiff_dataset,
-    suppress_deprecations
-)
-from datacube.testutils.io import native_load, rio_slurp_xarray, rio_slurp
-from datacube.utils.cog import write_cog, to_cog, _write_cog
+import numpy as np
+import pytest
+import xarray as xr
+from dask.base import is_dask_collection
+from dask.delayed import Delayed
+
+from datacube.testutils import gen_tiff_dataset, mk_test_image, suppress_deprecations
+from datacube.testutils.io import native_load, rio_slurp, rio_slurp_xarray
+from datacube.utils.cog import _write_cog, to_cog, write_cog
 
 
 def gen_test_data(prefix, dask=False, shape=None, dtype="int16", nodata=-999):

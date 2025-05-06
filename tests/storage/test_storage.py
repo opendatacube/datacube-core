@@ -3,26 +3,24 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from contextlib import contextmanager
-
 from unittest import mock
+
 import numpy as np
 import pytest
 import rasterio.warp
 from affine import Affine, identity
+from odc.geo import wh_
+from odc.geo.geobox import GeoBox
 from rasterio.warp import Resampling
 
 from datacube.drivers.datasource import DataSource
-from datacube.model import Dataset, Product, MetadataType
-from datacube.testutils.io import RasterFileDataSource
-from datacube.storage import BandInfo
-from datacube.drivers.netcdf import create_netcdf_storage_unit, Variable
-from datacube.storage import reproject_and_fuse
-from datacube.storage._rio import RasterDatasetDataSource, _url2rasterio
+from datacube.drivers.netcdf import Variable, create_netcdf_storage_unit
+from datacube.model import Dataset, MetadataType, Product
+from datacube.storage import BandInfo, reproject_and_fuse
 from datacube.storage._read import read_time_slice
-from odc.geo.geobox import GeoBox
-from odc.geo import wh_
-
-from datacube.testutils.geom import epsg4326, epsg3577
+from datacube.storage._rio import RasterDatasetDataSource, _url2rasterio
+from datacube.testutils.geom import epsg3577, epsg4326
+from datacube.testutils.io import RasterFileDataSource
 
 
 def mk_gbox(shape=(2, 2), transform=identity, crs=epsg4326):
@@ -647,8 +645,9 @@ def test_netcdf_multi_part() -> None:
 
 
 def test_rasterio_nodata(tmpdir) -> None:
-    from datacube.testutils.io import dc_read, write_gtiff
     from pathlib import Path
+
+    from datacube.testutils.io import dc_read, write_gtiff
 
     roi = np.s_[10:20, 20:30]
     xx = np.zeros((64, 64), dtype='uint8')

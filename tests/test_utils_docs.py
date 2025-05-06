@@ -8,10 +8,10 @@ Test utility functions from :module:`datacube.utils`
 
 """
 import os
-from pathlib import Path
 from collections import OrderedDict
-from types import SimpleNamespace
 from collections.abc import Iterable
+from pathlib import Path
+from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import numpy as np
@@ -19,25 +19,38 @@ import pytest
 import toolz
 
 from datacube.model import MetadataType
-from datacube.model.utils import traverse_datasets, flatten_datasets, dedup_lineage, remap_lineage_doc
-from datacube.testutils import mk_sample_product, make_graph_abcde, gen_dataset_test_dag, dataset_maker
-from datacube.utils import (read_documents, InvalidDocException,
-                            SimpleDocNav)
-from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
+from datacube.model.utils import (
+    dedup_lineage,
+    flatten_datasets,
+    remap_lineage_doc,
+    traverse_datasets,
+)
+from datacube.testutils import (
+    dataset_maker,
+    gen_dataset_test_dag,
+    make_graph_abcde,
+    mk_sample_product,
+)
+from datacube.utils import InvalidDocException, SimpleDocNav, read_documents
+from datacube.utils.changes import (
+    MISSING,
+    DocumentMismatchError,
+    check_doc_unchanged,
+    get_doc_changes,
+)
 from datacube.utils.documents import (
-    parse_yaml,
-    without_lineage_sources,
-    _open_from_s3,
-    netcdf_extract_string,
     DocReader,
-    is_supported_document_type,
+    _open_from_s3,
     get_doc_offset,
-    transform_object_tree,
+    is_supported_document_type,
     metadata_subset,
+    netcdf_extract_string,
+    parse_yaml,
+    transform_object_tree,
+    without_lineage_sources,
 )
 from datacube.utils.serialise import jsonify_document
 from datacube.utils.uris import as_url
-
 
 doc_changes = [
     (1, 1, []),
@@ -521,8 +534,8 @@ def sample_document_files(data_folder):
 
 def test_jsonify() -> None:
     from datetime import datetime
-    from uuid import UUID
     from decimal import Decimal
+    from uuid import UUID
 
     assert sorted(jsonify_document({'a': (1.0, 2.0, 3.0),
                                     'b': float("inf"),

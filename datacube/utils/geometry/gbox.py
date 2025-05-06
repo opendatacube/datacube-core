@@ -6,15 +6,16 @@
 Geometric operations on GeoBox class
 """
 
-from collections.abc import Iterable
 import itertools
 import math
+from collections.abc import Iterable
 from typing import TypeAlias
-from affine import Affine
 
-from . import Geometry, GeoBox, BoundingBox
-from .tools import align_up
+from affine import Affine
 from odc.geo.math import clamp
+
+from . import BoundingBox, GeoBox, Geometry
+from .tools import align_up
 
 # pylint: disable=invalid-name
 MaybeInt: TypeAlias = int | None

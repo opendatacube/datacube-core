@@ -2,6 +2,9 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from collections.abc import MutableMapping
+from typing import Literal
+
 from alembic import context
 
 from datacube.cfg import ODCConfig, ODCEnvironment
@@ -9,8 +12,6 @@ from datacube.drivers.postgis._connections import PostGisDb
 from datacube.drivers.postgis._schema import MetadataObj
 from datacube.drivers.postgis._spatial import is_spindex_table_name
 from datacube.drivers.postgis.sql import SCHEMA_NAME
-from typing import Literal
-from collections.abc import MutableMapping
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -2,22 +2,21 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import logging
-import os
-import time
-from collections.abc import Sequence
-
-import click
 import functools
 import itertools
-import re
-from pathlib import Path
-import pandas as pd
+import logging
+import os
 import pickle
+import re
+import time
+from collections.abc import Sequence
+from pathlib import Path
+
+import click
+import pandas as pd
 
 from datacube.ui import click as dc_ui
 from datacube.utils import read_documents
-
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

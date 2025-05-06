@@ -11,17 +11,15 @@ import datetime
 import shutil
 import sys
 from collections.abc import Callable, Collection
-from functools import partial
+from functools import partial, singledispatch
+from os import terminal_size as t_size
 from typing import Any
 
 import click
-from os import terminal_size as t_size
 from sqlalchemy.dialects.postgresql import Range
-from functools import singledispatch
 
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
-
 from datacube.utils.dates import tz_as_utc
 
 PASS_INDEX = ui.pass_index('datacube-search')

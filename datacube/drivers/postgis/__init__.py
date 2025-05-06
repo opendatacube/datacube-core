@@ -8,7 +8,7 @@ Lower-level database access.
 This package tries to contain any SQLAlchemy and database-specific code.
 """
 
-from ._connections import PostGisDb
 from ._api import PostgisDbAPI
+from ._connections import PostGisDb
 
 __all__ = ['PostGisDb', 'PostgisDbAPI']

@@ -5,9 +5,9 @@
 """
 Utility functions
 """
+import logging
 import os
 import sys
-import logging
 
 
 class DatacubeException(Exception):  # noqa: N818

@@ -6,26 +6,24 @@
 Build and index fields within documents.
 """
 from collections import namedtuple
-from datetime import datetime, date
+from collections.abc import Callable
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
-from typing_extensions import override
-from collections.abc import Callable
 
-from sqlalchemy import cast, func, and_
+from sqlalchemy import and_, cast, func
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import INT4RANGE
-from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
-from sqlalchemy.dialects.postgresql import INTERVAL
+from sqlalchemy.dialects.postgresql import INT4RANGE, INTERVAL, NUMRANGE, TSTZRANGE
 from sqlalchemy.sql import ColumnElement
+from typing_extensions import override
 
 from datacube import utils
-from datacube.model.fields import Expression, Field
 from datacube.model import Range
+from datacube.model.fields import Expression, Field
 from datacube.utils import get_doc_offset
-from .sql import FLOAT8RANGE
-
 from datacube.utils.dates import tz_aware
+
+from .sql import FLOAT8RANGE
 
 
 class PgField(Field):

@@ -2,26 +2,29 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections import OrderedDict
-from datetime import datetime
-from copy import deepcopy
 import warnings
-
-import pytest
+from collections import OrderedDict
+from copy import deepcopy
+from datetime import datetime
 from unittest import mock
-import numpy
-import xarray as xr
 
-from datacube.model import Product, MetadataType, Dataset
+import numpy
+import pytest
+import xarray as xr
 from odc.geo import CRS
 from odc.geo.gridspec import GridSpec
-from datacube.virtual import construct_from_yaml, catalog_from_yaml, VirtualProductException
-from datacube.virtual import DEFAULT_RESOLVER, Transformation
+
+from datacube.model import Dataset, MetadataType, Product
+from datacube.virtual import (
+    DEFAULT_RESOLVER,
+    Transformation,
+    VirtualProductException,
+    catalog_from_yaml,
+    construct_from_yaml,
+)
+from datacube.virtual.expr import FormulaEvaluator, evaluate_data, formula_parser
 from datacube.virtual.impl import Datacube
-
-from datacube.virtual.expr import formula_parser, FormulaEvaluator, evaluate_data
 from datacube.virtual.transformations import fiscal_year
-
 
 ##########################################
 # Set up some common test data and fixtures

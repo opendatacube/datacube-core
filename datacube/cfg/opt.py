@@ -5,14 +5,14 @@
 
 import os
 import warnings
-from typing import Any, TYPE_CHECKING
-from typing_extensions import override
-from urllib.parse import urlparse
-from urllib.parse import quote_plus
+from typing import TYPE_CHECKING, Any
+from urllib.parse import quote_plus, urlparse
 
+from typing_extensions import override
+
+from ..migration import ODC2DeprecationWarning
 from .exceptions import ConfigException
 from .utils import check_valid_option
-from ..migration import ODC2DeprecationWarning
 
 if TYPE_CHECKING:
     from .api import ODCEnvironment

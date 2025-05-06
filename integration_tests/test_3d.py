@@ -15,13 +15,14 @@ try:
     from yaml import CSafeDumper as SafeDumper  # type: ignore
     from yaml import CSafeLoader as SafeLoader  # type: ignore
 except ImportError:
-    from yaml import SafeLoader, SafeDumper  # type: ignore
+    from yaml import SafeDumper, SafeLoader  # type: ignore
 
 import rasterio
 import xarray as xr
 from affine import Affine
-from datacube.api.core import Datacube
 from odc.geo.geobox import GeoBox
+
+from datacube.api.core import Datacube
 
 pytest.importorskip("dcio_example.xarray_3d")  # skip this test if 3d driver is not installed
 _LOG = logging.getLogger(__name__)

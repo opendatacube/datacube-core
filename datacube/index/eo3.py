@@ -5,21 +5,20 @@
 # TODO: typehints need attention
 """ Tools for working with EO3 metadata
 """
-from affine import Affine
+from collections.abc import Iterable
 from functools import reduce
 from typing import Any, cast
-from collections.abc import Iterable
 from uuid import UUID
 
+from affine import Affine
 from odc.geo import (
-    SomeCRS,
     CRS,
-    Geometry,
-    CoordList,
     BoundingBox,
+    CoordList,
+    Geometry,
+    SomeCRS,
 )
-
-from odc.geo.geom import polygon, lonlat_bounds
+from odc.geo.geom import lonlat_bounds, polygon
 
 EO3_SCHEMA = "https://schemas.opendatacube.org/dataset"
 

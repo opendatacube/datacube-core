@@ -5,6 +5,7 @@
 from abc import ABC, abstractmethod
 from threading import Lock
 from typing import Any
+
 from typing_extensions import override
 
 from datacube.index.exceptions import TransactionException

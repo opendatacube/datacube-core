@@ -82,7 +82,8 @@ def test_task_app_with_no_tasks(tmpdir) -> None:
 
 def test_task_app_year_splitting() -> None:
     import pandas as pd
-    from datacube.ui.task_app import validate_year, break_query_into_years
+
+    from datacube.ui.task_app import break_query_into_years, validate_year
     one_millisecond = pd.Timedelta('1 ms')
 
     def is_close(ts1, ts2, max_delta=one_millisecond):
@@ -140,7 +141,11 @@ def test_task_app_year_splitting() -> None:
 
 
 def test_task_app_cell_index(tmpdir) -> None:
-    from datacube.ui.task_app import validate_cell_index, validate_cell_list, cell_list_to_file
+    from datacube.ui.task_app import (
+        cell_list_to_file,
+        validate_cell_index,
+        validate_cell_list,
+    )
 
     assert validate_cell_index(None, None, None) is None
     assert validate_cell_index(None, None, '17,-12') == (17, -12)
