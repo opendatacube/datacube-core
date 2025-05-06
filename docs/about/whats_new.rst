@@ -37,6 +37,7 @@ Next Version
 - Remove executable permission :pull:`1846`
 - Sort imports with Ruff :pull:`1858`
 - Fix documentation parameter names :pull:`1857`
+- Add pandas types for development :pull:`1867`
 
 v1.9.3 (15th April 2025)
 ========================
