@@ -36,6 +36,7 @@ Next Version
 - pytest: configure in pyproject.toml :pull:`1844`
 - Remove executable permission :pull:`1846`
 - Sort imports with Ruff :pull:`1858`
+- Fix documentation parameter names :pull:`1857`
 
 v1.9.3 (15th April 2025)
 ========================

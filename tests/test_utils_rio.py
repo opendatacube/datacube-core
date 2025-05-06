@@ -114,7 +114,7 @@ def test_rio_env_aws_auto_region(monkeypatch, without_aws_env) -> None:
 
 
 def test_rio_env_aws_auto_region_dummy() -> None:
-    "Just call it we don't know if it will succeed"
+    """Just call it we don't know if it will succeed"""
 
     # at least it should not raise error since we haven't asked for region_name='auto'
     ee = activate_rio_env(aws={})

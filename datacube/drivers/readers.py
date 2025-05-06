@@ -105,8 +105,7 @@ def new_datasource(band: BandInfo) -> DataSource | None:
     This function will return the default :class:`RasterDatasetDataSource` if no more specific
     ``DataSource`` can be found.
 
-    :param dataset: The dataset to read.
-    :param str band_name: the name of the band to read.
+    :param band: The band to choose data source from.
 
     """
 

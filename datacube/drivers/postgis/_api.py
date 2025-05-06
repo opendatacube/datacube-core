@@ -223,7 +223,7 @@ def non_native_fields(mdt_metadata) -> dict:
 
 def extract_dataset_search_fields(ds_metadata, mdt_metadata) -> dict:
     """
-    :param ds_metdata: A Dataset metadata document
+    :param ds_metadata: A Dataset metadata document
     :param mdt_metadata: The corresponding metadata-type definition document
 
     :return: A dictionary mapping search field names to (type_name, value) tuples.
@@ -233,7 +233,7 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata) -> dict:
 
 def extract_dataset_fields(ds_metadata, fields) -> dict:
     """
-    :param ds_metdata: A Dataset metadata document
+    :param ds_metadata: A Dataset metadata document
     :param fields: A dictionary of field names to Field objects
 
     :return: A dictionary mapping search field names to (type_name, value) tuples.
@@ -1008,7 +1008,7 @@ class PostgisDbAPI:
                        dsids: Sequence[DSID] = []) -> int:
         """
         Update a spatial index
-        :param crs: CRSs for Spatial Indexes to update. Default=all indexes
+        :param crs_seq: CRSs for Spatial Indexes to update. Default=all indexes
         :param product_names: Product names to update
         :param dsids: Dataset IDs to update
 

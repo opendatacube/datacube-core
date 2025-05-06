@@ -115,8 +115,8 @@ def num2numpy(x, dtype, ignore_range=None):
     """
     Cast python numeric value to numpy.
 
-    :param x int|float: Numerical value to convert to numpy.type
-    :param dtype str|numpy.dtype|numpy.type: Destination dtype
+    :param int|float x: Numerical value to convert to numpy.type
+    :param str|numpy.dtype|numpy.type dtype: Destination dtype
     :param ignore_range: If set to True skip range check and cast anyway (for example: -1 -> 255)
                          (Not supported in numpy 2.0+)
 

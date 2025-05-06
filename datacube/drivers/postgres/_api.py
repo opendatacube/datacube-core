@@ -742,7 +742,7 @@ class PostgresDbAPI:
         """
         Insert bulk lineage records (e.g. for index cloning)
 
-        :param values: An array of values dicts for bulk insert
+        :param vals: An array of values dicts for bulk insert
         :return: tuple[count of rows loaded, count of rows skipped]
         """
         requested = len(vals)
