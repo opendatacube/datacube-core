@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
+
 from datacube.model import Dataset
 from datacube.testutils import suppress_deprecations
 

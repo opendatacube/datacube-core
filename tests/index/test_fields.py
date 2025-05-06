@@ -6,12 +6,18 @@
 Module
 """
 
-from datacube.drivers.postgres._fields import SimpleDocField, NumericRangeDocField, parse_fields, RangeDocField, \
-    IntDocField
-from datacube.utils.uris import split_uri
+import pytest
+
+from datacube.drivers.postgres._fields import (
+    IntDocField,
+    NumericRangeDocField,
+    RangeDocField,
+    SimpleDocField,
+    parse_fields,
+)
 from datacube.drivers.postgres._schema import DATASET
 from datacube.model import Range
-import pytest
+from datacube.utils.uris import split_uri
 
 
 def _assert_same(obj1, obj2) -> None:

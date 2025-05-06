@@ -3,9 +3,9 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
+from ..index.abstract import AbstractIndexDriver
 from ._tools import singleton_setup
 from .driver_cache import load_drivers
-from ..index.abstract import AbstractIndexDriver
 
 
 class IndexDriverCache:
@@ -14,9 +14,15 @@ class IndexDriverCache:
 
         if len(self._drivers) == 0:
             # Driver load has failed.  Something is very wrong, but try to manually load the main drivers anyway.
-            from datacube.index.postgres.index import index_driver_init as pg_index_driver_init
-            from datacube.index.postgis.index import index_driver_init as pgis_index_driver_init
-            from datacube.index.memory.index import index_driver_init as mem_index_driver_init
+            from datacube.index.memory.index import (
+                index_driver_init as mem_index_driver_init,
+            )
+            from datacube.index.postgis.index import (
+                index_driver_init as pgis_index_driver_init,
+            )
+            from datacube.index.postgres.index import (
+                index_driver_init as pg_index_driver_init,
+            )
             self._drivers = dict(postgres=pg_index_driver_init(),
                                  postgis=pgis_index_driver_init(),
                                  memory=mem_index_driver_init())

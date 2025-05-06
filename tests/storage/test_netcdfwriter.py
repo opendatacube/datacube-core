@@ -2,25 +2,32 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import netCDF4
-import numpy
-import xarray as xr
-import pytest
-from hypothesis import given
-from hypothesis.strategies import text
 import string
 from uuid import uuid4
 
-from datacube.drivers.netcdf._write import _get_units
-from datacube.drivers.netcdf.writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
-    create_grid_mapping_variable, flag_mask_meanings, Variable
-from datacube.drivers.netcdf import write_dataset_to_netcdf
-from datacube.drivers.netcdf.writer import DEFAULT_GRID_MAPPING
-from datacube.utils import DatacubeException, read_strings_from_netcdf
+import netCDF4
+import numpy
+import pytest
+import xarray as xr
+from hypothesis import given
+from hypothesis.strategies import text
 from odc.geo import CRS
 from odc.geo.geobox import Coordinate
-from datacube.testutils import mk_sample_xr_dataset
 
+from datacube.drivers.netcdf import write_dataset_to_netcdf
+from datacube.drivers.netcdf._write import _get_units
+from datacube.drivers.netcdf.writer import (
+    DEFAULT_GRID_MAPPING,
+    Variable,
+    create_coordinate,
+    create_grid_mapping_variable,
+    create_netcdf,
+    create_variable,
+    flag_mask_meanings,
+    netcdfy_data,
+)
+from datacube.testutils import mk_sample_xr_dataset
+from datacube.utils import DatacubeException, read_strings_from_netcdf
 
 crs_var = DEFAULT_GRID_MAPPING
 

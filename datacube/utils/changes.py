@@ -5,12 +5,12 @@
 """
 Validation of document/dictionary changes.
 """
-import numpy
-
-from itertools import zip_longest
-from typing import TypeAlias, cast, Any
-from typing_extensions import override
 from collections.abc import Callable, Mapping, Sequence
+from itertools import zip_longest
+from typing import Any, TypeAlias, cast
+
+import numpy
+from typing_extensions import override
 
 # Type that can be checked for changes.
 # (MyPy approximation without recursive references)

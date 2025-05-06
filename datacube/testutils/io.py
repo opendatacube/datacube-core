@@ -2,24 +2,25 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
+
 import numpy as np
 import toolz
 import xarray
-from pathlib import Path
-from typing import Any
+from odc.geo import wh_
+from odc.geo.geobox import GeoBox, zoom_to
+from odc.geo.warp import resampling_s2rio
+from odc.geo.xr import xr_coords
 from typing_extensions import override
 
-from . import suppress_deprecations
+from ..index.eo3 import EO3Grid, is_doc_eo3
 from ..model import Dataset
-from ..storage import reproject_and_fuse, BandInfo
-from ..storage._rio import RasterioDataSource, RasterDatasetDataSource
+from ..storage import BandInfo, reproject_and_fuse
 from ..storage._read import rdr_geobox
-from ..index.eo3 import is_doc_eo3, EO3Grid
-from types import SimpleNamespace
-from odc.geo.warp import resampling_s2rio
-from odc.geo.geobox import GeoBox, zoom_to
-from odc.geo import wh_
-from odc.geo.xr import xr_coords
+from ..storage._rio import RasterDatasetDataSource, RasterioDataSource
+from . import suppress_deprecations
 
 
 class RasterFileDataSource(RasterioDataSource):
@@ -199,9 +200,10 @@ def write_gtiff(fname: Path,
     """
     # pylint: disable=too-many-locals
 
-    from affine import Affine
-    import rasterio
     from pathlib import Path
+
+    import rasterio
+    from affine import Affine
 
     if pix.ndim == 2:
         h, w = pix.shape

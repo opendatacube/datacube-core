@@ -71,11 +71,30 @@ def formula_parser() -> lark.Lark:
 
 @lark.v_args(inline=True)
 class FormulaEvaluator(lark.Transformer):
-    from operator import not_, or_, and_, xor              # type: ignore[misc]
-    from operator import eq, ne, le, ge, lt, gt            # type: ignore[misc]
-    from operator import add, sub, mul, truediv, floordiv  # type: ignore[misc]
-    from operator import neg, pos, inv                     # type: ignore[misc]
-    from operator import mod, pow, lshift, rshift          # type: ignore[misc]  # noqa: A004
+    from operator import (  # type: ignore[misc]
+        add,
+        and_,
+        eq,
+        floordiv,
+        ge,
+        gt,
+        inv,
+        le,
+        lshift,
+        lt,
+        mod,
+        mul,
+        ne,
+        neg,
+        not_,
+        or_,
+        pos,
+        pow,  # noqa: A004
+        rshift,
+        sub,
+        truediv,
+        xor,
+    )
 
     float_literal = float
     int_literal = int
@@ -84,7 +103,7 @@ class FormulaEvaluator(lark.Transformer):
 @lark.v_args(inline=True)
 class MaskEvaluator(lark.Transformer):
     # the result of an expression is nodata whenever any of its subexpressions is nodata
-    from operator import or_     # type: ignore[misc]
+    from operator import or_  # type: ignore[misc]
 
     # pylint: disable=invalid-name
     and_ = _xor = or_

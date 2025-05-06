@@ -20,22 +20,31 @@ from hypothesis import given
 from hypothesis.strategies import integers, text
 from pandas import to_datetime
 
-from datacube.utils import gen_password, write_user_secret_file, slurp
 from datacube.model.utils import xr_apply
+from datacube.testutils import mk_sample_product, suppress_deprecations
+from datacube.utils import gen_password, slurp, write_user_secret_file
 from datacube.utils.dates import date_sequence
+from datacube.utils.io import check_write_path
 from datacube.utils.math import (
-    num2numpy,
-    valid_mask,
     invalid_mask,
+    num2numpy,
     unsqueeze_data_array,
     unsqueeze_dataset,
+    valid_mask,
 )
 from datacube.utils.py import sorted_items
-from datacube.utils.uris import (uri_to_local_path, mk_part_uri, get_part_from_uri, as_url, is_url,
-                                 pick_uri, uri_resolve, is_vsipath,
-                                 normalise_path, default_base_dir)
-from datacube.utils.io import check_write_path
-from datacube.testutils import mk_sample_product, suppress_deprecations
+from datacube.utils.uris import (
+    as_url,
+    default_base_dir,
+    get_part_from_uri,
+    is_url,
+    is_vsipath,
+    mk_part_uri,
+    normalise_path,
+    pick_uri,
+    uri_resolve,
+    uri_to_local_path,
+)
 
 
 def test_stats_dates() -> None:
@@ -182,7 +191,7 @@ def test_testutils_mk_sample() -> None:
 
 
 def test_testutils_write_files() -> None:
-    from datacube.testutils import write_files, assert_file_structure
+    from datacube.testutils import assert_file_structure, write_files
 
     files = {'a.txt': 'string',
              'aa.txt': ('line1\n', 'line2\n')}
@@ -287,8 +296,9 @@ def test_default_base_dir(monkeypatch) -> None:
 
 
 def test_time_info() -> None:
-    from datacube.model.utils import time_info
     from datetime import datetime
+
+    from datacube.model.utils import time_info
 
     date = '2019-03-03T00:00:00'
     ee = time_info(datetime(2019, 3, 3))
@@ -340,7 +350,7 @@ def test_testutils_testimage() -> None:
 
 def test_testutils_gtif(tmpdir) -> None:
     from datacube.testutils import mk_test_image
-    from datacube.testutils.io import write_gtiff, rio_slurp
+    from datacube.testutils.io import rio_slurp, write_gtiff
 
     w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
 
@@ -412,9 +422,10 @@ def test_testutils_gtif(tmpdir) -> None:
 
 
 def test_testutils_geobox() -> None:
-    from datacube.testutils.io import dc_crs_from_rio, rio_geobox
-    from rasterio.crs import CRS
     from affine import Affine
+    from rasterio.crs import CRS
+
+    from datacube.testutils.io import dc_crs_from_rio, rio_geobox
 
     assert rio_geobox({}) is None
 

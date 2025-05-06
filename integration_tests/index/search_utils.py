@@ -7,7 +7,7 @@ import io
 from collections.abc import Iterable
 
 import datacube.scripts.search_tool
-from datacube.model import Product, Dataset
+from datacube.model import Dataset, Product
 
 
 def _load_product_query(

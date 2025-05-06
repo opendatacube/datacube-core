@@ -6,19 +6,24 @@ import logging
 from collections.abc import Mapping
 from threading import Lock
 from typing import Any
-from typing_extensions import override
 
 from deprecat import deprecat
+from odc.geo import CRS
+from typing_extensions import override
+
 from datacube.cfg import ODCEnvironment
+from datacube.index.abstract import (
+    AbstractIndex,
+    AbstractIndexDriver,
+    UnhandledTransaction,
+)
 from datacube.index.memory._datasets import DatasetResource, LineageResource
 from datacube.index.memory._fields import get_dataset_fields
 from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.index.memory._products import ProductResource
 from datacube.index.memory._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction
-from datacube.model import Field, MetadataType
 from datacube.migration import ODC2DeprecationWarning
-from odc.geo import CRS
+from datacube.model import Field, MetadataType
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -2,12 +2,12 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 from urllib.parse import urlparse
 
 from datacube.model import Dataset
-from datacube.utils.uris import uri_resolve, pick_uri
+from datacube.utils.uris import pick_uri, uri_resolve
 
 
 def _get_band_and_layer(b: dict[str, Any]) -> tuple[int | None, str | None]:

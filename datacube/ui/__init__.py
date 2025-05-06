@@ -5,9 +5,10 @@
 """
 User Interface Utilities
 """
-from .expression import parse_expressions
-from .common import get_metadata_path
 from datacube.utils import read_documents
+
+from .common import get_metadata_path
+from .expression import parse_expressions
 
 __all__ = [
     'get_metadata_path',

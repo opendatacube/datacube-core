@@ -16,7 +16,6 @@ from xarray import DataArray, Dataset
 
 from datacube.utils.math import valid_mask
 
-
 FLAGS_ATTR_NAME = 'flags_definition'
 
 

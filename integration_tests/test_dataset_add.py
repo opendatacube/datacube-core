@@ -2,19 +2,24 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import logging
 import math
 
 import pytest
 import toolz
 import yaml
-import logging
 
 from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
 from datacube.model import MetadataType
-from datacube.testutils import gen_dataset_test_dag, load_dataset_definition, write_files, dataset_maker
-from datacube.utils import SimpleDocNav
 from datacube.scripts.dataset import _resolve_uri
+from datacube.testutils import (
+    dataset_maker,
+    gen_dataset_test_dag,
+    load_dataset_definition,
+    write_files,
+)
+from datacube.utils import SimpleDocNav
 
 logger = logging.getLogger(__name__)
 

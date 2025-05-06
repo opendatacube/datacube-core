@@ -3,10 +3,12 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import Callable
-from .driver_cache import load_drivers
-from .datasource import DataSource
-from ._tools import singleton_setup
+
 from datacube.storage._base import BandInfo
+
+from ._tools import singleton_setup
+from .datasource import DataSource
+from .driver_cache import load_drivers
 
 DatasourceFactory = Callable[[BandInfo], DataSource]  # pylint: disable=invalid-name
 

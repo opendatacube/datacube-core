@@ -4,12 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Mapping
 from time import monotonic
-from collections.abc import Mapping, Iterable
-from typing_extensions import override
 from uuid import UUID
 
-from datacube.model import LineageTree, LineageDirection, LineageRelation
+from typing_extensions import override
+
+from datacube.model import LineageDirection, LineageRelation, LineageTree
 from datacube.model.lineage import LineageRelations
 from datacube.utils import report_to_user
 

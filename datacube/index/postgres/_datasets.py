@@ -10,28 +10,33 @@ import json
 import logging
 import warnings
 from collections import namedtuple
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from time import monotonic
 from typing import Any
-from collections.abc import Iterator
-from typing_extensions import override
-from collections.abc import Iterable, Mapping, Sequence
 from uuid import UUID
-from deprecat import deprecat
 
+from deprecat import deprecat
+from typing_extensions import override
+
+from datacube.drivers.postgres._api import split_uri
 from datacube.drivers.postgres._fields import SimpleDocField
 from datacube.drivers.postgres._schema import DATASET
-from datacube.index.abstract import (AbstractDatasetResource, DSID,
-                                     DatasetTuple, BatchStatus, DatasetSpatialMixin)
+from datacube.index import fields
+from datacube.index.abstract import (
+    DSID,
+    AbstractDatasetResource,
+    BatchStatus,
+    DatasetSpatialMixin,
+    DatasetTuple,
+)
 from datacube.index.postgres._transaction import IndexResourceAddIn
+from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, Product
 from datacube.model._base import QueryField
-from datacube.model.fields import Field, Expression
+from datacube.model.fields import Expression, Field
 from datacube.model.utils import flatten_datasets
-from datacube.utils import jsonify_document, _readable_offset, changes
-from datacube.utils.changes import get_doc_changes, Offset
-from datacube.index import fields
-from datacube.drivers.postgres._api import split_uri
-from datacube.migration import ODC2DeprecationWarning
+from datacube.utils import _readable_offset, changes, jsonify_document
+from datacube.utils.changes import Offset, get_doc_changes
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import Sequence
 from typing import Any
+
 from datacube.utils.documents import InvalidDocException
 
 required_sys_field_values = [

@@ -5,12 +5,18 @@
 """
 Common methods for UI code.
 """
-from pathlib import Path
 from collections.abc import Iterator
+from pathlib import Path
 
 from toolz.functoolz import identity
 
-from datacube.utils import read_documents, InvalidDocException, SimpleDocNav, is_supported_document_type, is_url
+from datacube.utils import (
+    InvalidDocException,
+    SimpleDocNav,
+    is_supported_document_type,
+    is_url,
+    read_documents,
+)
 
 
 def get_metadata_path(possible_path: str | Path) -> str:

@@ -5,35 +5,34 @@
 """
 Useful methods for tests (particularly: reading/writing and checking files)
 """
-import typing
-
 import atexit
+import contextlib
+import json
 import math
 import os
+import pathlib
 import shutil
 import tempfile
-import json
+import typing
 import uuid
-import numpy as np
-from numpy.typing import NDArray
-import xarray as xr
 import warnings
-import contextlib
+from collections.abc import Mapping, Sequence
 from datetime import datetime
-from collections.abc import Sequence, Mapping
 from typing import Any
-import pathlib
 
+import numpy as np
+import xarray as xr
 from affine import Affine
-from datacube import Datacube
-from datacube.model import Measurement
-from datacube.utils.dates import mk_time_coord
-from datacube.utils.documents import parse_yaml
-from datacube.model import Dataset, Product, MetadataType
-from datacube.ui.common import get_metadata_path
-from datacube.utils import read_documents, SimpleDocNav
+from numpy.typing import NDArray
 from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox
+
+from datacube import Datacube
+from datacube.model import Dataset, Measurement, MetadataType, Product
+from datacube.ui.common import get_metadata_path
+from datacube.utils import SimpleDocNav, read_documents
+from datacube.utils.dates import mk_time_coord
+from datacube.utils.documents import parse_yaml
 
 _DEFAULT = object()
 
@@ -425,8 +424,9 @@ def gen_tiff_dataset(bands: list[BandObject],
 
     :returns:  (Dataset, GeoBox)
     """
-    from .io import write_gtiff
     from pathlib import Path
+
+    from .io import write_gtiff
 
     if base_folder_of_record is None:
         base_folder_of_record = base_folder

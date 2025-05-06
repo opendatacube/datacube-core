@@ -8,19 +8,22 @@ Core SQL schema settings.
 
 import logging
 
-from datacube.drivers.postgres.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
-                                           SCHEMA_NAME, TYPES_INIT_SQL,
-                                           UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
-                                           UPDATE_COLUMN_INDEX_SQL_TEMPLATE,
-                                           ADDED_COLUMN_MIGRATE_SQL_TEMPLATE,
-                                           ADDED_COLUMN_INDEX_SQL_TEMPLATE,
-                                           UPDATE_TIMESTAMP_SQL,
-                                           escape_pg_identifier,
-                                           pg_column_exists)
 from sqlalchemy import MetaData, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema, DropSchema
 
+from datacube.drivers.postgres.sql import (
+    ADDED_COLUMN_INDEX_SQL_TEMPLATE,
+    ADDED_COLUMN_MIGRATE_SQL_TEMPLATE,
+    INSTALL_TRIGGER_SQL_TEMPLATE,
+    SCHEMA_NAME,
+    TYPES_INIT_SQL,
+    UPDATE_COLUMN_INDEX_SQL_TEMPLATE,
+    UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
+    UPDATE_TIMESTAMP_SQL,
+    escape_pg_identifier,
+    pg_column_exists,
+)
 
 USER_ROLES = ('agdc_user', 'agdc_ingest', 'agdc_manage', 'agdc_admin')
 

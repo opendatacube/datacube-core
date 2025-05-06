@@ -7,9 +7,9 @@ import datetime
 import logging
 import sys
 from collections import OrderedDict
-from textwrap import dedent
-from typing import cast, Any
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
+from textwrap import dedent
+from typing import Any, cast
 from uuid import UUID
 
 import click
@@ -17,15 +17,15 @@ import yaml
 import yaml.resolver
 from click import echo
 
+from datacube.index import Index
+from datacube.index.eo3 import prep_eo3
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.hl import Doc2Dataset, check_dataset_consistent
-from datacube.index.eo3 import prep_eo3
-from datacube.index import Index
 from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli, print_help_msg
 from datacube.ui.common import ui_path_doc_stream
-from datacube.utils import changes, SimpleDocNav
+from datacube.utils import SimpleDocNav, changes
 from datacube.utils.serialise import SafeDatacubeDumper
 from datacube.utils.uris import uri_resolve
 

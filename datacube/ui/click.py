@@ -5,24 +5,22 @@
 """
 Common functions for click-based cli scripts.
 """
+import copy
 import functools
 import logging
 import os
-import copy
 import sys
 from textwrap import dedent
-from typing_extensions import override
 
 import click
+from sqlalchemy.exc import OperationalError, ProgrammingError
+from typing_extensions import override
 
 from datacube import __version__
 from datacube.api.core import Datacube
-from datacube.cfg import ODCConfig, ODCEnvironment, ConfigException
-
+from datacube.cfg import ConfigException, ODCConfig, ODCEnvironment
 from datacube.index import index_connect
-
 from datacube.ui.expression import parse_expressions
-from sqlalchemy.exc import OperationalError, ProgrammingError
 
 _LOG_FORMAT_STRING = '%(asctime)s %(process)d %(name)s %(levelname)s %(message)s'
 CLICK_SETTINGS: dict[str, list[str]] = dict(help_option_names=['-h', '--help'])

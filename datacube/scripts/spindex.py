@@ -7,9 +7,9 @@ import sys
 from collections.abc import Sequence
 
 import click
-from pyproj.exceptions import CRSError
-from click import echo, confirm
+from click import confirm, echo
 from odc.geo import CRS
+from pyproj.exceptions import CRSError
 
 from datacube.index import Index
 from datacube.ui import click as ui

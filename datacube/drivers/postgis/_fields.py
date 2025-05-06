@@ -6,30 +6,26 @@
 Build and index fields within documents.
 """
 import math
-
 from collections import namedtuple
-from datetime import timezone
-from datetime import datetime, date
+from collections.abc import Callable
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any, TypeAlias
-from typing_extensions import override
-from collections.abc import Callable
 
-from sqlalchemy.types import TIMESTAMP
-from sqlalchemy import cast, func, and_
+from sqlalchemy import and_, cast, func
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE, Range as PgRange
-from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.sql import ColumnElement, FromClause, ColumnExpressionArgument
+from sqlalchemy.dialects.postgresql import INTERVAL, NUMRANGE, TSTZRANGE
+from sqlalchemy.dialects.postgresql import Range as PgRange
 from sqlalchemy.orm import aliased
+from sqlalchemy.sql import ColumnElement, ColumnExpressionArgument, FromClause
+from sqlalchemy.types import TIMESTAMP
+from typing_extensions import override
 
 from datacube import utils
-from datacube.model.fields import Expression, Field
-from datacube.model import Range
-from datacube.utils import get_doc_offset
-
 from datacube.drivers.postgis._schema import Dataset, search_field_index_map
-from datacube.utils import cached_property
+from datacube.model import Range
+from datacube.model.fields import Expression, Field
+from datacube.utils import cached_property, get_doc_offset
 from datacube.utils.dates import tz_as_utc
 
 DatasetJoinArgs = tuple[FromClause] | tuple[FromClause, ColumnExpressionArgument]

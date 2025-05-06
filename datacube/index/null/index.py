@@ -7,17 +7,23 @@ from collections.abc import Mapping
 from typing import Any
 
 from deprecat import deprecat
+from odc.geo import CRS
+from typing_extensions import override
+
 from datacube.cfg import ODCEnvironment
+from datacube.index.abstract import (
+    AbstractIndex,
+    AbstractIndexDriver,
+    NoLineageResource,
+    UnhandledTransaction,
+)
 from datacube.index.null._datasets import DatasetResource
 from datacube.index.null._metadata_types import MetadataTypeResource
 from datacube.index.null._products import ProductResource
 from datacube.index.null._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction, NoLineageResource
+from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Field, MetadataType
 from datacube.model.fields import get_dataset_fields
-from datacube.migration import ODC2DeprecationWarning
-from odc.geo import CRS
-from typing_extensions import override
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

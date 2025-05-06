@@ -3,10 +3,11 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import pytest
-from datacube.testutils.threads import FakeThreadPoolExecutor
-from datacube.testutils import mk_sample_xr_dataset, mk_sample_dataset
-from datacube.testutils.io import native_geobox
 from odc.geo import xy_
+
+from datacube.testutils import mk_sample_dataset, mk_sample_xr_dataset
+from datacube.testutils.io import native_geobox
+from datacube.testutils.threads import FakeThreadPoolExecutor
 
 
 def test_fakethreadpool() -> None:
@@ -60,8 +61,8 @@ def test_mk_sample_xr() -> None:
 
 
 def test_native_geobox_ingested() -> None:
-    from datacube.testutils.io import native_geobox
     from datacube.testutils.geom import AlbersGS
+    from datacube.testutils.io import native_geobox
 
     gbox = AlbersGS.tile_geobox((15, -40))
     ds = mk_sample_dataset([dict(name='a')],

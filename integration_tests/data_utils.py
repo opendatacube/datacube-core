@@ -17,8 +17,15 @@ from pathlib import Path
 import numpy as np
 import rasterio
 import yaml
-from hypothesis.strategies import sampled_from, datetimes, composite, floats, lists, text, uuids
-
+from hypothesis.strategies import (
+    composite,
+    datetimes,
+    floats,
+    lists,
+    sampled_from,
+    text,
+    uuids,
+)
 from odc.geo import CRS
 from odc.geo.geom import point
 

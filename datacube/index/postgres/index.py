@@ -3,24 +3,29 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from contextlib import contextmanager
 from collections.abc import Iterable, Iterator
-from typing_extensions import override
+from contextlib import contextmanager
 
 from deprecat import deprecat
-from datacube.cfg.opt import ODCOptionHandler, config_options_for_psql_driver
+from typing_extensions import override
+
 from datacube.cfg.api import ODCEnvironment
+from datacube.cfg.opt import ODCOptionHandler, config_options_for_psql_driver
 from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
-from datacube.index.postgres._transaction import PostgresTransaction
+from datacube.index.abstract import (
+    AbstractIndex,
+    AbstractIndexDriver,
+    AbstractTransaction,
+    default_metadata_type_docs,
+)
 from datacube.index.postgres._datasets import DatasetResource
 from datacube.index.postgres._lineage import LineageResource
 from datacube.index.postgres._metadata_types import MetadataTypeResource
 from datacube.index.postgres._products import ProductResource
+from datacube.index.postgres._transaction import PostgresTransaction
 from datacube.index.postgres._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, AbstractTransaction, \
-    default_metadata_type_docs
-from datacube.model import MetadataType
 from datacube.migration import ODC2DeprecationWarning
+from datacube.model import MetadataType
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

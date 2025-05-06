@@ -14,11 +14,12 @@ This extension is reliant on an `xarray` object having a `.crs` property of type
 
 """
 import warnings
+
 import xarray
 from odc.geo import resxy_
+from odc.geo._xr_interop import _xarray_geobox as _xr_geobox
 from odc.geo.math import affine_from_axis
 from odc.geo.xr import spatial_dims
-from odc.geo._xr_interop import _xarray_geobox as _xr_geobox
 
 
 def _xarray_affine_impl(obj):

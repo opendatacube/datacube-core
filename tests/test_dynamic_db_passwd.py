@@ -3,11 +3,13 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import pytest
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.engine.url import URL
+from sqlalchemy.exc import OperationalError
 
-from datacube.drivers.postgres._connections import PostgresDb, handle_dynamic_token_authentication
-
+from datacube.drivers.postgres._connections import (
+    PostgresDb,
+    handle_dynamic_token_authentication,
+)
 
 counter = [0]
 last_base = [None]

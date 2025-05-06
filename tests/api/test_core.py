@@ -2,20 +2,20 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from unittest.mock import MagicMock
-
-import xarray as xr
-import numpy as np
 import datetime
-from uuid import UUID
 from types import SimpleNamespace
-import pytest
+from unittest.mock import MagicMock
+from uuid import UUID
 
-from datacube.api.query import GroupBy
-from datacube.api.core import _calculate_chunk_sizes, output_geobox
+import numpy as np
+import pytest
+import xarray as xr
+
 from datacube import Datacube
-from datacube.testutils.geom import AlbersGS
+from datacube.api.core import _calculate_chunk_sizes, output_geobox
+from datacube.api.query import GroupBy
 from datacube.testutils import mk_sample_dataset, suppress_deprecations
+from datacube.testutils.geom import AlbersGS
 
 
 def test_grouping_datasets() -> None:
@@ -128,7 +128,8 @@ def test_output_geobox() -> None:
     from odc.geo.crs import CRS as ODCGeoCRS  # noqa: N811
     from odc.geo.geobox import GeoBox as ODCGeoGeoBox
     with suppress_deprecations():
-        from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox, CRS as LegacyCRS  # noqa: N811
+        from datacube.utils.geometry import CRS as LegacyCRS  # noqa: N811
+        from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox
     from odc.geo.xr import xr_zeros
 
     odc_gbox = ODCGeoGeoBox.from_bbox(

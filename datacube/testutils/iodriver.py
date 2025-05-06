@@ -5,13 +5,14 @@
 """ Reader driver construction for tests
 """
 from pathlib import Path
-from datacube.testutils import mk_sample_dataset
+
+from datacube.drivers._types import ReaderDriver
 from datacube.drivers.rio._reader import (
     RDEntry,
 )
 from datacube.storage import BandInfo
+from datacube.testutils import mk_sample_dataset
 from datacube.testutils.threads import FakeThreadPoolExecutor
-from datacube.drivers._types import ReaderDriver
 
 NetCDF = 'NetCDF'    # pylint: disable=invalid-name
 GeoTIFF = 'GeoTIFF'  # pylint: disable=invalid-name

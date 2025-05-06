@@ -8,22 +8,21 @@ Datacube configuration
 """
 import os
 import warnings
-
 from os import PathLike
 from threading import Lock
 from typing import Any, TypeAlias, Union, cast
 
+from ..migration import ODC2DeprecationWarning
 from .cfg import find_config, parse_text
 from .exceptions import ConfigException
 from .opt import (
-    ODCOptionHandler,
     AliasOptionHandler,
-    IndexDriverOptionHandler,
     BoolOptionHandler,
+    IndexDriverOptionHandler,
     IntOptionHandler,
+    ODCOptionHandler,
 )
 from .utils import ConfigDict, check_valid_env_name
-from ..migration import ODC2DeprecationWarning
 
 # TypeAliases for more concise type hints
 # (Unions required as typehint | operator doesn't work with string forward-references).

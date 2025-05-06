@@ -2,12 +2,13 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Optional, cast
 from uuid import UUID
-from typing import Optional, Any, cast
+
 from typing_extensions import override
-from collections.abc import Mapping, Sequence, Iterable
 
 
 class LineageDirection(Enum):

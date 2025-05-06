@@ -2,15 +2,16 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import warnings
+from collections.abc import Callable
+
 import numpy as np
 from affine import Affine
-from collections.abc import Callable
-import warnings
-
 from odc.geo import CRS
 from odc.geo.geobox import GeoBox
-from odc.geo.math import apply_affine
 from odc.geo.gridspec import GridSpec
+from odc.geo.math import apply_affine
+
 # from datacube.model import GridSpec
 
 # pylint: disable=invalid-name

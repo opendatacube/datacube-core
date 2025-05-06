@@ -77,7 +77,7 @@ goo:
 
 
 def test_parse_text(simple_valid_ini, simple_valid_yaml) -> None:
-    from datacube.cfg import ConfigException, parse_text, CfgFormat
+    from datacube.cfg import CfgFormat, ConfigException, parse_text
     ini = parse_text(simple_valid_ini)
     yaml = parse_text(simple_valid_yaml)
     assert ini["foo"]["bar"] == yaml["foo"]["bar"]
@@ -180,7 +180,7 @@ def simple_dict():
 
 
 def test_invalid_env() -> None:
-    from datacube.cfg import ODCConfig, ConfigException
+    from datacube.cfg import ConfigException, ODCConfig
     with pytest.raises(ConfigException):
         ODCConfig(text="""
 default:
@@ -212,7 +212,7 @@ def test_oldstyle_cfg() -> None:
 
 
 def test_invalid_option() -> None:
-    from datacube.cfg import ODCOptionHandler, ConfigException
+    from datacube.cfg import ConfigException, ODCOptionHandler
     mockenv = MagicMock()
     with pytest.raises(ConfigException):
         ODCOptionHandler("NO_CAPS", mockenv)
@@ -248,7 +248,7 @@ def assert_simple_aliases(cfg) -> None:
 
 
 def test_aliases(simple_config) -> None:
-    from datacube.cfg import ODCConfig, ConfigException
+    from datacube.cfg import ConfigException, ODCConfig
     cfg = ODCConfig(text=simple_config)
     assert_simple_aliases(cfg)
     with pytest.raises(ConfigException) as e:
@@ -336,7 +336,7 @@ def test_ini_from_path(path_to_ini_config) -> None:
 
 
 def test_ini_from_paths(path_to_ini_config, path_to_yaml_config, path_to_different_config, monkeypatch) -> None:
-    from datacube.cfg import ODCConfig, ConfigException
+    from datacube.cfg import ConfigException, ODCConfig
     cfg = ODCConfig(paths=[
         "/non/existent/path.yml",
         path_to_yaml_config,
@@ -410,7 +410,7 @@ def test_envvar_overrides(path_to_yaml_config, monkeypatch) -> None:
 
 
 def test_intopt_validation() -> None:
-    from datacube.cfg import ODCConfig, ConfigException
+    from datacube.cfg import ConfigException, ODCConfig
     cfg = ODCConfig(text="""
 env1:
     db_hostname: localhost
@@ -442,7 +442,7 @@ env1:
 
 
 def test_invalid_idx_driver() -> None:
-    from datacube.cfg import ODCConfig, ConfigException
+    from datacube.cfg import ConfigException, ODCConfig
     cfg = ODCConfig(raw_dict={
         "default": {"alias": "foo"},
         "foo": {
@@ -458,7 +458,7 @@ def test_invalid_idx_driver() -> None:
 
 
 def test_invalid_pg_url() -> None:
-    from datacube.cfg import ODCConfig, ConfigException
+    from datacube.cfg import ConfigException, ODCConfig
     cfg = ODCConfig(raw_dict={
         "default": {"alias": "foo"},
         "foo": {
@@ -511,7 +511,7 @@ def test_pgurl_from_config(simple_dict) -> None:
 
 
 def test_multiple_sourcetypes(simple_config, path_to_ini_config, simple_dict) -> None:
-    from datacube.cfg import ODCConfig, ConfigException
+    from datacube.cfg import ConfigException, ODCConfig
     with pytest.raises(ConfigException) as e:
         ODCConfig(paths=path_to_ini_config, raw_dict=simple_dict, text=simple_config)
     assert "Can only supply one of" in str(e.value)
@@ -527,7 +527,7 @@ def test_multiple_sourcetypes(simple_config, path_to_ini_config, simple_dict) ->
 
 
 def test_get_environment(simple_config) -> None:
-    from datacube.cfg import ODCConfig, ConfigException
+    from datacube.cfg import ConfigException, ODCConfig
     cfg = ODCConfig(text=simple_config)
     with pytest.raises(ConfigException) as e:
         ODCConfig.get_environment(config=cfg, raw_config=simple_config)

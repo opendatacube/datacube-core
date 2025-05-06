@@ -8,16 +8,16 @@ Serialise function used in YAML output
 
 import math
 from collections import OrderedDict
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
 import numpy
 import yaml
-
-from datacube.utils.documents import transform_object_tree
-from datacube.model._base import Range
 from odc.geo.crs import CRS
+
+from datacube.model._base import Range
+from datacube.utils.documents import transform_object_tree
 
 
 class SafeDatacubeDumper(yaml.SafeDumper):  # pylint: disable=too-many-ancestors

@@ -3,16 +3,16 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import datetime
-import pandas
-import numpy as np
 from types import SimpleNamespace
 
+import numpy as np
+import pandas
 import pytest
+from odc.geo import CRS
 
-from datacube.api.query import Query, query_group_by, solar_day, GroupBy, solar_offset
+from datacube.api.query import GroupBy, Query, query_group_by, solar_day, solar_offset
 from datacube.model import Range
 from datacube.utils import parse_time
-from odc.geo import CRS
 
 
 @pytest.fixture
@@ -219,8 +219,9 @@ def test_solar_day() -> None:
 
 
 def test_solar_offset() -> None:
-    from odc.geo.geom import point
     from datetime import timedelta
+
+    from odc.geo.geom import point
 
     def _hr(t):
         return t.days*24 + t.seconds/3600

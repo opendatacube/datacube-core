@@ -2,21 +2,22 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from datetime import datetime
+
 import numpy as np
 import pytest
-from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from dateutil.rrule import DAILY, MONTHLY, YEARLY
+
 from datacube.utils.dates import (
+    mk_time_coord,
+    normalise_dt,
     parse_duration,
     parse_interval,
     parse_time,
-    mk_time_coord,
-    normalise_dt,
     tz_aware,
-    tzutc
+    tzutc,
 )
-
-from dateutil.rrule import YEARLY, MONTHLY, DAILY
-from dateutil.relativedelta import relativedelta
 
 
 def test_parse() -> None:

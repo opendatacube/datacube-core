@@ -13,12 +13,11 @@ from datetime import datetime, tzinfo
 
 import dateutil
 import dateutil.parser
-from dateutil.relativedelta import relativedelta
-from dateutil.rrule import YEARLY, MONTHLY, DAILY, rrule
-from dateutil.tz import tzutc
 import numpy as np
 import xarray as xr
-
+from dateutil.relativedelta import relativedelta
+from dateutil.rrule import DAILY, MONTHLY, YEARLY, rrule
+from dateutil.tz import tzutc
 
 FREQS: dict[str, int] = {'y': YEARLY, 'm': MONTHLY, 'd': DAILY}
 DURATIONS = {'y': 'years', 'm': 'months', 'd': 'days'}

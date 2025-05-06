@@ -5,10 +5,10 @@
 import csv
 import json
 import logging
+import signal
 import sys
 
 import click
-import signal
 import pandas as pd
 import yaml
 import yaml.resolver
@@ -16,8 +16,8 @@ from click import echo, style
 
 from datacube.index import Index
 from datacube.ui import click as ui
-from datacube.ui.click import cli, print_help_msg, exit_on_empty_file
-from datacube.utils import read_documents, InvalidDocException
+from datacube.ui.click import cli, exit_on_empty_file, print_help_msg
+from datacube.utils import InvalidDocException, read_documents
 from datacube.utils.serialise import SafeDatacubeDumper
 
 _LOG: logging.Logger = logging.getLogger('datacube-product')

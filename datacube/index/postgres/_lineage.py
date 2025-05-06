@@ -2,8 +2,9 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from time import monotonic
 from collections.abc import Iterable
+from time import monotonic
+
 from typing_extensions import override
 
 from datacube.index.abstract import BatchStatus, NoLineageResource

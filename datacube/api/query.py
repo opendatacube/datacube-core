@@ -7,21 +7,22 @@ Storage Query and Access API module
 """
 
 
-import logging
-import datetime
 import collections
+import datetime
+import logging
 import math
 import warnings
-import pandas
 
-from pandas import to_datetime as pandas_to_datetime
-from typing_extensions import override
 import numpy as np
-from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
-from ..model import Range, Dataset, QueryField
-from ..utils.dates import normalise_dt, tz_aware
+import pandas
 from odc.geo import Geometry
 from odc.geo.geom import lonlat_bounds, mid_longitude
+from pandas import to_datetime as pandas_to_datetime
+from typing_extensions import override
+
+from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
+from ..model import Dataset, QueryField, Range
+from ..utils.dates import normalise_dt, tz_aware
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

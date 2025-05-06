@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pytest
 
-
 EXAMPLE_DATASET_TYPE_DOCS = map(str, Path(__file__).parent.parent.
                                 joinpath('docs', 'config_samples', 'dataset_types').glob('**/*.yaml'))
 

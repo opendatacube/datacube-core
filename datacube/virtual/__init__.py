@@ -2,20 +2,38 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Any, cast
-from collections.abc import Mapping
 import copy
-
-from .impl import VirtualProduct, Transformation, VirtualProductException
-from .impl import from_validated_recipe, virtual_product_kind
-from .transformations import MakeMask, ApplyMask, ToFloat, Rename, Select, Expressions
-from .transformations import XarrayReduction, year, month, week, day, earliest_time, fiscal_year
-from .catalog import Catalog
-from .utils import reject_keys
+from collections.abc import Mapping
+from typing import Any, cast
 
 from datacube.model import Measurement
 from datacube.utils import import_function
 from datacube.utils.documents import parse_yaml
+
+from .catalog import Catalog
+from .impl import (
+    Transformation,
+    VirtualProduct,
+    VirtualProductException,
+    from_validated_recipe,
+    virtual_product_kind,
+)
+from .transformations import (
+    ApplyMask,
+    Expressions,
+    MakeMask,
+    Rename,
+    Select,
+    ToFloat,
+    XarrayReduction,
+    day,
+    earliest_time,
+    fiscal_year,
+    month,
+    week,
+    year,
+)
+from .utils import reject_keys
 
 __all__ = ['Measurement', 'Transformation', 'construct']
 

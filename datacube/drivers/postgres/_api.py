@@ -16,41 +16,48 @@ Persistence API implementation for postgres.
 import datetime
 import logging
 import uuid  # noqa: F401
+from collections.abc import Iterable, Iterator
 from typing import Any
-from collections.abc import Iterator
-from typing_extensions import override
-from collections.abc import Iterable
 from typing import cast as type_cast
+
 from sqlalchemy import (
-    cast,
-    String,
     Label,
-    delete,
-    column,
-    values,
-    select,
-    text,
-    bindparam,
+    String,
     and_,
-    or_,
+    bindparam,
+    cast,
+    column,
+    delete,
+    distinct,
     func,
     literal,
-    distinct,
+    or_,
+    select,
+    text,
+    values,
 )
-from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.dialects.postgresql import JSONB, insert, UUID
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.dialects.postgresql import INTERVAL, JSONB, UUID, insert
 from sqlalchemy.engine import Row
+from sqlalchemy.exc import IntegrityError
+from typing_extensions import override
 
 from datacube.index.exceptions import MissingRecordError
-from datacube.index.fields import Field, Expression, OrExpression
+from datacube.index.fields import Expression, Field, OrExpression
 from datacube.model import Range
 from datacube.utils.uris import split_uri
+
 from . import _core
 from . import _dynamic as dynamic
-from ._fields import parse_fields, PgField, PgExpression, DateRangeDocField  # noqa: F401
-from ._fields import NativeField, DateDocField, SimpleDocField
-from ._schema import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, PRODUCT
+from ._fields import (  # noqa: F401
+    DateDocField,
+    DateRangeDocField,
+    NativeField,
+    PgExpression,
+    PgField,
+    SimpleDocField,
+    parse_fields,
+)
+from ._schema import DATASET, DATASET_LOCATION, DATASET_SOURCE, METADATA_TYPE, PRODUCT
 from .sql import escape_pg_identifier
 
 PGCODE_FOREIGN_KEY_VIOLATION = '23503'

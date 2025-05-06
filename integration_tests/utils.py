@@ -8,6 +8,7 @@ import shutil
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
+
 import numpy as np
 import rasterio
 from click.testing import CliRunner

@@ -13,13 +13,13 @@ import os
 
 import pytest
 from affine import Affine
-
-from datacube import Datacube
 from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox
-from datacube.utils.documents import read_documents
-from datacube.model import Measurement, MetadataType, Product, Dataset
+
+from datacube import Datacube
 from datacube.index.eo3 import prep_eo3
+from datacube.model import Dataset, Measurement, MetadataType, Product
+from datacube.utils.documents import read_documents
 
 AWS_ENV_VARS = (
     "AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN"

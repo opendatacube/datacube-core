@@ -9,9 +9,8 @@ Test creation of added/updated columns during
 import pytest
 from sqlalchemy import text
 
-from datacube.drivers.postgres.sql import SCHEMA_NAME
 from datacube.drivers.postgres import _schema
-
+from datacube.drivers.postgres.sql import SCHEMA_NAME
 
 COLUMN_PRESENCE = """
 select exists (select 1 from information_schema.columns

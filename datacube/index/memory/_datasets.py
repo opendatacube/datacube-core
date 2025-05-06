@@ -6,31 +6,35 @@ import datetime
 import logging
 import re
 import warnings
-from itertools import chain
-
-from deprecat import deprecat
 from collections import namedtuple
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from itertools import chain
 from time import monotonic
 from typing import Any, cast
-from typing_extensions import override
-from collections.abc import Callable, Iterable, Mapping, Sequence
 from uuid import UUID
 
-from datacube.migration import ODC2DeprecationWarning
+from deprecat import deprecat
+from typing_extensions import override
+
 from datacube.index import fields
-from datacube.index.abstract import (AbstractDatasetResource, DSID, BatchStatus,
-                                     NoLineageResource,
-                                     dsid_to_uuid, DatasetSpatialMixin,
-                                     AbstractIndex)
-from datacube.model._base import QueryField
+from datacube.index.abstract import (
+    DSID,
+    AbstractDatasetResource,
+    AbstractIndex,
+    BatchStatus,
+    DatasetSpatialMixin,
+    NoLineageResource,
+    dsid_to_uuid,
+)
 from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
+from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, LineageRelation, Product, Range, ranges_overlap
-from datacube.utils import jsonify_document, _readable_offset
-from datacube.utils import changes
+from datacube.model._base import QueryField
+from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
 from datacube.utils.dates import tz_aware
-from datacube.utils.documents import metadata_subset, JsonDict
+from datacube.utils.documents import JsonDict, metadata_subset
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

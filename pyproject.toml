@@ -145,7 +145,6 @@ filterwarnings = [
 
 [tool.ruff]
 extend-exclude = ["datacube/drivers/postgis/alembic/versions"]
-src = ["datacube", "docs", "examples", "tests", "integration_tests"]
 
 [tool.ruff.lint]
 select = [
@@ -153,6 +152,7 @@ select = [
     "B",  # flake8-bugbear
     "E",  # pycodestyle errors
     "EXE", # flake8-executable
+    "I",  # isort
     "N",  # pep8-naming
     "RUF", # Ruff-specific rules
     "UP", # pyupgrade
@@ -178,6 +178,8 @@ extend-ignore-names = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+# Generated file, exclude from linting.
+"datacube/_version.py" = ["UP"]
 # SQLAlchemy has overloaded ==, so use that (or is_) to compare with None.
 "datacube/drivers/postgis/_api.py" = ["E711"]
 "datacube/drivers/postgis/_schema.py" = ["E711"]

@@ -3,16 +3,26 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from copy import deepcopy
-from typing import cast, Any
-from typing_extensions import override
 from collections.abc import Iterable, Mapping
+from copy import deepcopy
+from typing import Any, cast
 
-from datacube.index.abstract import AbstractMetadataTypeResource, default_metadata_type_docs
-from datacube.model import MetadataType
+from typing_extensions import override
+
+from datacube.index.abstract import (
+    AbstractMetadataTypeResource,
+    default_metadata_type_docs,
+)
 from datacube.index.memory._fields import get_dataset_fields
-from datacube.utils import jsonify_document, changes, _readable_offset
-from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes
+from datacube.model import MetadataType
+from datacube.utils import _readable_offset, changes, jsonify_document
+from datacube.utils.changes import (
+    AllowPolicy,
+    Change,
+    Offset,
+    check_doc_unchanged,
+    get_doc_changes,
+)
 from datacube.utils.documents import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)

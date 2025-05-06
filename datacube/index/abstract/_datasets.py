@@ -5,22 +5,22 @@
 import datetime
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import timedelta
 from time import monotonic
 from typing import Any
-from collections.abc import Iterable, Mapping, Sequence
 from uuid import UUID
 
 from deprecat import deprecat
 from odc.geo import CRS, Geometry
 
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Dataset, Product, Field, Range, QueryDict, QueryField
+from datacube.model import Dataset, Field, Product, QueryDict, QueryField, Range
 from datacube.utils import report_to_user
-from datacube.utils.changes import Offset, AllowPolicy, Change, DocumentMismatchError
+from datacube.utils.changes import AllowPolicy, Change, DocumentMismatchError, Offset
 from datacube.utils.documents import JsonDict
 
-from ._types import DSID, DatasetTuple, BatchStatus
+from ._types import DSID, BatchStatus, DatasetTuple
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
