@@ -3,25 +3,31 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
-from collections.abc import Generator, Hashable
+
 import logging
 import typing
-from typing_extensions import override
-from odc.geo.gridspec import GridSpec
-import xarray as xr
 from collections import OrderedDict
-import pandas as pd
+from collections.abc import Generator, Hashable
 
-from odc.geo.geom import intersects
-from .query import Query, query_group_by
+import numpy as np
+import pandas as pd
+import xarray as xr
+from odc.geo.geom import Geometry, intersects
+from odc.geo.gridspec import GridSpec
+from typing_extensions import override
+
+from datacube.model import Dataset, QueryField
+
 from .core import Datacube
+from .query import GroupBy, Query, query_group_by
 
 _LOG = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from odc.geo.geobox import GeoBox
-    from datacube.model import Product
+
     from datacube.index import Index
+    from datacube.model import Product
 
 
 def _fast_slice(array: xr.DataArray, indexers):
@@ -62,7 +68,7 @@ class Tile:
     the entire `Tile` at once.
     """
 
-    def __init__(self, sources: xr.DataArray, geobox):
+    def __init__(self, sources: xr.DataArray, geobox: GeoBox):
         """Create a Tile representing a dataset that can be loaded.
 
         :param xr.DataArray sources: An array of non-spatial dimensions of the request, holding lists of
@@ -81,14 +87,12 @@ class Tile:
     @property
     def shape(self) -> tuple[int, ...]:
         """Lengths of each dimension, eg ``(285, 4000, 4000)``
-        :return: tuple(int)
         """
         return self.sources.shape + self.geobox.shape
 
     @property
     def product(self) -> Product:
         """
-        :rtype: datacube.model.DatasetType
         """
         return self.sources.values[0][0].product
 
@@ -171,7 +175,7 @@ class GridWorkflow:
         :param GridSpec grid_spec: The grid projection and resolution
         :param str product: The name of an existing product, if no grid_spec is supplied.
         """
-        self.index = index
+        self.index: Index = index
         if grid_spec is None:
             if product is None:
                 raise ValueError("Have to supply either grid_spec or product")
@@ -188,26 +192,29 @@ class GridWorkflow:
                 )
 
             grid_spec = product.grid_spec
-        self.grid_spec = grid_spec
+        self.grid_spec: GridSpec = grid_spec
 
         assert self.grid_spec is not None
 
     def cell_observations(
-        self, cell_index=None, geopolygon=None, tile_buffer=None, **indexers
-    ):
+        self,
+        cell_index: tuple[int, int]|None = None,
+        geopolygon: Geometry|None =None,
+        tile_buffer: tuple[float, float]|None = None,
+        **indexers: QueryField
+    ) -> dict[tuple[int, int], list[Dataset]]:
         """
         List datasets, grouped by cell.
 
-        :param datacube.utils.Geometry geopolygon:
+        :param geopolygon:
             Only return observations with data inside polygon.
-        :param (float,float) tile_buffer:
+        :param tile_buffer:
             buffer tiles by (y, x) in CRS units
-        :param (int,int) cell_index:
+        :param  cell_index:
             The cell index. E.g. (14, -40)
         :param indexers:
             Query to match the datasets, see :py:class:`datacube.api.query.Query`
         :return: Datsets grouped by cell index
-        :rtype: dict[(int,int), list[:py:class:`datacube.model.Dataset`]]
 
         .. seealso::
             :meth:`datacube.Datacube.find_datasets`
@@ -289,7 +296,7 @@ class GridWorkflow:
         return datasets, query
 
     @staticmethod
-    def group_into_cells(observations, group_by):
+    def group_into_cells(observations, group_by) -> dict[tuple[int, int], Tile]:
         """
         Group observations into a stack of source tiles.
 
@@ -297,7 +304,6 @@ class GridWorkflow:
         :param group_by: grouping method, as returned by :py:meth:`datacube.api.query.query_group_by`
         :type group_by: :py:class:`datacube.api.query.GroupBy`
         :return: tiles grouped by cell index
-        :rtype: dict[(int,int), :class:`.Tile`]
 
         .. seealso::
             :meth:`load`
@@ -311,7 +317,7 @@ class GridWorkflow:
         return cells
 
     @staticmethod
-    def tile_sources(observations, group_by):
+    def tile_sources(observations, group_by: GroupBy):
         """
         Split observations into tiles and group into source tiles
 
@@ -339,7 +345,7 @@ class GridWorkflow:
 
         return tiles
 
-    def list_cells(self, cell_index=None, **query):
+    def list_cells(self, cell_index: tuple[int, int]|None =None, **query) -> dict[tuple[int, int], Tile]:
         """
         List cells that match the query.
 
@@ -353,14 +359,13 @@ class GridWorkflow:
             gw.list_cells(product='ls5_nbar_albers',
                           time=('2001-1-1 00:00:00', '2001-3-31 23:59:59'))
 
-        :param (int,int) cell_index: The cell index. E.g. (14, -40)
+        :param cell_index: The cell index. E.g. (14, -40)
         :param query: see :py:class:`datacube.api.query.Query`
-        :rtype: dict[(int, int), :class:`.Tile`]
         """
         observations = self.cell_observations(cell_index, **query)
         return self.group_into_cells(observations, query_group_by(**query))
 
-    def list_tiles(self, cell_index=None, **query):
+    def list_tiles(self, cell_index: tuple[int, int]|None=None, **query) -> dict[tuple[int, int, np.datetime64], Tile]:
         """
         List tiles of data, sorted by cell.
         ::
@@ -370,9 +375,8 @@ class GridWorkflow:
 
         The values can be passed to :meth:`load`
 
-        :param (int,int) cell_index: The cell index (optional). E.g. (14, -40)
+        :param cell_index: The cell index (optional). E.g. (14, -40)
         :param query: see :py:class:`datacube.api.query.Query`
-        :rtype: dict[(int, int, numpy.datetime64), :class:`.Tile`]
 
         .. seealso:: :meth:`load`
         """

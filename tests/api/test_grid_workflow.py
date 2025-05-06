@@ -2,15 +2,17 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import pytest
-import numpy
-from datacube.api.grid_workflow import GridWorkflow
-from odc.geo import CRS, Resolution
-from odc.geo.gridspec import GridSpec
-from unittest.mock import MagicMock, patch
-from datacube.testutils import mk_sample_product
 import datetime
 import uuid
+from unittest.mock import MagicMock, patch
+
+import numpy
+import pytest
+from odc.geo import CRS, Resolution
+from odc.geo.gridspec import GridSpec
+
+from datacube.api.grid_workflow import GridWorkflow
+from datacube.testutils import mk_sample_product
 
 
 class PickleableMock(MagicMock):
@@ -30,7 +32,7 @@ def mk_fake_index(products, datasets):
     return fakeindex
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def fake_index():
     return mk_fake_index(
         products=dict(
@@ -256,16 +258,12 @@ def test_gridworkflow_with_time_depth():
     """
     crs = CRS("EPSG:4326")
 
-    # grid = 100  # spatial frequency in crs units
     pixel = 10  # square pixel linear dimension in crs units
-    # if cell(0,0) has lower left corner at grid origin,
-    # and cell indices increase toward upper right,
-    # then this will be cell(1,-2).
     gridspec = GridSpec(
         crs=crs, tile_shape=(10, 10), resolution=Resolution(pixel)
-    )  # e.g. product gridspec
+    )
 
-    def make_fake_datasets(num_datasets):
+    def make_fake_datasets(num_datasets: int):
         start_time = datetime.datetime(2001, 2, 15)
         delta = datetime.timedelta(days=16)
         for i in range(num_datasets):
