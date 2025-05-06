@@ -7,10 +7,11 @@ Common datatypes for DB drivers.
 """
 
 from datetime import date, datetime, time
+
 from dateutil.tz import tz
 from typing_extensions import override
 
-from datacube.model import Range, Not
+from datacube.model import Not, Range
 from datacube.model.fields import Expression, Field
 
 __all__ = [

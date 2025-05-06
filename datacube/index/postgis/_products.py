@@ -3,27 +3,26 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
+
 import datetime
 import logging
-
+from collections.abc import Iterable, Mapping, Sequence
 from time import monotonic
-from cachetools.func import lru_cache
+from typing import TYPE_CHECKING, cast
 
+from cachetools.func import lru_cache
 from odc.geo.crs import CRS
 from odc.geo.geom import Geometry
+from typing_extensions import override
+
 from datacube.drivers.postgis import PostGisDb
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource, BatchStatus
-from datacube.utils.documents import JsonDict
 from datacube.index.postgis._transaction import IndexResourceAddIn
-from datacube.model import Product, MetadataType, QueryDict
-from datacube.utils import jsonify_document, changes, _readable_offset
+from datacube.model import MetadataType, Product, QueryDict
+from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
-
-from typing import TYPE_CHECKING, cast
-from typing_extensions import override
-from collections.abc import Iterable, Mapping, Sequence
-
+from datacube.utils.documents import JsonDict
 
 if TYPE_CHECKING:
     from datacube.index.postgis.index import Index

@@ -3,4 +3,5 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from threading import RLock
+
 HDF5_LOCK = RLock()

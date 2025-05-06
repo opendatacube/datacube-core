@@ -2,15 +2,15 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import logging
 import datetime
+import logging
+from collections.abc import Iterable
+
+from odc.geo import CRS, Geometry
 from typing_extensions import override
 
 from datacube.index.abstract import AbstractProductResource
 from datacube.model import Product
-from odc.geo import CRS, Geometry
-
-from collections.abc import Iterable
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

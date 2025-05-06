@@ -5,15 +5,15 @@
 import datetime
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Iterator, Sequence
 from time import monotonic
-from typing import cast, TYPE_CHECKING
-from collections.abc import Iterable, Sequence, Iterator
+from typing import TYPE_CHECKING, cast
 
 from odc.geo import CRS, Geometry
 
-from datacube.model import MetadataType, Product, QueryField, QueryDict
-from datacube.utils import jsonify_document, InvalidDocException
-from datacube.utils.changes import DocumentMismatchError, check_doc_unchanged, Change
+from datacube.model import MetadataType, Product, QueryDict, QueryField
+from datacube.utils import InvalidDocException, jsonify_document
+from datacube.utils.changes import Change, DocumentMismatchError, check_doc_unchanged
 from datacube.utils.documents import JsonDict, JsonLike, UnknownMetadataType
 
 from ._types import BatchStatus

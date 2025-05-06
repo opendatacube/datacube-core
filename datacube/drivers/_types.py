@@ -4,18 +4,16 @@
 # SPDX-License-Identifier: Apache-2.0
 """ Defines abstract types for IO drivers.
 """
-from typing import (
-    Any,
-    TYPE_CHECKING
-)
-from collections.abc import Iterable
-
 from abc import ABCMeta, abstractmethod
+from collections.abc import Iterable
+from concurrent.futures import Future
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
 from affine import Affine
-from concurrent.futures import Future
-from datacube.storage import BandInfo
 from odc.geo.crs import CRS
+
+from datacube.storage import BandInfo
 
 # pylint: disable=invalid-name,unsubscriptable-object,pointless-statement
 

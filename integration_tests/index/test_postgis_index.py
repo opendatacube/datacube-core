@@ -3,11 +3,12 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import datetime
-import pytest
 
-from datacube.model import Range
-from datacube.index import Index
+import pytest
 from odc.geo import CRS
+
+from datacube.index import Index
+from datacube.model import Range
 
 
 @pytest.mark.parametrize('datacube_env_name', ('postgis',))
@@ -177,6 +178,7 @@ def spatial_index_crs_sanitise_helper() -> None:
 
 def test_spatial_index_crs_sanitise() -> None:
     import warnings
+
     from antimeridian import FixWindingWarning
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', FixWindingWarning)

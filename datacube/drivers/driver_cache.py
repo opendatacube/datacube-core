@@ -3,8 +3,8 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from typing import Any
 from collections.abc import Iterable
+from typing import Any
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -6,25 +6,38 @@
 Core classes used across modules.
 """
 from __future__ import annotations
+
 import logging
 import math
 from collections import OrderedDict
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
 from uuid import UUID
 
 from affine import Affine
-from typing import Any
 from typing_extensions import override
-from collections.abc import Mapping, Iterator, Iterable, Sequence
 
-from urllib.parse import urlparse
-from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
-    schema_validated, DocReader
-from .fields import Field, get_dataset_fields
-from ._base import Range, ranges_overlap, Not, QueryField, QueryDict  # noqa: F401
+from datacube.utils import (
+    DocReader,
+    cached_property,
+    parse_time,
+    schema_validated,
+    uri_to_local_path,
+    without_lineage_sources,
+)
+
+from ._base import Not, QueryDict, QueryField, Range, ranges_overlap  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
-from .lineage import LineageDirection, LineageTree, LineageRelation, InconsistentLineageException
+from .fields import Field, get_dataset_fields
+from .lineage import (
+    InconsistentLineageException,
+    LineageDirection,
+    LineageRelation,
+    LineageTree,
+)
 
 __all__ = [
     "Dataset",
@@ -46,12 +59,13 @@ __all__ = [
     "ranges_overlap"
 ]
 
-from odc.geo import CRS, BoundingBox, Geometry, wh_, resyx_, res_, yx_
+from deprecat import deprecat
+from odc.geo import CRS, BoundingBox, Geometry, res_, resyx_, wh_, yx_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
 from odc.geo.gridspec import GridSpec as GeoGridSpec
+
 from datacube.migration import ODC2DeprecationWarning
-from deprecat import deprecat
 
 from ..utils.uris import pick_uri
 

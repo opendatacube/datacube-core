@@ -2,18 +2,23 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from types import SimpleNamespace
+
 import pytest
 import yaml
 
-from types import SimpleNamespace
-
-from datacube.drivers import new_datasource, reader_drivers, writer_drivers
-from datacube.drivers import index_drivers, index_driver_by_name
+from datacube.drivers import (
+    index_driver_by_name,
+    index_drivers,
+    new_datasource,
+    reader_drivers,
+    writer_drivers,
+)
 from datacube.drivers.indexes import IndexDriverCache
+from datacube.model import MetadataType
 from datacube.storage import BandInfo
 from datacube.storage._rio import RasterDatasetDataSource
 from datacube.testutils import mk_sample_dataset, suppress_deprecations
-from datacube.model import MetadataType
 
 
 def test_new_datasource_fallback() -> None:
@@ -113,8 +118,9 @@ def test_reader_cache_throws_on_missing_fallback() -> None:
 
 
 def test_driver_singleton() -> None:
-    from datacube.drivers._tools import singleton_setup
     from unittest.mock import MagicMock
+
+    from datacube.drivers._tools import singleton_setup
 
     result = object()
     factory = MagicMock(return_value=result)

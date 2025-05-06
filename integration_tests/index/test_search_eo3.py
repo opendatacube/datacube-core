@@ -7,26 +7,24 @@ Module
 """
 import datetime
 import warnings
-from antimeridian import FixWindingWarning
-from typing import Any
 from collections import namedtuple
+from typing import Any
 
 import pytest
 import yaml
+from antimeridian import FixWindingWarning
 from dateutil import tz
 
 import datacube.scripts.search_tool
+from datacube import Datacube
 from datacube.cfg import ODCEnvironment
 from datacube.cfg.opt import _DEFAULT_DB_USER
 from datacube.index import Index
-from datacube.model import Dataset
-from datacube.model import Product
-from datacube.model import Range
-
-from datacube import Datacube
+from datacube.model import Dataset, Product, Range
 from datacube.testutils import suppress_deprecations
-from .search_utils import _cli_csv_search, _csv_search_raw, _load_product_query
 from datacube.utils.dates import tz_as_utc
+
+from .search_utils import _cli_csv_search, _csv_search_raw, _load_product_query
 
 
 def test_search_by_metadata(index: Index, ls8_eo3_product, wo_eo3_product) -> None:

@@ -6,12 +6,15 @@
 
 This allows extraction of fields of interest from dataset metadata document.
 """
+import decimal
 from collections.abc import Callable, Mapping
 from typing import Any
-from typing_extensions import override
+
 import toolz
-import decimal
+from typing_extensions import override
+
 from datacube.utils import parse_time
+
 from ._base import Range
 
 # Allowed values for field 'type' (specified in a metadata type document)

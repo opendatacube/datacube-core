@@ -8,8 +8,13 @@ from decimal import Decimal
 
 import pytest
 
-from datacube.drivers.postgis._fields import NumericDocField, IntDocField, DoubleDocField, DateDocField, \
-    UnindexableValue
+from datacube.drivers.postgis._fields import (
+    DateDocField,
+    DoubleDocField,
+    IntDocField,
+    NumericDocField,
+    UnindexableValue,
+)
 from datacube.drivers.postgis._schema import Dataset
 
 

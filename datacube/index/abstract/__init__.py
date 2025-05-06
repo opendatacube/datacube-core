@@ -3,14 +3,18 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-from ._types import BatchStatus, DSID, DatasetTuple, dsid_to_uuid, DatasetSpatialMixin
-from ._users import AbstractUserResource
-from ._metadata_types import AbstractMetadataTypeResource, default_metadata_type_docs, _DEFAULT_METADATA_TYPES_PATH
-from ._products import AbstractProductResource
-from ._lineage import AbstractLineageResource, NoLineageResource
 from ._datasets import AbstractDatasetResource
-from ._transactions import AbstractTransaction, UnhandledTransaction
 from ._index import AbstractIndex, AbstractIndexDriver
+from ._lineage import AbstractLineageResource, NoLineageResource
+from ._metadata_types import (
+    _DEFAULT_METADATA_TYPES_PATH,
+    AbstractMetadataTypeResource,
+    default_metadata_type_docs,
+)
+from ._products import AbstractProductResource
+from ._transactions import AbstractTransaction, UnhandledTransaction
+from ._types import DSID, BatchStatus, DatasetSpatialMixin, DatasetTuple, dsid_to_uuid
+from ._users import AbstractUserResource
 
 __all__ = [
     "DSID",

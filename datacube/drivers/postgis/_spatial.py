@@ -7,26 +7,23 @@ Tracking spatial indexes
 """
 
 import logging
-from threading import Lock
 from collections.abc import Mapping
-
-from sqlalchemy import ForeignKey, select, delete
-from sqlalchemy.dialects import postgresql as postgres
-from geoalchemy2 import Geometry
+from threading import Lock
 
 from antimeridian import fix_shape
-
-from sqlalchemy.engine import Engine
-from sqlalchemy import text
-from sqlalchemy.orm import Session, mapped_column
-
-from odc.geo import CRS, Geometry as Geom
+from geoalchemy2 import Geometry
+from odc.geo import CRS
+from odc.geo import Geometry as Geom
 from odc.geo.geom import multipolygon, polygon
+from sqlalchemy import ForeignKey, delete, select, text
+from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, mapped_column
 from sqlalchemy.sql.ddl import DropTable
 
 from ._core import METADATA
+from ._schema import Base, Dataset, SpatialIndex, SpatialIndexRecord, orm_registry
 from .sql import SCHEMA_NAME
-from ._schema import Base, orm_registry, Dataset, SpatialIndex, SpatialIndexRecord
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

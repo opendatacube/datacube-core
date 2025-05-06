@@ -5,19 +5,19 @@
 """ Dask Distributed Tools
 
 """
-from pathlib import Path
-from typing import Any
-from collections.abc import Iterable
-from random import randint
-import toolz
-import queue
-from dask.distributed import Client
-import dask
-from dask.delayed import delayed
-import threading
 import logging
 import os
+import queue
+import threading
+from collections.abc import Iterable
+from pathlib import Path
+from random import randint
+from typing import Any
 
+import dask
+import toolz
+from dask.delayed import delayed
+from dask.distributed import Client
 
 __all__ = [
     "compute_tasks",
@@ -264,7 +264,8 @@ def _save_blob_to_s3(data: bytes | str,
                      **kw) -> tuple[str, bool]:
     from botocore.errorfactory import ClientError
     from botocore.exceptions import BotoCoreError
-    from .aws import s3_dump, s3_client
+
+    from .aws import s3_client, s3_dump
 
     try:
         s3 = s3_client(profile=profile,

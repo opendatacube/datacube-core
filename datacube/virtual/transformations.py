@@ -2,22 +2,27 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Collection, Iterable, Mapping
 import warnings
+from collections.abc import Collection, Iterable, Mapping
 
 import numpy
-import xarray
 import pandas as pd
+import xarray
 from typing_extensions import override
 
 from datacube.utils.masking import make_mask as make_mask_prim
 from datacube.utils.masking import mask_invalid_data as mask_invalid_data_prim
-
 from datacube.utils.math import dtype_is_float
 
-from .impl import VirtualProductException, Transformation, Measurement
-from .expr import FormulaEvaluator, MaskEvaluator
-from .expr import formula_parser, evaluate_data, evaluate_nodata_mask, evaluate_type
+from .expr import (
+    FormulaEvaluator,
+    MaskEvaluator,
+    evaluate_data,
+    evaluate_nodata_mask,
+    evaluate_type,
+    formula_parser,
+)
+from .impl import Measurement, Transformation, VirtualProductException
 
 
 def selective_apply_dict(dictionary, apply_to=None, key_map=None, value_map=None):

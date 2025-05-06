@@ -7,19 +7,25 @@ Module
 """
 
 import copy
+
 import pytest
 import yaml
 from sqlalchemy import text
 
-from datacube.drivers.postgres._fields import NumericRangeDocField as PgrNumericRangeDocField, PgField as PgrPgField
-from datacube.drivers.postgis._fields import NumericRangeDocField as PgsNumericRangeDocField, PgField as PgsPgField
+from datacube.drivers.postgis._fields import (
+    NumericRangeDocField as PgsNumericRangeDocField,
+)
+from datacube.drivers.postgis._fields import PgField as PgsPgField
+from datacube.drivers.postgres._fields import (
+    NumericRangeDocField as PgrNumericRangeDocField,
+)
+from datacube.drivers.postgres._fields import PgField as PgrPgField
 from datacube.index import Index
 from datacube.index.abstract import default_metadata_type_docs
-from datacube.model import MetadataType, Product
-from datacube.model import Range, Not, Dataset
+from datacube.model import Dataset, MetadataType, Not, Product, Range
+from datacube.testutils import sanitise_doc, suppress_deprecations
 from datacube.utils import changes
 from datacube.utils.documents import documents_equal
-from datacube.testutils import sanitise_doc, suppress_deprecations
 
 _DATASET_METADATA = {
     'id': 'f7018d80-8807-11e5-aeaa-1040f381a756',

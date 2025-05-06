@@ -4,18 +4,19 @@
 # SPDX-License-Identifier: Apache-2.0
 """ xarray 3D driver plugin for 3D support testing
 """
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
-from collections.abc import Generator
 from urllib.parse import urlparse
 
 import numpy as np
 import xarray as xr
 from affine import Affine
+from odc.geo import CRS
+
 from datacube.storage import BandInfo
 from datacube.utils.math import num2numpy
-from odc.geo import CRS
 
 PROTOCOL = ["file", "xarray_3d"]
 FORMAT = "xarray_3d"

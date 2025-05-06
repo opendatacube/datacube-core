@@ -5,20 +5,21 @@
 """
 Helper methods for working with AWS
 """
+import functools
 import os
 import time
-import functools
+from typing import IO, Any, TypeAlias
+from urllib.parse import urlparse
+from urllib.request import urlopen
+
 import botocore
 import botocore.session
 from botocore.client import BaseClient
 from botocore.config import Config
 from botocore.credentials import Credentials, ReadOnlyCredentials
 from botocore.session import Session
-from urllib.request import urlopen
-from urllib.parse import urlparse
 from sqlalchemy.engine.url import URL
 
-from typing import Any, IO, TypeAlias
 from datacube.utils.generic import thread_local_cache
 
 ByteRange: TypeAlias = slice | tuple[int, int]       # pylint: disable=invalid-name

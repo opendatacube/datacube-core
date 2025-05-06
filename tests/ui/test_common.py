@@ -9,8 +9,12 @@ from pathlib import Path
 
 import pytest
 
-from datacube.testutils import write_files, assert_file_structure
-from datacube.ui.common import get_metadata_path, _find_any_metadata_suffix, ui_path_doc_stream
+from datacube.testutils import assert_file_structure, write_files
+from datacube.ui.common import (
+    _find_any_metadata_suffix,
+    get_metadata_path,
+    ui_path_doc_stream,
+)
 
 
 def test_get_metadata_path() -> None:

@@ -6,38 +6,33 @@
 Utility functions
 """
 
+from ._misc import DatacubeException, gen_password, report_to_user
 from .dates import parse_time
+from .documents import (
+    DocReader,
+    InvalidDocException,
+    NoDatesSafeLoader,
+    SimpleDocNav,
+    _readable_offset,
+    get_doc_offset,
+    is_supported_document_type,
+    netcdf_extract_string,
+    read_documents,
+    read_strings_from_netcdf,
+    schema_validated,
+    validate_document,
+    without_lineage_sources,
+)
+from .io import check_write_path, slurp, write_user_secret_file
+from .math import (
+    iter_slices,
+    spatial_dims,
+    unsqueeze_data_array,
+    unsqueeze_dataset,
+)
 from .py import cached_property, ignore_exceptions_if, import_function
 from .serialise import jsonify_document
-from .uris import is_url, uri_to_local_path, get_part_from_uri, mk_part_uri, is_vsipath
-from .io import slurp, check_write_path, write_user_secret_file
-from .documents import (
-    InvalidDocException,
-    SimpleDocNav,
-    DocReader,
-    is_supported_document_type,
-    read_strings_from_netcdf,
-    read_documents,
-    validate_document,
-    NoDatesSafeLoader,
-    get_doc_offset,
-    netcdf_extract_string,
-    without_lineage_sources,
-    schema_validated,
-    _readable_offset,
-)
-from .math import (
-    unsqueeze_dataset,
-    unsqueeze_data_array,
-    spatial_dims,
-    iter_slices,
-)
-from ._misc import (
-    DatacubeException,
-    gen_password,
-    report_to_user
-)
-
+from .uris import get_part_from_uri, is_url, is_vsipath, mk_part_uri, uri_to_local_path
 
 __all__ = [
     "DatacubeException",

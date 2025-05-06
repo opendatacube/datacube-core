@@ -7,11 +7,8 @@
 
 import numpy as np
 
-from datacube.storage._load import (
-    xr_load, _default_fuser
-)
-
 from datacube.api.core import Datacube
+from datacube.storage._load import _default_fuser, xr_load
 from datacube.testutils import mk_sample_dataset
 from datacube.testutils.io import rio_slurp
 from datacube.testutils.iodriver import mk_rio_driver, tee_new_load_context

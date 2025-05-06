@@ -3,32 +3,24 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import numpy as np
-
 import pytest
+from odc.geo import geobox as gbx
+from odc.geo.geobox import GeoBox
+from odc.geo.overlap import compute_reproject_roi
+from odc.geo.roi import roi_is_empty, roi_shape
 from rasterio.enums import Resampling
 
 from datacube.storage._read import (
+    pick_read_scale,
+    rdr_geobox,
     read_time_slice,
     read_time_slice_v2,
-    pick_read_scale,
-    rdr_geobox)
-
-from datacube.testutils.io import RasterFileDataSource
-from odc.geo.overlap import compute_reproject_roi
-from odc.geo.roi import roi_shape, roi_is_empty
-from odc.geo.geobox import GeoBox
-
-from odc.geo import geobox as gbx
-
-from datacube.testutils.io import (
-    rio_slurp
 )
-
 from datacube.testutils.geom import (
-    epsg3857,
     AlbersGS,
+    epsg3857,
 )
-
+from datacube.testutils.io import RasterFileDataSource, rio_slurp
 
 nearest_resampling_parametrize = pytest.mark.parametrize(
     "nearest_resampling", ['nearest', Resampling.nearest, Resampling.nearest.value]
@@ -44,9 +36,10 @@ def test_pick_read_scale() -> None:
 
 @nearest_resampling_parametrize
 def test_read_paste(nearest_resampling, tmpdir) -> None:
+    from pathlib import Path
+
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
-    from pathlib import Path
 
     pp = Path(str(tmpdir))
 
@@ -123,9 +116,10 @@ def test_read_paste(nearest_resampling, tmpdir) -> None:
 
 @nearest_resampling_parametrize
 def test_read_with_reproject(nearest_resampling, tmpdir) -> None:
+    from pathlib import Path
+
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
-    from pathlib import Path
 
     pp = Path(str(tmpdir))
 
@@ -183,10 +177,11 @@ def test_read_with_reproject(nearest_resampling, tmpdir) -> None:
 
 @nearest_resampling_parametrize
 def test_read_paste_v2(nearest_resampling, tmpdir) -> None:
+    from pathlib import Path
+
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from datacube.testutils.iodriver import open_reader
-    from pathlib import Path
 
     pp = Path(str(tmpdir))
 
@@ -269,10 +264,11 @@ def test_read_paste_v2(nearest_resampling, tmpdir) -> None:
 
 @nearest_resampling_parametrize
 def test_read_with_reproject_v2(nearest_resampling, tmpdir) -> None:
+    from pathlib import Path
+
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import write_gtiff
     from datacube.testutils.iodriver import open_reader
-    from pathlib import Path
 
     pp = Path(str(tmpdir))
 

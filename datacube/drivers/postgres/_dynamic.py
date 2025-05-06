@@ -9,12 +9,11 @@ Methods for managing dynamic dataset field indexes and views.
 import logging
 from collections.abc import Sequence
 
-from sqlalchemy import Index, text
-from sqlalchemy import select
+from sqlalchemy import Index, select, text
 
 from ._core import schema_qualified
-from ._schema import DATASET, PRODUCT, METADATA_TYPE
-from .sql import pg_exists, CreateView
+from ._schema import DATASET, METADATA_TYPE, PRODUCT
+from .sql import CreateView, pg_exists
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -2,32 +2,31 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import pytest
-import moto
 from pathlib import Path
+
 import dask
 import dask.delayed
-
-from datacube.utils.io import slurp
-
-from datacube.utils.dask import (
-    start_local_dask,
-    get_total_available_memory,
-    compute_memory_per_worker,
-    compute_tasks,
-    pmap,
-    partition_map,
-    save_blob_to_file,
-    save_blob_to_s3,
-    _save_blob_to_file,
-    _save_blob_to_s3,
-)
+import moto
+import pytest
 
 from datacube.utils.aws import (
-    s3_url_parse,
-    s3_fetch,
     s3_client,
+    s3_fetch,
+    s3_url_parse,
 )
+from datacube.utils.dask import (
+    _save_blob_to_file,
+    _save_blob_to_s3,
+    compute_memory_per_worker,
+    compute_tasks,
+    get_total_available_memory,
+    partition_map,
+    pmap,
+    save_blob_to_file,
+    save_blob_to_s3,
+    start_local_dask,
+)
+from datacube.utils.io import slurp
 
 
 def test_compute_tasks() -> None:

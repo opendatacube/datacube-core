@@ -2,12 +2,12 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from docutils.nodes import literal_block, section, title, make_id
-from sphinx.domains import Domain
-from docutils.parsers.rst import Directive
 import importlib
 
 import click
+from docutils.nodes import literal_block, make_id, section, title
+from docutils.parsers.rst import Directive
+from sphinx.domains import Domain
 
 
 class ClickHelpDirective(Directive):

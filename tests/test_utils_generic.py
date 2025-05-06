@@ -3,10 +3,11 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from queue import Queue
+
 from datacube.utils.generic import (
-    qmap,
     it2q,
     map_with_lookahead,
+    qmap,
     thread_local_cache,
 )
 

@@ -3,17 +3,23 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from time import monotonic
 from collections.abc import Iterable, Mapping
-from typing_extensions import override
+from time import monotonic
 
 from cachetools.func import lru_cache
+from typing_extensions import override
 
 from datacube.index.abstract import AbstractMetadataTypeResource, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import MetadataType
-from datacube.utils import jsonify_document, changes, _readable_offset
-from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes
+from datacube.utils import _readable_offset, changes, jsonify_document
+from datacube.utils.changes import (
+    AllowPolicy,
+    Change,
+    Offset,
+    check_doc_unchanged,
+    get_doc_changes,
+)
 from datacube.utils.documents import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)

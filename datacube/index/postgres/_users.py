@@ -3,13 +3,15 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
-from typing import TYPE_CHECKING
-from typing_extensions import override
+
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
+
+from typing_extensions import override
+
+from datacube.drivers.postgres import PostgresDb
 from datacube.index.abstract import AbstractUserResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
-from datacube.drivers.postgres import PostgresDb
-
 
 if TYPE_CHECKING:
     from datacube.index.postgres.index import Index

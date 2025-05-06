@@ -4,19 +4,26 @@
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 import logging
-
-from typing import cast
-from typing_extensions import override
 from collections.abc import Iterable, Sequence
+from typing import cast
 from uuid import UUID
 
+from typing_extensions import override
+
+from datacube.index.abstract import AbstractIndex, AbstractProductResource
 from datacube.index.fields import as_expression
-from datacube.index.abstract import AbstractProductResource, AbstractIndex
-from datacube.model._base import QueryField, QueryDict
 from datacube.model import Product
-from datacube.utils import changes, jsonify_document, _readable_offset
-from datacube.utils.changes import AllowPolicy, Change, Offset, check_doc_unchanged, get_doc_changes, classify_changes
-from datacube.utils.documents import metadata_subset, JsonDict
+from datacube.model._base import QueryDict, QueryField
+from datacube.utils import _readable_offset, changes, jsonify_document
+from datacube.utils.changes import (
+    AllowPolicy,
+    Change,
+    Offset,
+    check_doc_unchanged,
+    classify_changes,
+    get_doc_changes,
+)
+from datacube.utils.documents import JsonDict, metadata_subset
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

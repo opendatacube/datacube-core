@@ -11,23 +11,23 @@ Important functions are:
 import logging
 import numbers
 from collections import OrderedDict
+from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping
+from typing import Any, cast
+
 import numpy as np
+from odc.geo.geobox import GeoBox
+from odc.geo.roi import roi_is_empty
+from odc.geo.warp import Resampling
+from odc.geo.xr import xr_coords
 from xarray.core.coordinates import DataArrayCoordinates
 from xarray.core.dataarray import DataArray as XrDataArray
 from xarray.core.dataset import Dataset as XrDataset
-from typing import (
-    Any, cast
-)
-from collections.abc import Callable, Iterator, Iterable, Mapping, Hashable
 
+from datacube.drivers._types import ReaderDriver
+from datacube.model import Measurement
 from datacube.utils import ignore_exceptions_if
 from datacube.utils.math import invalid_mask
-from odc.geo.geobox import GeoBox
-from odc.geo.roi import roi_is_empty
-from odc.geo.xr import xr_coords
-from odc.geo.warp import Resampling
-from datacube.model import Measurement
-from datacube.drivers._types import ReaderDriver
+
 from ..drivers.datasource import DataSource
 from ._base import BandInfo
 

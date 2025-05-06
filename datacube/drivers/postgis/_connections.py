@@ -15,26 +15,30 @@ Postgis connection and setup
 import json
 import logging
 import re
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from typing import Any
-from collections.abc import Iterator
-from typing_extensions import override
-from collections.abc import Callable, Iterable, Mapping
 
-from sqlalchemy import Connection, event, create_engine
+from odc.geo import CRS
+from sqlalchemy import Connection, create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
+from typing_extensions import override
 
 import datacube
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
-from odc.geo import CRS
 
-from . import _api
-from . import _core
-from ._spatial import ensure_spindex, spindexes, spindex_for_crs, drop_spindex, crs_to_epsg
-from ._schema import SpatialIndex
 from ...cfg import ODCEnvironment, psql_url_from_config
+from . import _api, _core
+from ._schema import SpatialIndex
+from ._spatial import (
+    crs_to_epsg,
+    drop_spindex,
+    ensure_spindex,
+    spindex_for_crs,
+    spindexes,
+)
 
 _LIB_ID: str = 'odc-' + str(datacube.__version__)
 
@@ -291,7 +295,7 @@ def handle_dynamic_token_authentication(engine: Engine,
         # Handle IAM authentication
         # Importing here because the function `clock_gettime` is not available on Windows
         # which shouldn't be a problem, because boto3 auth is mostly used on AWS.
-        from time import clock_gettime, CLOCK_REALTIME
+        from time import CLOCK_REALTIME, clock_gettime
 
         now = clock_gettime(CLOCK_REALTIME)
         if now - last_token_time[0] > timeout:

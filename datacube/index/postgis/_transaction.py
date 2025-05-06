@@ -3,10 +3,11 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
+
 from typing_extensions import override
-from collections.abc import Iterator
 
 from datacube.drivers.postgis import PostGisDb
 from datacube.drivers.postgis._api import PostgisDbAPI

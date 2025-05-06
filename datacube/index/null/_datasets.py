@@ -4,13 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import datetime
+from collections.abc import Iterable, Sequence
+
 from deprecat import deprecat
 from typing_extensions import override
 
+from datacube.index.abstract import DSID, AbstractDatasetResource
 from datacube.migration import ODC2DeprecationWarning
-from datacube.index.abstract import AbstractDatasetResource, DSID
 from datacube.model import Dataset, Product
-from collections.abc import Iterable, Sequence
 
 
 class DatasetResource(AbstractDatasetResource):

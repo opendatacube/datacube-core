@@ -4,14 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from pathlib import Path
 from time import monotonic
 from typing import cast
-from collections.abc import Iterable
 
 from datacube.model import MetadataType
-from datacube.utils import read_documents, jsonify_document, InvalidDocException
-from datacube.utils.changes import DocumentMismatchError, check_doc_unchanged, Change
+from datacube.utils import InvalidDocException, jsonify_document, read_documents
+from datacube.utils.changes import Change, DocumentMismatchError, check_doc_unchanged
 from datacube.utils.documents import JsonDict
 
 from ._types import BatchStatus

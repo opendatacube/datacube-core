@@ -5,26 +5,26 @@
 """
 Functions for working with YAML documents and configurations
 """
+import collections.abc
 import gzip
 import json
 import logging
 import math
 import sys
-import collections.abc
 from collections import OrderedDict
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
+from copy import deepcopy
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
-from typing import Any
-from typing_extensions import override
-from collections.abc import Iterator, Mapping
-from copy import deepcopy
 from uuid import UUID
 
 import numpy
 import toolz
 import yaml
+from typing_extensions import override
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -32,8 +32,7 @@ except ImportError:
     from yaml import SafeLoader  # type: ignore
 
 from datacube.utils.generic import map_with_lookahead
-from datacube.utils.uris import mk_part_uri, as_url, uri_to_local_path
-
+from datacube.utils.uris import as_url, mk_part_uri, uri_to_local_path
 
 JsonAtom = None | bool | str | float | int
 JsonLike = JsonAtom | list["JsonLike"] | dict[str, "JsonLike"]

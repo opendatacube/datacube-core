@@ -6,11 +6,12 @@
 Modules for interfacing with the index/database.
 """
 
-from ._api import index_connect
-from ._spatial import strip_all_spatial_fields_from_query, extract_geom_from_query
-from .fields import UnknownFieldError
-from .exceptions import DuplicateRecordError, MissingRecordError, IndexSetupError
 from datacube.index.abstract import AbstractIndex as Index
+
+from ._api import index_connect
+from ._spatial import extract_geom_from_query, strip_all_spatial_fields_from_query
+from .exceptions import DuplicateRecordError, IndexSetupError, MissingRecordError
+from .fields import UnknownFieldError
 
 __all__ = [
     'DuplicateRecordError',

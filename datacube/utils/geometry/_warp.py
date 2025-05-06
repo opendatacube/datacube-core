@@ -2,11 +2,13 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import rasterio.warp
-import rasterio.crs
-import numpy as np
-from affine import Affine
 from typing import TypeAlias
+
+import numpy as np
+import rasterio.crs
+import rasterio.warp
+from affine import Affine
+
 from . import GeoBox
 
 Resampling: TypeAlias = str | int | rasterio.warp.Resampling  # pylint: disable=invalid-name

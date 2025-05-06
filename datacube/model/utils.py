@@ -6,25 +6,22 @@ import os
 import platform
 import sys
 import uuid
-from collections.abc import Sequence
-from typing import Literal
-from collections.abc import Mapping
-
-import toolz
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
+from typing import Literal
 
 import numpy
+import toolz
 import xarray
 import yaml
+from odc.geo import CRS
+from odc.geo.geom import Geometry, point
 from pandas import to_datetime
 
 import datacube
 from datacube.model import Dataset
-from datacube.utils import SimpleDocNav, InvalidDocException
+from datacube.utils import InvalidDocException, SimpleDocNav
 from datacube.utils.py import sorted_items
-
-from odc.geo import CRS
-from odc.geo.geom import Geometry, point
 
 try:
     from yaml import CSafeDumper as SafeDumper

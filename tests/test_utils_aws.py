@@ -2,28 +2,29 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import pytest
-from unittest import mock
 import json
+from unittest import mock
+
 import botocore
+import pytest
 from botocore.credentials import ReadOnlyCredentials
 
 from datacube.testutils import write_files
 from datacube.utils.aws import (
     _fetch_text,
-    ec2_current_region,
+    _s3_cache_key,
     auto_find_region,
+    ec2_current_region,
     get_aws_settings,
-    mk_boto_session,
     get_creds_with_retry,
-    s3_url_parse,
-    s3_fmt_range,
+    mk_boto_session,
+    obtain_new_iam_auth_token,
     s3_client,
     s3_dump,
     s3_fetch,
+    s3_fmt_range,
     s3_head_object,
-    _s3_cache_key,
-    obtain_new_iam_auth_token,
+    s3_url_parse,
 )
 
 
@@ -164,8 +165,8 @@ def test_creds_with_retry() -> None:
 
 
 def test_s3_basics(without_aws_env) -> None:
-    from numpy import s_
     from botocore.credentials import ReadOnlyCredentials
+    from numpy import s_
 
     assert s3_url_parse('s3://bucket/key') == ('bucket', 'key')
     assert s3_url_parse('s3://bucket/key/') == ('bucket', 'key/')

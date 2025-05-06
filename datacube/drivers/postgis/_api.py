@@ -17,42 +17,60 @@ import datetime
 import json
 import logging
 import uuid
-from sqlalchemy import (
-    cast,
-    delete,
-    update,
-    select,
-    text,
-    and_,
-    or_,
-    func,
-    column,
-)
-from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.sql.expression import Select
-from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.exc import IntegrityError
-
+from collections.abc import Iterable, Iterator, Sequence
 from typing import Any
-from collections.abc import Iterator
-from typing_extensions import override
-from collections.abc import Iterable, Sequence
 from typing import cast as type_cast
 
+from odc.geo import CRS, Geometry
+from sqlalchemy import (
+    and_,
+    cast,
+    column,
+    delete,
+    func,
+    or_,
+    select,
+    text,
+    update,
+)
+from sqlalchemy.dialects.postgresql import INTERVAL, insert
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql.expression import Select
+from typing_extensions import override
+
+from datacube.index.abstract import DSID
 from datacube.index.fields import OrExpression
 from datacube.model import Range
-from odc.geo import CRS, Geometry
+from datacube.model.lineage import LineageDirection, LineageRelation
 from datacube.utils.uris import split_uri
-from datacube.index.abstract import DSID
-from datacube.model.lineage import LineageRelation, LineageDirection
-from . import _core
-from ._fields import parse_fields, PgField, PgExpression, DateRangeDocField
-from ._fields import NativeField, DateDocField, SimpleDocField, UnindexableValue
-from ._schema import MetadataType, Product, Dataset, DatasetLineage, \
-    search_field_index_map, search_field_indexes, DatasetHome
-from ._spatial import geom_alchemy, generate_dataset_spatial_values, extract_geometry_from_eo3_projection
-from .sql import escape_pg_identifier
+
 from ...utils.changes import Offset
+from . import _core
+from ._fields import (
+    DateDocField,
+    DateRangeDocField,
+    NativeField,
+    PgExpression,
+    PgField,
+    SimpleDocField,
+    UnindexableValue,
+    parse_fields,
+)
+from ._schema import (
+    Dataset,
+    DatasetHome,
+    DatasetLineage,
+    MetadataType,
+    Product,
+    search_field_index_map,
+    search_field_indexes,
+)
+from ._spatial import (
+    extract_geometry_from_eo3_projection,
+    generate_dataset_spatial_values,
+    geom_alchemy,
+)
+from .sql import escape_pg_identifier
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -9,8 +9,8 @@ import copy
 import datetime
 import uuid
 from decimal import Decimal
-from uuid import UUID
 from typing import Any
+from uuid import UUID
 
 import pytest
 import yaml
@@ -18,19 +18,15 @@ from dateutil import tz
 from odc.geo import CRS
 from sqlalchemy.dialects.postgresql.ranges import Range as SQLARange
 
+from datacube import Datacube
 from datacube.cfg import ODCEnvironment
 from datacube.cfg.opt import _DEFAULT_DB_USER
 from datacube.index import Index
-from datacube.model import Dataset
-from datacube.model import Product
-from datacube.model import MetadataType
-from datacube.model import Range
-
+from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.testutils import load_dataset_definition, suppress_deprecations
-
-from datacube import Datacube
-from .search_utils import _load_product_query, _csv_search_raw, _cli_csv_search
 from datacube.utils.dates import tz_as_utc
+
+from .search_utils import _cli_csv_search, _csv_search_raw, _load_product_query
 
 # These tests use non-EO3 metadata, so will not work with the postgis driver.
 # Mark all with @pytest.mark.parametrize('datacube_env_name', ('datacube', ))

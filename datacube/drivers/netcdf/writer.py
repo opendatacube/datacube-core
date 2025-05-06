@@ -8,20 +8,19 @@ Create netCDF4 Storage Units and write data to them
 
 import logging
 import numbers
-from datetime import datetime, timezone
 from collections import namedtuple
-from os import PathLike
 from collections.abc import Sequence
+from datetime import datetime, timezone
+from os import PathLike
+
 import numpy
-
-from datacube.utils.masking import describe_flags_def
 from netCDF4 import Dataset
-
 from odc.geo import CRS
 from odc.geo.geom import box
 from odc.geo.math import data_resolution_and_offset
 
 from datacube import __version__
+from datacube.utils.masking import describe_flags_def
 
 UTC: timezone = timezone.utc
 

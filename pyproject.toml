@@ -152,6 +152,7 @@ select = [
     "B",  # flake8-bugbear
     "E",  # pycodestyle errors
     "EXE", # flake8-executable
+    "I",  # isort
     "N",  # pep8-naming
     "RUF", # Ruff-specific rules
     "UP", # pyupgrade

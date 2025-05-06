@@ -2,19 +2,25 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from datacube import Datacube
-from datacube.api.query import query_group_by
-import numpy as np
+from pathlib import Path
 from types import SimpleNamespace
+
+import numpy as np
 import pytest
 
-from pathlib import Path
+from datacube import Datacube
+from datacube.api.query import query_group_by
 from datacube.testutils import (
+    gen_tiff_dataset,
     mk_sample_dataset,
     mk_test_image,
-    gen_tiff_dataset,
 )
-from datacube.testutils.io import write_gtiff, rio_slurp, rio_slurp_xarray, get_raster_info
+from datacube.testutils.io import (
+    get_raster_info,
+    rio_slurp,
+    rio_slurp_xarray,
+    write_gtiff,
+)
 from datacube.testutils.iodriver import NetCDF
 from datacube.utils import ignore_exceptions_if
 
@@ -249,8 +255,8 @@ def test_load_data_cbk(tmpdir) -> None:
 
 
 def test_hdf5_lock_release_on_failure() -> None:
-    from datacube.storage._rio import RasterDatasetDataSource, HDF5_LOCK
     from datacube.storage import BandInfo
+    from datacube.storage._rio import HDF5_LOCK, RasterDatasetDataSource
 
     band = dict(name='xx',
                 layer='xx',
@@ -375,7 +381,7 @@ def test_missing_file_handling() -> None:
 
 
 def test_native_load(tmpdir) -> None:
-    from datacube.testutils.io import native_load, native_geobox
+    from datacube.testutils.io import native_geobox, native_load
 
     tmpdir = Path(str(tmpdir))
     spatial = dict(resolution=(15, -15),

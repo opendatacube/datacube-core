@@ -2,9 +2,10 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import numpy as np
 import collections.abc
 from types import SimpleNamespace
+
+import numpy as np
 from affine import Affine
 
 # This is numeric code, short names make sense in this context, so disabling
@@ -393,7 +394,7 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> tuple[slice, s
     :returns: (slice in the source image,
                slice in the destination image)
     """
-    from math import floor, ceil
+    from math import ceil, floor
 
     needs_flip = s < 0
 

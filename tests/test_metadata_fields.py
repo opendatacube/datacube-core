@@ -2,14 +2,15 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import yaml
 import datetime
 import decimal
 from textwrap import dedent
-import pytest
 
-from datacube.model.fields import get_dataset_fields, parse_search_field, Expression
+import pytest
+import yaml
+
 from datacube.model import Range, metadata_from_doc
+from datacube.model.fields import Expression, get_dataset_fields, parse_search_field
 
 METADATA_DOC = yaml.safe_load('''---
 name: test

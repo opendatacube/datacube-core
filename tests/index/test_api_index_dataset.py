@@ -6,12 +6,11 @@ import datetime
 from collections import namedtuple
 from contextlib import contextmanager
 from copy import deepcopy
-
 from uuid import UUID
 
-from datacube.index.postgres._datasets import DatasetResource
 from datacube.index.exceptions import DuplicateRecordError
-from datacube.model import Product, MetadataType, Dataset
+from datacube.index.postgres._datasets import DatasetResource
+from datacube.model import Dataset, MetadataType, Product
 
 _nbar_uuid = UUID('f2f12372-8366-11e5-817e-1040f381a756')
 _ortho_uuid = UUID('5cf41d98-eda9-11e4-8a8e-1040f381a756')

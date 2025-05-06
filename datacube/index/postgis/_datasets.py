@@ -10,31 +10,48 @@ import json
 import logging
 import warnings
 from collections import namedtuple
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from time import monotonic
 from typing import Any, NamedTuple, cast
-from collections.abc import Iterator
-from typing_extensions import override
-from collections.abc import Iterable, Mapping, Sequence
 from uuid import UUID
 
 from deprecat import deprecat
-
-from datacube.drivers.postgis._fields import SimpleDocField, PgField, PgExpression
-from datacube.drivers.postgis._schema import Dataset as SQLDataset, search_field_map
-from datacube.drivers.postgis._api import non_native_fields, extract_dataset_fields, mk_simple_offset_field
-from datacube.utils.uris import split_uri
-from datacube.drivers.postgis._spatial import generate_dataset_spatial_values, extract_geometry_from_eo3_projection
-from datacube.migration import ODC2DeprecationWarning
-from datacube.index.abstract import AbstractDatasetResource, DSID, BatchStatus, DatasetTuple, DatasetSpatialMixin
-from datacube.utils.documents import JsonDict
-from datacube.model._base import QueryField
-from datacube.index.postgis._transaction import IndexResourceAddIn
-from datacube.model import Dataset, Product, Range, LineageTree
-from datacube.model.fields import Field
-from datacube.utils import jsonify_document, _readable_offset, changes
-from datacube.utils.changes import get_doc_changes, Offset
 from odc.geo import CRS, Geometry
-from datacube.index import fields, extract_geom_from_query, strip_all_spatial_fields_from_query
+from typing_extensions import override
+
+from datacube.drivers.postgis._api import (
+    extract_dataset_fields,
+    mk_simple_offset_field,
+    non_native_fields,
+)
+from datacube.drivers.postgis._fields import PgExpression, PgField, SimpleDocField
+from datacube.drivers.postgis._schema import Dataset as SQLDataset
+from datacube.drivers.postgis._schema import search_field_map
+from datacube.drivers.postgis._spatial import (
+    extract_geometry_from_eo3_projection,
+    generate_dataset_spatial_values,
+)
+from datacube.index import (
+    extract_geom_from_query,
+    fields,
+    strip_all_spatial_fields_from_query,
+)
+from datacube.index.abstract import (
+    DSID,
+    AbstractDatasetResource,
+    BatchStatus,
+    DatasetSpatialMixin,
+    DatasetTuple,
+)
+from datacube.index.postgis._transaction import IndexResourceAddIn
+from datacube.migration import ODC2DeprecationWarning
+from datacube.model import Dataset, LineageTree, Product, Range
+from datacube.model._base import QueryField
+from datacube.model.fields import Field
+from datacube.utils import _readable_offset, changes, jsonify_document
+from datacube.utils.changes import Offset, get_doc_changes
+from datacube.utils.documents import JsonDict
+from datacube.utils.uris import split_uri
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

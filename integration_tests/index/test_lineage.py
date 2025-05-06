@@ -6,7 +6,7 @@ from uuid import uuid4 as random_uuid
 
 import pytest
 
-from datacube.model import LineageDirection, LineageTree, InconsistentLineageException
+from datacube.model import InconsistentLineageException, LineageDirection, LineageTree
 from datacube.model.lineage import LineageRelations
 
 

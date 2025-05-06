@@ -23,17 +23,21 @@ from sqlalchemy import text
 
 import datacube.scripts.cli_app
 import datacube.utils
-from datacube.drivers.postgres import _core as pgres_core
+from datacube.cfg import ODCConfig, ODCEnvironment, psql_url_from_config
+from datacube.drivers.postgis import PostGisDb
 from datacube.drivers.postgis import _core as pgis_core
+from datacube.drivers.postgres import PostgresDb
+from datacube.drivers.postgres import _core as pgres_core
 from datacube.index import index_connect
 from datacube.index.abstract import default_metadata_type_docs
-from integration_tests.utils import _make_geotiffs, _make_ls5_scene_datasets, load_yaml_file, \
-    GEOTIFF, load_test_products
-
-from datacube.cfg import ODCConfig, ODCEnvironment, psql_url_from_config
-from datacube.drivers.postgres import PostgresDb
-from datacube.drivers.postgis import PostGisDb
-from datacube.model import LineageTree, LineageDirection
+from datacube.model import LineageDirection, LineageTree
+from integration_tests.utils import (
+    GEOTIFF,
+    _make_geotiffs,
+    _make_ls5_scene_datasets,
+    load_test_products,
+    load_yaml_file,
+)
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 

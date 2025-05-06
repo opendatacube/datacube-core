@@ -4,24 +4,29 @@
 # SPDX-License-Identifier: Apache-2.0
 """ Tests for new RIO reader driver
 """
+import warnings
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timezone
-from concurrent.futures import ThreadPoolExecutor, Future
+
 import numpy as np
+import pytest
 import rasterio
 from affine import Affine
-import pytest
-import warnings
 
 from datacube.drivers.rio._reader import (
     RDEntry,
     _dc_crs,
-    _rio_uri,
     _rio_band_idx,
+    _rio_uri,
     _roi_to_window,
 )
 from datacube.testutils.geom import SAMPLE_WKT_WITHOUT_AUTHORITY, epsg3857
 from datacube.testutils.iodriver import (
-    NetCDF, GeoTIFF, mk_band, mk_rio_driver, open_reader
+    GeoTIFF,
+    NetCDF,
+    mk_band,
+    mk_rio_driver,
+    open_reader,
 )
 
 UTC = timezone.utc
