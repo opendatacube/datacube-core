@@ -94,6 +94,7 @@ dev = [
     "boto3-stubs",
     "botocore-stubs",
     "mypy",
+    "pandas-stubs",
     "types-affine",
     "types-cachetools",
     "types-jsonschema",

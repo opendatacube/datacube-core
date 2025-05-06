@@ -252,7 +252,7 @@ class Datacube:
 
         import pandas
 
-        return pandas.DataFrame.from_dict(measurements).set_index(
+        return pandas.DataFrame.from_records(measurements).set_index(
             ["product", "measurement"]
         )
 
