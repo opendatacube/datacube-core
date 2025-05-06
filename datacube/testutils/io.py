@@ -136,7 +136,7 @@ def native_load(ds, measurements=None, basis=None, **kw):
     :param basis: Name of the band to use for computing reference frame, other
     bands might be reprojected if they use different pixel grid
 
-    :param **kw: Any other parameter load_data accepts
+    :param kw: Any other parameter load_data accepts
 
     :return: Xarray dataset
     """
