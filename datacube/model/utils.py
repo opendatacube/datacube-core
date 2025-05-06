@@ -184,7 +184,7 @@ def xr_apply(data_array, func, dtype=None, with_numeric_index: bool = False) -> 
     :param func: function that takes a dict of labels and an element of the array,
         and returns a value of the given dtype
     :param dtype: The dtype of the returned array, default to the same as original
-    :param with_numeric_index Bool: If true include numeric index: func(index, labels, value)
+    :param bool with_numeric_index: If true include numeric index: func(index, labels, value)
     :return: The array with output of the function for every element.
     :rtype: xarray.DataArray
     """

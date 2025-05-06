@@ -260,10 +260,8 @@ def write_cog(
     :param blocksize: Size of internal tiff tiles (512x512 pixels)
     :param ovr_blocksize: Size of internal tiles in overview images (defaults to blocksize)
     :param overview_resampling: Use this resampling when computing overviews
-    :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32],
+    :param overview_levels: List of shrink factors to compute overviews for: [2,4,8,16,32],
                             to disable overviews supply empty list ``[]``
-    :param nodata: Set ``nodata`` flag to this value if supplied, by default ``nodata`` is
-                   read from the attributes of the input array (``geo_im.attrs['nodata']``).
     :param use_windowed_writes: Write image block by block (might need this for large images)
     :param intermediate_compression: Configure compression settings for first pass write, default is no compression
     :param extra_rio_opts: Any other option is passed to ``rasterio.open``
@@ -347,9 +345,7 @@ def to_cog(
     :param blocksize: Size of internal tiff tiles (512x512 pixels)
     :param ovr_blocksize: Size of internal tiles in overview images (defaults to blocksize)
     :param overview_resampling: Use this resampling when computing overviews
-    :param overview_levels: List of shrink factors to compute overiews for: [2,4,8,16,32]
-    :param nodata: Set ``nodata`` flag to this value if supplied, by default ``nodata`` is
-                   read from the attributes of the input array (``geo_im.attrs['nodata']``).
+    :param overview_levels: List of shrink factors to compute overviews for: [2,4,8,16,32]
     :param use_windowed_writes: Write image block by block (might need this for large images)
     :param intermediate_compression: Configure compression settings for first pass write, default is no compression
     :param extra_rio_opts: Any other option is passed to ``rasterio.open``

@@ -924,7 +924,7 @@ def polygon(outer, crs: MaybeCRS, *inners) -> Geometry:
     >>> polygon([(10, 10), (20, 20), (20, 10), (10, 10)], None)
     Geometry(POLYGON ((10 10, 20 20, 20 10, 10 10)), None)
 
-    :param coords: list of 2d x,y coordinate tuples
+    :param outer: list of 2d x,y coordinate tuples
     """
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
 

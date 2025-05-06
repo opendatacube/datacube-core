@@ -84,7 +84,7 @@ class AbstractProductResource(ABC):
         """
         Add a product to the index.
 
-        :param metadata_type: Unpersisted Product model
+        :param product: Unpersisted Product model
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.

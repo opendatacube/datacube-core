@@ -391,7 +391,7 @@ class LineageRelations:
         Raises InconsistentLineageException if tree contains cyclic dependencies or inconsistent direction
 
         :param tree: The LineageTree to merge
-        :param parent_node: The parent node (used to mark recursive traversal - should be None on first call)
+        :param nodes: The parent node (used to mark recursive traversal - should be None on first call)
         :param max_depth: The depth to traverse the tree to.  default/zero = unlimited
         """
         # Check new tree is acyclic within itself
