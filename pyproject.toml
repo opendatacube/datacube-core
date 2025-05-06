@@ -145,7 +145,6 @@ filterwarnings = [
 
 [tool.ruff]
 extend-exclude = ["datacube/drivers/postgis/alembic/versions"]
-src = ["datacube", "docs", "examples", "tests", "integration_tests"]
 
 [tool.ruff.lint]
 select = [
