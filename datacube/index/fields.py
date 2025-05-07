@@ -8,7 +8,7 @@ Common datatypes for DB drivers.
 
 from datetime import date, datetime, time
 
-from dateutil.tz import tz
+from dateutil.tz import UTC
 from typing_extensions import override
 
 from datacube.model import Not, Range
@@ -66,8 +66,8 @@ def as_expression(field: Field, value) -> Expression:
         return as_expression(
             field,
             Range(
-                datetime.combine(value, time.min.replace(tzinfo=tz.tzutc())),
-                datetime.combine(value, time.max.replace(tzinfo=tz.tzutc())),
+                datetime.combine(value, time.min.replace(tzinfo=UTC)),
+                datetime.combine(value, time.max.replace(tzinfo=UTC)),
             ),
         )
     return field == value
