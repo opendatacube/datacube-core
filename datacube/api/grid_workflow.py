@@ -17,6 +17,7 @@ from odc.geo.gridspec import GridSpec
 from typing_extensions import override
 
 from datacube.model import Dataset, QueryField
+from datacube.utils import DatacubeException
 
 from .core import Datacube
 from .query import GroupBy, Query, query_group_by
@@ -28,6 +29,9 @@ if typing.TYPE_CHECKING:
 
     from datacube.index import Index
     from datacube.model import Product
+
+class GridWorkflowException(DatacubeException):
+    """An ODC Exception raised while building or running Grid Workflows"""
 
 
 def _fast_slice(array: xr.DataArray, indexers):
@@ -176,25 +180,29 @@ class GridWorkflow:
         :param str product: The name of an existing product, if no grid_spec is supplied.
         """
         self.index: Index = index
-        if grid_spec is None:
+
+        # If available, use the provided grid_spec
+        if grid_spec is not None:
+            self.grid_spec: GridSpec = grid_spec
+        else:
+            # Otherwise, attempt to get the grid_spec by the provided product
+            # which may or may not have one.
             if product is None:
-                raise ValueError("Have to supply either grid_spec or product")
+                raise GridWorkflowException("Have to supply either grid_spec or product")
 
             if isinstance(product, str):
                 product = self.index.products.get_by_name(product)
 
             if product is None:
-                raise ValueError(f"No such product: {product}")
+                raise GridWorkflowException("No such product", product)
 
             if product.grid_spec is None:
-                raise ValueError(
-                    f"Supplied product `{product}` does not have a gridspec"
+                raise GridWorkflowException(
+                    "Supplied product does not have a gridspec", product
                 )
 
-            grid_spec = product.grid_spec
-        self.grid_spec: GridSpec = grid_spec
+            self.grid_spec = product.grid_spec
 
-        assert self.grid_spec is not None
 
     def cell_observations(
         self,
@@ -202,7 +210,7 @@ class GridWorkflow:
         geopolygon: Geometry|None =None,
         tile_buffer: tuple[float, float]|None = None,
         **indexers: QueryField
-    ) -> dict[tuple[int, int], list[Dataset]]:
+    ) -> dict[tuple[int, int], dict[str, Dataset|GeoBox]]:
         """
         List datasets, grouped by cell.
 
@@ -214,7 +222,8 @@ class GridWorkflow:
             The cell index. E.g. (14, -40)
         :param indexers:
             Query to match the datasets, see :py:class:`datacube.api.query.Query`
-        :return: Datsets grouped by cell index
+        :return: A dictionary of cell index (int, int) mapping to a dict containing two keys,
+          "datasets", with a list of datasets, and "geobox", containing the geobox for the cell.
 
         .. seealso::
             :meth:`datacube.Datacube.find_datasets`
@@ -225,8 +234,8 @@ class GridWorkflow:
         # TODO: split this method into 3: cell/polygon/unconstrained querying
 
         if tile_buffer is not None and geopolygon is not None:
-            raise ValueError("Cannot process tile_buffering and geopolygon together.")
-        cells = {}
+            raise GridWorkflowException("Cannot process tile_buffering and geopolygon together.")
+        cells: dict[tuple[int, int], dict[str, Dataset|GeoBox]] = {}
 
         def add_dataset_to_cells(tile_index, tile_geobox, dataset_):
             cells.setdefault(tile_index, {"datasets": [], "geobox": tile_geobox})[
@@ -234,8 +243,6 @@ class GridWorkflow:
             ].append(dataset_)
 
         if cell_index:
-            assert len(cell_index) == 2
-            cell_index = tuple(cell_index)
             geobox = self.grid_spec.tile_geobox(cell_index)
             geobox = geobox.buffered(*tile_buffer) if tile_buffer else geobox
 
@@ -246,7 +253,7 @@ class GridWorkflow:
             return cells
         else:
             datasets, query = self._find_datasets(geopolygon, indexers)
-            geobox_cache = {}
+            geobox_cache: dict[tuple[int, int], GeoBox] = {}
 
             if query.geopolygon:
                 # Get a rough region of tiles

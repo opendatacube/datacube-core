@@ -11,7 +11,7 @@ import pytest
 from odc.geo import CRS, Resolution
 from odc.geo.gridspec import GridSpec
 
-from datacube.api.grid_workflow import GridWorkflow
+from datacube.api.grid_workflow import GridWorkflow, GridWorkflowException
 from datacube.testutils import mk_sample_product
 
 
@@ -47,18 +47,18 @@ def test_create_gridworkflow_creation_with_product(fake_index):
     index = fake_index
 
     # need product or grispec
-    with pytest.raises(ValueError):
+    with pytest.raises(GridWorkflowException):
         GridWorkflow(index)
 
     # Can't specify a product that doesn't exist.
-    with pytest.raises(ValueError):
+    with pytest.raises(GridWorkflowException):
         GridWorkflow(index, product="no-such-product")
 
     # Error out if a production without a GridSpec is specified
     assert fake_index.products.get_by_name("without_gs") is not None
     assert fake_index.products.get_by_name("without_gs").grid_spec is None
 
-    with pytest.raises(ValueError):
+    with pytest.raises(GridWorkflowException):
         GridWorkflow(index, product="without_gs")
 
     # Able to create a Grid Workflow with a Product that has a GridSpec
@@ -116,7 +116,7 @@ def test_gridworkflow_cell_observations_errors(sample_grid_workflow):
         product="fake_product_name", time=("2001-1-1 00:00:00", "2001-3-31 23:59:59")
     )
     # It's invalid to supply tile_buffer and geopolygon at the same time
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(GridWorkflowException) as e:
         list(
             gw.cell_observations(
                 **query,
