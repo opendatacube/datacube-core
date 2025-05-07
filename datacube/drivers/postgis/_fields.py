@@ -11,6 +11,7 @@ from collections import namedtuple
 from collections.abc import Callable, Sequence
 from datetime import date, datetime, timezone
 from decimal import Decimal
+from functools import cached_property
 from typing import Any, TypeAlias
 
 from sqlalchemy import and_, cast, func
@@ -26,7 +27,7 @@ from datacube import utils
 from datacube.drivers.postgis._schema import Dataset, search_field_index_map
 from datacube.model import Range
 from datacube.model.fields import _AVAILABLE_TYPES, Expression, Field
-from datacube.utils import cached_property, get_doc_offset, parse_time
+from datacube.utils import get_doc_offset, parse_time
 from datacube.utils.changes import Offset
 from datacube.utils.dates import tz_as_utc
 
@@ -86,8 +87,8 @@ class PgField(Field):
             return (
                 self.search_index_table,
                 and_(
-                    Dataset.id == self.search_index_table.dataset_ref,
-                    self.search_index_table.search_key == self.name,
+                    Dataset.id == self.search_index_table.dataset_ref,  # type: ignore[attr-defined]
+                    self.search_index_table.search_key == self.name,  # type: ignore[attr-defined]
                 ),
             )
         return (self.search_index_table,)
@@ -103,7 +104,7 @@ class PgField(Field):
     @property
     def search_alchemy_expression(self) -> ColumnExpressionArgument:
         if self.indexed:
-            return self.search_index_table.search_val
+            return self.search_index_table.search_val  # type: ignore[attr-defined]
         return self.alchemy_expression
 
     @property

@@ -5,6 +5,7 @@
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping, Sequence
+from functools import cached_property
 from urllib.parse import ParseResult, urlparse
 
 from deprecat import deprecat
@@ -13,7 +14,7 @@ from odc.geo import CRS
 from datacube.cfg import ODCEnvironment, ODCOptionHandler
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Field, MetadataType
-from datacube.utils import cached_property, report_to_user
+from datacube.utils import report_to_user
 from datacube.utils.generic import thread_local_cache
 from datacube.utils.json_types import JsonDict
 

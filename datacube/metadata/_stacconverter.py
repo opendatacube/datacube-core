@@ -229,7 +229,7 @@ def ds2stac(
         datetime=dt,
         properties=properties,
         geometry=geometry,
-        bbox=bbox,
+        bbox=None if bbox is None else list(bbox),
         collection=dataset.product.name,
     )
 

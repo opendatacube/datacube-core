@@ -391,7 +391,11 @@ def test_roundtrip(eo3_dataset: Dataset, eo3_product: Product) -> None:
     )
 
     assert roundtrip.crs == original.crs
-    assert roundtrip.extent.area == pytest.approx(original.extent.area, abs=0.001)
+    roundtrip_extent = roundtrip.extent
+    assert roundtrip_extent is not None
+    original_extent = original.extent
+    assert original_extent is not None
+    assert roundtrip_extent.area == pytest.approx(original_extent.area, abs=0.001)
     assert all(
         x == pytest.approx(y)
         for x, y in zip(
