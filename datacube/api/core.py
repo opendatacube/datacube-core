@@ -1251,7 +1251,7 @@ def select_datasets_inside_polygon(
     assert polygon is not None
     query_crs = polygon.crs
     for dataset in datasets:
-        if intersects(polygon, dataset.extent.to_crs(query_crs)):
+        if dataset.extent and intersects(polygon, dataset.extent.to_crs(query_crs)):
             yield dataset
 
 
