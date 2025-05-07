@@ -85,9 +85,9 @@ class PgField(Field):
             return (
                 self.search_index_table,
                 and_(
-                    Dataset.id == self.search_index_table.dataset_ref,
-                    self.search_index_table.search_key == self.name,
-                ),
+                    Dataset.id == self.search_index_table.dataset_ref,  # type: ignore[attr-defined]
+                    self.search_index_table.search_key == self.name  # type: ignore[attr-defined]
+                )
             )
         else:
             return (self.search_index_table,)
@@ -103,7 +103,7 @@ class PgField(Field):
     @property
     def search_alchemy_expression(self) -> ColumnExpressionArgument:
         if self.indexed:
-            return self.search_index_table.search_val
+            return self.search_index_table.search_val  # type: ignore[attr-defined]
         else:
             return self.alchemy_expression
 
