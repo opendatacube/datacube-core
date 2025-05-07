@@ -11,6 +11,7 @@ from collections import namedtuple
 from collections.abc import Callable
 from datetime import date, datetime, timezone
 from decimal import Decimal
+from functools import cached_property
 from typing import Any, TypeAlias
 
 from sqlalchemy import and_, cast, func
@@ -26,7 +27,7 @@ from datacube import utils
 from datacube.drivers.postgis._schema import Dataset, search_field_index_map
 from datacube.model import Range
 from datacube.model.fields import Expression, Field
-from datacube.utils import cached_property, get_doc_offset
+from datacube.utils import get_doc_offset
 from datacube.utils.dates import tz_as_utc
 
 DatasetJoinArgs = tuple[FromClause] | tuple[FromClause, ColumnExpressionArgument]

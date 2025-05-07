@@ -13,6 +13,7 @@ import math
 from collections import OrderedDict
 from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 from datetime import datetime
+from functools import cached_property
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -23,7 +24,6 @@ from typing_extensions import override
 
 from datacube.utils import (
     DocReader,
-    cached_property,
     parse_time,
     schema_validated,
     uri_to_local_path,

@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import Iterable, Sequence
+from functools import cached_property
 from typing import NamedTuple
 from uuid import UUID
 
@@ -10,7 +11,6 @@ from deprecat import deprecat
 
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, Product
-from datacube.utils import cached_property
 from datacube.utils.documents import JsonDict
 
 
