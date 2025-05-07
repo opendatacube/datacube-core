@@ -30,7 +30,7 @@ from .math import (
     unsqueeze_data_array,
     unsqueeze_dataset,
 )
-from .py import cached_property, ignore_exceptions_if, import_function
+from .py import ignore_exceptions_if, import_function
 from .serialise import jsonify_document
 from .uris import get_part_from_uri, is_url, is_vsipath, mk_part_uri, uri_to_local_path
 
@@ -41,7 +41,6 @@ __all__ = [
     "NoDatesSafeLoader",
     "SimpleDocNav",
     "_readable_offset",
-    "cached_property",
     "check_write_path",
     "gen_password",
     "get_doc_offset",

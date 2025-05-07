@@ -8,6 +8,9 @@ from collections.abc import Callable, Mapping
 from contextlib import contextmanager
 
 import toolz
+from deprecat import deprecat
+
+from datacube.migration import ODC2DeprecationWarning
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -46,6 +49,12 @@ def ignore_exceptions_if(
         yield
 
 
+@deprecat(
+    reason="This class has been deprecated. Please use cached_property from "
+    "functools instead.",
+    version="1.9.18",
+    category=ODC2DeprecationWarning,
+)
 class cached_property:  # pylint: disable=invalid-name  # noqa: N801
     """
     A property that is only computed once per instance and then replaces

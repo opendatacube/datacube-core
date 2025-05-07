@@ -25,7 +25,7 @@ from odc.geo.geom import lonlat_bounds, multipolygon, polygon
 from odc.stac._mdtools import _group_geoboxes
 from toolz.dicttoolz import get_in
 
-from datacube.model import Dataset, Product, Range
+from datacube.model import Dataset, GridSpec, Product, Range
 from datacube.storage import BandInfo
 from datacube.storage._rio import RasterDatasetDataSource
 from datacube.utils import DatacubeException, DocReader
@@ -474,14 +474,11 @@ def make_grids(
                     },
                     None,
                 )
-            elif ds.product.grid_spec:
-                # assumes we'll get a legacy GridSpec since we're dealing with legacy datasets
+            elif (gs := ds.product.grid_spec) and isinstance(gs, GridSpec):
+                # Legacy GridSpec since we're dealing with legacy datasets.
                 shape, transform = _shape_and_transform(
                     ref_points,
-                    {
-                        "x": ds.product.grid_spec.resolution[1],
-                        "y": ds.product.grid_spec.resolution[0],
-                    },
+                    {"x": gs.resolution[1], "y": gs.resolution[0]},
                     None,
                 )
             else:

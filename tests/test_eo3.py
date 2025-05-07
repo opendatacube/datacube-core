@@ -401,7 +401,9 @@ def test_eo1_dataset_conversion(
     assert compat_ds.is_eo3
     assert compat_ds.properties
     assert compat_ds.accessories
-    assert compat_ds.properties["datetime"] == compat_ds.center_time.strftime(
+    compat_ds_center_time = compat_ds.center_time
+    assert compat_ds_center_time is not None
+    assert compat_ds.properties["datetime"] == compat_ds_center_time.strftime(
         "%Y-%m-%d %H:%M:%S"
     )
     assert compat_ds.metadata_doc["lineage"]["source_datasets"] == {

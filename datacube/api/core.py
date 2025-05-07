@@ -1352,11 +1352,12 @@ def select_datasets_inside_polygon(
     # Check against the bounding box of the original scene, can throw away some portions
     # (Only needed for index drivers without spatial index support)
     query_crs = polygon.crs
-    for dataset in datasets:
-        if dataset.extent and intersects(
-            polygon, dataset.extent.to_crs(query_crs, resolution="auto")
-        ):
-            yield dataset
+    if query_crs is not None:
+        for dataset in datasets:
+            if dataset.extent and intersects(
+                polygon, dataset.extent.to_crs(query_crs, resolution="auto")
+            ):
+                yield dataset
 
 
 def fuse_lazy(
