@@ -140,7 +140,7 @@ geoalchemy2==0.17.1
     # via datacube (pyproject.toml)
 greenlet==3.2.1
     # via sqlalchemy
-hypothesis==6.131.12
+hypothesis==6.131.15
     # via datacube (pyproject.toml:dev)
 idna==3.10
     # via requests
