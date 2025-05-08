@@ -5,6 +5,7 @@
 import os
 from unittest import mock
 
+import moto
 import pytest
 
 from datacube.testutils import write_files
@@ -116,12 +117,13 @@ def test_rio_env_aws_auto_region(monkeypatch, without_aws_env) -> None:
 def test_rio_env_aws_auto_region_dummy() -> None:
     """Just call it we don't know if it will succeed"""
 
-    # at least it should not raise error since we haven't asked for region_name='auto'
-    ee = activate_rio_env(aws={})
-    assert isinstance(ee, dict)
+    with moto.mock_aws():
+        # at least it should not raise error since we haven't asked for region_name='auto'
+        ee = activate_rio_env(aws={})
+        assert isinstance(ee, dict)
 
-    deactivate_rio_env()
-    assert get_rio_env() == {}
+        deactivate_rio_env()
+        assert get_rio_env() == {}
 
 
 def test_rio_env_via_config() -> None:
