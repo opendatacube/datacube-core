@@ -6,6 +6,7 @@ import json
 from unittest import mock
 
 import botocore
+import moto
 import pytest
 from botocore.credentials import ReadOnlyCredentials
 
@@ -164,9 +165,7 @@ def test_creds_with_retry() -> None:
     assert session.get_credentials.call_count == 2
 
 
-def test_s3_basics(without_aws_env) -> None:
-    from botocore.credentials import ReadOnlyCredentials
-    from numpy import s_
+def test_s3_url_parsing() -> None:
 
     assert s3_url_parse('s3://bucket/key') == ('bucket', 'key')
     assert s3_url_parse('s3://bucket/key/') == ('bucket', 'key/')
@@ -174,6 +173,10 @@ def test_s3_basics(without_aws_env) -> None:
 
     with pytest.raises(ValueError):
         s3_url_parse("file://some/path")
+
+
+def test_s3_fmt_range() -> None:
+    from numpy import s_
 
     assert s3_fmt_range((0, 3)) == "bytes=0-2"
     assert s3_fmt_range(s_[4:10]) == "bytes=4-9"
@@ -184,17 +187,23 @@ def test_s3_basics(without_aws_env) -> None:
         with pytest.raises(ValueError):
             s3_fmt_range(bad)
 
+
+def test_s3_client(without_aws_env) -> None:
+    from botocore.credentials import ReadOnlyCredentials
+
     creds = ReadOnlyCredentials('fake-key', 'fake-secret', None)
 
-    assert str(s3_client(region_name='kk')._endpoint) == 's3(https://s3.kk.amazonaws.com)'
-    assert str(s3_client(region_name='kk', use_ssl=False)._endpoint) == 's3(http://s3.kk.amazonaws.com)'
+    # Mock AWS to make the test run faster.
+    # From ~5 seconds to ~ 0.3s
+    with moto.mock_aws():
+        assert str(s3_client(region_name='kk')._endpoint) == 's3(https://s3.kk.amazonaws.com)'
+        assert str(s3_client(region_name='kk', use_ssl=False)._endpoint) == 's3(http://s3.kk.amazonaws.com)'
 
-    s3 = s3_client(region_name='us-west-2', creds=creds)
-    assert s3 is not None
+        s3 = s3_client(region_name='us-west-2', creds=creds)
+        assert s3 is not None
 
 
 def test_s3_io(monkeypatch, without_aws_env) -> None:
-    import moto
     from numpy import s_
 
     url = "s3://bucket/file.txt"
@@ -226,12 +235,13 @@ def test_s3_io(monkeypatch, without_aws_env) -> None:
 
 
 def test_s3_unsigned(monkeypatch, without_aws_env) -> None:
-    s3 = s3_client(aws_unsigned=True)
-    assert s3._request_signer.signature_version == botocore.UNSIGNED
+    with moto.mock_aws():
+        s3 = s3_client(aws_unsigned=True)
+        assert s3._request_signer.signature_version == botocore.UNSIGNED
 
-    monkeypatch.setenv("AWS_UNSIGNED", "yes")
-    s3 = s3_client()
-    assert s3._request_signer.signature_version == botocore.UNSIGNED
+        monkeypatch.setenv("AWS_UNSIGNED", "yes")
+        s3 = s3_client()
+        assert s3._request_signer.signature_version == botocore.UNSIGNED
 
 
 @mock.patch('datacube.utils.aws.ec2_current_region', return_value="us-west-2")
@@ -239,11 +249,14 @@ def test_s3_client_cache(monkeypatch, without_aws_env) -> None:
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
 
-    s3 = s3_client(cache=True)
-    assert s3 is s3_client(cache=True)
-    assert s3 is s3_client(cache='purge')
-    assert s3_client(cache='purge') is None
-    assert s3 is not s3_client(cache=True)
+    # Mock AWS to make the test run faster.
+    # From ~5 seconds to ~ 0.3s
+    with moto.mock_aws():
+        s3 = s3_client(cache=True)
+        assert s3 is s3_client(cache=True)
+        assert s3 is s3_client(cache='purge')
+        assert s3_client(cache='purge') is None
+        assert s3 is not s3_client(cache=True)
 
     opts = (dict(),
             dict(region_name="foo"),

@@ -228,7 +228,7 @@ def _mk_s3_client(profile: str | None = None,
                                   creds=creds,
                                   region_name=region_name)
 
-    extras = {}  # type: dict[str, Any]
+    extras: dict[str, str|None] = {}
     if creds is not None:
         extras.update(aws_access_key_id=creds.access_key,
                       aws_secret_access_key=creds.secret_key,

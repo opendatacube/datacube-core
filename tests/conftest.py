@@ -21,12 +21,18 @@ from datacube.index.eo3 import prep_eo3
 from datacube.model import Dataset, Measurement, MetadataType, Product
 from datacube.utils.documents import read_documents
 
-AWS_ENV_VARS = (
-    "AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN"
-    "AWS_DEFAULT_REGION AWS_DEFAULT_OUTPUT AWS_PROFILE "
-    "AWS_ROLE_SESSION_NAME AWS_CA_BUNDLE "
-    "AWS_SHARED_CREDENTIALS_FILE AWS_CONFIG_FILE"
-).split(" ")
+AWS_ENV_VARS = [
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_SESSION_TOKEN",
+    "AWS_DEFAULT_REGION",
+    "AWS_DEFAULT_OUTPUT",
+    "AWS_PROFILE",
+    "AWS_ROLE_SESSION_NAME",
+    "AWS_CA_BUNDLE",
+    "AWS_SHARED_CREDENTIALS_FILE",
+    "AWS_CONFIG_FILE",
+]
 
 
 @pytest.fixture

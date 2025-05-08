@@ -38,6 +38,7 @@ Next Version
 - Sort imports with Ruff :pull:`1858`
 - Fix documentation parameter names :pull:`1857`
 - Add pandas types for development :pull:`1867`
+- Speed up AWS Utils tests :pull:`1878`
 
 v1.9.3 (15th April 2025)
 ========================
