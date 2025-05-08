@@ -418,7 +418,7 @@ class Doc2Dataset:
                  source_tree: LineageTree | None = None) -> DatasetOrError:
         """Attempt to construct dataset from metadata document and a uri.
 
-        :param doc: Dictionary or SimpleDocNav object
+        :param doc_in: Dictionary or SimpleDocNav object
         :param uri: String "location" property of the Dataset
 
         :return: (dataset, None) is successful,

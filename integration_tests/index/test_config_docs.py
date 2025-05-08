@@ -65,7 +65,6 @@ _DATASET_METADATA = {
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_metadata_indexes_views_exist(index, default_metadata_type) -> None:
     """
-    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
     :type default_metadata_type: datacube.model.MetadataType
     """
     # Metadata indexes should no longer exist.
@@ -78,7 +77,6 @@ def test_metadata_indexes_views_exist(index, default_metadata_type) -> None:
 @pytest.mark.parametrize('datacube_env_name', ('datacube', ))
 def test_dataset_indexes_views_exist(index, ls5_telem_type) -> None:
     """
-    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
     :type ls5_telem_type: datacube.model.DatasetType
     """
     assert ls5_telem_type.name == 'ls5_telem_test'
@@ -175,7 +173,6 @@ def _object_exists(index, index_name) -> bool:
 
 def test_idempotent_add_dataset_type(index, ls8_eo3_product, extended_eo3_product_doc) -> None:
     """
-    :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
     """
     assert index.products.get_by_name(ls8_eo3_product.name) is not None
@@ -460,7 +457,7 @@ def _to_yaml(ls5_telem_doc):
 
 def test_update_metadata_type(index, default_metadata_type) -> None:
     """
-    :type default_metadata_type_docs: list[dict]
+    :type default_metadata_type: list[dict]
     :type index: datacube.index.Index
     """
     mt_doc = next(d for d in default_metadata_type_docs() if d['name'] == default_metadata_type.name)
@@ -502,7 +499,6 @@ def test_update_metadata_type(index, default_metadata_type) -> None:
 
 def test_filter_types_by_fields(index, wo_eo3_product) -> None:
     """
-    :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
     """
     res = list(index.metadata_types.get_with_fields(['platform', 'instrument', 'region_code']))
@@ -520,7 +516,6 @@ def test_filter_types_by_fields(index, wo_eo3_product) -> None:
 
 def test_filter_products_by_types(index, wo_eo3_product) -> None:
     """
-    :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
     """
     res = list(index.products.get_with_types([wo_eo3_product.metadata_type]))
@@ -529,7 +524,6 @@ def test_filter_products_by_types(index, wo_eo3_product) -> None:
 
 def test_filter_types_by_search(index, wo_eo3_product, ls8_eo3_product) -> None:
     """
-    :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index.Index
     """
     assert index.products
