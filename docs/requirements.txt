@@ -202,7 +202,7 @@ partd==1.4.2
     # via dask
 pexpect==4.9.0
     # via ipython
-platformdirs==4.3.7
+platformdirs==4.3.8
     # via jupyter-core
 prompt-toolkit==3.0.51
     # via ipython
