@@ -25,7 +25,6 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
     def __init__(self, db: PostGisDb, index: AbstractIndex) -> None:
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
-        :type metadata_type_resource: datacube.index._metadata_types.MetadataTypeResource
         """
         self._db = db
         super().__init__(index)

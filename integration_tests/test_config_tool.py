@@ -243,8 +243,6 @@ def test_user_creation(clirunner, example_user) -> None:
     Add a user, grant them, delete them.
 
     This test requires role creation privileges on the PostgreSQL instance used for testing...
-
-    :type db: datacube.drivers.postgres._connections.PostgresDb
     """
     username, user_description = example_user
 

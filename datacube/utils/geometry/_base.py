@@ -167,7 +167,7 @@ class CRS:
     """
     Wrapper around `pyproj.CRS` for backwards compatibility.
 
-    :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
+    :param crs_spec: string representation of a CRS, often an EPSG code like 'EPSG:4326'
     :raises: `pyproj.exceptions.CRSError`
     """
     DEFAULT_WKT_VERSION = (WktVersion.WKT1_GDAL if Version(rasterio.__gdal_version__) < Version("3.0.0")

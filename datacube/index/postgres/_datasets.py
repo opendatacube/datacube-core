@@ -51,7 +51,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def __init__(self, db, index) -> None:
         """
         :type db: datacube.drivers.postgres._connections.PostgresDb
-        :type dataset_type_resource: datacube.index._products.ProductResource
         """
         self._db = db
         super().__init__(index)

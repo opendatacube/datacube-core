@@ -469,7 +469,7 @@ def _set_doc_offset(offset: list[str | int], document: dict, value) -> None:
 class DocReader:
     def __init__(self, type_definition, search_fields, doc) -> None:
         """
-        :type system_offsets: dict[str,list[str]]
+        :type type_definition: dict[str,list[str]]
         :type doc: dict
         """
         self.__dict__['_doc'] = doc

@@ -104,7 +104,7 @@ class AbstractProductResource(ABC):
 
         API Note: This API method is not finalised and may be subject to change.
 
-        :param batch_types: An iterable of one batch's worth of Product objects to add
+        :param batch_products: An iterable of one batch's worth of Product objects to add
         :return: BatchStatus named tuple.
         """
         b_skipped = 0

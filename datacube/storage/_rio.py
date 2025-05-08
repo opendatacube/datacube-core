@@ -164,8 +164,7 @@ class RasterDatasetDataSource(RasterioDataSource):
         """
         Initialise for reading from a Data Cube Dataset.
 
-        :param dataset: dataset to read from
-        :param measurement_id: measurement to read. a single 'band' or 'slice'
+        :param band: band to read.
         """
         self._band_info = band
         self._hdf = _is_hdf(band.format)

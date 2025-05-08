@@ -36,7 +36,7 @@ Next Version
 - pytest: configure in pyproject.toml :pull:`1844`
 - Remove executable permission :pull:`1846`
 - Sort imports with Ruff :pull:`1858`
-- Fix documentation parameter names :pull:`1857`
+- Fix documentation parameter names :pull:`1857`, :pull:`1880`
 - Add pandas types for development :pull:`1867`
 - Speed up AWS Utils tests :pull:`1878`
 
