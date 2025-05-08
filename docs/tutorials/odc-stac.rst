@@ -8,15 +8,15 @@ Accessing data with odc-stac
 Introduction
 ============
 
-In this tutorial we will use Python libraries to search for freely available 
-Sentinel-2 imagery and load it into memory.
-You will then create a true-colour image and export it as a cloud-optimised GeoTiff.
+In this tutorial we will use Python libraries to find and load land cover data from the freely available `Impact Observatory Annual Land Use Land Cover <iolulc_>`_ product.
+After loading the data, we will export it as a cloud-optimised GeoTiff.
+This will allow you to further view or work with the data in GIS software and other tools.
 
 During the tutorial, we will:
 
 * Specify our search in terms of:
   
-  * what (data provider and satellite)
+  * what (data provider and product)
   * where (area of interest)
   * when (date range)
 * Use `pystac-client`_ to connect to a Spatio-Temporal Asset Catalog (STAC) 
@@ -144,3 +144,4 @@ Export loaded data
 .. _pystac-client: https://pystac-client.readthedocs.io/en/stable/
 .. _odc-stac: https://odc-stac.readthedocs.io/en/latest/ 
 .. _GitHub: https://github.com/opendatacube/tutorial-odc-stac/tree/main
+.. _iolulc: https://planetarycomputer.microsoft.com/dataset/io-lulc-annual-v02
