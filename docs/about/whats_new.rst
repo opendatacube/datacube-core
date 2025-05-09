@@ -71,6 +71,7 @@ Other Changes
 - Fix documentation parameter names :pull:`1857`, :pull:`1880`
 - Add pandas types for development :pull:`1867`
 - Speed up AWS Utils tests :pull:`1878`
+- pyproject: set a fallback version :pull:`1887`
 
 
 v1.9.3 (15th April 2025)
