@@ -78,6 +78,7 @@ Other Changes
 - model: remove old asserts :pull:`1898`
 - Remove pytest-timeout :pull:`1899`
 - Dependabot: set to weekly schedule :pull:`1901`
+- Ensure lock files are kept in sync with ``pyproject.toml`` dependencies. :pull:`1890`
 
 v1.9.3 (15th April 2025)
 ========================
