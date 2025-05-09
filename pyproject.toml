@@ -196,7 +196,7 @@ include = ['datacube*']
 
 [tool.setuptools_scm]
 write_to = 'datacube/_version.py'
-fallback_version = "1.9.3+"
+fallback_version = "1.9.4.dev0"
 
 [tool.mypy]
 python_version = '3.10'
