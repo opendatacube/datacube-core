@@ -8,6 +8,38 @@ What's New
 Next Version
 ============
 
+v1.9.4 (?? May 2025)
+====================
+
+Improvements
+------------
+
+**Bring back GridWorkflow**
+
+GridWorkflow is back! It was accidentally removed with the deprecated ingestion tools as
+part of the ODC 1.9 release, since it's no longer needed internally. It is however an
+extremely useful public API for anyone running large scale data summaries and is
+used by `ODC Statistician`_.
+
+It has been updated to use the odc-geo_ geometry classes.
+
+See: :issue:`1749` and :pull:`1760`
+
+**Cleaning and Tidying**
+
+Massive cleaning effort across the codebase, spearheaded by @pjonsson, with a focus on:
+
+ - Improvements in type annotation
+ - Linting fixes
+ - Code formatting and import ordering
+ - Continuous integration improvements 
+
+.. _odc-geo: https://odc-geo.readthedocs.io/
+.. _ODC Statistician: https://github.com/opendatacube/odc-stats
+
+Other Changes
+-------------
+
 - Use odc-geo GridSpec if `tile_shape` in product storage information :pull:`1783`
 - SQL: fix package names type :pull:`1784`
 - Add some type signatures :pull:`1785`, :pull:`1788`, :pull:`1796`
@@ -39,6 +71,7 @@ Next Version
 - Fix documentation parameter names :pull:`1857`, :pull:`1880`
 - Add pandas types for development :pull:`1867`
 - Speed up AWS Utils tests :pull:`1878`
+
 
 v1.9.3 (15th April 2025)
 ========================
@@ -459,12 +492,10 @@ v1.8.13 (6th June 2023)
 - Add pre-commit hook to verify license headers (:pull:`1438`)
 - Support open-ended date ranges in `datacube dataset search`, `dc.load`, and `dc.find_datasets` (:pull:`1439`, :pull:`1443`)
 - Pass Y and Y Scale factors through to rasterio.warp.reproject, to eliminate projection bug affecting
-  non-square Areas Of Interest (See `Issue #1448`_) (:pull:`1450`)
+  non-square Areas Of Interest (See :issue:`1448` and :pull:`1450`)
 - Add `archive_less_mature` option to `datacube dataset add` and `datacube dataset update` (:pull:`1451`)
 - Allow for +-1ms leniency in finding other maturity versions of a dataset (:pull:`1452`)
 - Update whats_new.rst for release (:pull:`1453`)
-
-.. _`Issue #1448`: https://github.com/opendatacube/datacube-core/issues/1448
 
 v1.8.12 (7th March 2023)
 ========================
