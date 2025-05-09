@@ -257,7 +257,7 @@ partd==1.4.2
     # via dask
 pexpect==4.9.0
     # via ipython
-platformdirs==4.3.7
+platformdirs==4.3.8
     # via
     #   jupyter-core
     #   pylint
@@ -362,7 +362,7 @@ shapely==2.0.7
     #   odc-geo
 six==1.17.0
     # via python-dateutil
-snowballstemmer==2.2.0
+snowballstemmer==3.0.0.1
     # via sphinx
 sortedcontainers==2.4.0
     # via
