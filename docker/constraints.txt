@@ -257,7 +257,7 @@ partd==1.4.2
     # via dask
 pexpect==4.9.0
     # via ipython
-platformdirs==4.3.7
+platformdirs==4.3.8
     # via
     #   jupyter-core
     #   pylint
@@ -349,7 +349,7 @@ ruamel-yaml==0.18.10
     # via datacube (pyproject.toml)
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
-ruff==0.11.8
+ruff==0.11.9
     # via datacube (pyproject.toml:dev)
 s3transfer==0.12.0
     # via boto3
@@ -362,7 +362,7 @@ shapely==2.0.7
     #   odc-geo
 six==1.17.0
     # via python-dateutil
-snowballstemmer==2.2.0
+snowballstemmer==3.0.1
     # via sphinx
 sortedcontainers==2.4.0
     # via
@@ -433,7 +433,7 @@ traitlets==5.14.3
     #   nbsphinx
 types-affine==0.1.0
     # via datacube (pyproject.toml:dev)
-types-awscrt==0.26.1
+types-awscrt==0.27.1
     # via botocore-stubs
 types-cachetools==5.5.0.20240820
     # via datacube (pyproject.toml:dev)
