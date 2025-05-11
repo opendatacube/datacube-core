@@ -50,22 +50,15 @@ jobs:
 
     - name: Verify and Run Tests
       run: |
-        echo "Run tests"
-        cat <<EOF | docker run --rm -i -v $(pwd):/code ${{ env.DOCKER_IMAGE }} bash -
-          set -euo pipefail
-
-          pip install -e /code/tests/drivers/fail_drivers --no-deps
-          pip install -e /code/examples/io_plugin --no-deps
-
-          pytest -r a \
+        docker run --rm -i -v $(pwd):/code ${{ env.DOCKER_IMAGE }} bash --login -c \
+          "pytest -r a \
             --cov datacube \
             --cov-report=xml \
             --doctest-ignore-import-errors \
             --durations=5 \
             datacube \
             tests \
-            integration_tests
-        EOF
+            integration_tests"
 
     - name: Install uv
       uses: astral-sh/setup-uv@v6
