@@ -518,7 +518,7 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
 
     derived_dataset_ids: list[UUID] = []
     if all_ds:
-        datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=False)}
+        datasets_for_archive = dict.fromkeys(index.datasets.get_all_dataset_ids(archived=False), True)
     else:
         datasets_for_archive = {UUID(dataset_id): exists
                                 for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
@@ -618,7 +618,7 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: list[
         sys.exit(1)
 
     if all_ds:
-        datasets_for_purge = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
+        datasets_for_purge = dict.fromkeys(index.datasets.get_all_dataset_ids(archived=True), True)
     else:
         datasets_for_purge = {UUID(dataset_id): exists
                               for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}

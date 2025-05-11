@@ -649,9 +649,9 @@ class DatasetResource(AbstractDatasetResource):
         # Note that this implementation relies on dictionaries being ordered by insertion - this has been the case
         # since Py3.6, and officially guaranteed behaviour since Py3.7.
         if field_names is None and custom_offsets is None:
-            field_name_d = {f: None for f in self._index.products.get_field_names()}
+            field_name_d = dict.fromkeys(self._index.products.get_field_names())
         elif field_names:
-            field_name_d = {f: None for f in field_names}
+            field_name_d = dict.fromkeys(field_names)
         else:
             field_name_d = {}
 
