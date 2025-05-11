@@ -59,6 +59,8 @@ RUN groupmod ubuntu -n odc  \
 
 USER odc
 
+COPY --chown=odc:odc docker/assets/datacube_integration.conf /home/odc/.datacube_integration.conf
+
 WORKDIR /env
 
 RUN virtualenv /env
