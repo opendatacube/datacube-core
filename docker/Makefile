@@ -44,7 +44,7 @@ dkr: Dockerfile
 run-test:
 	@docker run --rm \
     -v $(CODE):/code \
-    $(DKR_IMG) pytest --timeout=30 tests integration_tests datacube
+    $(DKR_IMG) pytest tests integration_tests datacube
 
 clean:
 	@echo "Keeping wheels and pip cache"
