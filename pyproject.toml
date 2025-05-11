@@ -82,13 +82,10 @@ dev = [
     'pytest',
     'pytest-cov',
     'pytest-httpserver',
-    'pytest-timeout',
-
     # Linting tools
     'pycodestyle',
     'pylint',
     'ruff',
-
     # Types and type checking
     "boto3-stubs",
     "botocore-stubs",

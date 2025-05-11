@@ -131,6 +131,8 @@ fsspec==2025.3.2
     # via dask
 geoalchemy2==0.17.1
     # via datacube (pyproject.toml)
+greenlet==3.2.2
+    # via sqlalchemy
 hypothesis==6.131.15
     # via datacube (pyproject.toml:dev)
 idna==3.10
@@ -301,12 +303,9 @@ pytest==8.3.5
     # via
     #   datacube (pyproject.toml:dev)
     #   pytest-cov
-    #   pytest-timeout
 pytest-cov==6.1.1
     # via datacube (pyproject.toml:dev)
 pytest-httpserver==1.1.3
-    # via datacube (pyproject.toml:dev)
-pytest-timeout==2.4.0
     # via datacube (pyproject.toml:dev)
 python-dateutil==2.9.0.post0
     # via

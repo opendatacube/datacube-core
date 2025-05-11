@@ -76,6 +76,7 @@ Other Changes
 - ``compliance-checker``` is no longer a dependency :pull:`1888`, :pull:`1897`
 - Enable flake8-comprehensions :pull:`1900`
 - model: remove old asserts :pull:`1898`
+- Remove pytest-timeout :pull:`1899`
 
 v1.9.3 (15th April 2025)
 ========================
