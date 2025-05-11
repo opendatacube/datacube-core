@@ -74,6 +74,7 @@ Other Changes
 - Dependabot: disable weekly updates :pull:`1886`
 - pyproject: set a fallback version :pull:`1887`
 - ``compliance-checker``` is no longer a dependency :pull:`1888`, :pull:`1897`
+- CI: run tests with docker compose :pull:`1896`
 - Enable flake8-comprehensions :pull:`1900`
 - model: remove old asserts :pull:`1898`
 - Remove pytest-timeout :pull:`1899`
