@@ -50,8 +50,9 @@ jobs:
 
     - name: Verify and Run Tests
       run: |
-        docker run --rm -i -v $(pwd):/code ${{ env.DOCKER_IMAGE }} bash --login -c \
-          "pytest -r a \
+        docker compose up --quiet-pull --wait -d
+        docker compose exec --user odc -T core /bin/bash --login -c \
+          "source /env/bin/activate && pytest -r a \
             --cov datacube \
             --cov-report=xml \
             --doctest-ignore-import-errors \
@@ -59,6 +60,7 @@ jobs:
             datacube \
             tests \
             integration_tests"
+        docker compose down
 
     - name: Install uv
       uses: astral-sh/setup-uv@v6
