@@ -665,7 +665,7 @@ class Collate(VirtualProduct):
             return value['collate'][1]
 
         def fetch_child(child, source_index, r):
-            if any([x == 0 for x in r.box.shape]):
+            if any(x == 0 for x in r.box.shape):
                 # empty raster
                 return None
             else:

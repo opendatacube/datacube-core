@@ -35,8 +35,8 @@ def test_compute_tasks() -> None:
                                   dashboard_address=None)
 
         tasks = (dask.delayed(x) for x in range(100))
-        xx = [x for x in compute_tasks(tasks, client)]
-        assert xx == [x for x in range(100)]
+        xx = list(compute_tasks(tasks, client))
+        assert xx == list(range(100))
     finally:
         client.close()
         del client
@@ -54,7 +54,7 @@ def test_start_local_dask_dashboard_link(monkeypatch) -> None:
 
 def test_partition_map() -> None:
     tasks = partition_map(10, str, range(101))
-    tt = [t for t in tasks]
+    tt = list(tasks)
     assert len(tt) == 11
     lump = tt[0].compute()
     assert len(lump) == 10
@@ -70,7 +70,7 @@ def test_pmap() -> None:
                                   dashboard_address=None)
 
         xx_it = pmap(str, range(101), client=client)
-        xx = [x for x in xx_it]
+        xx = list(xx_it)
 
         assert xx == [str(x) for x in range(101)]
     finally:

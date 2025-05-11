@@ -534,7 +534,7 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
             # Get the UUID of our found derived datasets
             derived_dataset_ids = [derived.id for derived_dataset in derived_datasets for derived in derived_dataset]
 
-    all_datasets = derived_dataset_ids + [uuid for uuid in datasets_for_archive.keys()]
+    all_datasets = derived_dataset_ids + list(datasets_for_archive.keys())
 
     for dataset in all_datasets:
         click.echo(f'Archiving dataset: {dataset}')

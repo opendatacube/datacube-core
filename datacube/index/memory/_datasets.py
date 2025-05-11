@@ -347,7 +347,7 @@ class DatasetResource(AbstractDatasetResource):
     @override
     def get_location(self, id_: DSID) -> str | None:
         uuid = dsid_to_uuid(id_)
-        locations = [s for s in self._locations.get(uuid, [])]
+        locations = list(self._locations.get(uuid, []))
         if not locations:
             return None
         return locations[0]

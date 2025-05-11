@@ -202,7 +202,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             assert isinstance(ds_by_uuid, dict)  # For typechecker.
             all_uuids = list(ds_by_uuid)
 
-            present = {k: v for k, v in zip(all_uuids, self.bulk_has(all_uuids))}
+            present = dict(zip(all_uuids, self.bulk_has(all_uuids)))
 
             if present[dataset.id]:
                 _LOG.warning('Dataset %s is already in the database', dataset.id)

@@ -36,7 +36,7 @@ def test_gridspec() -> None:
             resolution=(-0.1, 0.1), origin=(10, 10)
         )
     poly = polygon([(10, 12.2), (10.8, 13), (13, 10.8), (12.2, 10), (10, 12.2)], crs=CRS('EPSG:4326'))
-    cells = {index: geobox for index, geobox in list(gs.tiles_from_geopolygon(poly))}
+    cells = dict(list(gs.tiles_from_geopolygon(poly)))
     assert set(cells.keys()) == {(0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}
     assert numpy.isclose(cells[(2, 0)].coordinates['longitude'].values, numpy.linspace(12.05, 12.95, num=10)).all()
     assert numpy.isclose(cells[(2, 0)].coordinates['latitude'].values, numpy.linspace(10.95, 10.05, num=10)).all()
@@ -66,14 +66,14 @@ def test_gridspec_upperleft() -> None:
     with suppress_deprecations():
         gs = GridSpec(crs=CRS('EPSG:5070'), tile_size=(-150000, 150000), resolution=(-30, 30),
                       origin=(3314800.0, -2565600.0))  # Coverage test  of deprecated class
-    cells = {index: geobox for index, geobox in list(gs.tiles(bbox))}
+    cells = dict(list(gs.tiles(bbox)))
     assert set(cells.keys()) == {(30, 6)}
     assert cells[(30, 6)].extent.boundingbox == tile_bbox
 
     with suppress_deprecations():
         gs = GridSpec(crs=CRS('EPSG:5070'), tile_size=(150000, 150000), resolution=(-30, 30),
                       origin=(14800.0, -2565600.0))
-    cells = {index: geobox for index, geobox in list(gs.tiles(bbox))}
+    cells = dict(list(gs.tiles(bbox)))
     assert set(cells.keys()) == {(30, 15)}  # WELD grid spec has 21 vertical cells -- 21 - 6 = 15
     assert cells[(30, 15)].extent.boundingbox == tile_bbox
 

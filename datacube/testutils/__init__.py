@@ -61,9 +61,9 @@ def assert_file_structure(
 
     if expected_filenames != actual_filenames:
         missing_files = expected_filenames - actual_filenames
-        missing_text = f'Missing: {sorted(list(missing_files))!r}'
+        missing_text = f'Missing: {sorted(missing_files)!r}'
         extra_files = actual_filenames - expected_filenames
-        added_text = f'Extra  : {sorted(list(extra_files))!r}'
+        added_text = f'Extra  : {sorted(extra_files)!r}'
         raise AssertionError(f'Folder mismatch of {root!r}\n\t{missing_text}\n\t{added_text}')
 
     for k, v in expected_structure.items():

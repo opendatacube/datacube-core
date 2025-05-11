@@ -1020,7 +1020,7 @@ class PostgisDbAPI:
         """
         verified = 0
         if crs_seq:
-            crses = [crs for crs in crs_seq]
+            crses = list(crs_seq)
         else:
             crses = self._db.spatially_indexed_crses()
 

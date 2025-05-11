@@ -244,7 +244,7 @@ def is_supported_document_type(path) -> bool:
     :type path: Union[Path, str]
     :rtype: bool
     """
-    return any([str(path).lower().endswith(suffix) for suffix in _ALL_SUPPORTED_EXTENSIONS])
+    return any(str(path).lower().endswith(suffix) for suffix in _ALL_SUPPORTED_EXTENSIONS)
 
 
 class NoDatesSafeLoader(SafeLoader):  # pylint: disable=too-many-ancestors

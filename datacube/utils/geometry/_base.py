@@ -979,7 +979,7 @@ def sides(poly: Geometry) -> Iterable[Geometry]:
 def multigeom(geoms: Iterable[Geometry]) -> Geometry:
     """ Construct Multi{Polygon|LineString|Point}
     """
-    geoms = [g for g in geoms]  # force into list
+    geoms = list(geoms)  # force into list
     src_types = {g.geom_type for g in geoms}
     if len(src_types) > 1:
         raise ValueError("All Geometries must be of the same type")
