@@ -11,7 +11,7 @@ from datacube.testutils import mk_sample_dataset, suppress_deprecations
 
 def test_band_layer() -> None:
     def t(band=None, layer=None):
-        return _get_band_and_layer(dict(band=band, layer=layer))
+        return _get_band_and_layer({'band': band, 'layer': layer})
 
     assert t() == (None, None)
     assert t(1) == (1, None)
@@ -29,11 +29,11 @@ def test_band_layer() -> None:
 
 
 def test_band_info() -> None:
-    bands = [dict(name=n,
-                  dtype='uint8',
-                  units='K',
-                  nodata=33,
-                  path=n+'.tiff')
+    bands = [{'name': n,
+              'dtype': 'uint8',
+              'units': 'K',
+              'nodata': 33,
+              'path': n+'.tiff'}
              for n in 'a b c'.split(' ')]
 
     ds = mk_sample_dataset(bands,
@@ -93,11 +93,11 @@ def test_band_info_with_url_mangling() -> None:
     def url_mangler(raw):
         return raw.replace("tmp", "tmp/mangled")
 
-    bands = [dict(name=n,
-                  dtype='uint8',
-                  units='K',
-                  nodata=33,
-                  path=n+'.tiff')
+    bands = [{'name': n,
+              'dtype': 'uint8',
+              'units': 'K',
+              'nodata': 33,
+              'path': n+'.tiff'}
              for n in 'a b c'.split(' ')]
 
     ds = mk_sample_dataset(bands,

@@ -132,10 +132,10 @@ def load_datasets_for_update(doc_stream, index) -> Iterator:
 
 @dataset_cmd.command('add',
                      help="Add datasets to the Data Cube",
-                     context_settings=dict(token_normalize_func=report_old_options({
+                     context_settings={'token_normalize_func': report_old_options({
                          'dtype': 'product',
                          't': 'p'
-                     })))
+                     })})
 @click.option('--product', '-p', 'product_names',
               help=('Only match against products specified with this option, '
                     'you can supply several by repeating this option with a new product name'),
@@ -288,9 +288,9 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
     def loc_keep(new_ds, existing_ds):
         return None
 
-    update_loc = dict(archive=loc_archive,
-                      forget=loc_forget,
-                      keep=loc_keep)[location_policy]
+    update_loc = {'archive': loc_archive,
+                  'forget': loc_forget,
+                  'keep': loc_keep}[location_policy]
 
     updates_allowed = parse_update_rules(keys_that_can_change)
 

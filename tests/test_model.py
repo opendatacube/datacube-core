@@ -79,13 +79,13 @@ def test_gridspec_upperleft() -> None:
 
 
 def test_dataset_basics() -> None:
-    ds = mk_sample_dataset([dict(name='a')])
+    ds = mk_sample_dataset([{'name': 'a'}])
     assert ds == ds
     assert ds != "33"
     assert (ds == "33") is False
     assert str(ds) == repr(ds)
 
-    ds = mk_sample_dataset([dict(name='a')], uri=None, geobox=None)
+    ds = mk_sample_dataset([{'name': 'a'}], uri=None, geobox=None)
     assert not ds.uri
     assert ds.uri_scheme == ''
     assert ds.crs is None
@@ -97,8 +97,8 @@ def test_dataset_basics() -> None:
 def test_dataset_measurement_paths() -> None:
     format_ = 'GeoTiff'
 
-    ds = mk_sample_dataset([dict(name=n,
-                                 path=n+'.tiff')
+    ds = mk_sample_dataset([{'name': n,
+                             'path': n+'.tiff'}
                             for n in 'a b c'.split(' ')],
                            uri='file:///tmp/datataset.yml',
                            format=format_)
@@ -171,15 +171,15 @@ def test_product_gridspec() -> None:
 def test_product_nodata_nan() -> None:
     # When storing .nan to JSON in DB it becomes a string with value "NaN"
     # Make sure it is converted back to real NaN
-    product = mk_sample_product('test', measurements=[dict(name='_nan',
-                                                           dtype='float32',
-                                                           nodata='NaN'),
-                                                      dict(name='_inf',
-                                                           dtype='float32',
-                                                           nodata='Infinity'),
-                                                      dict(name='_neg_inf',
-                                                           dtype='float32',
-                                                           nodata='-Infinity'),
+    product = mk_sample_product('test', measurements=[{'name': '_nan',
+                                                       'dtype': 'float32',
+                                                       'nodata': 'NaN'},
+                                                      {'name': '_inf',
+                                                       'dtype': 'float32',
+                                                       'nodata': 'Infinity'},
+                                                      {'name': '_neg_inf',
+                                                       'dtype': 'float32',
+                                                       'nodata': '-Infinity'},
                                                       ])
     for m in product.measurements.values():
         assert isinstance(m.nodata, float)
@@ -190,9 +190,9 @@ def test_product_nodata_nan() -> None:
 
 
 def test_product_scale_factor() -> None:
-    product = mk_sample_product('test', measurements=[dict(name='red',
-                                                           scale_factor=33,
-                                                           add_offset=-5)])
+    product = mk_sample_product('test', measurements=[{'name': 'red',
+                                                       'scale_factor': 33,
+                                                       'add_offset': -5}])
     assert product.validate(product.definition) is None
     assert product.measurements['red'].scale_factor == 33
     assert product.measurements['red'].add_offset == -5
@@ -203,8 +203,8 @@ def test_product_scale_factor() -> None:
 
 def test_product_load_hints() -> None:
     product = mk_sample_product('test_product',
-                                load=dict(crs='epsg:3857',
-                                          resolution={'x': 10, 'y': -10}))
+                                load={'crs': 'epsg:3857',
+                                      'resolution': {'x': 10, 'y': -10}})
 
     assert 'load' in product.definition
     assert Product.validate(product.definition) is None
@@ -215,9 +215,9 @@ def test_product_load_hints() -> None:
     assert 'align' not in hints
 
     product = mk_sample_product('test_product',
-                                load=dict(crs='epsg:3857',
-                                          align={'x': 5, 'y': 6},
-                                          resolution={'x': 10, 'y': -10}))
+                                load={'crs': 'epsg:3857',
+                                      'align': {'x': 5, 'y': 6},
+                                      'resolution': {'x': 10, 'y': -10}})
 
     hints = product.load_hints()
     assert hints['output_crs'] == CRS('epsg:3857')
@@ -228,9 +228,9 @@ def test_product_load_hints() -> None:
     assert product.default_align == (6, 5)
 
     product = mk_sample_product('test_product',
-                                load=dict(crs='epsg:4326',
-                                          align={'longitude': 0.5, 'latitude': 0.6},
-                                          resolution={'longitude': 1.2, 'latitude': -1.1}))
+                                load={'crs': 'epsg:4326',
+                                      'align': {'longitude': 0.5, 'latitude': 0.6},
+                                      'resolution': {'longitude': 1.2, 'latitude': -1.1}})
 
     hints = product.load_hints()
     assert hints['output_crs'] == CRS('epsg:4326')
@@ -258,9 +258,9 @@ def test_product_load_hints() -> None:
     assert product.load_hints() == {}
 
     # check for fallback into partially defined `storage:`
-    product = mk_sample_product('test', storage=dict(
-        crs='EPSG:3857',
-        resolution={'x': 10, 'y': -10}))
+    product = mk_sample_product('test', storage={
+        'crs': 'EPSG:3857',
+        'resolution': {'x': 10, 'y': -10}})
     with suppress_deprecations():
         assert product.grid_spec is None
     assert product.default_resolution.yx == (-10, 10)
@@ -268,16 +268,16 @@ def test_product_load_hints() -> None:
 
     # check for fallback into partially defined `storage:`
     # no resolution -- no hints
-    product = mk_sample_product('test', storage=dict(
-        crs='EPSG:3857'))
+    product = mk_sample_product('test', storage={
+        'crs': 'EPSG:3857'})
     with suppress_deprecations():
         assert product.grid_spec is None
     assert product.load_hints() == {}
 
     # check misspelled load hints
     product = mk_sample_product('test_product',
-                                load=dict(crs='epsg:4326',
-                                          resolution={'longtude': 1.2, 'latitude': -1.1}))
+                                load={'crs': 'epsg:4326',
+                                      'resolution': {'longtude': 1.2, 'latitude': -1.1}})
     assert product.load_hints() == {}
 
 
@@ -379,13 +379,13 @@ def test_output_geobox_fail_paths() -> None:
 
 def test_metadata_type() -> None:
     m = MetadataType({'name': 'eo',
-                      'dataset': dict(
-                          id=['id'],
-                          label=['ga_label'],
-                          creation_time=['creation_dt'],
-                          measurements=['image', 'bands'],
-                          sources=['lineage', 'source_datasets'],
-                          format=['format', 'name'])},
+                      'dataset': {
+                          'id': ['id'],
+                          'label': ['ga_label'],
+                          'creation_time': ['creation_dt'],
+                          'measurements': ['image', 'bands'],
+                          'sources': ['lineage', 'source_datasets'],
+                          'format': ['format', 'name']}},
                      dataset_search_fields={})
 
     assert 'eo' in str(m)

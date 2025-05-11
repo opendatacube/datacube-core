@@ -23,9 +23,9 @@ class IndexDriverCache:
             from datacube.index.postgres.index import (
                 index_driver_init as pg_index_driver_init,
             )
-            self._drivers = dict(postgres=pg_index_driver_init(),
-                                 postgis=pgis_index_driver_init(),
-                                 memory=mem_index_driver_init())
+            self._drivers = {'postgres': pg_index_driver_init(),
+                             'postgis': pgis_index_driver_init(),
+                             'memory': mem_index_driver_init()}
 
         for driver in list(self._drivers.values()):
             if hasattr(driver, 'aliases'):

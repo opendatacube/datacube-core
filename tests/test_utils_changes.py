@@ -51,11 +51,11 @@ def test_classify_changes() -> None:
     good_change = (changes, [])
     bad_change = ([], changes)
     assert classify_changes(changes, {}) == bad_change
-    assert classify_changes(changes, {tuple(): allow_any}) == good_change
-    assert classify_changes(changes, {tuple(): allow_removal}) == bad_change
-    assert classify_changes(changes, {tuple(): allow_addition}) == bad_change
-    assert classify_changes(changes, {tuple(): allow_truncation}) == good_change
-    assert classify_changes(changes, {tuple(): allow_extension}) == bad_change
+    assert classify_changes(changes, {(): allow_any}) == good_change
+    assert classify_changes(changes, {(): allow_removal}) == bad_change
+    assert classify_changes(changes, {(): allow_addition}) == bad_change
+    assert classify_changes(changes, {(): allow_truncation}) == good_change
+    assert classify_changes(changes, {(): allow_extension}) == bad_change
     assert classify_changes(changes, {('a1', ): allow_any}) == bad_change
     assert classify_changes(changes, {('a1', ): allow_removal}) == bad_change
     assert classify_changes(changes, {('a1', ): allow_addition}) == bad_change

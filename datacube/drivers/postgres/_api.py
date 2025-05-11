@@ -176,29 +176,29 @@ def get_dataset_fields(metadata_type_definition):
 
     fields = get_native_fields()
     # "Fixed fields" (not dynamic: defined in metadata type schema)
-    fields.update(dict(
-        creation_time=DateDocField(
+    fields.update({
+        'creation_time': DateDocField(
             'creation_time',
             'Time when dataset was created (processed)',
             DATASET.c.metadata,
             False,
             offset=dataset_section.get('creation_dt') or ['creation_dt']
         ),
-        format=SimpleDocField(
+        'format': SimpleDocField(
             'format',
             'File format (GeoTiff, NetCDF)',
             DATASET.c.metadata,
             False,
             offset=dataset_section.get('format') or ['format', 'name']
         ),
-        label=SimpleDocField(
+        'label': SimpleDocField(
             'label',
             'Label',
             DATASET.c.metadata,
             False,
             offset=dataset_section.get('label') or ['label']
         ),
-    ))
+    })
 
     # noinspection PyTypeChecker
     fields.update(

@@ -336,7 +336,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         # TODO: figure out (un)safe changes from metadata type?
         allowed: dict = {
             # can always add more metadata
-            tuple(): changes.allow_extension,
+            (): changes.allow_extension,
         }
         allowed.update(updates_allowed or {})
 
@@ -991,7 +991,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 )
 
             for result in results:
-                field_values = dict()
+                field_values = {}
                 for i_, field in enumerate(select_fields):
                     # We need to load the simple doc fields
                     if isinstance(field, SimpleDocField):
@@ -1042,7 +1042,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
 
         product_queries = list(self._get_product_queries(query))
-        custom_query = dict()
+        custom_query = {}
         if not product_queries:
             # The key, values in query that are un-machable with info
             # in metadata types and product definitions, perhaps there are custom

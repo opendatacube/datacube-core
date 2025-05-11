@@ -33,7 +33,7 @@ from datacube.virtual.transformations import fiscal_year
 def test_formula_parsing() -> None:
     parser = formula_parser()
     evaluator = FormulaEvaluator
-    env = dict(x=4, y=2, true=True, false=False)
+    env = {'x': 4, 'y': 2, 'true': True, 'false': False}
 
     assert evaluate_data('x', env, parser, evaluator) == 4
     assert evaluate_data('-y', env, parser, evaluator) == -2
@@ -50,13 +50,13 @@ PRODUCT_LIST = ['ls7_pq_albers', 'ls8_pq_albers', 'ls7_nbar_albers', 'ls8_nbar_a
 
 
 def example_metadata_type():
-    return MetadataType(dict(name='eo',
-                             dataset=dict(id=['id'],
-                                          label=['ga_label'],
-                                          creation_time=['creation_dt'],
-                                          measurements=['image', 'bands'],
-                                          grid_spatial=['grid_spatial', 'projection'],
-                                          sources=['lineage', 'source_datasets'])),
+    return MetadataType({'name': 'eo',
+                         'dataset': {'id': ['id'],
+                                     'label': ['ga_label'],
+                                     'creation_time': ['creation_dt'],
+                                     'measurements': ['image', 'bands'],
+                                     'grid_spatial': ['grid_spatial', 'projection'],
+                                     'sources': ['lineage', 'source_datasets']}},
                         dataset_search_fields={})
 
 
@@ -64,8 +64,8 @@ def example_product(name):
     if name not in PRODUCT_LIST:
         return None
 
-    blue = dict(name='blue', dtype='int16', nodata=-999, units='1')
-    green = dict(name='green', dtype='int16', nodata=-999, units='1', aliases=['verde'])
+    blue = {'name': 'blue', 'dtype': 'int16', 'nodata': -999, 'units': '1'}
+    green = {'name': 'green', 'dtype': 'int16', 'nodata': -999, 'units': '1', 'aliases': ['verde']}
     flags = {"cloud_acca": {"bits": 10, "values": {"0": "cloud", "1": "no_cloud"}},
              "contiguous": {"bits": 8, "values": {"0": False, "1": True}},
              "cloud_fmask": {"bits": 11, "values": {"0": "cloud", "1": "no_cloud"}},
@@ -78,11 +78,11 @@ def example_product(name):
              "cloud_shadow_acca": {"bits": 12, "values": {"0": "cloud_shadow", "1": "no_cloud_shadow"}},
              "cloud_shadow_fmask": {"bits": 13, "values": {"0": "cloud_shadow", "1": "no_cloud_shadow"}}}
 
-    pixelquality = dict(name='pixelquality', dtype='int16', nodata=0, units='1',
-                        flags_definition=flags)
+    pixelquality = {'name': 'pixelquality', 'dtype': 'int16', 'nodata': 0, 'units': '1',
+                    'flags_definition': flags}
 
     result = Product(example_metadata_type(),
-                     dict(name=name, description="", metadata_type='eo', metadata={}))
+                     {'name': name, 'description': "", 'metadata_type': 'eo', 'metadata': {}})
     result.grid_spec = GridSpec(crs=CRS('EPSG:3577'),
                                 tile_shape=(4000, 4000),
                                 resolution=25)
@@ -235,7 +235,7 @@ def dc():
 
     def example_dataset(product, id_, center_time):
         result = Dataset(example_product(product),
-                         dict(id=id_, grid_spatial=example_grid_spatial()),
+                         {'id': id_, 'grid_spatial': example_grid_spatial()},
                          uri='file://test.zzz')
         result.center_time = center_time
         return result

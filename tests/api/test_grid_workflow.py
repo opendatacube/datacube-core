@@ -35,10 +35,10 @@ def mk_fake_index(products, datasets):
 @pytest.fixture
 def fake_index():
     return mk_fake_index(
-        products=dict(
-            with_gs=mk_sample_product("with_gs", with_grid_spec=True),
-            without_gs=mk_sample_product("without_gs", with_grid_spec=False),
-        ),
+        products={
+            "with_gs": mk_sample_product("with_gs", with_grid_spec=True),
+            "without_gs": mk_sample_product("without_gs", with_grid_spec=False),
+        },
         datasets=[],
     )
 
@@ -99,9 +99,9 @@ def test_gridworkflow_str_repr(sample_grid_workflow):
 
 def test_gridworkflow_cell_observations(sample_grid_workflow):
     gw, gridspec, _, _ = sample_grid_workflow
-    query = dict(
-        product="fake_product_name", time=("2001-1-1 00:00:00", "2001-3-31 23:59:59")
-    )
+    query = {
+        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+    }
     assert list(gw.cell_observations(**query).keys()) == [(1, -2)]
     assert list(
         gw.cell_observations(
@@ -112,9 +112,9 @@ def test_gridworkflow_cell_observations(sample_grid_workflow):
 
 def test_gridworkflow_cell_observations_errors(sample_grid_workflow):
     gw, gridspec, _, _ = sample_grid_workflow
-    query = dict(
-        product="fake_product_name", time=("2001-1-1 00:00:00", "2001-3-31 23:59:59")
-    )
+    query = {
+        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+    }
     # It's invalid to supply tile_buffer and geopolygon at the same time
     with pytest.raises(GridWorkflowException) as e:
         list(
@@ -129,25 +129,25 @@ def test_gridworkflow_cell_observations_errors(sample_grid_workflow):
 
 def test_gridworkflow_list_tiles_unpadded(sample_grid_workflow):
     gw, _, _, _ = sample_grid_workflow
-    query = dict(
-        product="fake_product_name", time=("2001-1-1 00:00:00", "2001-3-31 23:59:59")
-    )
+    query = {
+        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+    }
     assert len(gw.list_tiles(**query)) == 1
 
 
 def test_gridworkflow_list_tiles_padded(sample_grid_workflow):
     gw, _, _, _ = sample_grid_workflow
-    query = dict(
-        product="fake_product_name", time=("2001-1-1 00:00:00", "2001-3-31 23:59:59")
-    )
+    query = {
+        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+    }
     assert len(gw.list_tiles(tile_buffer=(20, 20), **query)) == 9
 
 
 def test_gridworkflow_list_tiles_multiple_datasets(sample_grid_workflow):
     gw, gridspec, fakedataset, fakeindex = sample_grid_workflow
-    query = dict(
-        product="fake_product_name", time=("2001-1-1 00:00:00", "2001-3-31 23:59:59")
-    )
+    query = {
+        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+    }
 
     # Add dataset to cell (2,-2)
     fakedataset2 = MagicMock()
@@ -167,9 +167,9 @@ def test_gridworkflow_list_tiles_multiple_datasets(sample_grid_workflow):
 
 def test_gridworkflow_returned_tile_properties(sample_grid_workflow):
     gw, gridspec, fakedataset, fakeindex = sample_grid_workflow
-    query = dict(
-        product="fake_product_name", time=("2001-1-1 00:00:00", "2001-3-31 23:59:59")
-    )
+    query = {
+        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+    }
     np_time = numpy.datetime64(fakedataset.center_time, "ns")
 
     # Add dataset to cell (2,-2)
@@ -197,14 +197,14 @@ def test_gridworkflow_returned_tile_properties(sample_grid_workflow):
 
 def test_gridworkflow_loading(sample_grid_workflow):
     gw, _, fakedataset, _ = sample_grid_workflow
-    query = dict(
-        product="fake_product_name", time=("2001-1-1 00:00:00", "2001-3-31 23:59:59")
-    )
+    query = {
+        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+    }
     np_time = numpy.datetime64(fakedataset.center_time, "ns")
     tile = gw.list_tiles(**query)[1, -2, np_time]
     padded_tile = gw.list_tiles(tile_buffer=(20, 20), **query)[1, -2, np_time]
 
-    measurement = dict(nodata=0, dtype=numpy.int32)
+    measurement = {"nodata": 0, "dtype": numpy.int32}
     fakedataset.product.lookup_measurements.return_value = {"dummy": measurement}
     fakedataset2 = MagicMock()
     fakedataset2.product = fakedataset.product
@@ -225,9 +225,9 @@ def test_gridworkflow_loading(sample_grid_workflow):
 
 def test_gridworkflow_cell_index_extract(sample_grid_workflow):
     gw, gridspec, fakedataset, fakeindex = sample_grid_workflow
-    query = dict(
-        product="fake_product_name", time=("2001-1-1 00:00:00", "2001-3-31 23:59:59")
-    )
+    query = {
+        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+    }
     np_time = numpy.datetime64(fakedataset.center_time, "ns")
 
     # Add dataset to cell (2,-2)
@@ -279,7 +279,7 @@ def test_gridworkflow_with_time_depth():
     # ------ test with time dimension ----
 
     gw = GridWorkflow(fakeindex, gridspec)
-    query = dict(product="fake_product_name")
+    query = {"product": "fake_product_name"}
 
     cells = gw.list_cells(**query)
     for _, cell in cells.items():

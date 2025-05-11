@@ -398,14 +398,14 @@ def test_search_or_expressions_eo3(index: Index,
 
     all_datasets = list(index.datasets.search())
     assert len(all_datasets) == 3
-    all_ids = set(dataset.id for dataset in all_datasets)
+    all_ids = {dataset.id for dataset in all_datasets}
 
     # OR all instruments: should return all datasets
     datasets = list(index.datasets.search(
         instrument=['WOOLI_TIRS', 'OLI_TIRS', 'OLI_TIRS2']
     ))
     assert len(datasets) == 3
-    ids = set(dataset.id for dataset in datasets)
+    ids = {dataset.id for dataset in datasets}
     assert ids == all_ids
 
     # OR expression with only one clause.
@@ -420,7 +420,7 @@ def test_search_or_expressions_eo3(index: Index,
         product=[ls8_eo3_dataset.product.name, wo_eo3_dataset.product.name]
     ))
     assert len(datasets) == 3
-    ids = set(dataset.id for dataset in datasets)
+    ids = {dataset.id for dataset in datasets}
     assert ids == all_ids
 
     # eo OR eo3: return all
@@ -434,7 +434,7 @@ def test_search_or_expressions_eo3(index: Index,
         ]
     ))
     assert len(datasets) == 3
-    ids = set(dataset.id for dataset in datasets)
+    ids = {dataset.id for dataset in datasets}
     assert ids == all_ids
 
     # Redundant ORs should have no effect.
@@ -668,7 +668,7 @@ def test_searches_only_type_eo3(index: Index,
         platform='landsat-8'
     ))
     assert len(datasets) == 2
-    assert set(ds.id for ds in datasets) == {ls8_eo3_dataset.id, wo_eo3_dataset.id}
+    assert {ds.id for ds in datasets} == {ls8_eo3_dataset.id, wo_eo3_dataset.id}
 
     # No results for different metadata type.
     with pytest.raises(ValueError):
@@ -918,7 +918,7 @@ def test_cli_info_eo3(index: Index,
     assert len(yaml_docs) == 1
 
     # We output properties in order for readability:
-    output_lines = set(line for line in output_lines)
+    output_lines = set(output_lines)
     expected_lines = [
         "id: " + str(ls8_eo3_dataset.id),
         'product: ga_ls8c_ard_3',

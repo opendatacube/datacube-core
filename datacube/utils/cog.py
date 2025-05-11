@@ -128,20 +128,20 @@ def _write_cog(
     if (blocksize % 16) != 0:
         warnings.warn("Block size must be a multiple of 16, will be adjusted")
 
-    rio_opts = dict(
-        width=w,
-        height=h,
-        count=nbands,
-        dtype=pix.dtype.name,
-        crs=str(geobox.crs),
-        transform=geobox.transform,
-        tiled=True,
-        blockxsize=_adjust_blocksize(blocksize, w),
-        blockysize=_adjust_blocksize(blocksize, h),
-        zlevel=6,
-        predictor=3 if pix.dtype.kind == "f" else 2,
-        compress="DEFLATE",
-    )
+    rio_opts = {
+        "width": w,
+        "height": h,
+        "count": nbands,
+        "dtype": pix.dtype.name,
+        "crs": str(geobox.crs),
+        "transform": geobox.transform,
+        "tiled": True,
+        "blockxsize": _adjust_blocksize(blocksize, w),
+        "blockysize": _adjust_blocksize(blocksize, h),
+        "zlevel": 6,
+        "predictor": 3 if pix.dtype.kind == "f" else 2,
+        "compress": "DEFLATE",
+    }
 
     # If nodata is not set, but the array is of floating point type, force nodata=nan
     if nodata is None and np.issubdtype(pix.dtype, np.floating):

@@ -186,10 +186,10 @@ def mk_sample_product(name: str,
                    'resolution': {'x': 25, 'y': -25},
                    'tile_size': {'x': 100000.0, 'y': 100000.0}}
 
-    common = dict(dtype='int16',
-                  nodata=-999,
-                  units='1',
-                  aliases=[])
+    common = {'dtype': 'int16',
+              'nodata': -999,
+              'units': '1',
+              'aliases': []}
 
     if metadata_type is None:
         metadata_type = mk_sample_eo('eo')
@@ -211,13 +211,13 @@ def mk_sample_product(name: str,
 
     measurements = [mk_measurement(m) for m in measurements]
 
-    definition = dict(
-        name=name,
-        description=description,
-        metadata_type=metadata_type.name,
-        metadata={},
-        measurements=measurements
-    )
+    definition = {
+        'name': name,
+        'description': description,
+        'metadata_type': metadata_type.name,
+        'metadata': {},
+        'measurements': measurements
+    }
 
     if storage is not None:
         definition['storage'] = storage
@@ -241,10 +241,10 @@ def mk_sample_dataset(bands: list[dict],
     measurement_keys = 'dtype units nodata aliases name'.split(' ')
 
     def with_keys(d, keys) -> dict:
-        return dict((k, d[k]) for k in keys if k in d)
+        return {k: d[k] for k in keys if k in d}
 
     measurements = [with_keys(m, measurement_keys) for m in bands]
-    image_bands = dict((m['name'], with_keys(m, image_bands_keys)) for m in bands)
+    image_bands = {m['name']: with_keys(m, image_bands_keys) for m in bands}
 
     if product_opts is None:
         product_opts = {}
@@ -320,7 +320,7 @@ def dataset_maker(idx: int, t=None):
                     label=name+postfix,
                     creation_dt=t,
                     n=idx,
-                    lineage=dict(source_datasets=sources),
+                    lineage={'source_datasets': sources},
                     **kwargs)
 
     return make
@@ -446,11 +446,11 @@ def gen_tiff_dataset(bands: list[BandObject],
 
         geobox: GeoBox = meta.geobox
 
-        measurement_defs.append(dict(name=name,
-                                     path=fname,
-                                     layer=1,
-                                     nodata=band.nodata,
-                                     dtype=meta.dtype))
+        measurement_defs.append({'name': name,
+                                 'path': fname,
+                                 'layer': 1,
+                                 'nodata': band.nodata,
+                                 'dtype': meta.dtype})
 
     uri = Path(base_folder_of_record/'metadata.yaml').absolute().as_uri()
     ds = mk_sample_dataset(measurement_defs,

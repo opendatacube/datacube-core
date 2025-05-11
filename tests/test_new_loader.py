@@ -16,10 +16,10 @@ odc_loader = pytest.importorskip("odc.loader")
 def test_with_driver(tmpdir) -> None:
     tmpdir = Path(str(tmpdir))
 
-    spatial = dict(
-        resolution=(15, -15),
-        offset=(11230, 1381110),
-    )
+    spatial = {
+        "resolution": (15, -15),
+        "offset": (11230, 1381110),
+    }
 
     nodata = -999
     aa = mk_test_image(96, 64, "int16", nodata=nodata)

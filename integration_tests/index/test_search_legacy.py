@@ -466,14 +466,14 @@ def test_search_or_expressions(index: Index,
 
     all_datasets = list(index.datasets.search())
     assert len(all_datasets) == 4
-    all_ids = set(dataset.id for dataset in all_datasets)
+    all_ids = {dataset.id for dataset in all_datasets}
 
     # OR all platforms: should return all datasets
     datasets = list(index.datasets.search(
         platform=['LANDSAT_5', 'LANDSAT_7', 'LANDSAT_8']
     ))
     assert len(datasets) == 4
-    ids = set(dataset.id for dataset in datasets)
+    ids = {dataset.id for dataset in datasets}
     assert ids == all_ids
 
     # OR expression with only one clause.
@@ -488,7 +488,7 @@ def test_search_or_expressions(index: Index,
         product=[pseudo_ls8_type.name, ls5_dataset_nbar_type.name]
     ))
     assert len(datasets) == 2
-    ids = set(dataset.id for dataset in datasets)
+    ids = {dataset.id for dataset in datasets}
     assert ids == {pseudo_ls8_dataset.id, ls5_dataset_w_children.id}
 
     # eo OR telemetry: return all
@@ -503,7 +503,7 @@ def test_search_or_expressions(index: Index,
         ]
     ))
     assert len(datasets) == 4
-    ids = set(dataset.id for dataset in datasets)
+    ids = {dataset.id for dataset in datasets}
     assert ids == all_ids
 
     # Redundant ORs should have no effect.
@@ -853,7 +853,7 @@ def test_cli_info(index: Index,
     assert len(yaml_docs) == 1
 
     # We output properties in order for readability:
-    output_lines = set(line for line in output_lines if not line.startswith('indexed:'))
+    output_lines = {line for line in output_lines if not line.startswith('indexed:')}
     expected_lines = [
         "id: " + str(pseudo_ls8_dataset.id),
         'product: ls8_telemetry',

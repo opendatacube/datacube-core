@@ -198,7 +198,7 @@ class DatasetResource(AbstractDatasetResource):
             )
         # TODO: Determine (un)safe changes from metadata type
         allowed: dict[Offset, AllowPolicy] = {
-            tuple(): changes.allow_extension
+            (): changes.allow_extension
         }
         allowed.update(updates_allowed or {})
         doc_changes = get_doc_changes(

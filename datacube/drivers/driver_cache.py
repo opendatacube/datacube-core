@@ -53,4 +53,4 @@ def load_drivers(group: str) -> dict[str, Any]:
             if driver is not None:
                 yield ep.name, driver
 
-    return dict((name, driver) for name, driver in resolve_all(group))
+    return {name: driver for name, driver in resolve_all(group)}

@@ -967,8 +967,8 @@ def virtual_product_kind(recipe: dict[str, Any]) -> str:
 
 
 def from_validated_recipe(recipe):
-    lookup = dict(product=Product, transform=Transform, collate=Collate,
-                  juxtapose=Juxtapose, aggregate=Aggregate, reproject=Reproject)
+    lookup = {"product": Product, "transform": Transform, "collate": Collate,
+              "juxtapose": Juxtapose, "aggregate": Aggregate, "reproject": Reproject}
     return lookup[virtual_product_kind(recipe)](recipe)
 
 

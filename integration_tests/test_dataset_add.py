@@ -649,7 +649,7 @@ def xtest_dataset_add_fails(clirunner, index) -> None:
 
 def test_resolve_uri() -> None:
     def doc(loc=None):
-        return SimpleDocNav(dict(location=loc, id='4d9fd75c-1309-4712-93b5-f0d9c6fdd8ab'))
+        return SimpleDocNav({'location': loc, 'id': '4d9fd75c-1309-4712-93b5-f0d9c6fdd8ab'})
 
     uri = "file:///a"
     override = 'https://a.com/b.yaml'

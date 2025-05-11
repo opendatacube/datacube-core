@@ -22,8 +22,8 @@ from datacube.testutils import mk_sample_dataset, suppress_deprecations
 
 
 def test_new_datasource_fallback() -> None:
-    bands = [dict(name='green',
-                  path='')]
+    bands = [{'name': 'green',
+              'path': ''}]
     dataset = mk_sample_dataset(bands, 'file:///foo', format='GeoTiff')
 
     assert dataset.uri_scheme == 'file'

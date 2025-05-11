@@ -54,12 +54,12 @@ def test_new_xr_load(data_folder) -> None:
 
     tee_new_load_context(rdr, band_info_collector)
 
-    band_a = dict(name='a',
-                  path='test.tif')
+    band_a = {"name": 'a',
+              "path": 'test.tif'}
 
-    band_b = dict(name='b',
-                  band=2,
-                  path='test.tif')
+    band_b = {"name": 'b',
+              "band": 2,
+              "path": 'test.tif'}
 
     ds = mk_sample_dataset([band_a, band_b], base)
 

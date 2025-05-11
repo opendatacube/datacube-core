@@ -41,13 +41,13 @@ def gen_test_data(prefix, dask=False, shape=None, dtype="int16", nodata=-999):
     "opts",
     [
         {},
-        dict(use_windowed_writes=True),
-        dict(
-            intermediate_compression={"compress": "deflate", "zlevel": 1},
-            use_windowed_writes=True,
-        ),
-        dict(intermediate_compression=True),
-        dict(intermediate_compression="deflate"),
+        {"use_windowed_writes": True},
+        {
+            "intermediate_compression": {"compress": "deflate", "zlevel": 1},
+            "use_windowed_writes": True,
+        },
+        {"intermediate_compression": True},
+        {"intermediate_compression": "deflate"},
     ],
 )
 def test_cog_file(tmpdir, opts) -> None:

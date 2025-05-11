@@ -52,16 +52,16 @@ def test_rio_env_aws() -> None:
         activate_rio_env(aws='something')
 
     # note: setting region_name to avoid auto-lookup
-    ee = activate_rio_env(aws=dict(aws_unsigned=True,
-                                   region_name='us-west-1'))
+    ee = activate_rio_env(aws={'aws_unsigned': True,
+                               'region_name': 'us-west-1'})
 
     assert ee.get('AWS_NO_SIGN_REQUEST') == 'YES'
 
     ee = activate_rio_env(cloud_defaults=True,
-                          aws=dict(aws_secret_access_key='blabla',
-                                   aws_access_key_id='not a real one',
-                                   aws_session_token='faketoo',
-                                   region_name='us-west-1'))
+                          aws={'aws_secret_access_key': 'blabla',
+                               'aws_access_key_id': 'not a real one',
+                               'aws_session_token': 'faketoo',
+                               'region_name': 'us-west-1'})
 
     assert 'AWS_NO_SIGN_REQUEST' not in ee
     # check secrets are sanitized
@@ -93,9 +93,9 @@ def test_rio_env_aws_auto_region(monkeypatch, without_aws_env) -> None:
 
     assert datacube.utils.aws.botocore_default_region() is None
 
-    aws = dict(aws_secret_access_key='blabla',
-               aws_access_key_id='not a real one',
-               aws_session_token='faketoo')
+    aws = {'aws_secret_access_key': 'blabla',
+           'aws_access_key_id': 'not a real one',
+           'aws_session_token': 'faketoo'}
 
     with mock.patch('datacube.utils.aws.ec2_current_region',
                     return_value='TT'):
@@ -108,7 +108,7 @@ def test_rio_env_aws_auto_region(monkeypatch, without_aws_env) -> None:
         assert 'AWS_REGION' not in ee
 
         with pytest.raises(ValueError):
-            activate_rio_env(aws=dict(region_name='auto'))
+            activate_rio_env(aws={'region_name': 'auto'})
 
     deactivate_rio_env()
     assert get_rio_env() == {}
