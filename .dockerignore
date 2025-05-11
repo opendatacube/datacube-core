@@ -9,7 +9,9 @@ integration_tests
 tests
 !tests/drivers/fail_drivers
 
+# Files that are only used by docker compose.
 docker-compose.yml
+docker/assets/create-pg-databases.sh
 
 # Byte-compiled / optimized / DLL files
 **/__pycache__

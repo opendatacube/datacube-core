@@ -20,7 +20,6 @@ FROM base
 COPY --from=builder --link /usr/local/bin/uv* /usr/local/bin/
 
 ARG V_PG=16
-ARG V_PGIS=16-postgis-3
 
 # Update and install Ubuntu packages
 
@@ -35,11 +34,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libhdf5-dev libnetcdf-dev libgeos-dev libudunits2-dev \
         python3-dev virtualenv \
         build-essential \
-        postgresql \
         redis-server \
         postgresql-client-${V_PG} \
-        postgresql-${V_PG} \
-        postgresql-${V_PGIS} \
         sudo make graphviz \
         tini
 
@@ -87,10 +83,6 @@ RUN  --mount=type=cache,id=odc-python-312-cache,target=/home/odc/.cache \
     && python3 -m pip --disable-pip-version-check install /code/tests/drivers/fail_drivers
 
 USER root
-
-# prep db
-RUN  install --owner postgres --group postgres -D -d /var/run/postgresql /srv/postgresql \
-  && sudo -u postgres "$(find /usr/lib/postgresql/ -type f -name initdb)" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
 
 VOLUME /code
 WORKDIR /code
