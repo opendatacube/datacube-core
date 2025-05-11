@@ -160,7 +160,7 @@ class DatasetResource(AbstractDatasetResource):
 
         fields = [to_field(f) for f in args]
         # Typing note: mypy cannot handle dynamically created namedtuples
-        GroupedVals = namedtuple('search_result', list(f.name for f in fields))  # type: ignore[misc]
+        GroupedVals = namedtuple('search_result', [f.name for f in fields])  # type: ignore[misc]
 
         def values(ds: Dataset) -> GroupedVals:
             vals = []

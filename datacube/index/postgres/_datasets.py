@@ -148,7 +148,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             existing = set(connection.datasets_intersection(ids_))
 
         return [x in existing for x in
-                map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
+                (UUID(x) if isinstance(x, str) else x for x in ids_)]
 
     @override
     def add(self, dataset: Dataset,
