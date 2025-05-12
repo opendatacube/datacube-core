@@ -110,8 +110,6 @@ class Dataset:
                  archived_time: datetime | None = None,
                  source_tree: LineageTree | None = None,
                  derived_tree: LineageTree | None = None) -> None:
-        assert isinstance(product, Product)
-
         self.product = product
 
         #: The document describing the dataset as a dictionary. It is often serialised as YAML on disk
@@ -638,7 +636,6 @@ class Product:
                  metadata_type: MetadataType,
                  definition: Mapping[str, Any],
                  id_: int | None = None) -> None:
-        assert isinstance(metadata_type, MetadataType)
         self.id = id_
         self.metadata_type = metadata_type
         #: product definition document
