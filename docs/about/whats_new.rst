@@ -77,6 +77,7 @@ Other Changes
 - Enable flake8-comprehensions :pull:`1900`
 - model: remove old asserts :pull:`1898`
 - Remove pytest-timeout :pull:`1899`
+- Dependabot: set to weekly schedule :pull:`1901`
 
 v1.9.3 (15th April 2025)
 ========================
