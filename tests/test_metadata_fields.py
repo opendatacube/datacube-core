@@ -109,13 +109,13 @@ def test_get_dataset_simple_fields() -> None:
     xx = get_dataset_fields(METADATA_DOC)
     assert xx['x_default_type'].type_name == 'string'
 
-    type_map = dict(
-        double=float,
-        integer=int,
-        string=str,
-        datetime=datetime.datetime,
-        numeric=decimal.Decimal,
-    )
+    type_map = {
+        'double': float,
+        'integer': int,
+        'string': str,
+        'datetime': datetime.datetime,
+        'numeric': decimal.Decimal,
+    }
 
     for n, f in xx.items():
         assert n == f.name
@@ -142,8 +142,8 @@ def test_get_dataset_range_fields() -> None:
     assert xx['ab'].extract({}) is None
 
     # partially missing Range
-    assert xx['ab'].extract(dict(a=3)) == Range(3, None)
-    assert xx['ab'].extract(dict(b=4)) == Range(None, 4)
+    assert xx['ab'].extract({'a': 3}) == Range(3, None)
+    assert xx['ab'].extract({'b': 4}) == Range(None, 4)
 
     # float-range conversion
     assert xx['float_range'].type_name == 'numeric-range'

@@ -156,7 +156,7 @@ class ProductResource(AbstractProductResource):
     def search_robust(self, **query: QueryField) -> Iterable[tuple[Product, QueryDict]]:
         def listify(v):
             if isinstance(v, tuple):
-                return list()
+                return []
             elif isinstance(v, list):
                 return v
             else:

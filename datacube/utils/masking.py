@@ -27,7 +27,7 @@ def list_flag_names(variable):
     :return: list
     """
     flags_def = get_flags_def(variable)
-    return sorted(list(flags_def.keys()))
+    return sorted(flags_def.keys())
 
 
 def describe_variable_flags(variable, with_pandas: bool = True):

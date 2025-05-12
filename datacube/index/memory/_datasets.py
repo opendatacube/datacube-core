@@ -160,7 +160,7 @@ class DatasetResource(AbstractDatasetResource):
 
         fields = [to_field(f) for f in args]
         # Typing note: mypy cannot handle dynamically created namedtuples
-        GroupedVals = namedtuple('search_result', list(f.name for f in fields))  # type: ignore[misc]
+        GroupedVals = namedtuple('search_result', [f.name for f in fields])  # type: ignore[misc]
 
         def values(ds: Dataset) -> GroupedVals:
             vals = []
@@ -198,7 +198,7 @@ class DatasetResource(AbstractDatasetResource):
             )
         # TODO: Determine (un)safe changes from metadata type
         allowed: dict[Offset, AllowPolicy] = {
-            tuple(): changes.allow_extension
+            (): changes.allow_extension
         }
         allowed.update(updates_allowed or {})
         doc_changes = get_doc_changes(
@@ -347,7 +347,7 @@ class DatasetResource(AbstractDatasetResource):
     @override
     def get_location(self, id_: DSID) -> str | None:
         uuid = dsid_to_uuid(id_)
-        locations = [s for s in self._locations.get(uuid, [])]
+        locations = list(self._locations.get(uuid, []))
         if not locations:
             return None
         return locations[0]
@@ -649,9 +649,9 @@ class DatasetResource(AbstractDatasetResource):
         # Note that this implementation relies on dictionaries being ordered by insertion - this has been the case
         # since Py3.6, and officially guaranteed behaviour since Py3.7.
         if field_names is None and custom_offsets is None:
-            field_name_d = {f: None for f in self._index.products.get_field_names()}
+            field_name_d = dict.fromkeys(self._index.products.get_field_names())
         elif field_names:
-            field_name_d = {f: None for f in field_names}
+            field_name_d = dict.fromkeys(field_names)
         else:
             field_name_d = {}
 

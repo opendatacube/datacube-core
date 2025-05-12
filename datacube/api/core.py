@@ -799,7 +799,7 @@ class Datacube:
 
         # 2D defaults
         # retrieve dims from coords if DataArray
-        dims_default = cast(tuple[Hashable, ...], tuple())
+        dims_default: tuple[Hashable, ...] = ()
         if coords != {}:
             coords_value = next(iter(coords.values()))
             if isinstance(coords_value, xarray.DataArray):
@@ -1364,13 +1364,10 @@ def _calculate_chunk_sizes(
             f"Unknown dask_chunk dimension {bad_keys}. Valid dimensions are: {valid_keys}"
         )
 
-    chunk_maxsz = dict(
-        (dim, sz)
-        for dim, sz in zip(
+    chunk_maxsz = dict(zip(
             sources.dims + extra_dim_names + geobox.dimensions,
             sources.shape + extra_dim_shapes + geobox.shape,
-        )
-    )
+        ))
 
     # defaults: 1 for non-spatial, whole dimension for Y/X
     chunk_defaults = dict(

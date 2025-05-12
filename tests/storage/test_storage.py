@@ -546,14 +546,14 @@ def make_sample_geotiff(tmpdir):
 _EXAMPLE_METADATA_TYPE = MetadataType(
     {
         'name': 'eo',
-        'dataset': dict(
-            id=['id'],
-            label=['ga_label'],
-            creation_time=['creation_dt'],
-            measurements=['image', 'bands'],
-            sources=['lineage', 'source_datasets'],
-            format=['format', 'name'],
-        )
+        'dataset': {
+            'id': ['id'],
+            'label': ['ga_label'],
+            'creation_time': ['creation_dt'],
+            'measurements': ['image', 'bands'],
+            'sources': ['lineage', 'source_datasets'],
+            'format': ['format', 'name'],
+        }
     },
     dataset_search_fields={}
 )

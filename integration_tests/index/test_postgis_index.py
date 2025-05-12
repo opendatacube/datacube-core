@@ -262,7 +262,7 @@ def test_spatial_search(index,
     exact1_3577 = ls8_eo3_dataset.extent.to_crs(epsg3577)
     exact3_4326 = ls8_eo3_dataset3.extent.to_crs(epsg4326)
     exact3_3577 = ls8_eo3_dataset3.extent.to_crs(epsg3577)
-    dssids = set(ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.product.name, geopolygon=exact1_4326))
+    dssids = {ds.id for ds in index.datasets.search(product=ls8_eo3_dataset.product.name, geopolygon=exact1_4326)}
     assert len(dssids) == 2
     assert ls8_eo3_dataset.id in dssids
     assert ls8_eo3_dataset2.id in dssids

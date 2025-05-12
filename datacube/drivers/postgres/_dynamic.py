@@ -29,7 +29,7 @@ def contains_all(d_: dict, *keys) -> bool:
     >>> contains_all({'b': 5}, 'a')
     False
     """
-    return all([d_.get(key) for key in keys])
+    return all(d_.get(key) for key in keys)
 
 
 def _ensure_view(conn, fields, name: str, replace_existing, where_expression, delete: bool = False) -> None:

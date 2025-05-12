@@ -236,14 +236,14 @@ def write_gtiff(fname: Path,
         A = Affine(sx, 0, tx,
                    0, sy, ty)
 
-    rio_opts = dict(width=w,
-                    height=h,
-                    count=nbands,
-                    dtype=pix.dtype.name,
-                    crs=crs,
-                    transform=A,
-                    predictor=2,
-                    compress='DEFLATE')
+    rio_opts = {'width': w,
+                'height': h,
+                'count': nbands,
+                'dtype': pix.dtype.name,
+                'crs': crs,
+                'transform': A,
+                'predictor': 2,
+                'compress': 'DEFLATE'}
 
     if blocksize is not None:
         rio_opts.update(tiled=True,
@@ -411,5 +411,4 @@ def rio_slurp_xarray(fname, *args, rgb: str = 'auto', **kw) -> xarray.DataArray:
     return DataArray(im,
                      dims=dims,
                      coords=xr_coords(mm.geobox),
-                     attrs=dict(
-                         nodata=mm.nodata))
+                     attrs={'nodata': mm.nodata})

@@ -91,8 +91,8 @@ def test_grid_points() -> None:
     assert pts == [(100, 0), (122, 0), (122, 11), (100, 11)]
 
     for bad in [{},
-                dict(shape=(1, 1)),
-                dict(transform=identity)]:
+                {"shape": (1, 1)},
+                {"transform": identity}]:
         with pytest.raises(ValueError):
             grid = EO3Grid(bad)
 

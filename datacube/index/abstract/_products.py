@@ -342,7 +342,7 @@ class AbstractProductResource(ABC):
         :param types: An iterable of MetadataType models
         :return: An iterable of Product models
         """
-        mdts = set(mdt.name for mdt in types)
+        mdts = {mdt.name for mdt in types}
         for prod in self.get_all():
             if prod.metadata_type.name in mdts:
                 yield prod

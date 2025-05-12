@@ -979,7 +979,7 @@ def sides(poly: Geometry) -> Iterable[Geometry]:
 def multigeom(geoms: Iterable[Geometry]) -> Geometry:
     """ Construct Multi{Polygon|LineString|Point}
     """
-    geoms = [g for g in geoms]  # force into list
+    geoms = list(geoms)  # force into list
     src_types = {g.geom_type for g in geoms}
     if len(src_types) > 1:
         raise ValueError("All Geometries must be of the same type")
@@ -1212,8 +1212,8 @@ class GeoBox:
         if crs is not None:
             attrs['crs'] = str(crs)
 
-        coords = dict((n, _coord_to_xr(n, c, **attrs))
-                      for n, c in self.coordinates.items())  # type: dict[Hashable, xr.DataArray]
+        coords = {n: _coord_to_xr(n, c, **attrs)
+                  for n, c in self.coordinates.items()}  # type: dict[Hashable, xr.DataArray]
 
         if with_crs and crs is not None:
             coords[spatial_ref] = _mk_crs_coord(crs, spatial_ref)

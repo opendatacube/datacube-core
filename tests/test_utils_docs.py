@@ -121,9 +121,9 @@ def test_more_check_doc_unchanged() -> None:
 
 def test_without_lineage_sources() -> None:
     def mk_sample(v):
-        return dict(lineage={'source_datasets': v, 'a': 'a', 'b': 'b'},
-                    aa='aa',
-                    bb=dict(bb='bb'))
+        return {'lineage': {'source_datasets': v, 'a': 'a', 'b': 'b'},
+                'aa': 'aa',
+                'bb': {'bb': 'bb'}}
 
     spec = mk_sample_product('tt')
 
@@ -141,24 +141,24 @@ def test_without_lineage_sources() -> None:
     assert without_lineage_sources(mk_sample(10), spec) == mk_sample({})
 
     # check behaviour when `sources` is defined for the type but lineage has not been remapped
-    test_doc = dict(lineage={'a': ['a'], 'b': ['b']},
-                    aa='aa',
-                    bb=dict(bb='bb'))
-    assert without_lineage_sources(test_doc, spec) == dict(lineage={},
-                                                           aa='aa',
-                                                           bb=dict(bb='bb'))
+    test_doc = {'lineage': {'a': ['a'], 'b': ['b']},
+                'aa': 'aa',
+                'bb': {'bb': 'bb'}}
+    assert without_lineage_sources(test_doc, spec) == {'lineage': {},
+                                                       'aa': 'aa',
+                                                       'bb': {'bb': 'bb'}}
 
     # check behaviour when `sources` is not defined for the type
     no_sources_type = MetadataType({
         'name': 'eo',
         'description': 'Sample',
-        'dataset': dict(
-            id=['id'],
-            label=['ga_label'],
-            creation_time=['creation_dt'],
-            measurements=['image', 'bands'],
-            format=['format', 'name'],
-        )
+        'dataset': {
+            'id': ['id'],
+            'label': ['ga_label'],
+            'creation_time': ['creation_dt'],
+            'measurements': ['image', 'bands'],
+            'format': ['format', 'name'],
+        }
     }, dataset_search_fields={})
 
     test_doc = mk_sample(10)
@@ -260,7 +260,7 @@ def test_dataset_maker() -> None:
     assert a1['creation_dt'] != a2['creation_dt']
     assert a1['product_type'] == 'eo'
 
-    c = SimpleDocNav(mk('C', sources=dict(a=a.doc, b=b.doc)))
+    c = SimpleDocNav(mk('C', sources={'a': a.doc, 'b': b.doc}))
     assert c.sources['a'].doc is a.doc
     assert c.sources['b'].doc is b.doc
 
@@ -340,7 +340,7 @@ def test_simple_doc_nav() -> None:
     un_map = {u: n for n, u in nu_map.items()}
 
     def node(name, **kwargs):
-        return dict(id=nu_map[name], lineage=dict(source_datasets=kwargs))
+        return {'id': nu_map[name], 'lineage': {'source_datasets': kwargs}}
 
     A, _, C, _, _ = make_graph_abcde(node)  # noqa: N806
     rdr = SimpleDocNav(A)
@@ -401,9 +401,9 @@ A:..:0
     assert [len(dss) for dss in dg] == [1, 3, 2, 1]
 
     def to_set(xx):
-        return set(x.id for x in xx)
+        return {x.id for x in xx}
 
-    assert [set(nu_map[n] for n in s)
+    assert [{nu_map[n] for n in s}
             for s in ('A', 'BCE', 'CD', 'D')
             ] == [to_set(xx) for xx in dg]
 
@@ -501,11 +501,11 @@ def test_remap_lineage_doc() -> None:
 
 def test_merge() -> None:
     from datacube.model.utils import merge
-    assert merge(dict(a=1), dict(b=2)) == dict(a=1, b=2)
-    assert merge(dict(a=1, b=2), dict(b=2)) == dict(a=1, b=2)
+    assert merge({'a': 1}, {'b': 2}) == {'a': 1, 'b': 2}
+    assert merge({'a': 1, 'b': 2}, {'b': 2}) == {'a': 1, 'b': 2}
 
     with pytest.raises(ValueError):
-        merge(dict(a=1, b=2), dict(b=3))
+        merge({'a': 1, 'b': 2}, {'b': 3})
 
 
 @pytest.mark.xfail(True, reason="Merging dictionaries with content of NaN doesn't work currently")
@@ -514,7 +514,7 @@ def test_merge_with_nan() -> None:
 
     _nan = float("nan")
     assert _nan != _nan
-    xx = merge(dict(a=_nan), dict(a=_nan))  # <- fails here because of simple equality check
+    xx = merge({'a': _nan}, {'a': _nan})  # <- fails here because of simple equality check
     assert xx['a'] != xx['a']
 
 

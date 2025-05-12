@@ -118,7 +118,7 @@ class ODCConfig:
                      Used as is - environment variable overrides are NOT applied.
         """
         # Cannot supply both text AND paths.
-        args_supplied: int = sum(map(lambda x: int(bool(x)), (paths, raw_dict, text)))
+        args_supplied: int = sum(int(bool(x)) for x in (paths, raw_dict, text))
         if args_supplied > 1:
             raise ConfigException(
                 "Can only supply one of configuration path(s), raw dictionary, "

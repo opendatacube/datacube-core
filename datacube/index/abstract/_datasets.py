@@ -239,7 +239,7 @@ class AbstractDatasetResource(ABC):
             Bool value accepted only for improving backwards compatibility, int preferred.
         """
         less_mature = self.find_less_mature(ds, delta)
-        less_mature_ids = map(lambda x: x.id, less_mature)
+        less_mature_ids = (x.id for x in less_mature)
 
         self.archive(less_mature_ids)
         for lm_ds in less_mature_ids:

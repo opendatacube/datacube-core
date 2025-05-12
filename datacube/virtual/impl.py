@@ -665,7 +665,7 @@ class Collate(VirtualProduct):
             return value['collate'][1]
 
         def fetch_child(child, source_index, r):
-            if any([x == 0 for x in r.box.shape]):
+            if any(x == 0 for x in r.box.shape):
                 # empty raster
                 return None
             else:
@@ -967,8 +967,8 @@ def virtual_product_kind(recipe: dict[str, Any]) -> str:
 
 
 def from_validated_recipe(recipe):
-    lookup = dict(product=Product, transform=Transform, collate=Collate,
-                  juxtapose=Juxtapose, aggregate=Aggregate, reproject=Reproject)
+    lookup = {"product": Product, "transform": Transform, "collate": Collate,
+              "juxtapose": Juxtapose, "aggregate": Aggregate, "reproject": Reproject}
     return lookup[virtual_product_kind(recipe)](recipe)
 
 

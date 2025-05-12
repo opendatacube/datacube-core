@@ -46,7 +46,7 @@ def test_grouping_datasets() -> None:
 
 
 def test_group_datasets_by_time() -> None:
-    bands = [dict(name='a')]
+    bands = [{'name': 'a'}]
     # Same time instant but one explicitly marked as UTC
     ds1 = mk_sample_dataset(bands, timestamp="2019-01-01T23:24:00Z")
     ds2 = mk_sample_dataset(bands, timestamp="2019-01-01T23:24:00")

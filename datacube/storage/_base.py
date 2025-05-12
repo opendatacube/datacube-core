@@ -70,8 +70,7 @@ def measurement_paths(ds: Dataset) -> dict[str, str]:
     else:
         base = pick_uri(ds.uris)
 
-    return dict((k, uri_resolve(base, m.get('path')))
-                for k, m in ds.measurements.items())
+    return {k: uri_resolve(base, m.get('path')) for k, m in ds.measurements.items()}
 
 
 class BandInfo:

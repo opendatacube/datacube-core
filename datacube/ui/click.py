@@ -23,7 +23,7 @@ from datacube.index import index_connect
 from datacube.ui.expression import parse_expressions
 
 _LOG_FORMAT_STRING = '%(asctime)s %(process)d %(name)s %(levelname)s %(message)s'
-CLICK_SETTINGS: dict[str, list[str]] = dict(help_option_names=['-h', '--help'])
+CLICK_SETTINGS: dict[str, list[str]] = {'help_option_names': ['-h', '--help']}
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
@@ -57,12 +57,12 @@ def compose(*functions):
 
 class ColorFormatter(logging.Formatter):
     colors = {
-        'info': dict(fg='white'),
-        'error': dict(fg='red'),
-        'exception': dict(fg='red'),
-        'critical': dict(fg='red'),
-        'debug': dict(fg='blue'),
-        'warning': dict(fg='yellow')
+        'info': {'fg': 'white'},
+        'error': {'fg': 'red'},
+        'exception': {'fg': 'red'},
+        'critical': {'fg': 'red'},
+        'debug': {'fg': 'blue'},
+        'warning': {'fg': 'yellow'}
     }
 
     @override

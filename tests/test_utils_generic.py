@@ -29,7 +29,7 @@ def test_map_with_lookahead() -> None:
 def test_qmap() -> None:
     q = Queue(maxsize=100)
     it2q(range(10), q)
-    rr = [x for x in qmap(str, q)]
+    rr = list(qmap(str, q))
     assert rr == [str(x) for x in range(10)]
     q.join()  # should not block
 

@@ -29,8 +29,8 @@ def test_load_data(tmpdir) -> None:
     tmpdir = Path(str(tmpdir))
 
     group_by = query_group_by('time')
-    spatial = dict(resolution=(15, -15),
-                   offset=(11230, 1381110),)
+    spatial = {'resolution': (15, -15),
+               'offset': (11230, 1381110), }
 
     nodata = -999
     aa = mk_test_image(96, 64, 'int16', nodata=nodata)
@@ -86,8 +86,8 @@ def test_load_data(tmpdir) -> None:
 
 
 def test_load_data_dask(tmp_path) -> None:
-    spatial = dict(resolution=(15, -15),
-                   offset=(11230, 1381110),)
+    spatial = {'resolution': (15, -15),
+               'offset': (11230, 1381110), }
 
     nodata = -999
     aa = mk_test_image(128, 128, 'int16', nodata=nodata)
@@ -128,8 +128,8 @@ def test_load_data_with_url_mangling(tmpdir) -> None:
         return raw.replace(recorded_uri_root, actual_uri_root)
 
     group_by = query_group_by('time')
-    spatial = dict(resolution=(15, -15),
-                   offset=(11230, 1381110),)
+    spatial = {'resolution': (15, -15),
+               'offset': (11230, 1381110), }
 
     nodata = -999
     aa = mk_test_image(96, 64, 'int16', nodata=nodata)
@@ -191,8 +191,8 @@ def test_load_data_cbk(tmpdir) -> None:
 
     tmpdir = Path(str(tmpdir))
 
-    spatial = dict(resolution=(15, -15),
-                   offset=(11230, 1381110),)
+    spatial = {'resolution': (15, -15),
+               'offset': (11230, 1381110), }
 
     nodata = -999
     aa = mk_test_image(96, 64, 'int16', nodata=nodata)
@@ -258,11 +258,11 @@ def test_hdf5_lock_release_on_failure() -> None:
     from datacube.storage import BandInfo
     from datacube.storage._rio import HDF5_LOCK, RasterDatasetDataSource
 
-    band = dict(name='xx',
-                layer='xx',
-                dtype='uint8',
-                units='K',
-                nodata=33)
+    band = {'name': 'xx',
+            'layer': 'xx',
+            'dtype': 'uint8',
+            'units': 'K',
+            'nodata': 33}
 
     ds = mk_sample_dataset([band],
                            uri='file:///tmp/this_probably_doesnot_exist_37237827513/xx.nc',
@@ -384,8 +384,8 @@ def test_native_load(tmpdir) -> None:
     from datacube.testutils.io import native_geobox, native_load
 
     tmpdir = Path(str(tmpdir))
-    spatial = dict(resolution=(15, -15),
-                   offset=(11230, 1381110),)
+    spatial = {'resolution': (15, -15),
+               'offset': (11230, 1381110), }
     nodata = -999
     aa = mk_test_image(96, 64, 'int16', nodata=nodata)
     cc = mk_test_image(32, 16, 'int16', nodata=nodata)

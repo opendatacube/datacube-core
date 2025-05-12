@@ -242,7 +242,7 @@ class PostGisDb:
     def spatially_indexed_crses(self, refresh: bool = False) -> Iterable[CRS]:
         if refresh:
             self._refresh_spindexes()
-        return list(CRS(epsg) for epsg in self.spindexes.keys())
+        return [CRS(epsg) for epsg in self.spindexes.keys()]
 
     @contextmanager
     def _connect(self) -> Iterator:

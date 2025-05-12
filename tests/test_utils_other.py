@@ -183,7 +183,7 @@ def test_testutils_mk_sample() -> None:
     pp = mk_sample_product('tt', measurements=['aa', 'bb'])
     assert set(pp.measurements) == {'aa', 'bb'}
 
-    pp = mk_sample_product('tt', measurements=[dict(name=n) for n in ['aa', 'bb']])
+    pp = mk_sample_product('tt', measurements=[{'name': n} for n in ['aa', 'bb']])
     assert set(pp.measurements) == {'aa', 'bb'}
 
     with pytest.raises(ValueError):
@@ -245,13 +245,13 @@ def test_xr_apply() -> None:
 
 
 def test_sorted_items() -> None:
-    aa = dict(c=1, b={}, a=[])
+    aa = {'c': 1, 'b': {}, 'a': []}
 
     assert ''.join(k for k, _ in sorted_items(aa)) == 'abc'
     assert ''.join(k for k, _ in sorted_items(aa, key=lambda x: x)) == 'abc'
     assert ''.join(k for k, _ in sorted_items(aa, reverse=True)) == 'cba'
 
-    remap = dict(c=0, a=1, b=2)
+    remap = {'c': 0, 'a': 1, 'b': 2}
     assert ''.join(k for k, _ in sorted_items(aa, key=lambda x: remap[x])) == 'cab'
 
     assert sorted_items(None) == []
@@ -436,7 +436,7 @@ def test_testutils_geobox() -> None:
     h, w = shape
     crs = CRS.from_epsg(3578)
 
-    meta = dict(width=w, height=h, transform=transform, crs=crs)
+    meta = {'width': w, 'height': h, 'transform': transform, 'crs': crs}
     gbox = rio_geobox(meta)
 
     assert gbox.shape == shape

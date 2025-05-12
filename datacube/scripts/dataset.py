@@ -132,10 +132,10 @@ def load_datasets_for_update(doc_stream, index) -> Iterator:
 
 @dataset_cmd.command('add',
                      help="Add datasets to the Data Cube",
-                     context_settings=dict(token_normalize_func=report_old_options({
+                     context_settings={'token_normalize_func': report_old_options({
                          'dtype': 'product',
                          't': 'p'
-                     })))
+                     })})
 @click.option('--product', '-p', 'product_names',
               help=('Only match against products specified with this option, '
                     'you can supply several by repeating this option with a new product name'),
@@ -288,9 +288,9 @@ def update_cmd(index, keys_that_can_change, dry_run, location_policy, dataset_pa
     def loc_keep(new_ds, existing_ds):
         return None
 
-    update_loc = dict(archive=loc_archive,
-                      forget=loc_forget,
-                      keep=loc_keep)[location_policy]
+    update_loc = {'archive': loc_archive,
+                  'forget': loc_forget,
+                  'keep': loc_keep}[location_policy]
 
     updates_allowed = parse_update_rules(keys_that_can_change)
 
@@ -518,7 +518,7 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
 
     derived_dataset_ids: list[UUID] = []
     if all_ds:
-        datasets_for_archive = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=False)}
+        datasets_for_archive = dict.fromkeys(index.datasets.get_all_dataset_ids(archived=False), True)
     else:
         datasets_for_archive = {UUID(dataset_id): exists
                                 for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}
@@ -534,7 +534,7 @@ def archive_cmd(index: Index, archive_derived: bool, dry_run: bool, all_ds: bool
             # Get the UUID of our found derived datasets
             derived_dataset_ids = [derived.id for derived_dataset in derived_datasets for derived in derived_dataset]
 
-    all_datasets = derived_dataset_ids + [uuid for uuid in datasets_for_archive.keys()]
+    all_datasets = derived_dataset_ids + list(datasets_for_archive.keys())
 
     for dataset in all_datasets:
         click.echo(f'Archiving dataset: {dataset}')
@@ -618,7 +618,7 @@ def purge_cmd(index: Index, dry_run: bool, all_ds: bool, force: bool, ids: list[
         sys.exit(1)
 
     if all_ds:
-        datasets_for_purge = {dsid: True for dsid in index.datasets.get_all_dataset_ids(archived=True)}
+        datasets_for_purge = dict.fromkeys(index.datasets.get_all_dataset_ids(archived=True), True)
     else:
         datasets_for_purge = {UUID(dataset_id): exists
                               for dataset_id, exists in zip(ids, index.datasets.bulk_has(ids))}

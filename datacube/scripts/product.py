@@ -157,7 +157,7 @@ def delete_products(index: Index, force: bool, dry_run: bool, product_names: lis
 
     if not dry_run:
         deleted = index.products.delete(products, force)
-        not_deleted = set(product_names).difference(set([p.name for p in deleted]))
+        not_deleted = set(product_names).difference({p.name for p in deleted})
         if not force and not_deleted:
             click.echo(f"Product(s) {', '.join(not_deleted)} could not be deleted due to active datasets. "
                        "Use the --force option to delete anyway.")

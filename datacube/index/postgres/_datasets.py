@@ -148,7 +148,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             existing = set(connection.datasets_intersection(ids_))
 
         return [x in existing for x in
-                map((lambda x: UUID(x) if isinstance(x, str) else x), ids_)]
+                (UUID(x) if isinstance(x, str) else x for x in ids_)]
 
     @override
     def add(self, dataset: Dataset,
@@ -202,7 +202,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             assert isinstance(ds_by_uuid, dict)  # For typechecker.
             all_uuids = list(ds_by_uuid)
 
-            present = {k: v for k, v in zip(all_uuids, self.bulk_has(all_uuids))}
+            present = dict(zip(all_uuids, self.bulk_has(all_uuids)))
 
             if present[dataset.id]:
                 _LOG.warning('Dataset %s is already in the database', dataset.id)
@@ -306,7 +306,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         # TODO: figure out (un)safe changes from metadata type?
         allowed: dict = {
             # can always add more metadata
-            tuple(): changes.allow_extension,
+            (): changes.allow_extension,
         }
         allowed.update(updates_allowed or {})
 
@@ -1022,7 +1022,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 )
 
             for result in results:
-                field_values = dict()
+                field_values = {}
                 for i_, field in enumerate(select_fields):
                     # We need to load the simple doc fields
                     if isinstance(field, SimpleDocField):
@@ -1073,7 +1073,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
 
         product_queries = list(self._get_product_queries(query))
-        custom_query = dict()
+        custom_query = {}
         if not product_queries:
             # The key, values in query that are un-machable with info
             # in metadata types and product definitions, perhaps there are custom

@@ -185,23 +185,23 @@ def get_dataset_fields(metadata_type_definition):
 
     fields = get_native_fields()
     # "Fixed fields" (not dynamic: defined in metadata type schema)
-    fields.update(dict(
-        creation_time=DateDocField(
+    fields.update({
+        'creation_time': DateDocField(
             'creation_time',
             'Time when dataset was created (processed)',
             Dataset.metadata_doc,
             False,
             offset=dataset_section.get('creation_dt') or ['creation_dt']
         ),
-        format=mk_simple_offset_field(
+        'format': mk_simple_offset_field(
             'format', 'File format (GeoTiff, NetCDF)',
             dataset_section.get('format') or ['format', 'name']
         ),
-        label=mk_simple_offset_field(
+        'label': mk_simple_offset_field(
             'label', 'Label',
             dataset_section.get('label') or ['label']
         ),
-    ))
+    })
 
     # noinspection PyTypeChecker
     fields.update(
@@ -396,7 +396,7 @@ class PostgisDbAPI:
                 search_val=value,
             ).on_conflict_do_update(
                 index_elements=[search_table.dataset_ref, search_table.search_key],
-                set_=dict(search_val=value)
+                set_={'search_val': value}
             )
         )
         return r.rowcount > 0
@@ -428,7 +428,7 @@ class PostgisDbAPI:
                 **values
             ).on_conflict_do_update(
                 index_elements=[SpatialIndex.dataset_ref],
-                set_=dict(extent=values["extent"])
+                set_={'extent': values["extent"]}
             )
         )
         return r.rowcount > 0
@@ -1020,7 +1020,7 @@ class PostgisDbAPI:
         """
         verified = 0
         if crs_seq:
-            crses = [crs for crs in crs_seq]
+            crses = list(crs_seq)
         else:
             crses = self._db.spatially_indexed_crses()
 

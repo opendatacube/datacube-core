@@ -121,13 +121,13 @@ _EXAMPLE_NBAR = {
 _EXAMPLE_METADATA_TYPE = MetadataType(
     {
         'name': 'eo',
-        'dataset': dict(
-            id=['id'],
-            label=['ga_label'],
-            creation_time=['creation_dt'],
-            measurements=['image', 'bands'],
-            sources=['lineage', 'source_datasets']
-        )
+        'dataset': {
+            'id': ['id'],
+            'label': ['ga_label'],
+            'creation_time': ['creation_dt'],
+            'measurements': ['image', 'bands'],
+            'sources': ['lineage', 'source_datasets']
+        }
     },
     dataset_search_fields={}
 )

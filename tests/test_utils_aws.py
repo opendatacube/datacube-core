@@ -258,17 +258,17 @@ def test_s3_client_cache(monkeypatch, without_aws_env) -> None:
         assert s3_client(cache='purge') is None
         assert s3 is not s3_client(cache=True)
 
-    opts = (dict(),
-            dict(region_name="foo"),
-            dict(region_name="bar"),
-            dict(profile="foo"),
-            dict(profile="foo", region_name="xxx"),
-            dict(profile="bar"),
-            dict(creds=ReadOnlyCredentials('fake1', '...', None)),
-            dict(creds=ReadOnlyCredentials('fake1', '...', None), region_name='custom'),
-            dict(creds=ReadOnlyCredentials('fake2', '...', None)))
+    opts = ({},
+            {'region_name': "foo"},
+            {'region_name': "bar"},
+            {'profile': "foo"},
+            {'profile': "foo", 'region_name': "xxx"},
+            {'profile': "bar"},
+            {'creds': ReadOnlyCredentials('fake1', '...', None)},
+            {'creds': ReadOnlyCredentials('fake1', '...', None), 'region_name': 'custom'},
+            {'creds': ReadOnlyCredentials('fake2', '...', None)})
 
-    keys = set(_s3_cache_key(**o) for o in opts)
+    keys = {_s3_cache_key(**o) for o in opts}
     assert len(keys) == len(opts)
 
 

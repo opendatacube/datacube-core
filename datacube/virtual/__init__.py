@@ -143,19 +143,19 @@ class NameResolver:
         self.lookup_table[namespace][name] = callable_obj
 
 
-DEFAULT_RESOLVER = NameResolver({'transform': dict(make_mask=MakeMask,
-                                                   apply_mask=ApplyMask,
-                                                   to_float=ToFloat,
-                                                   rename=Rename,
-                                                   select=Select,
-                                                   expressions=Expressions),
-                                 'aggregate': dict(xarray_reduction=XarrayReduction),
-                                 'aggregate/group_by': dict(year=year,
-                                                            month=month,
-                                                            week=week,
-                                                            day=day,
-                                                            earliest_time=earliest_time,
-                                                            fiscal_year=fiscal_year)})
+DEFAULT_RESOLVER = NameResolver({'transform': {'make_mask': MakeMask,
+                                               'apply_mask': ApplyMask,
+                                               'to_float': ToFloat,
+                                               'rename': Rename,
+                                               'select': Select,
+                                               'expressions': Expressions},
+                                 'aggregate': {'xarray_reduction': XarrayReduction},
+                                 'aggregate/group_by': {'year': year,
+                                                        'month': month,
+                                                        'week': week,
+                                                        'day': day,
+                                                        'earliest_time': earliest_time,
+                                                        'fiscal_year': fiscal_year}})
 
 
 def construct(name_resolver: NameResolver | None = None, **recipe: Mapping[str, Any]) -> VirtualProduct:
