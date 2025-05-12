@@ -177,7 +177,7 @@ extend-ignore-names = [
 
 [tool.ruff.lint.per-file-ignores]
 # Generated file, exclude from linting.
-"datacube/_version.py" = ["UP"]
+"datacube/_version.py" = ["I", "UP"]
 # SQLAlchemy has overloaded ==, so use that (or is_) to compare with None.
 "datacube/drivers/postgis/_api.py" = ["E711"]
 "datacube/drivers/postgis/_schema.py" = ["E711"]
