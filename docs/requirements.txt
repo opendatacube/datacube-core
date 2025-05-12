@@ -34,7 +34,7 @@ beautifulsoup4==4.13.4
     #   pydata-sphinx-theme
 bleach==6.2.0
     # via nbconvert
-boto3==1.38.10
+boto3==1.38.13
     # via datacube (../setup.py)
 botocore==1.38.10
     # via
