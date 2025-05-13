@@ -37,7 +37,7 @@ beautifulsoup4==4.13.4
     #   pydata-sphinx-theme
 bleach==6.2.0
     # via nbconvert
-boto3==1.38.10
+boto3==1.38.14
     # via
     #   datacube (pyproject.toml)
     #   moto
