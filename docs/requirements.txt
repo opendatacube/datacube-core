@@ -91,7 +91,7 @@ docutils==0.21.2
     #   recommonmark
     #   sphinx
     #   sphinx-click
-exceptiongroup==1.2.2
+exceptiongroup==1.3.0
     # via ipython
 executing==2.2.0
     # via stack-data
