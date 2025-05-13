@@ -73,7 +73,7 @@ charset-normalizer==3.4.2
     # via requests
 ciso8601==2.3.2
     # via datacube (pyproject.toml)
-click==8.1.8
+click==8.2.0
     # via
     #   datacube (pyproject.toml)
     #   click-plugins

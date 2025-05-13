@@ -8,6 +8,7 @@ Common methods for index integration tests.
 import itertools
 import os
 import warnings
+from collections.abc import Sequence
 from copy import copy, deepcopy
 from datetime import timedelta
 from pathlib import Path
@@ -876,10 +877,9 @@ def example_ls5_nbar_metadata_doc():
 
 @pytest.fixture
 def clirunner(datacube_env_name: str):
-    def _run_cli(opts, catch_exceptions: bool = False,
+    def _run_cli(opts: Sequence[str], catch_exceptions: bool = False,
                  expect_success: bool = True, cli_method=datacube.scripts.cli_app.cli,
                  skip_env: bool = False, skip_config_paths: bool = False,
-                 mix_stderr: bool = True,
                  verbose_flag: str = '-v') -> Result:
         # If raw config passed in, skip default test config
         if not skip_config_paths:
@@ -890,8 +890,7 @@ def clirunner(datacube_env_name: str):
             exe_opts.append(verbose_flag)
         exe_opts.extend(opts)
 
-        runner = CliRunner(mix_stderr=mix_stderr)
-        result = runner.invoke(
+        result = CliRunner().invoke(
             cli_method,
             exe_opts,
             catch_exceptions=catch_exceptions
