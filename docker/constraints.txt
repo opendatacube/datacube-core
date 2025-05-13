@@ -219,7 +219,7 @@ netcdf4==1.7.2
     # via
     #   datacube (pyproject.toml)
     #   datacube (pyproject.toml:dev)
-numpy==2.2.4
+numpy==2.2.5
     # via
     #   datacube (pyproject.toml)
     #   antimeridian
@@ -352,9 +352,9 @@ ruff==0.11.9
     # via datacube (pyproject.toml:dev)
 s3transfer==0.12.0
     # via boto3
-setuptools==80.3.0
+setuptools==80.4.0
     # via types-setuptools
-shapely==2.0.7
+shapely==2.1.0
     # via
     #   datacube (pyproject.toml)
     #   antimeridian
@@ -397,7 +397,7 @@ sphinxcontrib-qthelp==2.0.0
     # via sphinx
 sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
-sqlalchemy==2.0.39
+sqlalchemy==2.0.40
     # via
     #   datacube (pyproject.toml)
     #   alembic
@@ -486,7 +486,7 @@ werkzeug==3.1.3
     #   pytest-httpserver
 wrapt==1.17.2
     # via deprecat
-xarray==2025.3.0
+xarray==2025.4.0
     # via datacube (pyproject.toml)
 xmltodict==0.14.2
     # via moto

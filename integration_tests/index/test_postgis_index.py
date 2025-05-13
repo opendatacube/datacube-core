@@ -169,7 +169,7 @@ def spatial_index_crs_sanitise_helper() -> None:
     assert len(list(sanitised.geoms)) == 2
 
     assert sanitise_extent(pm_4326_ccw, epsg3857) == pm_4326_ccw.to_crs(epsg3857)
-    assert sanitise_extent(pm_3857, epsg3857).geom.almost_equals(pm_3857.geom)
+    assert sanitise_extent(pm_3857, epsg3857).geom.equals_exact(pm_3857.geom, 1e-6)
     assert sanitise_extent(am_3857, epsg3857).type == "MultiPolygon"
 
     assert sanitise_extent(am_3832, epsg3832) == am_3832

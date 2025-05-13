@@ -36,7 +36,7 @@ def upgrade() -> None:
                                         nullable=False, index=True, comment="when last updated"), schema="odc")
     else:
         op.alter_column("dataset", "updated", schema="odc", type_=DateTime(timezone=True),
-                        server_default=func.now(), nullable=False, comment="when last updated")  # noqa: E501
+                        server_default=func.now(), nullable=False, comment="when last updated")  # type: ignore[arg-type] # noqa: E501
     op.create_index("ix_dataset_updated", "dataset", ["updated"], schema="odc", if_not_exists=True)
 
     if not column_exists("metadata_type", "updated"):
@@ -44,14 +44,14 @@ def upgrade() -> None:
                                               nullable=False, comment="when last updated"), schema="odc")
     else:
         op.alter_column("metadata_type", "updated", schema="odc", type_=DateTime(timezone=True),
-                        server_default=func.now(), nullable=False, comment="when last updated")  # noqa: E501
+                        server_default=func.now(), nullable=False, comment="when last updated")  # type: ignore[arg-type] # noqa: E501
 
     if not column_exists("product", "updated"):
         op.add_column("product", Column("updated", DateTime(timezone=True), server_default=func.now(),
                                         nullable=False, comment="when last updated"), schema="odc")
     else:
         op.alter_column("product", "updated", schema="odc", type_=DateTime(timezone=True),
-                        server_default=func.now(), nullable=False, comment="when last updated")  # noqa: E501
+                        server_default=func.now(), nullable=False, comment="when last updated")  # type: ignore[arg-type] # noqa: E501
 
 
 def downgrade() -> None:

@@ -382,6 +382,7 @@ def mk_test_image(w, h,
 
     xx, yy = np.meshgrid(np.arange(w),
                          np.arange(h))
+    aa: np.ndarray[tuple[int, ...], np.dtype[np.float64 | np.signedinteger[Any]]]
     if dtype.kind == 'f':
         aa = xx.astype(dtype) + (yy.astype(dtype) % 1024.0) / 1024.0
     else:
