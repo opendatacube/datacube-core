@@ -882,8 +882,7 @@ def clirunner(datacube_env_name: str):
                  skip_env: bool = False, skip_config_paths: bool = False,
                  verbose_flag: str = '-v') -> Result:
         # If raw config passed in, skip default test config
-        if not skip_config_paths:
-            exe_opts = list(itertools.chain(*(('--config', f) for f in CONFIG_FILE_PATHS)))
+        exe_opts = [] if skip_config_paths else list(itertools.chain(*(('--config', f) for f in CONFIG_FILE_PATHS)))
         if not skip_env:
             exe_opts += ['--env', datacube_env_name]
         if verbose_flag:
