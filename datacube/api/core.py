@@ -34,6 +34,7 @@ from datacube.model.utils import xr_apply
 from datacube.storage import BandInfo, reproject_and_fuse
 from datacube.utils import ignore_exceptions_if
 from datacube.utils.dates import normalise_dt
+from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox
 
 if TYPE_CHECKING:
     from datacube.model import GridSpec
@@ -1168,7 +1169,7 @@ def per_band_load_data_settings(
 
 
 def output_geobox(
-    like: GeoBox | xarray.Dataset | xarray.DataArray | None = None,
+    like: GeoBox | LegacyGeoGeoBox | xarray.Dataset | xarray.DataArray | None = None,
     output_crs: Any = None,
     resolution: (
         int | float | tuple[int | float, int | float] | Resolution | None
@@ -1189,13 +1190,11 @@ def output_geobox(
         if isinstance(like, GeoBox):
             # Is already a GeoBox
             return like
-        if (
-            like.__class__.__name__ == "GeoBox"
-            and like.__class__.__module__ == "datacube.utils.geometry._base"
-        ):
-            # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox (check class without importing deprecated class)
+        if isinstance(like, LegacyGeoGeoBox):
+            # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
+            crs = None if like.crs is None else CRS(like.crs._str)
             return GeoBox(
-                shape=(like.height, like.width), affine=like.affine, crs=like.crs
+                shape=(like.height, like.width), affine=like.affine, crs=crs
             )
         # Is an Xarray object
         return like.odc.geobox
