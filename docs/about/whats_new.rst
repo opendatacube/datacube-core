@@ -5,10 +5,7 @@
 What's New
 **********
 
-Next Version
-============
-
-v1.9.4 (?? May 2025)
+v1.9.4 (20 May 2025)
 ====================
 
 Improvements
@@ -21,18 +18,28 @@ part of the ODC 1.9 release, since it's no longer needed internally. It is howev
 extremely useful public API for anyone running large scale data summaries and is
 used by `ODC Statistician`_.
 
-It has been updated to use the odc-geo_ geometry classes.
+GridWorkflow has been updated to use the odc-geo_ geometry classes.
 
 See: :issue:`1749` and :pull:`1760`
+
+**Fixed Dask load crash in some cases**
+
+There was a regression in data loading with dask in Datacube 1.9. It only
+occurred in rare cases so only affected some people. 
+
+The load failed whenever there were completely empty data chunks, which are
+rectangular in shape. That is, X != Y.
+ 
+See :pull:`1780` and :issue:`1779` for details.
 
 **Cleaning and Tidying**
 
 Massive cleaning effort across the codebase, spearheaded by @pjonsson, with a focus on:
 
- - Improvements in type annotation
- - Linting fixes
- - Code formatting and import ordering
- - Continuous integration improvements
+- Improvements in type annotations
+- Linting fixes
+- Code formatting and import ordering
+- Continuous integration improvements
 
 .. _odc-geo: https://odc-geo.readthedocs.io/
 .. _ODC Statistician: https://github.com/opendatacube/odc-stats
@@ -40,11 +47,10 @@ Massive cleaning effort across the codebase, spearheaded by @pjonsson, with a fo
 Other Changes
 -------------
 
-- Use odc-geo GridSpec if `tile_shape` in product storage information :pull:`1783`
+- Use odc-geo GridSpec if `tile_shape` is in product storage information :pull:`1783`
 - SQL: fix package names type :pull:`1784`
 - Add some type signatures :pull:`1785`, :pull:`1788`, :pull:`1796`
 - Use Ruff instead of flake8 :pull:`1789`
-- Update uv.lock with Dependabot :pull:`1790`
 - tests: use set instead of list :pull:`1792`
 - users: import right index :pull:`1793`
 - postgres: use one type for fields :pull:`1795`
@@ -53,35 +59,46 @@ Other Changes
 - virtual: fix pydoc formatting :pull:`1810`
 - fields: type annotate offset parameter :pull:`1809`
 - postgis: inherit instead of decorate :pull:`1801`
-- Dependabot: make one pull request for everything :pull:`1816`
 - tests: fix midnight bug :pull:`1825`
 - geometry: stop misusing constructor :pull:`1826`
 - Various lint fixes :pull:`1824`, :pull:`1838`
-- CI: use the right project slug :pull:`1823`
-- tests: update to moto 5.1.4 :pull:`1821`
 - Python 3.10 updates :pull:`1839`
-- Dependabot: update boto weekly instead :pull:`1837`, :pull:`1843`, :pull:`1856`
 - Dockerfile: stop running chown :pull:`1835`
-- CI: add security scanner :pull:`1833`
 - postgis: update mapper dynamically :pull:`1831`
 - Dockerfile: use uv-generated constraints :pull:`1842`
 - pytest: configure in pyproject.toml :pull:`1844`
 - Remove executable permission :pull:`1846`
 - Sort imports with Ruff :pull:`1858`
 - Fix documentation parameter names :pull:`1857`, :pull:`1880`
-- Add pandas types for development :pull:`1867`
 - Speed up AWS Utils tests :pull:`1878`
-- Dependabot: disable weekly updates :pull:`1886`
 - pyproject: set a fallback version :pull:`1887`
-- ``compliance-checker``` is no longer a dependency :pull:`1888`, :pull:`1897`
-- CI: run tests with docker compose :pull:`1896`
 - Enable flake8-comprehensions :pull:`1900`
 - model: remove old asserts :pull:`1898`
-- Remove pytest-timeout :pull:`1899`
-- Dependabot: set to weekly schedule :pull:`1901`
 - Ensure lock files are kept in sync with ``pyproject.toml`` dependencies. :pull:`1890`
 - Upgrade all lock files :pull:`1911`
 - core: fix type signature :pull:`1912`
+
+Dependencies
+------------
+
+- Add pandas types for development :pull:`1867`
+- tests: update to moto 5.1.4 :pull:`1821`
+- Remove pytest-timeout :pull:`1899`
+- ``compliance-checker``` is no longer a dependency :pull:`1888`, :pull:`1897`
+
+
+CI Fixes and Improvements
+--------------------------
+
+- CI: use the right project slug :pull:`1823`
+- CI: add security scanner :pull:`1833`
+- CI: run tests with docker compose :pull:`1896`
+- Dependabot: Keep uv.lock updated :pull:`1790`
+- Dependabot: make one pull request for everything :pull:`1816`
+- Dependabot: update boto weekly instead :pull:`1837`, :pull:`1843`, :pull:`1856`
+- Dependabot: disable weekly updates :pull:`1886`
+- Dependabot: set to weekly schedule :pull:`1901`
+
 
 v1.9.3 (15th April 2025)
 ========================
