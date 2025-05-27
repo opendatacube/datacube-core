@@ -83,7 +83,6 @@ dev = [
     'pytest-cov',
     'pytest-httpserver',
     # Linting tools
-    'pycodestyle',
     'pylint',
     'ruff',
     # Types and type checking

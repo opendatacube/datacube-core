@@ -34,7 +34,6 @@ jobs:
         lintcommand:
           - "pylint -j 2 --report no datacube"
           - "mypy datacube"
-          - "pycodestyle tests integration_tests examples --max-line-length 120"
     name: Linting
     steps:
       - name: checkout git
