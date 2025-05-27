@@ -9,7 +9,7 @@ affine==2.4.0
     #   rasterio
 alabaster==1.0.0
     # via sphinx
-alembic==1.15.2
+alembic==1.16.1
     # via datacube (pyproject.toml)
 antimeridian==0.4.1
     # via datacube (pyproject.toml)
@@ -37,25 +37,25 @@ beautifulsoup4==4.13.4
     #   pydata-sphinx-theme
 bleach==6.2.0
     # via nbconvert
-boto3==1.38.14
+boto3==1.38.24
     # via
     #   datacube (pyproject.toml)
     #   moto
-boto3-stubs==1.38.14
+boto3-stubs==1.38.24
     # via datacube (pyproject.toml:dev)
-botocore==1.38.14
+botocore==1.38.24
     # via
     #   datacube (pyproject.toml)
     #   boto3
     #   moto
     #   s3transfer
-botocore-stubs==1.38.14
+botocore-stubs==1.38.24
     # via
     #   datacube (pyproject.toml:dev)
     #   boto3-stubs
-bottleneck==1.4.2
+bottleneck==1.5.0
     # via datacube (pyproject.toml)
-cachetools==5.5.2
+cachetools==6.0.0
     # via
     #   datacube (pyproject.toml)
     #   odc-geo
@@ -73,7 +73,7 @@ charset-normalizer==3.4.2
     # via requests
 ciso8601==2.3.2
     # via datacube (pyproject.toml)
-click==8.2.0
+click==8.2.1
     # via
     #   datacube (pyproject.toml)
     #   click-plugins
@@ -93,14 +93,14 @@ cloudpickle==3.1.1
     #   distributed
 commonmark==0.9.1
     # via recommonmark
-coverage==7.8.0
+coverage==7.8.2
     # via pytest-cov
-cryptography==44.0.3
+cryptography==45.0.3
     # via
     #   moto
     #   types-pyopenssl
     #   types-redis
-dask==2025.4.1
+dask==2025.5.1
     # via
     #   datacube (pyproject.toml)
     #   distributed
@@ -112,7 +112,7 @@ deprecat==2.1.3
     # via datacube (pyproject.toml)
 dill==0.4.0
     # via pylint
-distributed==2025.4.1
+distributed==2025.5.1
     # via
     #   datacube (pyproject.toml)
     #   dask
@@ -127,13 +127,13 @@ executing==2.2.0
     # via stack-data
 fastjsonschema==2.21.1
     # via nbformat
-fsspec==2025.3.2
+fsspec==2025.5.1
     # via dask
 geoalchemy2==0.17.1
     # via datacube (pyproject.toml)
 greenlet==3.2.2
     # via sqlalchemy
-hypothesis==6.131.15
+hypothesis==6.131.30
     # via datacube (pyproject.toml:dev)
 idna==3.10
     # via requests
@@ -160,7 +160,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-jsonschema==4.23.0
+jsonschema==4.24.0
     # via
     #   datacube (pyproject.toml)
     #   nbformat
@@ -168,7 +168,7 @@ jsonschema-specifications==2025.4.1
     # via jsonschema
 jupyter-client==8.6.3
     # via nbclient
-jupyter-core==5.7.2
+jupyter-core==5.8.1
     # via
     #   jupyter-client
     #   nbclient
@@ -196,7 +196,7 @@ mccabe==0.7.0
     # via pylint
 mistune==3.1.3
     # via nbconvert
-moto==5.1.4
+moto==5.1.5
     # via datacube (pyproject.toml:dev)
 msgpack==1.1.0
     # via distributed
@@ -219,7 +219,7 @@ netcdf4==1.7.2
     # via
     #   datacube (pyproject.toml)
     #   datacube (pyproject.toml:dev)
-numpy==2.2.5
+numpy==2.2.6
     # via
     #   datacube (pyproject.toml)
     #   antimeridian
@@ -249,7 +249,7 @@ pandas==2.2.3
     # via
     #   datacube (pyproject.toml)
     #   xarray
-pandas-stubs==2.2.3.250308
+pandas-stubs==2.2.3.250527
     # via datacube (pyproject.toml:dev)
 pandocfilters==1.5.1
     # via nbconvert
@@ -263,7 +263,7 @@ platformdirs==4.3.8
     # via
     #   jupyter-core
     #   pylint
-pluggy==1.5.0
+pluggy==1.6.0
     # via pytest
 prompt-toolkit==3.0.51
     # via ipython
@@ -338,21 +338,19 @@ requests==2.32.3
     #   sphinx
 responses==0.25.7
     # via moto
-rpds-py==0.24.0
+rpds-py==0.25.1
     # via
     #   jsonschema
     #   referencing
-ruamel-yaml==0.18.10
+ruamel-yaml==0.18.11
     # via datacube (pyproject.toml)
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
-ruff==0.11.9
+ruff==0.11.11
     # via datacube (pyproject.toml:dev)
-s3transfer==0.12.0
+s3transfer==0.13.0
     # via boto3
-setuptools==80.4.0
-    # via types-setuptools
-shapely==2.1.0
+shapely==2.1.1
     # via
     #   datacube (pyproject.toml)
     #   antimeridian
@@ -395,7 +393,7 @@ sphinxcontrib-qthelp==2.0.0
     # via sphinx
 sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
-sqlalchemy==2.0.40
+sqlalchemy==2.0.41
     # via
     #   datacube (pyproject.toml)
     #   alembic
@@ -414,7 +412,7 @@ toolz==1.0.0
     #   dask
     #   distributed
     #   partd
-tornado==6.4.2
+tornado==6.5.1
     # via
     #   distributed
     #   jupyter-client
@@ -430,29 +428,29 @@ traitlets==5.14.3
     #   nbsphinx
 types-affine==0.1.0
     # via datacube (pyproject.toml:dev)
-types-awscrt==0.27.1
+types-awscrt==0.27.2
     # via botocore-stubs
-types-cachetools==5.5.0.20240820
+types-cachetools==6.0.0.20250525
     # via datacube (pyproject.toml:dev)
-types-cffi==1.17.0.20250326
+types-cffi==1.17.0.20250523
     # via types-pyopenssl
-types-jsonschema==4.23.0.20241208
+types-jsonschema==4.24.0.20250528
     # via datacube (pyproject.toml:dev)
-types-psutil==7.0.0.20250401
+types-psutil==7.0.0.20250516
     # via datacube (pyproject.toml:dev)
 types-pyopenssl==24.1.0.20240722
     # via types-redis
-types-python-dateutil==2.9.0.20241206
+types-python-dateutil==2.9.0.20250516
     # via datacube (pyproject.toml:dev)
-types-pytz==2025.2.0.20250326
+types-pytz==2025.2.0.20250516
     # via pandas-stubs
-types-pyyaml==6.0.12.20250402
+types-pyyaml==6.0.12.20250516
     # via datacube (pyproject.toml:dev)
 types-redis==4.6.0.20241004
     # via datacube (pyproject.toml:dev)
-types-s3transfer==0.12.0
+types-s3transfer==0.13.0
     # via boto3-stubs
-types-setuptools==80.4.0.20250511
+types-setuptools==80.8.0.20250521
     # via
     #   datacube (pyproject.toml:dev)
     #   types-cffi

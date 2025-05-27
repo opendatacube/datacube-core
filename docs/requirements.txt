@@ -9,7 +9,7 @@ affine==2.4.0
     #   rasterio
 alabaster==1.0.0
     # via sphinx
-alembic==1.15.2
+alembic==1.16.1
     # via datacube (pyproject.toml)
 antimeridian==0.4.1
     # via datacube (pyproject.toml)
@@ -34,14 +34,14 @@ beautifulsoup4==4.13.4
     #   pydata-sphinx-theme
 bleach==6.2.0
     # via nbconvert
-boto3==1.38.14
+boto3==1.38.24
     # via datacube (pyproject.toml)
-botocore==1.38.14
+botocore==1.38.24
     # via
     #   datacube (pyproject.toml)
     #   boto3
     #   s3transfer
-cachetools==5.5.2
+cachetools==6.0.0
     # via
     #   datacube (pyproject.toml)
     #   odc-geo
@@ -52,7 +52,7 @@ certifi==2025.4.26
     #   requests
 charset-normalizer==3.4.2
     # via requests
-click==8.2.0
+click==8.2.1
     # via
     #   datacube (pyproject.toml)
     #   click-plugins
@@ -72,7 +72,7 @@ cloudpickle==3.1.1
     #   distributed
 commonmark==0.9.1
     # via recommonmark
-dask==2025.4.1
+dask==2025.5.1
     # via
     #   datacube (pyproject.toml)
     #   distributed
@@ -82,7 +82,7 @@ defusedxml==0.7.1
     # via nbconvert
 deprecat==2.1.3
     # via datacube (pyproject.toml)
-distributed==2025.4.1
+distributed==2025.5.1
     # via datacube (pyproject.toml)
 docutils==0.21.2
     # via
@@ -95,7 +95,7 @@ executing==2.2.0
     # via stack-data
 fastjsonschema==2.21.1
     # via nbformat
-fsspec==2025.3.2
+fsspec==2025.5.1
     # via dask
 geoalchemy2==0.17.1
     # via datacube (pyproject.toml)
@@ -121,7 +121,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-jsonschema==4.23.0
+jsonschema==4.24.0
     # via
     #   datacube (pyproject.toml)
     #   nbformat
@@ -129,7 +129,7 @@ jsonschema-specifications==2025.4.1
     # via jsonschema
 jupyter-client==8.6.3
     # via nbclient
-jupyter-core==5.7.2
+jupyter-core==5.8.1
     # via
     #   jupyter-client
     #   nbclient
@@ -167,7 +167,7 @@ nbformat==5.10.4
     #   nbsphinx
 nbsphinx==0.9.7
     # via datacube (pyproject.toml:doc)
-numpy==2.2.5
+numpy==2.2.6
     # via
     #   datacube (pyproject.toml)
     #   antimeridian
@@ -251,17 +251,17 @@ referencing==0.36.2
     #   jsonschema-specifications
 requests==2.32.3
     # via sphinx
-rpds-py==0.24.0
+rpds-py==0.25.1
     # via
     #   jsonschema
     #   referencing
-ruamel-yaml==0.18.10
+ruamel-yaml==0.18.11
     # via datacube (pyproject.toml)
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
-s3transfer==0.12.0
+s3transfer==0.13.0
     # via boto3
-shapely==2.1.0
+shapely==2.1.1
     # via
     #   datacube (pyproject.toml)
     #   antimeridian
@@ -302,7 +302,7 @@ sphinxcontrib-qthelp==2.0.0
     # via sphinx
 sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
-sqlalchemy==2.0.40
+sqlalchemy==2.0.41
     # via
     #   datacube (pyproject.toml)
     #   alembic
@@ -319,7 +319,7 @@ toolz==1.0.0
     #   dask
     #   distributed
     #   partd
-tornado==6.4.2
+tornado==6.5.1
     # via
     #   distributed
     #   jupyter-client

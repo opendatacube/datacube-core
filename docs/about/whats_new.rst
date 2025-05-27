@@ -8,6 +8,7 @@ What's New
 Next Release
 ============
 
+- Update dependencies :pull:`1925`
 - Run Ruff format on all code :pull:`1926`, :pull:`1927`
 
 v1.9.4 (20 May 2025)
