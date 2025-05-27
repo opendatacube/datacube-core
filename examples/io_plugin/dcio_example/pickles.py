@@ -2,8 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" Example reader plugin
-"""
+"""Example reader plugin"""
+
 import pickle
 from contextlib import contextmanager
 from pathlib import Path
@@ -11,15 +11,15 @@ from urllib.parse import urlsplit
 
 from datacube.utils.uris import normalise_path
 
-PROTOCOL = 'file'
-FORMAT = 'pickle'
+PROTOCOL = "file"
+FORMAT = "pickle"
 
 
 def uri_split(uri):
-    loc = uri.find('://')
+    loc = uri.find("://")
     if loc < 0:
         return uri, PROTOCOL
-    return uri[loc+3:], uri[:loc]
+    return uri[loc + 3 :], uri[:loc]
 
 
 class PickleDataSource:
@@ -54,19 +54,21 @@ class PickleDataSource:
             if out_shape is None or out_shape == data.shape:
                 return data
 
-            raise NotImplementedError('Native reading not supported for this data source')
+            raise NotImplementedError(
+                "Native reading not supported for this data source"
+            )
 
     def __init__(self, band):
         self._band = band
         uri = band.uri
         self._filename, protocol = uri_split(uri)
 
-        if protocol not in [PROTOCOL, 'pickle']:
-            raise ValueError('Expected file:// or pickle:// url')
+        if protocol not in [PROTOCOL, "pickle"]:
+            raise ValueError("Expected file:// or pickle:// url")
 
     @contextmanager
     def open(self):
-        with open(self._filename, 'rb') as f:
+        with open(self._filename, "rb") as f:
             ds = pickle.load(f)
 
         yield PickleDataSource.BandDataSource(ds[self._band.name].isel(time=0))
@@ -74,13 +76,12 @@ class PickleDataSource:
 
 class PickleReaderDriver:
     def __init__(self):
-        self.name = 'PickleReader'
-        self.protocols = [PROTOCOL, 'pickle']
+        self.name = "PickleReader"
+        self.protocols = [PROTOCOL, "pickle"]
         self.formats = [FORMAT]
 
     def supports(self, protocol, fmt):
-        return (protocol in self.protocols and
-                fmt in self.formats)
+        return protocol in self.protocols and fmt in self.formats
 
     def new_datasource(self, band):
         return PickleDataSource(band)
@@ -96,7 +97,7 @@ class PickleWriterDriver:
 
     @property
     def aliases(self):
-        return ['pickles']
+        return ["pickles"]
 
     @property
     def format(self):
@@ -125,14 +126,18 @@ class PickleWriterDriver:
         """
         return normalise_path(file_path).as_uri()
 
-    def write_dataset_to_storage(self, dataset, file_uri,
-                                 global_attributes=None,
-                                 variable_params=None,
-                                 storage_config=None,
-                                 **kwargs):
+    def write_dataset_to_storage(
+        self,
+        dataset,
+        file_uri,
+        global_attributes=None,
+        variable_params=None,
+        storage_config=None,
+        **kwargs,
+    ):
         filepath = Path(urlsplit(file_uri).path)
         filepath.parent.mkdir(parents=True, exist_ok=True)
-        with filepath.open('wb') as f:
+        with filepath.open("wb") as f:
             pickle.dump(dataset, f)
         return {}
 

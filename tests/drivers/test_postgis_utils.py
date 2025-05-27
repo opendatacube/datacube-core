@@ -6,6 +6,7 @@
 
 def test_spindex_table_name() -> None:
     from datacube.drivers.postgis._spatial import is_spindex_table_name
+
     assert is_spindex_table_name("spatial_4326")
     assert not is_spindex_table_name("spatial")
     assert not is_spindex_table_name("spatial_")

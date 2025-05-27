@@ -41,14 +41,21 @@ def selective_apply_dict(dictionary, apply_to=None, key_map=None, value_map=None
 
         return value_map(key, value)
 
-    return {key_worker(key): value_worker(key, value)
-            for key, value in dictionary.items()}
+    return {
+        key_worker(key): value_worker(key, value) for key, value in dictionary.items()
+    }
 
 
-def selective_apply(data, apply_to=None, key_map=None, value_map=None) -> xarray.Dataset:
-    return xarray.Dataset(data_vars=selective_apply_dict(data.data_vars, apply_to=apply_to,
-                                                         key_map=key_map, value_map=value_map),
-                          coords=data.coords, attrs=data.attrs)
+def selective_apply(
+    data, apply_to=None, key_map=None, value_map=None
+) -> xarray.Dataset:
+    return xarray.Dataset(
+        data_vars=selective_apply_dict(
+            data.data_vars, apply_to=apply_to, key_map=key_map, value_map=value_map
+        ),
+        coords=data.coords,
+        attrs=data.attrs,
+    )
 
 
 class MakeMask(Transformation):
@@ -69,23 +76,27 @@ class MakeMask(Transformation):
     @override
     def measurements(self, input_measurements):
         if self.mask_measurement_name not in input_measurements:
-            raise VirtualProductException(f"required measurement {self.mask_measurement_name} not found"
-                                          )
+            raise VirtualProductException(
+                f"required measurement {self.mask_measurement_name} not found"
+            )
 
         def worker(_, value):
             result = value.copy()
-            result['dtype'] = 'bool'
+            result["dtype"] = "bool"
             return Measurement(**result)
 
-        return selective_apply_dict(input_measurements,
-                                    apply_to=[self.mask_measurement_name], value_map=worker)
+        return selective_apply_dict(
+            input_measurements, apply_to=[self.mask_measurement_name], value_map=worker
+        )
 
     @override
     def compute(self, data):
         def worker(_, value):
             return make_mask_prim(value, **self.flags)
 
-        return selective_apply(data, apply_to=[self.mask_measurement_name], value_map=worker)
+        return selective_apply(
+            data, apply_to=[self.mask_measurement_name], value_map=worker
+        )
 
 
 class ApplyMask(Transformation):
@@ -101,9 +112,16 @@ class ApplyMask(Transformation):
     :param erosion: the erosion to apply to mask in pixels
     :param dilation: the dilation to apply to mask in pixels
     """
-    def __init__(self, mask_measurement_name: str, apply_to: Collection[str] | None = None,
-                 preserve_dtype: bool = True, fallback_dtype: str = 'float32',
-                 erosion: int = 0, dilation: int = 0) -> None:
+
+    def __init__(
+        self,
+        mask_measurement_name: str,
+        apply_to: Collection[str] | None = None,
+        preserve_dtype: bool = True,
+        fallback_dtype: str = "float32",
+        erosion: int = 0,
+        dilation: int = 0,
+    ) -> None:
         self.mask_measurement_name = mask_measurement_name
         self.apply_to = apply_to
         self.preserve_dtype = preserve_dtype
@@ -113,17 +131,19 @@ class ApplyMask(Transformation):
 
     @override
     def measurements(self, input_measurements):
-        rest = {key: value
-                for key, value in input_measurements.items()
-                if key != self.mask_measurement_name}
+        rest = {
+            key: value
+            for key, value in input_measurements.items()
+            if key != self.mask_measurement_name
+        }
 
         def worker(_, value):
             if self.preserve_dtype:
                 return value
 
             result = value.copy()
-            result['dtype'] = self.fallback_dtype
-            result['nodata'] = float('nan')
+            result["dtype"] = self.fallback_dtype
+            result["nodata"] = float("nan")
             return Measurement(**result)
 
         return selective_apply_dict(rest, apply_to=self.apply_to, value_map=worker)
@@ -135,32 +155,40 @@ class ApplyMask(Transformation):
 
         if self.erosion > 0:
             from skimage.morphology import binary_erosion, disk
+
             kernel = disk(self.erosion)
-            mask = ~xarray.apply_ufunc(binary_erosion,
-                                       ~mask,
-                                       kernel.reshape((1, ) + kernel.shape),
-                                       output_dtypes=[bool],
-                                       dask='parallelized',
-                                       keep_attrs=True)
+            mask = ~xarray.apply_ufunc(
+                binary_erosion,
+                ~mask,
+                kernel.reshape((1,) + kernel.shape),
+                output_dtypes=[bool],
+                dask="parallelized",
+                keep_attrs=True,
+            )
 
         if self.dilation > 0:
             from skimage.morphology import binary_dilation, disk
+
             kernel = disk(self.dilation)
-            mask = ~xarray.apply_ufunc(binary_dilation,
-                                       ~mask,
-                                       kernel.reshape((1, ) + kernel.shape),
-                                       output_dtypes=[bool],
-                                       dask='parallelized',
-                                       keep_attrs=True)
+            mask = ~xarray.apply_ufunc(
+                binary_dilation,
+                ~mask,
+                kernel.reshape((1,) + kernel.shape),
+                output_dtypes=[bool],
+                dask="parallelized",
+                keep_attrs=True,
+            )
 
         def worker(key, value):
             if self.preserve_dtype:
-                if 'nodata' not in value.attrs:
-                    raise VirtualProductException(f"measurement {key} has no nodata value")
-                return value.where(mask, value.attrs['nodata'])
+                if "nodata" not in value.attrs:
+                    raise VirtualProductException(
+                        f"measurement {key} has no nodata value"
+                    )
+                return value.where(mask, value.attrs["nodata"])
 
             result = value.where(mask).astype(self.fallback_dtype)
-            result.attrs['nodata'] = float('nan')
+            result.attrs["nodata"] = float("nan")
             return result
 
         return selective_apply(rest, apply_to=self.apply_to, value_map=worker)
@@ -203,9 +231,14 @@ class ToFloat(Transformation):
     :param apply_to: list of names of measurements to apply conversion to
     :param dtype: default ``dtype`` for conversion
     """
-    def __init__(self, apply_to: list[str] | None = None, dtype: str = 'float32') -> None:
-        warnings.warn("the `to_float` transform is deprecated, please use `expressions` instead",
-                      category=DeprecationWarning)
+
+    def __init__(
+        self, apply_to: list[str] | None = None, dtype: str = "float32"
+    ) -> None:
+        warnings.warn(
+            "the `to_float` transform is deprecated, please use `expressions` instead",
+            category=DeprecationWarning,
+        )
         self.apply_to = apply_to
         self.dtype = dtype
 
@@ -213,15 +246,17 @@ class ToFloat(Transformation):
     def measurements(self, input_measurements):
         def worker(_, value):
             result = value.copy()
-            result['dtype'] = self.dtype
+            result["dtype"] = self.dtype
             return Measurement(**result)
 
-        return selective_apply_dict(input_measurements, apply_to=self.apply_to, value_map=worker)
+        return selective_apply_dict(
+            input_measurements, apply_to=self.apply_to, value_map=worker
+        )
 
     @override
     def compute(self, data):
         def worker(_, value):
-            if hasattr(value, 'dtype') and value.dtype == self.dtype:
+            if hasattr(value, "dtype") and value.dtype == self.dtype:
                 return value
 
             return mask_invalid_data_prim(value).astype(self.dtype)
@@ -263,9 +298,12 @@ class Rename(Transformation):
 
     :param measurement_names: mapping from INPUT NAME to OUTPUT NAME
     """
+
     def __init__(self, measurement_names: Mapping) -> None:
-        warnings.warn("the `rename` transform is deprecated, please use `expressions` instead",
-                      category=DeprecationWarning)
+        warnings.warn(
+            "the `rename` transform is deprecated, please use `expressions` instead",
+            category=DeprecationWarning,
+        )
         self.measurement_names = measurement_names
 
     @override
@@ -275,11 +313,15 @@ class Rename(Transformation):
 
         def value_map(key, value):
             result = value.copy()
-            result['name'] = self.measurement_names[key]
+            result["name"] = self.measurement_names[key]
             return Measurement(**result)
 
-        return selective_apply_dict(input_measurements, apply_to=self.measurement_names,
-                                    key_map=key_map, value_map=value_map)
+        return selective_apply_dict(
+            input_measurements,
+            apply_to=self.measurement_names,
+            key_map=key_map,
+            value_map=value_map,
+        )
 
     @override
     def compute(self, data):
@@ -315,22 +357,31 @@ class Select(Transformation):
 
     :param measurement_names: list of measurements to keep
     """
+
     def __init__(self, measurement_names: Iterable) -> None:
-        warnings.warn("the `select` transform is deprecated, please use `expressions` instead",
-                      category=DeprecationWarning)
+        warnings.warn(
+            "the `select` transform is deprecated, please use `expressions` instead",
+            category=DeprecationWarning,
+        )
         self.measurement_names = measurement_names
 
     @override
     def measurements(self, input_measurements):
-        return {key: value
-                for key, value in input_measurements.items()
-                if key in self.measurement_names}
+        return {
+            key: value
+            for key, value in input_measurements.items()
+            if key in self.measurement_names
+        }
 
     @override
     def compute(self, data):
-        return data.drop_vars([measurement
-                               for measurement in data.data_vars
-                               if measurement not in self.measurement_names])
+        return data.drop_vars(
+            [
+                measurement
+                for measurement in data.data_vars
+                if measurement not in self.measurement_names
+            ]
+        )
 
 
 class Expressions(Transformation):
@@ -351,6 +402,7 @@ class Expressions(Transformation):
            measurements: [nir, red]
 
     """
+
     def __init__(self, output: Mapping, masked: bool = True) -> None:
         """
         Initialize transformation.
@@ -374,11 +426,13 @@ class Expressions(Transformation):
         parser = formula_parser()
 
         def deduce_type(output_var, output_desc):
-            if 'dtype' in output_desc:
-                return numpy.dtype(output_desc['dtype'])
+            if "dtype" in output_desc:
+                return numpy.dtype(output_desc["dtype"])
 
-            formula = output_desc['formula']
-            result = evaluate_type(formula, input_measurements, parser, FormulaEvaluator)
+            formula = output_desc["formula"]
+            result = evaluate_type(
+                formula, input_measurements, parser, FormulaEvaluator
+            )
 
             return result.dtype
 
@@ -387,12 +441,17 @@ class Expressions(Transformation):
                 # copy measurement over
                 return input_measurements[output_desc]
 
-            return Measurement(name=output_var, dtype=deduce_type(output_var, output_desc),
-                               nodata=output_desc.get('nodata', float('nan')),
-                               units=output_desc.get('units', '1'))
+            return Measurement(
+                name=output_var,
+                dtype=deduce_type(output_var, output_desc),
+                nodata=output_desc.get("nodata", float("nan")),
+                units=output_desc.get("units", "1"),
+            )
 
-        return {output_var: measurement(output_var, output_desc)
-                for output_var, output_desc in self.output.items()}
+        return {
+            output_var: measurement(output_var, output_desc)
+            for output_var, output_desc in self.output.items()
+        }
 
     @override
     def compute(self, data) -> xarray.Dataset:
@@ -405,18 +464,18 @@ class Expressions(Transformation):
                 # copy measurement over
                 return data[output_desc]
 
-            nodata = output_desc.get('nodata')
-            dtype = output_desc.get('dtype')
+            nodata = output_desc.get("nodata")
+            dtype = output_desc.get("dtype")
 
-            formula = output_desc['formula']
+            formula = output_desc["formula"]
             result = evaluate_data(formula, data, parser, FormulaEvaluator)
-            result.attrs['crs'] = data.attrs['crs']
+            result.attrs["crs"] = data.attrs["crs"]
             if nodata is not None:
-                result.attrs['nodata'] = nodata
-            result.attrs['units'] = output_desc.get('units', '1')
+                result.attrs["nodata"] = nodata
+            result.attrs["units"] = output_desc.get("units", "1")
 
-            if 'masked' in output_desc:
-                masked = output_desc['masked']
+            if "masked" in output_desc:
+                masked = output_desc["masked"]
             else:
                 masked = self.masked
 
@@ -439,57 +498,69 @@ class Expressions(Transformation):
 
             elif nodata is None:
                 if not dtype_is_float(dtype):
-                    raise VirtualProductException("cannot mask without specified nodata")
+                    raise VirtualProductException(
+                        "cannot mask without specified nodata"
+                    )
 
                 result = result.where(~mask)
-                result.attrs['nodata'] = numpy.nan
+                result.attrs["nodata"] = numpy.nan
 
             else:
                 result = result.where(~mask, nodata)
-                result.attrs['nodata'] = nodata
+                result.attrs["nodata"] = nodata
 
             return result
 
-        return xarray.Dataset(data_vars={output_var: result(output_var, output_desc)
-                                         for output_var, output_desc in self.output.items()},
-                              coords=data.coords, attrs=data.attrs)
+        return xarray.Dataset(
+            data_vars={
+                output_var: result(output_var, output_desc)
+                for output_var, output_desc in self.output.items()
+            },
+            coords=data.coords,
+            attrs=data.attrs,
+        )
 
 
 def year(time):
-    return time.astype('datetime64[Y]')
+    return time.astype("datetime64[Y]")
 
 
 def fiscal_year(time):
     """
     This function supports group-by financial years
     """
+
     def convert_to_quarters(x):
         df = pd.Series(x)
-        return df.apply(lambda x: numpy.datetime64(str(x.to_period('Q-JUN').qyear))).values
+        return df.apply(
+            lambda x: numpy.datetime64(str(x.to_period("Q-JUN").qyear))
+        ).values
 
-    ds = xarray.apply_ufunc(convert_to_quarters,
-                            time,
-                            input_core_dims=[["time"]],
-                            output_core_dims=[["time"]],
-                            vectorize=True)
+    ds = xarray.apply_ufunc(
+        convert_to_quarters,
+        time,
+        input_core_dims=[["time"]],
+        output_core_dims=[["time"]],
+        vectorize=True,
+    )
 
-    df = time['time'].to_series()
-    years = df.apply(lambda x: numpy.datetime64(str(x.to_period('Q-JUN').qyear))).values
+    df = time["time"].to_series()
+    years = df.apply(lambda x: numpy.datetime64(str(x.to_period("Q-JUN").qyear))).values
     ds = ds.assign_coords({"time": years})
 
     return ds
 
 
 def month(time):
-    return time.astype('datetime64[M]')
+    return time.astype("datetime64[M]")
 
 
 def week(time):
-    return time.astype('datetime64[W]')
+    return time.astype("datetime64[W]")
 
 
 def day(time):
-    return time.astype('datetime64[D]')
+    return time.astype("datetime64[D]")
 
 
 def earliest_time(time):
@@ -503,7 +574,9 @@ class XarrayReduction(Transformation):
     Apply an `xarray` reduction method to the data.
     """
 
-    def __init__(self, method=None, apply_to=None, dtype=None, dim: str = 'time', **kwargs) -> None:
+    def __init__(
+        self, method=None, apply_to=None, dtype=None, dim: str = "time", **kwargs
+    ) -> None:
         if method is None:
             raise VirtualProductException("no method specified in xarray reduction")
 
@@ -520,11 +593,12 @@ class XarrayReduction(Transformation):
                 return value
 
             result = value.copy()
-            result['dtype'] = self.dtype
+            result["dtype"] = self.dtype
             return Measurement(**result)
 
-        return selective_apply_dict(input_measurements,
-                                    apply_to=self.apply_to, value_map=worker)
+        return selective_apply_dict(
+            input_measurements, apply_to=self.apply_to, value_map=worker
+        )
 
     @override
     def compute(self, data):

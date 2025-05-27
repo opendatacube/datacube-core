@@ -6,7 +6,6 @@
 Datacube command-line interface
 """
 
-
 import datacube.scripts.dataset
 import datacube.scripts.metadata
 import datacube.scripts.product
@@ -15,5 +14,5 @@ import datacube.scripts.system
 import datacube.scripts.user  # noqa: F401
 from datacube.ui.click import cli
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

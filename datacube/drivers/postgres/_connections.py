@@ -12,6 +12,7 @@
 """
 Postgres connection and setup
 """
+
 import json
 import logging
 import re
@@ -30,7 +31,7 @@ from datacube.utils import jsonify_document
 from ...cfg import ODCEnvironment, psql_url_from_config
 from . import _api, _core
 
-_LIB_ID: str = 'odc-' + str(datacube.__version__)
+_LIB_ID: str = "odc-" + str(datacube.__version__)
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class PostgresDb:
     or else use a separate instance of this class in each process.
     """
 
-    driver_name = 'postgres'   # Mostly to support parametrised tests
+    driver_name = "postgres"  # Mostly to support parametrised tests
 
     def __init__(self, engine) -> None:
         # We don't recommend using this constructor directly as it may change.
@@ -58,19 +59,25 @@ class PostgresDb:
         self._engine = engine
 
     @classmethod
-    def from_config(cls,
-                    config_env: ODCEnvironment,
-                    application_name: str | None = None,
-                    validate_connection: bool = True) -> "PostgresDb":
+    def from_config(
+        cls,
+        config_env: ODCEnvironment,
+        application_name: str | None = None,
+        validate_connection: bool = True,
+    ) -> "PostgresDb":
         app_name = cls._expand_app_name(application_name)
 
-        return PostgresDb.create(config_env, application_name=app_name, validate=validate_connection)
+        return PostgresDb.create(
+            config_env, application_name=app_name, validate=validate_connection
+        )
 
     @classmethod
-    def create(cls,
-               config_env: ODCEnvironment,
-               application_name: str | None = None,
-               validate: bool = True) -> "PostgresDb":
+    def create(
+        cls,
+        config_env: ODCEnvironment,
+        application_name: str | None = None,
+        validate: bool = True,
+    ) -> "PostgresDb":
         url = psql_url_from_config(config_env)
         kwargs = {
             "application_name": application_name,
@@ -82,45 +89,57 @@ class PostgresDb:
         engine = cls._create_engine(url, **kwargs)
         if validate:
             if not _core.database_exists(engine):
-                raise IndexSetupError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
-                    init_command='datacube system init'
-                ))
+                raise IndexSetupError(
+                    "\n\nNo DB schema exists. Have you run init?\n\t{init_command}".format(
+                        init_command="datacube system init"
+                    )
+                )
 
             if not _core.schema_is_latest(engine):
                 raise IndexSetupError(
-                    '\n\nDB schema is out of date. '
-                    'An administrator must run init:\n\t{init_command}'.format(
-                        init_command='datacube -v system init'
-                    ))
+                    "\n\nDB schema is out of date. "
+                    "An administrator must run init:\n\t{init_command}".format(
+                        init_command="datacube -v system init"
+                    )
+                )
         return PostgresDb(engine)
 
     @staticmethod
-    def _create_engine(url, application_name: str | None = None, iam_rds_auth: bool = False,
-                       iam_rds_timeout: float | int = 600, pool_timeout: int = 60) -> Engine:
+    def _create_engine(
+        url,
+        application_name: str | None = None,
+        iam_rds_auth: bool = False,
+        iam_rds_timeout: float | int = 600,
+        pool_timeout: int = 60,
+    ) -> Engine:
         try:
             engine = create_engine(
                 url,
                 echo=False,
                 echo_pool=False,
-
                 # 'AUTOCOMMIT' here means READ-COMMITTED isolation level with autocommit on.
                 # When a transaction is needed we will do an explicit begin/commit.
-                isolation_level='AUTOCOMMIT',
+                isolation_level="AUTOCOMMIT",
                 json_serializer=_to_json,
                 # If a connection is idle for this many seconds, SQLAlchemy will renew it rather
                 # than assuming it's still open. Allows servers to close idle connections without clients
                 # getting errors.
                 pool_recycle=pool_timeout,
-                connect_args={'application_name': application_name}
+                connect_args={"application_name": application_name},
             )
         except ModuleNotFoundError:
-            raise IndexSetupError('psycopg2 is required to work with the database. '
-                                  'Please install the [postgres] or [test] dependencies, '
-                                  'or manually install psycopg2 or psycopg2-binary.') from None
+            raise IndexSetupError(
+                "psycopg2 is required to work with the database. "
+                "Please install the [postgres] or [test] dependencies, "
+                "or manually install psycopg2 or psycopg2-binary."
+            ) from None
 
         if iam_rds_auth:
             from datacube.utils.aws import obtain_new_iam_auth_token
-            handle_dynamic_token_authentication(engine, obtain_new_iam_auth_token, timeout=iam_rds_timeout, url=url)
+
+            handle_dynamic_token_authentication(
+                engine, obtain_new_iam_auth_token, timeout=iam_rds_timeout, url=url
+            )
 
         return engine
 
@@ -162,12 +181,15 @@ class PostgresDb:
         full_name = _LIB_ID
         if application_name:
             if not isinstance(application_name, str):
-                raise TypeError('Application name must be a string')
+                raise TypeError("Application name must be a string")
 
-            full_name = re.sub('[^0-9a-zA-Z]+', '-', application_name) + ' ' + full_name
+            full_name = re.sub("[^0-9a-zA-Z]+", "-", application_name) + " " + full_name
 
         if len(full_name) > 64:
-            _LOG.warning('Application name is too long: Truncating to %s chars', (64 - len(_LIB_ID) - 1))
+            _LOG.warning(
+                "Application name is too long: Truncating to %s chars",
+                (64 - len(_LIB_ID) - 1),
+            )
         return full_name[-64:]
 
     def init(self, with_permissions: bool = True) -> bool:
@@ -200,7 +222,7 @@ class PostgresDb:
         Low level context manager, use <index_resource>._db_connection instead
         """
         with self._engine.connect().execution_options(
-                isolation_level="AUTOCOMMIT"
+            isolation_level="AUTOCOMMIT"
         ) as connection:
             try:
                 yield _api.PostgresDbAPI(connection)
@@ -219,10 +241,9 @@ class PostgresDb:
         return f"PostgresDb<engine={self._engine!r}>"
 
 
-def handle_dynamic_token_authentication(engine: Engine,
-                                        new_token: Callable[..., str],
-                                        timeout: float | int = 600,
-                                        **kwargs) -> None:
+def handle_dynamic_token_authentication(
+    engine: Engine, new_token: Callable[..., str], timeout: float | int = 600, **kwargs
+) -> None:
     last_token = [None]
     last_token_time = [0.0]
 

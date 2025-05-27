@@ -32,6 +32,7 @@ class Index(AbstractIndex):
     """
     (Sub-)Minimal (non-)implementation of the Index API.
     """
+
     #   Metadata type support flags
     supports_legacy = True
     supports_eo3 = True
@@ -99,8 +100,12 @@ class Index(AbstractIndex):
 
     @classmethod
     @override
-    def from_config(cls, config_env, application_name: str | None = None,
-                    validate_connection: bool = True) -> "Index":
+    def from_config(
+        cls,
+        config_env,
+        application_name: str | None = None,
+        validate_connection: bool = True,
+    ) -> "Index":
         return cls(config_env)
 
     @classmethod
@@ -109,7 +114,9 @@ class Index(AbstractIndex):
         return get_dataset_fields(doc)
 
     @override
-    def init_db(self, with_default_types: bool = True, with_permissions: bool = True) -> bool:
+    def init_db(
+        self, with_default_types: bool = True, with_permissions: bool = True
+    ) -> bool:
         return True
 
     @override
@@ -136,16 +143,18 @@ class NullIndexDriver(AbstractIndexDriver):
     @override
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
-               "Please use the 'index.metadata_type.from_doc()' instead.",
-        version='1.9.0',
-        category=ODC2DeprecationWarning)
+        "Please use the 'index.metadata_type.from_doc()' instead.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning,
+    )
     def metadata_type_from_doc(definition: dict) -> MetadataType:
         """
         :param definition:
         """
         MetadataType.validate(definition)  # type: ignore
-        return MetadataType(definition,
-                            dataset_search_fields=Index.get_dataset_fields(definition))
+        return MetadataType(
+            definition, dataset_search_fields=Index.get_dataset_fields(definition)
+        )
 
 
 def index_driver_init() -> NullIndexDriver:

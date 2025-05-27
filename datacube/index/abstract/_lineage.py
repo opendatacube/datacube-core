@@ -32,10 +32,11 @@ class AbstractLineageResource(ABC):
     However, any index driver that supports lineage must implement at least the get_all_lineage() and _add_batch()
     methods.
     """
+
     def __init__(self, index, supports_external_lineage: bool = True) -> None:
         self._index = index
         supports = self._index.supports_external_lineage
-        assert (supports if supports_external_lineage else not supports)
+        assert supports if supports_external_lineage else not supports
 
     @abstractmethod
     def get_derived_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
@@ -69,7 +70,12 @@ class AbstractLineageResource(ABC):
         """
 
     @abstractmethod
-    def merge(self, rels: LineageRelations, allow_updates: bool = False, validate_only: bool = False) -> None:
+    def merge(
+        self,
+        rels: LineageRelations,
+        allow_updates: bool = False,
+        validate_only: bool = False,
+    ) -> None:
         """
         Merge an entire LineageRelations collection into the database.
 
@@ -81,7 +87,9 @@ class AbstractLineageResource(ABC):
         """
 
     @abstractmethod
-    def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
+    def add(
+        self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False
+    ) -> None:
         """
         Add or update a LineageTree into the Index.
 
@@ -97,7 +105,9 @@ class AbstractLineageResource(ABC):
         """
 
     @abstractmethod
-    def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
+    def remove(
+        self, id_: DSID, direction: LineageDirection, max_depth: int = 0
+    ) -> None:
         """
         Remove lineage information from the Index.
 
@@ -168,7 +178,9 @@ class AbstractLineageResource(ABC):
         :return: BatchStatus named tuple, with `safe` set to None.
         """
 
-    def bulk_add(self, relations: Iterable[LineageRelation], batch_size: int = 1000) -> BatchStatus:
+    def bulk_add(
+        self, relations: Iterable[LineageRelation], batch_size: int = 1000
+    ) -> BatchStatus:
         """
         Add a group of LineageRelation objects in bulk.
 
@@ -193,11 +205,13 @@ class AbstractLineageResource(ABC):
             n_in_batch += 1
             if n_in_batch >= batch_size:
                 batch_result = self._add_batch(batch)
-                _LOG.info("Batch %d/%d datasets added in %.2fs: (%.2fdatasets/min)",
-                          batch_result.completed,
-                          n_in_batch,
-                          batch_result.seconds_elapsed,
-                          batch_result.completed * 60 / batch_result.seconds_elapsed)
+                _LOG.info(
+                    "Batch %d/%d datasets added in %.2fs: (%.2fdatasets/min)",
+                    batch_result.completed,
+                    n_in_batch,
+                    batch_result.seconds_elapsed,
+                    batch_result.completed * 60 / batch_result.seconds_elapsed,
+                )
                 added += batch_result.completed
                 skipped += batch_result.skipped
                 batch = []
@@ -223,6 +237,7 @@ class NoLineageResource(AbstractLineageResource):
     Index drivers that support legacy lineage should extend this implementation and provide
     implementations of the get_all_lineage() and _add_batch() methods.
     """
+
     def __init__(self, index) -> None:
         super().__init__(index, supports_external_lineage=False)
 
@@ -235,15 +250,24 @@ class NoLineageResource(AbstractLineageResource):
         raise NotImplementedError()
 
     @override
-    def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
+    def add(
+        self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False
+    ) -> None:
         raise NotImplementedError()
 
     @override
-    def merge(self, rels: LineageRelations, allow_updates: bool = False, validate_only: bool = False) -> None:
+    def merge(
+        self,
+        rels: LineageRelations,
+        allow_updates: bool = False,
+        validate_only: bool = False,
+    ) -> None:
         raise NotImplementedError()
 
     @override
-    def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
+    def remove(
+        self, id_: DSID, direction: LineageDirection, max_depth: int = 0
+    ) -> None:
         raise NotImplementedError()
 
     @override

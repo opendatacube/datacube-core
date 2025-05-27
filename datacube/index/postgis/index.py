@@ -33,7 +33,9 @@ from datacube.model import MetadataType
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-_DEFAULT_METADATA_TYPES_PATH: Path = Path(__file__).parent.joinpath('default-metadata-types.yaml')
+_DEFAULT_METADATA_TYPES_PATH: Path = Path(__file__).parent.joinpath(
+    "default-metadata-types.yaml"
+)
 
 
 class Index(AbstractIndex):
@@ -59,6 +61,7 @@ class Index(AbstractIndex):
     :type products: datacube.index._products.ProductResource
     :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
+
     #   Metadata type support flags
     supports_eo3 = True
 
@@ -128,12 +131,17 @@ class Index(AbstractIndex):
 
     @classmethod
     @override
-    def from_config(cls,
-                    config_env: ODCEnvironment,
-                    application_name: str | None = None,
-                    validate_connection: bool = True) -> "Index":
-        db = PostGisDb.from_config(config_env, application_name=application_name,
-                                   validate_connection=validate_connection)
+    def from_config(
+        cls,
+        config_env: ODCEnvironment,
+        application_name: str | None = None,
+        validate_connection: bool = True,
+    ) -> "Index":
+        db = PostGisDb.from_config(
+            config_env,
+            application_name=application_name,
+            validate_connection=validate_connection,
+        )
         return cls(db, config_env)
 
     @classmethod
@@ -142,14 +150,20 @@ class Index(AbstractIndex):
         return PostGisDb.get_dataset_fields(doc)
 
     @override
-    def init_db(self, with_default_types: bool = True, with_permissions: bool = True,
-                with_default_spatial_index: bool = True) -> bool:
+    def init_db(
+        self,
+        with_default_types: bool = True,
+        with_permissions: bool = True,
+        with_default_spatial_index: bool = True,
+    ) -> bool:
         is_new = self._db.init(with_permissions=with_permissions)
 
         if is_new and with_default_types:
-            _LOG.info('Adding default metadata types.')
+            _LOG.info("Adding default metadata types.")
             for doc in default_metadata_type_docs(_DEFAULT_METADATA_TYPES_PATH):
-                self.metadata_types.add(self.metadata_types.from_doc(doc), allow_table_lock=True)
+                self.metadata_types.add(
+                    self.metadata_types.from_doc(doc), allow_table_lock=True
+                )
 
         if is_new and with_default_spatial_index:
             self.create_spatial_index(CRS("EPSG:4326"))
@@ -187,11 +201,12 @@ class Index(AbstractIndex):
         return self._db.spatially_indexed_crses(refresh)
 
     @override
-    def update_spatial_index(self,
-                             crses: Sequence[CRS] = [],
-                             product_names: Sequence[str] = [],
-                             dataset_ids: Sequence[DSID] = []
-                             ) -> int:
+    def update_spatial_index(
+        self,
+        crses: Sequence[CRS] = [],
+        product_names: Sequence[str] = [],
+        dataset_ids: Sequence[DSID] = [],
+    ) -> int:
         with self._active_connection(transaction=True) as conn:
             return conn.update_spindex(crses, product_names, dataset_ids)
 
@@ -253,17 +268,19 @@ class PostgisIndexDriver(AbstractIndexDriver):
     @override
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
-               "Please use the 'index.metadata_type.from_doc()' instead.",
-        version='1.9.0',
-        category=ODC2DeprecationWarning)
+        "Please use the 'index.metadata_type.from_doc()' instead.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning,
+    )
     def metadata_type_from_doc(definition: dict) -> MetadataType:
         """
         :param definition:
         """
         # TODO: Validate metadata is ODCv2 compliant - e.g. either non-raster or EO3.
         MetadataType.validate(definition)  # type: ignore
-        return MetadataType(definition,
-                            dataset_search_fields=Index.get_dataset_fields(definition))
+        return MetadataType(
+            definition, dataset_search_fields=Index.get_dataset_fields(definition)
+        )
 
     @staticmethod
     @override

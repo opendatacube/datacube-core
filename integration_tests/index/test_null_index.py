@@ -11,7 +11,7 @@ from datacube import Datacube
 from datacube.cfg import ODCEnvironment
 from datacube.testutils import suppress_deprecations
 
-test_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
+test_uuid = UUID("4ec8fe97-e8b9-11e4-87ff-1040f381a756")
 
 
 def empty(iterable) -> bool:
@@ -22,6 +22,7 @@ def empty(iterable) -> bool:
 
 def test_init_null(null_config: ODCEnvironment) -> None:
     from datacube.drivers.indexes import index_cache
+
     idxs = index_cache()
     assert "default" in idxs._drivers
     assert "null" in idxs._drivers
@@ -111,40 +112,73 @@ def test_null_dataset_resource(null_config: ODCEnvironment) -> None:
         assert dc.index.datasets.get_datasets_for_location("http://a.uri/test") == []
 
         with suppress_deprecations():
-            assert empty(dc.index.datasets.get_field_names())  # DEPRECATED WRAPPER METHOD
-            assert dc.index.datasets.get_locations(test_uuid) == []  # Test deprecated method
-            assert dc.index.datasets.get_archived_locations(test_uuid) == []  # Test deprecated method
-            assert dc.index.datasets.get_archived_location_times(test_uuid) == []  # Test deprecated method
+            assert empty(
+                dc.index.datasets.get_field_names()
+            )  # DEPRECATED WRAPPER METHOD
+            assert (
+                dc.index.datasets.get_locations(test_uuid) == []
+            )  # Test deprecated method
+            assert (
+                dc.index.datasets.get_archived_locations(test_uuid) == []
+            )  # Test deprecated method
+            assert (
+                dc.index.datasets.get_archived_location_times(test_uuid) == []
+            )  # Test deprecated method
 
             with pytest.raises(NotImplementedError):
-                dc.index.datasets.add_location(test_uuid, "http://a.uri/test")  # Test deprecated method
+                dc.index.datasets.add_location(
+                    test_uuid, "http://a.uri/test"
+                )  # Test deprecated method
             with pytest.raises(NotImplementedError):
-                dc.index.datasets.remove_location(test_uuid, "http://a.uri/test")  # Test deprecated method
+                dc.index.datasets.remove_location(
+                    test_uuid, "http://a.uri/test"
+                )  # Test deprecated method
             with pytest.raises(NotImplementedError):
-                dc.index.datasets.archive_location(test_uuid, "http://a.uri/test")  # Test deprecated method
+                dc.index.datasets.archive_location(
+                    test_uuid, "http://a.uri/test"
+                )  # Test deprecated method
             with pytest.raises(NotImplementedError):
-                dc.index.datasets.restore_location(test_uuid, "http://a.uri/test")  # Test deprecated method
+                dc.index.datasets.restore_location(
+                    test_uuid, "http://a.uri/test"
+                )  # Test deprecated method
         with pytest.raises(KeyError):
             dc.index.datasets.temporal_extent(ids=[test_uuid])
         assert dc.index.datasets.spatial_extent(ids=[test_uuid]) is None
-        with (suppress_deprecations(), pytest.raises(KeyError)):
-            dc.index.datasets.get_product_time_bounds("product1")  # Test deprecated method
+        with suppress_deprecations(), pytest.raises(KeyError):
+            dc.index.datasets.get_product_time_bounds(
+                "product1"
+            )  # Test deprecated method
 
         assert dc.index.datasets.search_product_duplicates(MagicMock()) == []
         assert dc.index.datasets.search_by_metadata({}) == []
         assert dc.index.datasets.search(foo="bar", baz=12) == []
         assert dc.index.datasets.search_by_product(foo="bar", baz=12) == []
-        assert dc.index.datasets.search_returning(["foo", "bar"], foo="bar", baz=12) == []
+        assert (
+            dc.index.datasets.search_returning(["foo", "bar"], foo="bar", baz=12) == []
+        )
         assert dc.index.datasets.count(foo="bar", baz=12) == 0
         assert dc.index.datasets.count_by_product(foo="bar", baz=12) == []
-        assert dc.index.datasets.count_by_product_through_time("1 month", foo="bar", baz=12) == []
-        assert dc.index.datasets.count_product_through_time("1 month", foo="bar", baz=12) == []
+        assert (
+            dc.index.datasets.count_by_product_through_time(
+                "1 month", foo="bar", baz=12
+            )
+            == []
+        )
+        assert (
+            dc.index.datasets.count_product_through_time("1 month", foo="bar", baz=12)
+            == []
+        )
         with suppress_deprecations():
             # Coverage test of deprecated method
             assert dc.index.datasets.search_summaries(foo="bar", baz=12) == []
             # Coverage test of deprecated base class method
             assert dc.index.datasets.search_eager(foo="bar", baz=12) == []
-        assert dc.index.datasets.search_returning_datasets_light(("foo", "baz"), foo="bar", baz=12) == []
+        assert (
+            dc.index.datasets.search_returning_datasets_light(
+                ("foo", "baz"), foo="bar", baz=12
+            )
+            == []
+        )
 
 
 def test_null_transactions(null_config: ODCEnvironment) -> None:

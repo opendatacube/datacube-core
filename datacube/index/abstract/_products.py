@@ -34,11 +34,15 @@ class AbstractProductResource(ABC):
     (If a particular abstract method is not applicable for a particular implementation
     raise a NotImplementedError)
     """
+
     def __init__(self, index: "AbstractIndex") -> None:
         self._index = index
 
-    def from_doc(self, definition: JsonDict,
-                 metadata_type_cache: dict[str, MetadataType] | None = None) -> Product:
+    def from_doc(
+        self,
+        definition: JsonDict,
+        metadata_type_cache: dict[str, MetadataType] | None = None,
+    ) -> Product:
         """
         Construct unpersisted Product model from product metadata dictionary
 
@@ -48,39 +52,47 @@ class AbstractProductResource(ABC):
         :return: Unpersisted product model
         """
         # This column duplication is getting out of hand:
-        Product.validate(definition)   # type: ignore[attr-defined]   # validate method added by decorator
+        Product.validate(definition)  # type: ignore[attr-defined]   # validate method added by decorator
         # Validate extra dimension metadata
         Product.validate_extra_dims(definition)
 
-        metadata_type_in: str | JsonLike = definition['metadata_type']
+        metadata_type_in: str | JsonLike = definition["metadata_type"]
 
         # They either specified the name of a metadata type, or specified a metadata type.
         # Is it a name?
         if isinstance(metadata_type_in, str):
-            if metadata_type_cache is not None and metadata_type_in in metadata_type_cache:
-                metadata_type: MetadataType | None = metadata_type_cache[metadata_type_in]
+            if (
+                metadata_type_cache is not None
+                and metadata_type_in in metadata_type_cache
+            ):
+                metadata_type: MetadataType | None = metadata_type_cache[
+                    metadata_type_in
+                ]
             else:
                 metadata_type = self._index.metadata_types.get_by_name(metadata_type_in)
-                if (metadata_type is not None
-                        and metadata_type_cache is not None
-                        and metadata_type.name not in metadata_type_cache):
+                if (
+                    metadata_type is not None
+                    and metadata_type_cache is not None
+                    and metadata_type.name not in metadata_type_cache
+                ):
                     metadata_type_cache[metadata_type.name] = metadata_type
         else:
             # Otherwise they embedded a document, add it if needed:
-            metadata_type = self._index.metadata_types.from_doc(cast(JsonDict, metadata_type_in))
+            metadata_type = self._index.metadata_types.from_doc(
+                cast(JsonDict, metadata_type_in)
+            )
             definition = dict(definition)
-            definition['metadata_type'] = metadata_type.name
+            definition["metadata_type"] = metadata_type.name
 
         if metadata_type is None:
-            raise UnknownMetadataType(f"Unknown metadata type: {definition['metadata_type']!r}")
+            raise UnknownMetadataType(
+                f"Unknown metadata type: {definition['metadata_type']!r}"
+            )
 
         return Product(metadata_type, definition)
 
     @abstractmethod
-    def add(self,
-            product: Product,
-            allow_table_lock: bool = False
-           ) -> Product | None:
+    def add(self, product: Product, allow_table_lock: bool = False) -> Product | None:
         """
         Add a product to the index.
 
@@ -122,10 +134,12 @@ class AbstractProductResource(ABC):
                 b_skipped += 1
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
-    def bulk_add(self,
-                 product_docs: Iterable[JsonDict],
-                 metadata_types: dict[str, MetadataType] | None = None,
-                 batch_size: int = 1000) -> BatchStatus:
+    def bulk_add(
+        self,
+        product_docs: Iterable[JsonDict],
+        metadata_types: dict[str, MetadataType] | None = None,
+        batch_size: int = 1000,
+    ) -> BatchStatus:
         """
         Add a group of product documents in bulk.
 
@@ -155,7 +169,9 @@ class AbstractProductResource(ABC):
             try:
                 prod = self.from_doc(doc, metadata_type_cache=metadata_types)
                 if prod.name in existing:
-                    check_doc_unchanged(prod.definition, jsonify_document(doc), f"Product {prod.name}")
+                    check_doc_unchanged(
+                        prod.definition, jsonify_document(doc), f"Product {prod.name}"
+                    )
                     _LOG.warning("%s: skipped (already loaded)", prod.name)
                     skipped += 1
                     safe.add(prod.name)
@@ -191,11 +207,12 @@ class AbstractProductResource(ABC):
         return BatchStatus(added, skipped, monotonic() - started, safe)
 
     @abstractmethod
-    def can_update(self,
-                   product: Product,
-                   allow_unsafe_updates: bool = False,
-                   allow_table_lock: bool = False
-                  ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
+    def can_update(
+        self,
+        product: Product,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         """
         Check if product can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -213,11 +230,12 @@ class AbstractProductResource(ABC):
         """
 
     @abstractmethod
-    def update(self,
-               product: Product,
-               allow_unsafe_updates: bool = False,
-               allow_table_lock: bool = False
-               ) -> Product | None:
+    def update(
+        self,
+        product: Product,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ) -> Product | None:
         """
         Persist updates to a product. Unsafe changes will throw a ValueError by default.
 
@@ -234,11 +252,12 @@ class AbstractProductResource(ABC):
         :return: Persisted updated Product model
         """
 
-    def update_document(self,
-                        definition: JsonDict,
-                        allow_unsafe_updates: bool = False,
-                        allow_table_lock: bool = False
-                        ) -> Product | None:
+    def update_document(
+        self,
+        definition: JsonDict,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ) -> Product | None:
         """
         Update a metadata type from a document. Unsafe changes will throw a ValueError by default.
 
@@ -253,10 +272,11 @@ class AbstractProductResource(ABC):
             If false, creation will be slower and cannot be done in a transaction.
         :return: Persisted updated Product model
         """
-        return self.update(self.from_doc(definition),
-                           allow_unsafe_updates=allow_unsafe_updates,
-                           allow_table_lock=allow_table_lock
-                          )
+        return self.update(
+            self.from_doc(definition),
+            allow_unsafe_updates=allow_unsafe_updates,
+            allow_table_lock=allow_table_lock,
+        )
 
     def add_document(self, definition: JsonDict) -> Product | None:
         """
@@ -269,7 +289,9 @@ class AbstractProductResource(ABC):
         return self.add(type_)
 
     @abstractmethod
-    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Sequence[Product]:
+    def delete(
+        self, products: Iterable[Product], allow_delete_active: bool = False
+    ) -> Sequence[Product]:
         """
         Delete the specified products.
 
@@ -333,7 +355,9 @@ class AbstractProductResource(ABC):
         :param field_names: names of fields that returned products must have
         :returns: Matching product models
         """
-        return self.get_with_types(self._index.metadata_types.get_with_fields(field_names))
+        return self.get_with_types(
+            self._index.metadata_types.get_with_fields(field_names)
+        )
 
     def get_with_types(self, types: Iterable[MetadataType]) -> Iterable[Product]:
         """
@@ -380,9 +404,7 @@ class AbstractProductResource(ABC):
                 yield type_
 
     @abstractmethod
-    def search_robust(self,
-                      **query: QueryField
-                     ) -> Iterable[tuple[Product, QueryDict]]:
+    def search_robust(self, **query: QueryField) -> Iterable[tuple[Product, QueryDict]]:
         """
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
 
@@ -391,9 +413,7 @@ class AbstractProductResource(ABC):
         """
 
     @abstractmethod
-    def search_by_metadata(self,
-                           metadata: JsonDict
-                           ) -> Iterable[Product]:
+    def search_by_metadata(self, metadata: JsonDict) -> Iterable[Product]:
         """
         Perform a search using arbitrary metadata, returning results as Product objects.
 
@@ -424,7 +444,9 @@ class AbstractProductResource(ABC):
             yield cast(JsonDict, prod.definition)
 
     @abstractmethod
-    def spatial_extent(self, product: str | Product, crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
+    def spatial_extent(
+        self, product: str | Product, crs: CRS = CRS("EPSG:4326")
+    ) -> Geometry | None:
         """
         Return the combined spatial extent of the nominated product
 
@@ -441,7 +463,9 @@ class AbstractProductResource(ABC):
         """
 
     @abstractmethod
-    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+    def temporal_extent(
+        self, product: str | Product
+    ) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of a product.
         Raises KeyError if product is not found, RuntimeError if product has no datasets in the index

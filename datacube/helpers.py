@@ -11,29 +11,30 @@ Not used internally, those should go in `utils.py`
 import numpy as np
 
 DEFAULT_PROFILE = {
-    'blockxsize': 256,
-    'blockysize': 256,
-    'compress': 'lzw',
-    'driver': 'GTiff',
-    'interleave': 'band',
-    'nodata': 0.0,
-    'tiled': True}
+    "blockxsize": 256,
+    "blockysize": 256,
+    "compress": "lzw",
+    "driver": "GTiff",
+    "interleave": "band",
+    "nodata": 0.0,
+    "tiled": True,
+}
 
 
 def _calculate_blocksize(profile) -> None:
     # Block size must be smaller than the image size, and for geotiffs must be divisible by 16
     # Fix for small images.
-    if profile['blockxsize'] > profile['width']:
-        if profile['width'] % 16 == 0 or profile['width'] < 16:
-            profile['blockxsize'] = profile['width']
+    if profile["blockxsize"] > profile["width"]:
+        if profile["width"] % 16 == 0 or profile["width"] < 16:
+            profile["blockxsize"] = profile["width"]
         else:
-            profile['blockxsize'] = 16
+            profile["blockxsize"] = 16
 
-    if profile['blockysize'] > profile['height']:
-        if profile['height'] % 16 == 0 or profile['height'] < 16:
-            profile['blockysize'] = profile['height']
+    if profile["blockysize"] > profile["height"]:
+        if profile["height"] % 16 == 0 or profile["height"] < 16:
+            profile["blockysize"] = profile["height"]
         else:
-            profile['blockysize'] = 16
+            profile["blockysize"] = 16
 
 
 def ga_pq_fuser(dest, src) -> None:
@@ -44,7 +45,7 @@ def ga_pq_fuser(dest, src) -> None:
     by solar day to avoid duplicate data from scene overlaps.
     """
     valid_bit = 8
-    valid_val = (1 << valid_bit)
+    valid_val = 1 << valid_bit
 
     no_data_dest_mask = ~(dest & valid_val).astype(bool)
     np.copyto(dest, src, where=no_data_dest_mask)

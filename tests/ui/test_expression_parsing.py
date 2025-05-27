@@ -11,35 +11,35 @@ from datacube.ui import parse_expressions
 
 
 def test_parse_empty_str() -> None:
-    q = parse_expressions('')
+    q = parse_expressions("")
     assert q == {}
 
 
 def test_id_search() -> None:
     q = parse_expressions("id = 26931d17-7a4e-4b55-98e7-d6777fb61df6")
-    assert q['id'] == "26931d17-7a4e-4b55-98e7-d6777fb61df6"
+    assert q["id"] == "26931d17-7a4e-4b55-98e7-d6777fb61df6"
 
     q = parse_expressions('id = "26931d17-7a4e-4b55-98e7-d6777fb61df6"')
-    assert q['id'] == "26931d17-7a4e-4b55-98e7-d6777fb61df6"
+    assert q["id"] == "26931d17-7a4e-4b55-98e7-d6777fb61df6"
 
 
 def test_simple_string() -> None:
     q = parse_expressions("region_code = 56KKD", "i=10", "f=10.3")
-    assert q['region_code'] == '56KKD'
-    assert q['i'] == 10
-    assert q['f'] == 10.3
+    assert q["region_code"] == "56KKD"
+    assert q["i"] == 10
+    assert q["f"] == 10.3
 
 
 def test_between_expression() -> None:
-    q = parse_expressions('time in [2014, 2015]')
-    assert 'time' in q
-    r = q['time']
+    q = parse_expressions("time in [2014, 2015]")
+    assert "time" in q
+    r = q["time"]
     assert isinstance(r, Range)
     assert isinstance(r.begin, datetime)
     assert isinstance(r.end, datetime)
 
-    for k in ('lon', 'lat', 'x', 'y'):
-        q = parse_expressions(f'{k} in [10, 11.3]')
+    for k in ("lon", "lat", "x", "y"):
+        q = parse_expressions(f"{k} in [10, 11.3]")
         assert k in q
         r = q[k]
         assert isinstance(r, Range)
@@ -49,81 +49,117 @@ def test_between_expression() -> None:
 
 
 def test_parse_simple_expression() -> None:
-    assert parse_expressions('platform = 4') == {'platform': 4}
-    assert parse_expressions('platform = "LANDSAT_8"') == {'platform': 'LANDSAT_8'}
-    assert parse_expressions('platform = LANDSAT_8') == {'platform': 'LANDSAT_8'}
-    assert parse_expressions('platform = "LAND SAT_8"') == {'platform': 'LAND SAT_8'}
+    assert parse_expressions("platform = 4") == {"platform": 4}
+    assert parse_expressions('platform = "LANDSAT_8"') == {"platform": "LANDSAT_8"}
+    assert parse_expressions("platform = LANDSAT_8") == {"platform": "LANDSAT_8"}
+    assert parse_expressions('platform = "LAND SAT_8"') == {"platform": "LAND SAT_8"}
 
-    assert parse_expressions('lat in [4, 6]') == {'lat': Range(4, 6)}
+    assert parse_expressions("lat in [4, 6]") == {"lat": Range(4, 6)}
 
 
 def test_parse_uri_expression() -> None:
-    assert parse_expressions('uri = file:///f/data/test.nc') == {'uri': 'file:///f/data/test.nc'}
-    assert parse_expressions('uri = "file:///f/data/test.nc"') == {'uri': 'file:///f/data/test.nc'}
-    assert parse_expressions('uri = "file:///f/data/test me.nc"') == {'uri': 'file:///f/data/test me.nc'}
-    assert parse_expressions('uri = file:///C:/f/data/test.nc') == {'uri': 'file:///C:/f/data/test.nc'}
-    assert parse_expressions('uri = "file:///C:/f/data/test.nc"') == {'uri': 'file:///C:/f/data/test.nc'}
-    assert parse_expressions('uri = "file:///C:/f/data/test me.nc"') == {'uri': 'file:///C:/f/data/test me.nc'}
+    assert parse_expressions("uri = file:///f/data/test.nc") == {
+        "uri": "file:///f/data/test.nc"
+    }
+    assert parse_expressions('uri = "file:///f/data/test.nc"') == {
+        "uri": "file:///f/data/test.nc"
+    }
+    assert parse_expressions('uri = "file:///f/data/test me.nc"') == {
+        "uri": "file:///f/data/test me.nc"
+    }
+    assert parse_expressions("uri = file:///C:/f/data/test.nc") == {
+        "uri": "file:///C:/f/data/test.nc"
+    }
+    assert parse_expressions('uri = "file:///C:/f/data/test.nc"') == {
+        "uri": "file:///C:/f/data/test.nc"
+    }
+    assert parse_expressions('uri = "file:///C:/f/data/test me.nc"') == {
+        "uri": "file:///C:/f/data/test me.nc"
+    }
 
 
 def test_parse_dates() -> None:
-    assert parse_expressions('time in 2014-03-02') == {
-        'time': Range(begin=datetime(2014, 3, 2, 0, 0, tzinfo=tzutc()),
-                      end=datetime(2014, 3, 2, 23, 59, 59, 999999, tzinfo=tzutc()))
+    assert parse_expressions("time in 2014-03-02") == {
+        "time": Range(
+            begin=datetime(2014, 3, 2, 0, 0, tzinfo=tzutc()),
+            end=datetime(2014, 3, 2, 23, 59, 59, 999999, tzinfo=tzutc()),
+        )
     }
 
-    assert parse_expressions('time in 2014-3-2') == {
-        'time': Range(begin=datetime(2014, 3, 2, 0, 0, tzinfo=tzutc()),
-                      end=datetime(2014, 3, 2, 23, 59, 59, 999999, tzinfo=tzutc()))
+    assert parse_expressions("time in 2014-3-2") == {
+        "time": Range(
+            begin=datetime(2014, 3, 2, 0, 0, tzinfo=tzutc()),
+            end=datetime(2014, 3, 2, 23, 59, 59, 999999, tzinfo=tzutc()),
+        )
     }
 
     # A missing day defaults to the first of the month.
     # They are probably better off using in-expessions in these cases (eg. "time in 2013-01"), but it's here
     # for backwards compatibility.
     march_2014 = {
-        'time': Range(begin=datetime(2014, 3, 1, 0, 0, tzinfo=tzutc()),
-                      end=datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=tzutc()))
+        "time": Range(
+            begin=datetime(2014, 3, 1, 0, 0, tzinfo=tzutc()),
+            end=datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=tzutc()),
+        )
     }
-    assert parse_expressions('time in 2014-03') == march_2014
-    assert parse_expressions('time in 2014-3') == march_2014
+    assert parse_expressions("time in 2014-03") == march_2014
+    assert parse_expressions("time in 2014-3") == march_2014
 
     implied_feb_march_2014 = {
-        'time': Range(begin=datetime(2014, 2, 1, 0, 0, tzinfo=tzutc()),
-                      end=datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=tzutc()))
+        "time": Range(
+            begin=datetime(2014, 2, 1, 0, 0, tzinfo=tzutc()),
+            end=datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=tzutc()),
+        )
     }
-    assert parse_expressions('time in [2014-02, 2014-03]') == implied_feb_march_2014
+    assert parse_expressions("time in [2014-02, 2014-03]") == implied_feb_march_2014
 
 
 def test_parse_date_ranges() -> None:
     eighth_march_2014 = {
-        'time': Range(datetime(2014, 3, 8, tzinfo=tzutc()), datetime(2014, 3, 8, 23, 59, 59, 999999, tzinfo=tzutc()))
+        "time": Range(
+            datetime(2014, 3, 8, tzinfo=tzutc()),
+            datetime(2014, 3, 8, 23, 59, 59, 999999, tzinfo=tzutc()),
+        )
     }
-    assert parse_expressions('time in 2014-03-08') == eighth_march_2014
-    assert parse_expressions('time in 2014-03-8') == eighth_march_2014
+    assert parse_expressions("time in 2014-03-08") == eighth_march_2014
+    assert parse_expressions("time in 2014-03-8") == eighth_march_2014
 
     march_2014 = {
-        'time': Range(datetime(2014, 3, 1, tzinfo=tzutc()), datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=tzutc()))
+        "time": Range(
+            datetime(2014, 3, 1, tzinfo=tzutc()),
+            datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=tzutc()),
+        )
     }
-    assert parse_expressions('time in 2014-03') == march_2014
-    assert parse_expressions('time in 2014-3') == march_2014
+    assert parse_expressions("time in 2014-03") == march_2014
+    assert parse_expressions("time in 2014-3") == march_2014
     # Leap year, 28 days
     feb_2014 = {
-        'time': Range(datetime(2014, 2, 1, tzinfo=tzutc()), datetime(2014, 2, 28, 23, 59, 59, 999999, tzinfo=tzutc()))
+        "time": Range(
+            datetime(2014, 2, 1, tzinfo=tzutc()),
+            datetime(2014, 2, 28, 23, 59, 59, 999999, tzinfo=tzutc()),
+        )
     }
-    assert parse_expressions('time in 2014-02') == feb_2014
-    assert parse_expressions('time in 2014-2') == feb_2014
+    assert parse_expressions("time in 2014-02") == feb_2014
+    assert parse_expressions("time in 2014-2") == feb_2014
 
     # Entire year
     year_2014 = {
-        'time': Range(datetime(2014, 1, 1, tzinfo=tzutc()), datetime(2014, 12, 31, 23, 59, 59, 999999, tzinfo=tzutc()))
+        "time": Range(
+            datetime(2014, 1, 1, tzinfo=tzutc()),
+            datetime(2014, 12, 31, 23, 59, 59, 999999, tzinfo=tzutc()),
+        )
     }
-    assert parse_expressions('time in 2014') == year_2014
+    assert parse_expressions("time in 2014") == year_2014
 
 
 def test_parse_multiple_simple_expressions() -> None:
     # Multiple expressions in one command-line statement.
     # Mixed whitespace:
     between_exp = parse_expressions('platform=LS8 lat in [-4, 23.5] instrument="OTHER"')
-    assert between_exp == {'platform': 'LS8', 'lat': Range(-4, 23.5), 'instrument': 'OTHER'}
+    assert between_exp == {
+        "platform": "LS8",
+        "lat": Range(-4, 23.5),
+        "instrument": "OTHER",
+    }
     # Range(x,y) is "equal" to (x, y). Check explicitly that it's a range:
-    assert between_exp['lat'].begin == -4
+    assert between_exp["lat"].begin == -4

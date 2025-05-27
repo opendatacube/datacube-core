@@ -26,8 +26,9 @@ class UnappliedTransform:
 
     @override
     def __repr__(self) -> str:
-        return yaml.dump(self.recipe, Dumper=SafeDumper,
-                         default_flow_style=False, indent=2)
+        return yaml.dump(
+            self.recipe, Dumper=SafeDumper, default_flow_style=False, indent=2
+        )
 
 
 class Catalog(Mapping):
@@ -38,11 +39,11 @@ class Catalog(Mapping):
     def __init__(self, name_resolver, contents) -> None:
         self.name_resolver = name_resolver
         self.contents = contents
-        common = set(self._names('products')) & set(self._names('transforms'))
+        common = set(self._names("products")) & set(self._names("transforms"))
         assert not common, f"common names found in products and transforms {common}"
 
     def _names(self, section) -> list:
-        """ List of names under a section (products or transforms). """
+        """List of names under a section (products or transforms)."""
         if section not in self.contents:
             return []
         return list(self.contents[section])
@@ -53,10 +54,14 @@ class Catalog(Mapping):
         Looks up a virtual product or transform by name.
         Returns `None` if not found.
         """
-        if name in self._names('products'):
-            return self.name_resolver.construct(**self.contents['products'][name]['recipe'])
-        if name in self._names('transforms'):
-            return UnappliedTransform(self.name_resolver, self.contents['transforms'][name]['recipe'])
+        if name in self._names("products"):
+            return self.name_resolver.construct(
+                **self.contents["products"][name]["recipe"]
+            )
+        if name in self._names("transforms"):
+            return UnappliedTransform(
+                self.name_resolver, self.contents["transforms"][name]["recipe"]
+            )
 
         # raising a `KeyError` here stops autocompletion from working
         return None
@@ -66,15 +71,20 @@ class Catalog(Mapping):
 
     @override
     def __len__(self) -> int:
-        return len(self._names('products')) + len(self._names('transforms'))
+        return len(self._names("products")) + len(self._names("transforms"))
 
     @override
     def __iter__(self) -> Iterator:
-        return chain(iter(self._names('products')), iter(self._names('transforms')))
+        return chain(iter(self._names("products")), iter(self._names("transforms")))
 
     @override
     def __dir__(self) -> Iterable[str]:
         """
         Override to provide autocompletion of products and transforms.
         """
-        return sorted(dir(Mapping) + list(self.__dict__) + self._names('products') + self._names('transforms'))
+        return sorted(
+            dir(Mapping)
+            + list(self.__dict__)
+            + self._names("products")
+            + self._names("transforms")
+        )

@@ -6,6 +6,7 @@
 Test creation of added/updated columns during
 `datacube system init`
 """
+
 import pytest
 from sqlalchemy import text
 
@@ -42,24 +43,20 @@ def check_column(conn, table_name: str, column_name: str) -> bool:
 
 def check_trigger(conn, table_name: str) -> bool:
     trigger_result = conn.execute(
-        text(
-            TRIGGER_PRESENCE.format(schema=SCHEMA_NAME, table=table_name)
-        )
+        text(TRIGGER_PRESENCE.format(schema=SCHEMA_NAME, table=table_name))
     ).fetchone()
     if trigger_result is None:
         return False
-    return 'row_update_time' in trigger_result[0]
+    return "row_update_time" in trigger_result[0]
 
 
 def drop_column(conn, table: str, column: str) -> None:
     conn.execute(
-        text(
-            DROP_COLUMN.format(schema=SCHEMA_NAME, table=table, column=column)
-        )
+        text(DROP_COLUMN.format(schema=SCHEMA_NAME, table=table, column=column))
     )
 
 
-@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
+@pytest.mark.parametrize("datacube_env_name", ("datacube",))
 def test_added_column(clirunner, uninitialised_postgres_db) -> None:
     # Run on an empty database.
     result = clirunner(["--env", "datacube", "system", "init"])
@@ -73,7 +70,9 @@ def test_added_column(clirunner, uninitialised_postgres_db) -> None:
         assert check_column(connection, _schema.DATASET.name, "updated")
         assert not check_column(connection, _schema.DATASET.name, "fake_column")
         assert check_column(connection, _schema.DATASET_LOCATION.name, "added")
-        assert not check_column(connection, _schema.DATASET_LOCATION.name, "fake_column")
+        assert not check_column(
+            connection, _schema.DATASET_LOCATION.name, "fake_column"
+        )
 
         # Check for triggers
         assert check_trigger(connection, _schema.METADATA_TYPE.name)
@@ -82,7 +81,7 @@ def test_added_column(clirunner, uninitialised_postgres_db) -> None:
         assert not check_trigger(connection, _schema.DATASET_LOCATION.name)
 
 
-@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
+@pytest.mark.parametrize("datacube_env_name", ("datacube",))
 def test_readd_column(clirunner, uninitialised_postgres_db) -> None:
     # Run on an empty database. drop columns and re-add
     result = clirunner(["--env", "datacube", "system", "init"])

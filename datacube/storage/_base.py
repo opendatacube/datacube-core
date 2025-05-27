@@ -11,7 +11,7 @@ from datacube.utils.uris import pick_uri, uri_resolve
 
 
 def _get_band_and_layer(b: dict[str, Any]) -> tuple[int | None, str | None]:
-    """ Encode legacy logic for extracting band/layer:
+    """Encode legacy logic for extracting band/layer:
 
         on input:
         band -- Int | Nothing
@@ -27,8 +27,8 @@ def _get_band_and_layer(b: dict[str, Any]) -> tuple[int | None, str | None]:
           -    str   ( - , str)
 
     """
-    band = b.get('band')
-    layer = b.get('layer')
+    band = b.get("band")
+    layer = b.get("layer")
 
     if band is None:
         if isinstance(layer, int):
@@ -36,12 +36,16 @@ def _get_band_and_layer(b: dict[str, Any]) -> tuple[int | None, str | None]:
         if layer is None or isinstance(layer, str):
             return None, layer
 
-        raise ValueError(f'Expect `layer` to be one of None,int,str but it is {type(layer)}')
+        raise ValueError(
+            f"Expect `layer` to be one of None,int,str but it is {type(layer)}"
+        )
     else:
         if not isinstance(band, int):
-            raise ValueError(f'Expect `band` to be an integer (it is {type(band)})')
+            raise ValueError(f"Expect `band` to be an integer (it is {type(band)})")
         if layer is not None and not isinstance(layer, str):
-            raise ValueError(f'Expect `layer` to be one of None,str but it is {type(layer)}')
+            raise ValueError(
+                f"Expect `layer` to be one of None,str but it is {type(layer)}"
+            )
 
         return band, layer
 
@@ -64,54 +68,56 @@ def measurement_paths(ds: Dataset) -> dict[str, str]:
     :return: Band Name => URL
     """
     if not ds.uri:
-        raise ValueError('No locations on this dataset')
+        raise ValueError("No locations on this dataset")
     if not ds.has_multiple_uris():
         base = ds.uri
     else:
         base = pick_uri(ds.uris)
 
-    return {k: uri_resolve(base, m.get('path')) for k, m in ds.measurements.items()}
+    return {k: uri_resolve(base, m.get("path")) for k, m in ds.measurements.items()}
 
 
 class BandInfo:
     __slots__ = (
-        'band',
-        'crs',
-        'dims',
-        'driver_data',
-        'dtype',
-        'format',
-        'layer',
-        'name',
-        'nodata',
-        'transform',
-        'units',
-        'uri',
+        "band",
+        "crs",
+        "dims",
+        "driver_data",
+        "dtype",
+        "format",
+        "layer",
+        "name",
+        "nodata",
+        "transform",
+        "units",
+        "uri",
     )
 
-    def __init__(self,
-                 ds: Dataset,
-                 band: str,
-                 uri_scheme: str | None = None,
-                 extra_dim_index: int | None = None,
-                 patch_url: Callable[[str], str] | None = None) -> None:
+    def __init__(
+        self,
+        ds: Dataset,
+        band: str,
+        uri_scheme: str | None = None,
+        extra_dim_index: int | None = None,
+        patch_url: Callable[[str], str] | None = None,
+    ) -> None:
         try:
-            mp, = ds.product.lookup_measurements([band]).values()
+            (mp,) = ds.product.lookup_measurements([band]).values()
         except KeyError:
-            raise ValueError(f'No such band: {band}') from None
+            raise ValueError(f"No such band: {band}") from None
 
         mm = ds.measurements.get(mp.canonical_name)
 
         if mm is None:
-            raise ValueError(f'No such band: {band}')
+            raise ValueError(f"No such band: {band}")
 
         if not ds.uri:
-            raise ValueError('No uris defined on a dataset')
+            raise ValueError("No uris defined on a dataset")
         if not ds.has_multiple_uris():
             base_uri = ds.uri
         else:
             base_uri = ds.legacy_uri(uri_scheme)
-        uri = uri_resolve(base_uri, mm.get('path'))
+        uri = uri_resolve(base_uri, mm.get("path"))
         if patch_url is not None:
             uri = patch_url(uri)
 
@@ -125,10 +131,10 @@ class BandInfo:
         self.units = mp.units
         self.crs = ds.crs
         self.transform = ds.transform
-        self.format = ds.format or ''
-        self.dims = mp.get('dims', None)
+        self.format = ds.format or ""
+        self.dims = mp.get("dims", None)
         self.driver_data = _extract_driver_data(ds, mm)
 
     @property
     def uri_scheme(self) -> str:
-        return urlparse(self.uri).scheme or ''
+        return urlparse(self.uri).scheme or ""

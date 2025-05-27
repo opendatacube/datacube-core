@@ -5,7 +5,7 @@
 import datetime
 from collections import namedtuple
 
-Range = namedtuple('Range', ('begin', 'end'))
+Range = namedtuple("Range", ("begin", "end"))
 
 
 def ranges_overlap(ra: Range, rb: Range) -> bool:
@@ -21,6 +21,6 @@ def ranges_overlap(ra: Range, rb: Range) -> bool:
     return rb.end > ra.begin
 
 
-Not = namedtuple('Not', 'value')
+Not = namedtuple("Not", "value")
 QueryField = str | float | int | Range | datetime.datetime | Not
 QueryDict = dict[str, QueryField]

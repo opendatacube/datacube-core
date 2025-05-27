@@ -12,7 +12,7 @@ class WriterDriverCache:
         self._drivers = load_drivers(group)
 
         for driver in list(self._drivers.values()):
-            if hasattr(driver, 'aliases'):
+            if hasattr(driver, "aliases"):
                 for alias in driver.aliases:
                     self._drivers[alias] = driver
 
@@ -36,9 +36,9 @@ def writer_cache() -> WriterDriverCache:
     """
     Singleton for WriterDriverCache
     """
-    return singleton_setup(writer_cache, '_instance',
-                           WriterDriverCache,
-                           'datacube.plugins.io.write')
+    return singleton_setup(
+        writer_cache, "_instance", WriterDriverCache, "datacube.plugins.io.write"
+    )
 
 
 def writer_drivers() -> list[str]:

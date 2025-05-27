@@ -2,8 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" Reader driver construction for tests
-"""
+"""Reader driver construction for tests"""
+
 from pathlib import Path
 
 from datacube.drivers._types import ReaderDriver
@@ -14,38 +14,44 @@ from datacube.storage import BandInfo
 from datacube.testutils import mk_sample_dataset
 from datacube.testutils.threads import FakeThreadPoolExecutor
 
-NetCDF = 'NetCDF'    # pylint: disable=invalid-name
-GeoTIFF = 'GeoTIFF'  # pylint: disable=invalid-name
+NetCDF = "NetCDF"  # pylint: disable=invalid-name
+GeoTIFF = "GeoTIFF"  # pylint: disable=invalid-name
 
 
 def mk_rio_driver() -> ReaderDriver:
     pool = FakeThreadPoolExecutor()
     rde = RDEntry()
-    return rde.new_instance({'pool': pool,
-                             'allow_custom_pool': True})
+    return rde.new_instance({"pool": pool, "allow_custom_pool": True})
 
 
-def mk_band(name: str,
-            base_uri: str,
-            path: str = '',
-            format: str = GeoTIFF,  # pylint: disable=redefined-builtin  # noqa: A002
-            **extras) -> BandInfo:
+def mk_band(
+    name: str,
+    base_uri: str,
+    path: str = "",
+    format: str = GeoTIFF,  # pylint: disable=redefined-builtin  # noqa: A002
+    **extras,
+) -> BandInfo:
     """
     **extras**:
        layer, band, nodata, dtype, units, aliases
     """
-    band_opts = {k: extras.pop(k)
-                 for k in 'path layer band nodata dtype units aliases'.split() if k in extras}
+    band_opts = {
+        k: extras.pop(k)
+        for k in "path layer band nodata dtype units aliases".split()
+        if k in extras
+    }
 
     band = dict(name=name, path=path, **band_opts)
     ds = mk_sample_dataset([band], base_uri, format=format, **extras)
     return BandInfo(ds, name)
 
 
-def open_reader(path: str,
-                band_name: str = 'b1',
-                format: str = GeoTIFF,  # pylint: disable=redefined-builtin  # noqa: A002
-                **extras):
+def open_reader(
+    path: str,
+    band_name: str = "b1",
+    format: str = GeoTIFF,  # pylint: disable=redefined-builtin  # noqa: A002
+    **extras,
+):
     """
     **extras**:
        layer, band, nodata, dtype, units, aliases
@@ -59,8 +65,7 @@ def open_reader(path: str,
 
 
 def tee_new_load_context(rdr, new_impl) -> None:
-    """ When calling rdr.new_load_context(bands, old_ctx) tee data to new_impl
-    """
+    """When calling rdr.new_load_context(bands, old_ctx) tee data to new_impl"""
     _real_impl = rdr.new_load_context
 
     def patched(bands, old_ctx):

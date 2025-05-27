@@ -14,12 +14,12 @@ from .exceptions import DuplicateRecordError, IndexSetupError, MissingRecordErro
 from .fields import UnknownFieldError
 
 __all__ = [
-    'DuplicateRecordError',
-    'Index',
-    'IndexSetupError',
-    'MissingRecordError',
-    'UnknownFieldError',
-    'extract_geom_from_query',
-    'index_connect',
-    'strip_all_spatial_fields_from_query',
+    "DuplicateRecordError",
+    "Index",
+    "IndexSetupError",
+    "MissingRecordError",
+    "UnknownFieldError",
+    "extract_geom_from_query",
+    "index_connect",
+    "strip_all_spatial_fields_from_query",
 ]

@@ -6,6 +6,7 @@
 """
 Datacube configuration
 """
+
 import os
 import warnings
 from os import PathLike

@@ -67,5 +67,5 @@ __all__ = [
     "uri_to_local_path",
     "validate_document",
     "without_lineage_sources",
-    "write_user_secret_file"
+    "write_user_secret_file",
 ]

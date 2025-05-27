@@ -15,9 +15,11 @@ from .abstract import AbstractIndex as Index
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def index_connect(config_env: ODCEnvironment | None = None,
-                  application_name: str | None = None,
-                  validate_connection: bool = True) -> Index:
+def index_connect(
+    config_env: ODCEnvironment | None = None,
+    application_name: str | None = None,
+    validate_connection: bool = True,
+) -> Index:
     """
     Create a Data Cube Index (as per config)
 
@@ -38,6 +40,8 @@ def index_connect(config_env: ODCEnvironment | None = None,
     index_driver = index_driver_by_name(driver_name)
     # No need to check for missing index driver - already checked during config parsing.
     assert index_driver is not None
-    return index_driver.connect_to_index(config_env,
-                                         application_name=application_name,
-                                         validate_connection=validate_connection)
+    return index_driver.connect_to_index(
+        config_env,
+        application_name=application_name,
+        validate_connection=validate_connection,
+    )

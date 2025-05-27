@@ -17,7 +17,7 @@ The main class to access the datacube is :class:`datacube.Datacube`.
 try:
     from ._version import version as __version__
 except ImportError:
-    __version__ = 'Unknown/Not Installed'
+    __version__ = "Unknown/Not Installed"
 
 from .api import Datacube
 from .utils import xarray_geoextensions

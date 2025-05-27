@@ -23,7 +23,7 @@ def resampling_s2rio(name: str) -> rasterio.warp.Resampling:
     try:
         return getattr(rasterio.warp.Resampling, name.lower())
     except AttributeError:
-        raise ValueError(f'Bad resampling parameter: {name}') from None
+        raise ValueError(f"Bad resampling parameter: {name}") from None
 
 
 def is_resampling_nn(resampling: Resampling) -> bool:
@@ -32,17 +32,19 @@ def is_resampling_nn(resampling: Resampling) -> bool:
     :returns: False otherwise
     """
     if isinstance(resampling, str):
-        return resampling.lower() == 'nearest'
+        return resampling.lower() == "nearest"
     return resampling == rasterio.warp.Resampling.nearest
 
 
-def warp_affine_rio(src: np.ndarray,
-                    dst: np.ndarray,
-                    A: Affine,
-                    resampling: Resampling,
-                    src_nodata: Nodata = None,
-                    dst_nodata: Nodata = None,
-                    **kwargs) -> np.ndarray:
+def warp_affine_rio(
+    src: np.ndarray,
+    dst: np.ndarray,
+    A: Affine,
+    resampling: Resampling,
+    src_nodata: Nodata = None,
+    dst_nodata: Nodata = None,
+    **kwargs,
+) -> np.ndarray:
     """
     Perform Affine warp using rasterio as backend library.
 
@@ -65,39 +67,43 @@ def warp_affine_rio(src: np.ndarray,
         resampling = resampling_s2rio(resampling)
 
     # GDAL support for int8 is patchy, warp doesn't support it, so we need to convert to int16
-    if src.dtype.name == 'int8':
-        src = src.astype('int16')
+    if src.dtype.name == "int8":
+        src = src.astype("int16")
 
-    if dst.dtype.name == 'int8':
-        _dst = dst.astype('int16')
+    if dst.dtype.name == "int8":
+        _dst = dst.astype("int16")
     else:
         _dst = dst
 
-    rasterio.warp.reproject(src,
-                            _dst,
-                            src_transform=src_transform,
-                            dst_transform=dst_transform,
-                            src_crs=crs,
-                            dst_crs=crs,
-                            resampling=resampling,
-                            src_nodata=src_nodata,
-                            dst_nodata=dst_nodata,
-                            **kwargs)
+    rasterio.warp.reproject(
+        src,
+        _dst,
+        src_transform=src_transform,
+        dst_transform=dst_transform,
+        src_crs=crs,
+        dst_crs=crs,
+        resampling=resampling,
+        src_nodata=src_nodata,
+        dst_nodata=dst_nodata,
+        **kwargs,
+    )
 
     if dst is not _dst:
         # int8 workaround copy pixels back to int8
-        np.copyto(dst, _dst, casting='unsafe')
+        np.copyto(dst, _dst, casting="unsafe")
 
     return dst
 
 
-def warp_affine(src: np.ndarray,
-                dst: np.ndarray,
-                A: Affine,
-                resampling: Resampling,
-                src_nodata: Nodata = None,
-                dst_nodata: Nodata = None,
-                **kwargs) -> np.ndarray:
+def warp_affine(
+    src: np.ndarray,
+    dst: np.ndarray,
+    A: Affine,
+    resampling: Resampling,
+    src_nodata: Nodata = None,
+    dst_nodata: Nodata = None,
+    **kwargs,
+) -> np.ndarray:
     """
     Perform Affine warp using best available backend (GDAL via rasterio is the only one so far).
 
@@ -112,20 +118,21 @@ def warp_affine(src: np.ndarray,
 
     :returns: dst
     """
-    return warp_affine_rio(src, dst, A, resampling,
-                           src_nodata=src_nodata,
-                           dst_nodata=dst_nodata,
-                           **kwargs)
+    return warp_affine_rio(
+        src, dst, A, resampling, src_nodata=src_nodata, dst_nodata=dst_nodata, **kwargs
+    )
 
 
-def rio_reproject(src: np.ndarray,
-                  dst: np.ndarray,
-                  s_gbox: GeoBox,
-                  d_gbox: GeoBox,
-                  resampling: Resampling,
-                  src_nodata: Nodata = None,
-                  dst_nodata: Nodata = None,
-                  **kwargs) -> np.ndarray:
+def rio_reproject(
+    src: np.ndarray,
+    dst: np.ndarray,
+    s_gbox: GeoBox,
+    d_gbox: GeoBox,
+    resampling: Resampling,
+    src_nodata: Nodata = None,
+    dst_nodata: Nodata = None,
+    **kwargs,
+) -> np.ndarray:
     """
     Perform reproject from ndarray->ndarray using rasterio as backend library.
 
@@ -145,27 +152,29 @@ def rio_reproject(src: np.ndarray,
         resampling = resampling_s2rio(resampling)
 
     # GDAL support for int8 is patchy, warp doesn't support it, so we need to convert to int16
-    if src.dtype.name == 'int8':
-        src = src.astype('int16')
+    if src.dtype.name == "int8":
+        src = src.astype("int16")
 
-    if dst.dtype.name == 'int8':
-        _dst = dst.astype('int16')
+    if dst.dtype.name == "int8":
+        _dst = dst.astype("int16")
     else:
         _dst = dst
 
-    rasterio.warp.reproject(src,
-                            _dst,
-                            src_transform=s_gbox.transform,
-                            dst_transform=d_gbox.transform,
-                            src_crs=str(s_gbox.crs),
-                            dst_crs=str(d_gbox.crs),
-                            resampling=resampling,
-                            src_nodata=src_nodata,
-                            dst_nodata=dst_nodata,
-                            **kwargs)
+    rasterio.warp.reproject(
+        src,
+        _dst,
+        src_transform=s_gbox.transform,
+        dst_transform=d_gbox.transform,
+        src_crs=str(s_gbox.crs),
+        dst_crs=str(d_gbox.crs),
+        resampling=resampling,
+        src_nodata=src_nodata,
+        dst_nodata=dst_nodata,
+        **kwargs,
+    )
 
     if dst is not _dst:
         # int8 workaround copy pixels back to int8
-        np.copyto(dst, _dst, casting='unsafe')
+        np.copyto(dst, _dst, casting="unsafe")
 
     return dst

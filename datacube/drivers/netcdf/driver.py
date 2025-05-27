@@ -10,19 +10,18 @@ from datacube.utils.uris import normalise_path
 
 from ._write import write_dataset_to_netcdf
 
-PROTOCOL = 'file'
-FORMAT = 'NetCDF'
+PROTOCOL = "file"
+FORMAT = "NetCDF"
 
 
 class NetcdfReaderDriver:
     def __init__(self) -> None:
-        self.name = 'NetcdfReader'
+        self.name = "NetcdfReader"
         self.protocols = [PROTOCOL]
         self.formats = [FORMAT]
 
     def supports(self, protocol, fmt) -> bool:
-        return (protocol in self.protocols and
-                fmt in self.formats)
+        return protocol in self.protocols and fmt in self.formats
 
     def new_datasource(self, band) -> RasterDatasetDataSource:
         return RasterDatasetDataSource(band)
@@ -38,7 +37,7 @@ class NetcdfWriterDriver:
 
     @property
     def aliases(self) -> list[str]:
-        return ['NetCDF CF']
+        return ["NetCDF CF"]
 
     @property
     def format(self) -> str:
@@ -65,15 +64,16 @@ class NetcdfWriterDriver:
         """
         return normalise_path(file_path).as_uri()
 
-    def write_dataset_to_storage(self, dataset, file_uri,
-                                 global_attributes=None,
-                                 variable_params=None,
-                                 **kwargs) -> dict:
-
-        write_dataset_to_netcdf(dataset, urlsplit(file_uri).path,
-                                global_attributes=global_attributes,
-                                variable_params=variable_params,
-                                **kwargs)
+    def write_dataset_to_storage(
+        self, dataset, file_uri, global_attributes=None, variable_params=None, **kwargs
+    ) -> dict:
+        write_dataset_to_netcdf(
+            dataset,
+            urlsplit(file_uri).path,
+            global_attributes=global_attributes,
+            variable_params=variable_params,
+            **kwargs,
+        )
 
         return {}
 

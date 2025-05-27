@@ -5,6 +5,7 @@
 """
 Driver implementation for Rasterio based reader.
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -33,7 +34,7 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 
 def _rasterio_crs(src):
     if src.crs is None:
-        raise ValueError('no CRS')
+        raise ValueError("no CRS")
 
     return CRS(src.crs)
 
@@ -51,11 +52,10 @@ class BandDataSource(GeoRasterReader):
     :type source: rasterio.Band
     """
 
-    def __init__(self, source, nodata=None,
-                 lock: RLock | None = None) -> None:
+    def __init__(self, source, nodata=None, lock: RLock | None = None) -> None:
         self.source = source
         if nodata is None:
-            nodata = self.source.ds.nodatavals[self.source.bidx-1]
+            nodata = self.source.ds.nodatavals[self.source.bidx - 1]
 
         self._nodata = num2numpy(nodata, source.dtype)
         self._lock = lock
@@ -85,12 +85,14 @@ class BandDataSource(GeoRasterReader):
         return self.source.shape
 
     @override
-    def read(self, window: RasterWindow | None = None,
-             out_shape: RasterShape | None = None) -> np.ndarray | None:
-        """Read data in the native format, returning a numpy array
-        """
+    def read(
+        self, window: RasterWindow | None = None, out_shape: RasterShape | None = None
+    ) -> np.ndarray | None:
+        """Read data in the native format, returning a numpy array"""
         with maybe_lock(self._lock):
-            return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
+            return self.source.ds.read(
+                indexes=self.source.bidx, window=window, out_shape=out_shape
+            )
 
 
 class RasterioDataSource(DataSource):
@@ -138,7 +140,11 @@ class RasterioDataSource(DataSource):
 
                 bandnumber = self.get_bandnumber(src)
                 band = rasterio.band(src, bandnumber)
-                nodata = src.nodatavals[band.bidx-1] if src.nodatavals[band.bidx-1] is not None else self.nodata
+                nodata = (
+                    src.nodatavals[band.bidx - 1]
+                    if src.nodatavals[band.bidx - 1] is not None
+                    else self.nodata
+                )
                 nodata = num2numpy(nodata, band.dtype)
 
                 if locked:
@@ -146,7 +152,9 @@ class RasterioDataSource(DataSource):
                     lock.release()
 
                 if broken:
-                    raise RuntimeError(f'Broken/missing geospatial data was found in file "{self.filename}"')
+                    raise RuntimeError(
+                        f'Broken/missing geospatial data was found in file "{self.filename}"'
+                    )
                 yield BandDataSource(band, nodata=nodata, lock=lock)
 
         except Exception as e:
@@ -175,7 +183,6 @@ class RasterDatasetDataSource(RasterioDataSource):
 
     @override
     def get_bandnumber(self, src=None) -> int | None:
-
         # If `band` property is set to an integer it overrides any other logic
         bi = self._band_info
         if bi.band is not None:
@@ -198,13 +205,14 @@ class RasterDatasetDataSource(RasterioDataSource):
         if src.count == 1:  # Single-slice netcdf file
             return 1
 
-        raise DeprecationWarning("Stacked netcdf without explicit time index is not supported anymore")
+        raise DeprecationWarning(
+            "Stacked netcdf without explicit time index is not supported anymore"
+        )
 
     @override
     def get_transform(self, shape: RasterShape) -> Affine:
-        return self._band_info.transform * Affine.scale(   # type: ignore[operator, type-var, return-value]
-            1 / shape[1],
-            1 / shape[0]
+        return self._band_info.transform * Affine.scale(  # type: ignore[operator, type-var, return-value]
+            1 / shape[1], 1 / shape[0]
         )
 
     @override
@@ -213,10 +221,9 @@ class RasterDatasetDataSource(RasterioDataSource):
 
 
 def _is_hdf(fmt: str) -> bool:
-    """ Check if format is of HDF type (this includes netcdf variants)
-    """
+    """Check if format is of HDF type (this includes netcdf variants)"""
     fmt = fmt.lower()
-    return any(f in fmt for f in ('netcdf', 'hdf'))
+    return any(f in fmt for f in ("netcdf", "hdf"))
 
 
 def _build_hdf_uri(url_str: str, fmt: str, layer: str) -> str:
@@ -224,10 +231,10 @@ def _build_hdf_uri(url_str: str, fmt: str, layer: str) -> str:
         base = url_str
     else:
         url = urlparse(url_str)
-        if url.scheme in (None, ''):
+        if url.scheme in (None, ""):
             raise ValueError("Expect either URL or /vsi path")
 
-        if url.scheme != 'file':
+        if url.scheme != "file":
             raise RuntimeError(f"Can't access {fmt} over {url.scheme}")
         base = str(uri_to_local_path(url_str))
 
@@ -248,10 +255,10 @@ def _url2rasterio(url_str: str, fmt: str, layer: str | None) -> str:
         return url_str
 
     url = urlparse(url_str)
-    if url.scheme in (None, ''):
+    if url.scheme in (None, ""):
         raise ValueError("Expect either URL or /vsi path")
 
-    if url.scheme == 'file':
+    if url.scheme == "file":
         # if local path strip scheme and other gunk
         return str(uri_to_local_path(url_str))
 

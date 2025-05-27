@@ -18,7 +18,9 @@ from ._types import BatchStatus
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
-_DEFAULT_METADATA_TYPES_PATH: Path = Path(__file__).parent.joinpath('default-metadata-types.yaml')
+_DEFAULT_METADATA_TYPES_PATH: Path = Path(__file__).parent.joinpath(
+    "default-metadata-types.yaml"
+)
 
 
 def default_metadata_type_docs(path: Path = _DEFAULT_METADATA_TYPES_PATH) -> list[dict]:
@@ -47,10 +49,9 @@ class AbstractMetadataTypeResource(ABC):
         """
 
     @abstractmethod
-    def add(self,
-            metadata_type: MetadataType,
-            allow_table_lock: bool = False
-           ) -> MetadataType:
+    def add(
+        self, metadata_type: MetadataType, allow_table_lock: bool = False
+    ) -> MetadataType:
         """
         Add a metadata type to the index.
 
@@ -94,9 +95,9 @@ class AbstractMetadataTypeResource(ABC):
                 b_skipped += 1
         return BatchStatus(b_added, b_skipped, monotonic() - b_started, b_loaded)
 
-    def bulk_add(self,
-                 metadata_docs: Iterable[JsonDict],
-                 batch_size: int = 1000) -> BatchStatus:
+    def bulk_add(
+        self, metadata_docs: Iterable[JsonDict], batch_size: int = 1000
+    ) -> BatchStatus:
         """
         Add a group of Metadata Type documents in bulk.
 
@@ -122,7 +123,7 @@ class AbstractMetadataTypeResource(ABC):
                     check_doc_unchanged(
                         existing[mdt.name].definition,
                         jsonify_document(mdt.definition),
-                        f'Metadata Type {mdt.name}'
+                        f"Metadata Type {mdt.name}",
                     )
                     _LOG.warning("%s: Skipped - already exists", mdt.name)
                     skipped += 1
@@ -159,10 +160,9 @@ class AbstractMetadataTypeResource(ABC):
         return BatchStatus(added, skipped, monotonic() - started, safe)
 
     @abstractmethod
-    def can_update(self,
-                   metadata_type: MetadataType,
-                   allow_unsafe_updates: bool = False
-                  ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
+    def can_update(
+        self, metadata_type: MetadataType, allow_unsafe_updates: bool = False
+    ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         """
         Check if metadata type can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -174,11 +174,12 @@ class AbstractMetadataTypeResource(ABC):
         """
 
     @abstractmethod
-    def update(self,
-               metadata_type: MetadataType,
-               allow_unsafe_updates: bool = False,
-               allow_table_lock: bool = False
-              ) -> MetadataType:
+    def update(
+        self,
+        metadata_type: MetadataType,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ) -> MetadataType:
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -194,10 +195,11 @@ class AbstractMetadataTypeResource(ABC):
         :return: Persisted updated MetadataType model
         """
 
-    def update_document(self,
-                        definition: JsonDict,
-                        allow_unsafe_updates: bool = False,
-                        ) -> MetadataType:
+    def update_document(
+        self,
+        definition: JsonDict,
+        allow_unsafe_updates: bool = False,
+    ) -> MetadataType:
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -207,7 +209,9 @@ class AbstractMetadataTypeResource(ABC):
         :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :return: Persisted updated MetadataType model
         """
-        return self.update(self.from_doc(definition), allow_unsafe_updates=allow_unsafe_updates)
+        return self.update(
+            self.from_doc(definition), allow_unsafe_updates=allow_unsafe_updates
+        )
 
     def get_with_fields(self, field_names: Iterable[str]) -> Iterable[MetadataType]:
         """
@@ -263,11 +267,12 @@ class AbstractMetadataTypeResource(ABC):
         """
 
     @abstractmethod
-    def check_field_indexes(self,
-                            allow_table_lock: bool = False,
-                            rebuild_views: bool = False,
-                            rebuild_indexes: bool = False
-                           ) -> None:
+    def check_field_indexes(
+        self,
+        allow_table_lock: bool = False,
+        rebuild_views: bool = False,
+        rebuild_indexes: bool = False,
+    ) -> None:
         """
         Create or replace per-field indexes and views.
 

@@ -312,7 +312,9 @@ def odc_style_xr_dataset(request):
     geobox = GeoBox(wh_(100, 100), affine, CRS(GEO_PROJ))
 
     return Datacube.create_storage(
-        request.param, geobox, [Measurement(name="B10", dtype="int16", nodata=0, units="1")]
+        request.param,
+        geobox,
+        [Measurement(name="B10", dtype="int16", nodata=0, units="1")],
     )
 
 

@@ -31,23 +31,28 @@ def load_drivers(group: str) -> dict[str, Any]:
         try:
             driver_init = ep.load()
         except Exception as e:
-            _LOG.warning('Failed to resolve driver %s::%s', group, ep.name)
-            _LOG.warning('Error was: %s', repr(e))
+            _LOG.warning("Failed to resolve driver %s::%s", group, ep.name)
+            _LOG.warning("Error was: %s", repr(e))
             return None
 
         try:
             driver = driver_init()
         except Exception:
-            _LOG.warning('Exception during driver init, driver name: %s::%s', group, ep.name)
+            _LOG.warning(
+                "Exception during driver init, driver name: %s::%s", group, ep.name
+            )
             return None
 
         if driver is None:
-            _LOG.warning('Driver init returned None, driver name: %s::%s', group, ep.name)
+            _LOG.warning(
+                "Driver init returned None, driver name: %s::%s", group, ep.name
+            )
 
         return driver
 
     def resolve_all(group: str) -> Iterable[tuple[str, Any]]:
         from importlib.metadata import entry_points
+
         for ep in entry_points(group=group):
             driver = safe_load(ep)
             if driver is not None:

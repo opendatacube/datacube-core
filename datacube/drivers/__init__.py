@@ -11,10 +11,10 @@ from .readers import new_datasource, reader_drivers
 from .writers import storage_writer_by_name, writer_drivers
 
 __all__ = [
-           'index_driver_by_name',
-           'index_drivers',
-           'new_datasource',
-           'reader_drivers',
-           'storage_writer_by_name',
-           'writer_drivers',
+    "index_driver_by_name",
+    "index_drivers",
+    "new_datasource",
+    "reader_drivers",
+    "storage_writer_by_name",
+    "writer_drivers",
 ]

@@ -24,7 +24,9 @@ from odc.geo.geobox import GeoBox
 
 from datacube.api.core import Datacube
 
-pytest.importorskip("dcio_example.xarray_3d")  # skip this test if 3d driver is not installed
+pytest.importorskip(
+    "dcio_example.xarray_3d"
+)  # skip this test if 3d driver is not installed
 _LOG = logging.getLogger(__name__)
 _LOG.setLevel(logging.DEBUG)
 
@@ -318,7 +320,7 @@ def test_indexing_with_spectral_map(clirunner, index, dataset_types) -> None:
     clirunner(["-v", "product", "add", str(dataset_types)])
 
     # Index the Dataset
-    clirunner(["-v", "dataset", "add", '--ignore-lineage', str(index_yaml)])
+    clirunner(["-v", "dataset", "add", "--ignore-lineage", str(index_yaml)])
     dc = Datacube(index=index)
     check_open_with_dc_simple(dc, product_def, [product_id], measurement)
 
@@ -339,7 +341,7 @@ def test_end_to_end_multitime(clirunner, index, product_def, original_data) -> N
                 measurement=measurement,
             )
             # Index the Datasets
-            clirunner(["-v", "dataset", "add", '--ignore-lineage', str(index_yaml)])
+            clirunner(["-v", "dataset", "add", "--ignore-lineage", str(index_yaml)])
 
         if idx == 0:  # Full check for the first measurement only
             # Check data for all product IDs
@@ -405,7 +407,7 @@ def load_with_dc(
         params.product = product_def.name.format(measurement=measurement)
     _LOG.info(f"DC Loading {params}")
     data = dc.load(**params.__dict__)
-    _LOG.info(f"DC Loaded\n{data}\n{'-'*80}")
+    _LOG.info(f"DC Loaded\n{data}\n{'-' * 80}")
     return data
 
 
@@ -484,7 +486,9 @@ def check_open_with_grid_workflow(index) -> None:
     pass
 
 
-def check_load_via_dss(dc, product_def, product_ids, measurement, original_data) -> None:
+def check_load_via_dss(
+    dc, product_def, product_ids, measurement, original_data
+) -> None:
     """Check dataset can be searched and loaded, and has the right shape.
 
     Only the first of `product_ids` is tested. The actual contents of the loaded

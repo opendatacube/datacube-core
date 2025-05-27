@@ -5,6 +5,7 @@
 """
 Build and index fields within documents.
 """
+
 import math
 from collections import namedtuple
 from collections.abc import Callable
@@ -37,11 +38,14 @@ class PgField(Field):
     a JSONB column.
     """
 
-    def __init__(self,
-                 name: str, description: str,
-                 alchemy_column: ColumnElement,
-                 indexed: bool,
-                 alchemy_table: FromClause | None = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        alchemy_column: ColumnElement,
+        indexed: bool,
+        alchemy_table: FromClause | None = None,
+    ) -> None:
         super().__init__(name, description)
 
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
@@ -69,7 +73,8 @@ class PgField(Field):
         if self.indexed:
             search_table = search_field_index_map[self.type_name]
             return aliased(  # type: ignore[return-value]
-                search_table, name=f"{search_table.__tablename__}-{self.name}")
+                search_table, name=f"{search_table.__tablename__}-{self.name}"
+            )
         else:
             return self.select_alchemy_table
 
@@ -80,8 +85,8 @@ class PgField(Field):
                 self.search_index_table,
                 and_(
                     Dataset.id == self.search_index_table.dataset_ref,
-                    self.search_index_table.search_key == self.name
-                )
+                    self.search_index_table.search_key == self.name,
+                ),
             )
         else:
             return (self.search_index_table,)
@@ -92,7 +97,7 @@ class PgField(Field):
         Get an SQLAlchemy expression for accessing this field.
         :return:
         """
-        raise NotImplementedError('alchemy expression')
+        raise NotImplementedError("alchemy expression")
 
     @property
     def search_alchemy_expression(self) -> ColumnExpressionArgument:
@@ -107,10 +112,11 @@ class PgField(Field):
         Get the raw SQL expression for this field as a string.
         :rtype: str
         """
-        return str(self.alchemy_expression.compile(
-            dialect=postgres.dialect(),
-            compile_kwargs={"literal_binds": True}
-        ))
+        return str(
+            self.alchemy_expression.compile(
+                dialect=postgres.dialect(), compile_kwargs={"literal_binds": True}
+            )
+        )
 
     @override
     def __eq__(self, value):
@@ -124,7 +130,7 @@ class PgField(Field):
         """
         :rtype: Expression
         """
-        raise NotImplementedError('between expression')
+        raise NotImplementedError("between expression")
 
 
 class NativeField(PgField):
@@ -132,14 +138,24 @@ class NativeField(PgField):
     Fields hard-coded into the schema. (not user configurable)
     """
 
-    def __init__(self, name: str, description: str,
-                 alchemy_column: ColumnElement,
-                 alchemy_expression: ColumnExpressionArgument | None = None,
-                 join_clause: ColumnExpressionArgument | None = None,
-                 alchemy_table: FromClause | None = None,
-                 # Should this be selected by default when selecting all fields?
-                 affects_row_selection: bool = False) -> None:
-        super().__init__(name, description, alchemy_column, indexed=False, alchemy_table=alchemy_table)
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        alchemy_column: ColumnElement,
+        alchemy_expression: ColumnExpressionArgument | None = None,
+        join_clause: ColumnExpressionArgument | None = None,
+        alchemy_table: FromClause | None = None,
+        # Should this be selected by default when selecting all fields?
+        affects_row_selection: bool = False,
+    ) -> None:
+        super().__init__(
+            name,
+            description,
+            alchemy_column,
+            indexed=False,
+            alchemy_table=alchemy_table,
+        )
         self._expression = alchemy_expression
         self.affects_row_selection = affects_row_selection
         self.join_clause = join_clause
@@ -147,7 +163,9 @@ class NativeField(PgField):
     @override
     @property
     def alchemy_expression(self) -> ColumnExpressionArgument:
-        expression = self._expression if self._expression is not None else self.alchemy_column
+        expression = (
+            self._expression if self._expression is not None else self.alchemy_column
+        )
         return expression.label(self.name)  # type: ignore[union-attr]
 
     @override
@@ -162,6 +180,7 @@ class PgDocField(PgField):
     """
     A field extracted from inside a (jsonb) document.
     """
+
     def value_to_alchemy(self, value):
         """
         Wrap the given value with any necessary type casts/conversions for this field.
@@ -186,10 +205,12 @@ class PgDocField(PgField):
         """
         return value
 
-    def _alchemy_offset_value(self,
-                              doc_offsets: tuple[tuple[str]],
-                              agg_function: Callable[[Any], ColumnElement],
-                              type_: type | None = None) -> ColumnElement:
+    def _alchemy_offset_value(
+        self,
+        doc_offsets: tuple[tuple[str]],
+        agg_function: Callable[[Any], ColumnElement],
+        type_: type | None = None,
+    ) -> ColumnElement:
         """
         Get an sqlalchemy value for the given offsets of this field's sqlalchemy column.
         If there are multiple they will be combined using the given aggregate function.
@@ -209,11 +230,18 @@ class PgDocField(PgField):
             # It's a single offset.
             doc_offsets = [doc_offsets]
 
-        alchemy_values = [self.value_to_alchemy(self.alchemy_column[offset].astext) for offset in doc_offsets]
+        alchemy_values = [
+            self.value_to_alchemy(self.alchemy_column[offset].astext)
+            for offset in doc_offsets
+        ]
         if type_ is not None:
             alchemy_values = [cast(v, type_) for v in alchemy_values]
         # If there's multiple fields, we aggregate them (eg. "min()"). Otherwise use the one.
-        return agg_function(*alchemy_values) if len(alchemy_values) > 1 else alchemy_values[0]
+        return (
+            agg_function(*alchemy_values)
+            if len(alchemy_values) > 1
+            else alchemy_values[0]
+        )
 
     def _extract_offset_value(self, doc, doc_offsets, agg_function):
         """
@@ -243,8 +271,15 @@ class SimpleDocField(PgDocField):
     A field with a single value (eg. String, int) calculated as an offset inside a (jsonb) document.
     """
 
-    def __init__(self, name: str, description: str, alchemy_column, indexed: bool,
-                 offset=None, selection: str = 'first') -> None:
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        alchemy_column,
+        indexed: bool,
+        offset=None,
+        selection: str = "first",
+    ) -> None:
         super().__init__(name, description, alchemy_column, indexed)
         self.offset = offset
         if selection not in SELECTION_TYPES:
@@ -255,7 +290,9 @@ class SimpleDocField(PgDocField):
 
     @property
     def alchemy_expression(self):
-        return self._alchemy_offset_value(self.offset, self.aggregation.pg_calc).label(self.name)
+        return self._alchemy_offset_value(self.offset, self.aggregation.pg_calc).label(
+            self.name
+        )
 
     @override
     def __eq__(self, value):
@@ -269,7 +306,7 @@ class SimpleDocField(PgDocField):
         """
         :rtype: Expression
         """
-        raise NotImplementedError('Simple field between expression')
+        raise NotImplementedError("Simple field between expression")
 
     can_extract = True
 
@@ -286,7 +323,7 @@ class UnindexableValue(Exception):  # noqa: N818
 
 
 class NumericDocField(SimpleDocField):
-    type_name = 'numeric'
+    type_name = "numeric"
 
     @override
     def value_to_alchemy(self, value):
@@ -298,9 +335,10 @@ class NumericDocField(SimpleDocField):
             raise UnindexableValue("Cannot index NaNs")
         alc_val = self.value_to_alchemy(value)
         return func.numrange(
-            alc_val, alc_val,
+            alc_val,
+            alc_val,
             # Inclusive on both sides.
-            '[]',
+            "[]",
             type_=NUMRANGE,
         )
 
@@ -316,7 +354,7 @@ class NumericDocField(SimpleDocField):
 
 
 class IntDocField(NumericDocField):
-    type_name = 'integer'
+    type_name = "integer"
 
     @override
     def parse_value(self, value) -> int:
@@ -324,7 +362,7 @@ class IntDocField(NumericDocField):
 
 
 class DoubleDocField(NumericDocField):
-    type_name = 'double'
+    type_name = "double"
 
     @override
     def parse_value(self, value):
@@ -335,7 +373,7 @@ DateFieldLike: TypeAlias = datetime | date | str | ColumnElement
 
 
 class DateDocField(SimpleDocField):
-    type_name = 'datetime'
+    type_name = "datetime"
 
     @override
     def value_to_alchemy(self, value: DateFieldLike) -> DateFieldLike:
@@ -363,9 +401,10 @@ class DateDocField(SimpleDocField):
             value = tz_as_utc(value)
         value = cast(value, TIMESTAMP(timezone=True))
         return func.tstzrange(
-            value, value,
+            value,
+            value,
             # Inclusive on both sides.
-            '[]',
+            "[]",
             type_=TSTZRANGE,
         )
 
@@ -381,10 +420,13 @@ class DateDocField(SimpleDocField):
     def day(self):
         """Get field truncated to the day"""
         return NativeField(
-            f'{self.name}_day',
-            f'Day of {self.description}',
+            f"{self.name}_day",
+            f"Day of {self.description}",
             self.alchemy_column,
-            alchemy_expression=cast(func.date_trunc('day', self.alchemy_expression), TIMESTAMP(timezone=True))
+            alchemy_expression=cast(
+                func.date_trunc("day", self.alchemy_expression),
+                TIMESTAMP(timezone=True),
+            ),
         )
 
 
@@ -393,35 +435,45 @@ class RangeDocField(PgDocField):
     A range of values. Has min and max values, which may be calculated from multiple
     values in the document.
     """
+
     FIELD_CLASS = SimpleDocField
 
-    def __init__(self, name: str, description: str, alchemy_column, indexed: bool,
-                 min_offset=None, max_offset=None) -> None:
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        alchemy_column,
+        indexed: bool,
+        min_offset=None,
+        max_offset=None,
+    ) -> None:
         super().__init__(name, description, alchemy_column, indexed)
         self.lower = self.FIELD_CLASS(
-            name + '_lower',
+            name + "_lower",
             description,
             alchemy_column,
             indexed=False,
             offset=min_offset,
-            selection='least'
+            selection="least",
         )
         self.greater = self.FIELD_CLASS(
-            name + '_greater',
+            name + "_greater",
             description,
             alchemy_column,
             indexed=False,
             offset=max_offset,
-            selection='greatest'
+            selection="greatest",
         )
 
     @override
     def value_to_alchemy(self, value):
-        raise NotImplementedError('range type')
+        raise NotImplementedError("range type")
 
     @property
     def alchemy_expression(self):
-        return self.value_to_alchemy((self.lower.alchemy_expression, self.greater.alchemy_expression)).label(self.name)
+        return self.value_to_alchemy(
+            (self.lower.alchemy_expression, self.greater.alchemy_expression)
+        ).label(self.name)
 
     @override
     def __eq__(self, value):
@@ -445,15 +497,16 @@ class RangeDocField(PgDocField):
 
 class NumericRangeDocField(RangeDocField):
     FIELD_CLASS = NumericDocField
-    type_name = 'numeric-range'
+    type_name = "numeric-range"
 
     @override
     def value_to_alchemy(self, value):
         low, high = value
         return func.numrange(
-            low, high,
+            low,
+            high,
             # Inclusive on both sides.
-            '[]',
+            "[]",
             type_=NUMRANGE,
         )
 
@@ -476,17 +529,17 @@ class NumericRangeDocField(RangeDocField):
 
 class IntRangeDocField(NumericRangeDocField):
     FIELD_CLASS = IntDocField
-    type_name = 'integer-range'
+    type_name = "integer-range"
 
 
 class DoubleRangeDocField(NumericRangeDocField):
     FIELD_CLASS = DoubleDocField
-    type_name = 'double-range'
+    type_name = "double-range"
 
 
 class DateRangeDocField(RangeDocField):
     FIELD_CLASS = DateDocField
-    type_name = 'datetime-range'
+    type_name = "datetime-range"
 
     @override
     def value_to_alchemy(self, value):
@@ -497,9 +550,10 @@ class DateRangeDocField(RangeDocField):
         if isinstance(high, ColumnElement | str):
             high = cast(high, TIMESTAMP(timezone=True))
         return func.tstzrange(
-            low, high,
+            low,
+            high,
             # Inclusive on both sides.
-            '[]',
+            "[]",
             type_=TSTZRANGE,
         )
 
@@ -511,9 +565,10 @@ class DateRangeDocField(RangeDocField):
         if isinstance(high, datetime):
             high = tz_as_utc(high)
         return func.tstzrange(
-            low, high,
+            low,
+            high,
             # Inclusive on both sides.
-            '[]',
+            "[]",
             type_=TSTZRANGE,
         )
 
@@ -522,7 +577,11 @@ class DateRangeDocField(RangeDocField):
         if isinstance(value, datetime):
             return tz_as_utc(value)
         elif isinstance(value, PgRange):
-            return PgRange(lower=tz_as_utc(value.lower), upper=tz_as_utc(value.upper), bounds=value.bounds)
+            return PgRange(
+                lower=tz_as_utc(value.lower),
+                upper=tz_as_utc(value.upper),
+                bounds=value.bounds,
+            )
         else:
             return tuple(tz_as_utc(v) for v in value)
 
@@ -539,20 +598,27 @@ class DateRangeDocField(RangeDocField):
                 self,
                 tz_as_utc(low).astimezone(timezone.utc),
                 tz_as_utc(high).astimezone(timezone.utc),
-                _range_class=PgRange
+                _range_class=PgRange,
             )
         else:
-            raise ValueError("Unknown comparison type for date range: "
-                             f"expecting datetimes, got: ({low!r}, {high!r})")
+            raise ValueError(
+                "Unknown comparison type for date range: "
+                f"expecting datetimes, got: ({low!r}, {high!r})"
+            )
 
     @property
     def expression_with_leniency(self):
-        low = cast(self.lower.alchemy_expression, TIMESTAMP(timezone=True)) - cast('500 milliseconds', INTERVAL)
-        high = cast(self.greater.alchemy_expression, TIMESTAMP(timezone=True)) + cast('500 milliseconds', INTERVAL)
+        low = cast(self.lower.alchemy_expression, TIMESTAMP(timezone=True)) - cast(
+            "500 milliseconds", INTERVAL
+        )
+        high = cast(self.greater.alchemy_expression, TIMESTAMP(timezone=True)) + cast(
+            "500 milliseconds", INTERVAL
+        )
         return func.tstzrange(
-            low, high,
+            low,
+            high,
             # Inclusive on both sides.
-            '[]',
+            "[]",
             type_=TSTZRANGE,
         )
 
@@ -585,7 +651,7 @@ class PgExpression(Expression):
         Get an SQLAlchemy expression for accessing this field.
         :return:
         """
-        raise NotImplementedError('alchemy expression')
+        raise NotImplementedError("alchemy expression")
 
 
 class ValueBetweenExpression(PgExpression):
@@ -597,13 +663,15 @@ class ValueBetweenExpression(PgExpression):
     @property
     def alchemy_expression(self):
         if self.low_value is not None and self.high_value is not None:
-            return and_(self.field.search_alchemy_expression >= self.low_value,
-                        self.field.search_alchemy_expression <= self.high_value)
+            return and_(
+                self.field.search_alchemy_expression >= self.low_value,
+                self.field.search_alchemy_expression <= self.high_value,
+            )
         if self.low_value is not None:
             return self.field.search_alchemy_expression >= self.low_value
         if self.high_value is not None:
             return self.field.search_alchemy_expression <= self.high_value
-        raise ValueError('Expect at least one of [low,high] to be set')
+        raise ValueError("Expect at least one of [low,high] to be set")
 
 
 class RangeBetweenExpression(PgExpression):
@@ -612,7 +680,7 @@ class RangeBetweenExpression(PgExpression):
         self.low_value = low_value
         self.high_value = high_value
         self._range_class = _range_class
-        self._alc_val = self._range_class(self.low_value, self.high_value, bounds='[]')
+        self._alc_val = self._range_class(self.low_value, self.high_value, bounds="[]")
 
     @property
     def alchemy_expression(self):
@@ -679,7 +747,6 @@ def parse_fields(doc, table_column):
         IntDocField,
         DoubleDocField,
         DateDocField,
-
         NumericRangeDocField,
         IntRangeDocField,
         DoubleRangeDocField,
@@ -687,10 +754,10 @@ def parse_fields(doc, table_column):
     }
     type_map = {f.type_name: f for f in types}
     # An alias for backwards compatibility
-    type_map['float-range'] = NumericRangeDocField
+    type_map["float-range"] = NumericRangeDocField
 
     # No later field should have overridden string
-    assert type_map['string'] == SimpleDocField
+    assert type_map["string"] == SimpleDocField
 
     def _get_field(name: str, descriptor: dict, column) -> PgField:
         """
@@ -700,23 +767,32 @@ def parse_fields(doc, table_column):
         :rtype: PgField
         """
         ctorargs = descriptor.copy()
-        type_name = ctorargs.pop('type', 'string')
-        description = ctorargs.pop('description', None)
-        indexed_val = ctorargs.pop('indexed', "true")
-        indexed = indexed_val.lower() == 'true' if isinstance(indexed_val, str) else indexed_val
+        type_name = ctorargs.pop("type", "string")
+        description = ctorargs.pop("description", None)
+        indexed_val = ctorargs.pop("indexed", "true")
+        indexed = (
+            indexed_val.lower() == "true"
+            if isinstance(indexed_val, str)
+            else indexed_val
+        )
 
         field_class = type_map.get(type_name)
         if not field_class:
-            raise ValueError(f'Field {name!r} has unknown type {type_name!r}.'
-                              f' Available types are: {list(type_map.keys())!r}')
+            raise ValueError(
+                f"Field {name!r} has unknown type {type_name!r}."
+                f" Available types are: {list(type_map.keys())!r}"
+            )
         try:
             return field_class(name, description, column, indexed, **ctorargs)
         except TypeError as e:
             raise RuntimeError(
-                f'Field {name} has unexpected argument for a {type_name}', e
+                f"Field {name} has unexpected argument for a {type_name}", e
             ) from None
 
-    return {name: _get_field(name, descriptor, table_column) for name, descriptor in doc.items()}
+    return {
+        name: _get_field(name, descriptor, table_column)
+        for name, descriptor in doc.items()
+    }
 
 
 def _coalesce(*values):
@@ -738,11 +814,11 @@ def _coalesce(*values):
 
 
 # How to choose/combine multiple doc values.
-ValueAggregation = namedtuple('ValueAggregation', ('calc', 'pg_calc'))
+ValueAggregation = namedtuple("ValueAggregation", ("calc", "pg_calc"))
 SELECTION_TYPES = {
     # First non-null
-    'first': ValueAggregation(_coalesce, func.coalesce),
+    "first": ValueAggregation(_coalesce, func.coalesce),
     # min/max
-    'least': ValueAggregation(min, func.least),
-    'greatest': ValueAggregation(max, func.greatest),
+    "least": ValueAggregation(min, func.least),
+    "greatest": ValueAggregation(max, func.greatest),
 }

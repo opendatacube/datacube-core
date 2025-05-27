@@ -18,25 +18,24 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
         raise NotImplementedError
 
     @override
-    def add(self,
-            metadata_type: MetadataType,
-            allow_table_lock: bool = False
-           ) -> MetadataType:
+    def add(
+        self, metadata_type: MetadataType, allow_table_lock: bool = False
+    ) -> MetadataType:
         raise NotImplementedError
 
     @override
-    def can_update(self,
-                   metadata_type: MetadataType,
-                   allow_unsafe_updates: bool = False
-                  ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
+    def can_update(
+        self, metadata_type: MetadataType, allow_unsafe_updates: bool = False
+    ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         raise NotImplementedError
 
     @override
-    def update(self,
-               metadata_type: MetadataType,
-               allow_unsafe_updates: bool = False,
-               allow_table_lock: bool = False
-              ) -> MetadataType:
+    def update(
+        self,
+        metadata_type: MetadataType,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ) -> MetadataType:
         raise NotImplementedError
 
     @override
@@ -48,11 +47,12 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
         raise KeyError(name)
 
     @override
-    def check_field_indexes(self,
-                            allow_table_lock: bool = False,
-                            rebuild_views: bool = False,
-                            rebuild_indexes: bool = False
-                           ) -> None:
+    def check_field_indexes(
+        self,
+        allow_table_lock: bool = False,
+        rebuild_views: bool = False,
+        rebuild_indexes: bool = False,
+    ) -> None:
         raise NotImplementedError
 
     @override

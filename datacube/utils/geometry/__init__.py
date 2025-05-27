@@ -2,14 +2,15 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" Geometric shapes and operations on them
-"""
+"""Geometric shapes and operations on them"""
+
 from warnings import warn
 
 warn(
-    'datacube.utils.geometry is now deprecated. Please use the odc-geo library instead.',
+    "datacube.utils.geometry is now deprecated. Please use the odc-geo library instead.",
     DeprecationWarning,
-    stacklevel=2)
+    stacklevel=2,
+)
 
 from ._base import (  # noqa
     Coordinate,

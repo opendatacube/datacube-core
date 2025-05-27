@@ -2,8 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" rasterio environment management tools
-"""
+"""rasterio environment management tools"""
+
 import threading
 from types import SimpleNamespace
 
@@ -35,7 +35,7 @@ def _state(purge: bool = False):
 
 
 def get_rio_env(sanitize: bool = True):
-    """ Get GDAL params configured by rasterio for the current thread.
+    """Get GDAL params configured by rasterio for the current thread.
 
     :param sanitize: If True replace sensitive Values with 'x'
     """
@@ -51,8 +51,7 @@ def get_rio_env(sanitize: bool = True):
 
 
 def deactivate_rio_env() -> None:
-    """ Exit previously configured environment, or do nothing if one wasn't configured.
-    """
+    """Exit previously configured environment, or do nothing if one wasn't configured."""
     state = _state(purge=True)
 
     if state.env is not None:
@@ -60,7 +59,7 @@ def deactivate_rio_env() -> None:
 
 
 def activate_rio_env(aws=None, cloud_defaults: bool = False, **kwargs):
-    """ Inject activated rasterio.Env into current thread.
+    """Inject activated rasterio.Env into current thread.
 
     This de-activates previously setup environment.
 
@@ -117,7 +116,7 @@ def activate_rio_env(aws=None, cloud_defaults: bool = False, **kwargs):
 
 
 def activate_from_config():
-    """ Check if this threads needs to reconfigure, then does reconfigure.
+    """Check if this threads needs to reconfigure, then does reconfigure.
 
     - Does nothing if this thread is already configured and configuration hasn't changed.
     - Configures current thread with default rio settings
@@ -136,7 +135,7 @@ def activate_from_config():
 
 
 def set_default_rio_config(aws=None, cloud_defaults: bool = False, **kwargs) -> None:
-    """ Setup default configuration for rasterio/GDAL.
+    """Setup default configuration for rasterio/GDAL.
 
     Doesn't actually activate one, just stores configuration for future
     use from IO threads.
@@ -162,7 +161,7 @@ def configure_s3_access(
     requester_pays: bool = False,
     cloud_defaults: bool = True,
     client=None,
-    **gdal_opts
+    **gdal_opts,
 ):
     """
     Use :meth:`datacube.utils.aws.configure_s3_access` instead.
@@ -176,5 +175,5 @@ def configure_s3_access(
         requester_pays=requester_pays,
         cloud_defaults=cloud_defaults,
         client=client,
-        **gdal_opts
+        **gdal_opts,
     )

@@ -20,8 +20,8 @@ if TYPE_CHECKING:
 
 _DEFAULT_IAM_TIMEOUT = 600
 _DEFAULT_CONN_TIMEOUT = 60
-_DEFAULT_HOSTNAME = 'localhost'
-_DEFAULT_DATABASE = 'datacube'
+_DEFAULT_HOSTNAME = "localhost"
+_DEFAULT_DATABASE = "datacube"
 
 try:
     import pwd
@@ -38,11 +38,17 @@ class ODCOptionHandler:
 
     Smarter or more specialised option handlers extend this class.
     """
+
     # If overridden by subclass to False, then no environment variable overrides apply.
     allow_envvar_lookup: bool = True
 
-    def __init__(self, name: str, env: "ODCEnvironment", default: Any = None,
-                 legacy_env_aliases=None) -> None:
+    def __init__(
+        self,
+        name: str,
+        env: "ODCEnvironment",
+        default: Any = None,
+        legacy_env_aliases=None,
+    ) -> None:
         """
 
         :param name: Name of the option
@@ -107,7 +113,8 @@ class ODCOptionHandler:
                     warnings.warn(
                         f"Config being passed in by legacy environment variable ${envvar_name}. "
                         f"Please use ${canonical_name} instead.",
-                        ODC2DeprecationWarning)
+                        ODC2DeprecationWarning,
+                    )
                     return val
             global_name = f"odc_all_{self.name}".upper()
             if val := os.environ.get(global_name):
@@ -119,14 +126,17 @@ class AliasOptionHandler(ODCOptionHandler):
     """
     Alias option is handled at the environment level.
     """
+
     allow_envvar_lookup: bool = False
 
     @override
     def validate_and_normalise(self, value: Any) -> Any:
         if value is None:
             return None
-        raise ConfigException("Illegal attempt to directly access alias environment"
-                              " - use the ODCConfig object to resolve the environment")
+        raise ConfigException(
+            "Illegal attempt to directly access alias environment"
+            " - use the ODCConfig object to resolve the environment"
+        )
 
 
 class IndexDriverOptionHandler(ODCOptionHandler):
@@ -135,19 +145,24 @@ class IndexDriverOptionHandler(ODCOptionHandler):
 
     Example implementation for Postgresql/Postgis-based index drivers shown below.
     """
+
     @override
     def validate_and_normalise(self, value: Any) -> Any:
         value = super().validate_and_normalise(value)
         from datacube.drivers.indexes import index_drivers
+
         drivers = index_drivers()
         if value not in drivers:
-            raise ConfigException(f"Unknown index driver: {value} - Try one of {','.join(sorted(drivers))}")
+            raise ConfigException(
+                f"Unknown index driver: {value} - Try one of {','.join(sorted(drivers))}"
+            )
         return value
 
     @override
     def handle_dependent_options(self, value: Any) -> None:
         # Get driver-specific config options
         from datacube.drivers.indexes import index_driver_by_name
+
         driver = index_driver_by_name(value)
         assert driver is not None
         for option in driver.get_config_option_handlers(self.env):
@@ -158,7 +173,10 @@ class IntOptionHandler(ODCOptionHandler):
     """
     Require an integer value, with optional min and max vals.
     """
-    def __init__(self, *args, minval: int | None = None, maxval: int | None = None, **kwargs) -> None:
+
+    def __init__(
+        self, *args, minval: int | None = None, maxval: int | None = None, **kwargs
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.minval = minval
         self.maxval = maxval
@@ -172,11 +190,17 @@ class IntOptionHandler(ODCOptionHandler):
         try:
             ival = int(value)
         except ValueError:
-            raise ConfigException(f"Config option {self.name} must be an integer") from None
+            raise ConfigException(
+                f"Config option {self.name} must be an integer"
+            ) from None
         if self.minval is not None and ival < self.minval:
-            raise ConfigException(f"Config option {self.name} must be at least {self.minval}")
+            raise ConfigException(
+                f"Config option {self.name} must be at least {self.minval}"
+            )
         if self.maxval is not None and ival > self.maxval:
-            raise ConfigException(f"Config option {self.name} must not be greater than {self.minval}")
+            raise ConfigException(
+                f"Config option {self.name} must not be greater than {self.minval}"
+            )
         return ival
 
 
@@ -184,6 +208,7 @@ class BoolOptionHandler(ODCOptionHandler):
     """
     Handle config option expecting a boolean value
     """
+
     @override
     def validate_and_normalise(self, value: Any) -> Any:
         value = super().validate_and_normalise(value)
@@ -204,11 +229,12 @@ class IAMAuthenticationOptionHandler(ODCOptionHandler):
 
     If true, adds an IAM Timeout Option to the Environment.
     """
+
     @override
     def validate_and_normalise(self, value: Any) -> Any:
         if isinstance(value, bool):
             return value
-        elif isinstance(value, str) and value.lower() in ('y', 'yes'):
+        elif isinstance(value, str) and value.lower() in ("y", "yes"):
             return True
         else:
             return False
@@ -217,9 +243,13 @@ class IAMAuthenticationOptionHandler(ODCOptionHandler):
     def handle_dependent_options(self, value: Any) -> None:
         if value:
             self.env._option_handlers.append(
-                IntOptionHandler("db_iam_timeout", self.env, default=_DEFAULT_IAM_TIMEOUT,
-                                 legacy_env_aliases=['DATACUBE_IAM_TIMEOUT'],
-                                 minval=1)
+                IntOptionHandler(
+                    "db_iam_timeout",
+                    self.env,
+                    default=_DEFAULT_IAM_TIMEOUT,
+                    legacy_env_aliases=["DATACUBE_IAM_TIMEOUT"],
+                    minval=1,
+                )
             )
 
 
@@ -230,7 +260,9 @@ class PostgresURLOptionHandler(ODCOptionHandler):
             return None
         components = urlparse(value)
         # Check URL scheme is postgresql:
-        if components.scheme != "postgresql" and not value.startswith("postgresql+psycopg2"):
+        if components.scheme != "postgresql" and not value.startswith(
+            "postgresql+psycopg2"
+        ):
             raise ConfigException("Database URL is not a postgresql connection URL")
         # Don't bother splitting up the url, we'd just have to put it back together again later
         return value
@@ -239,15 +271,35 @@ class PostgresURLOptionHandler(ODCOptionHandler):
     def handle_dependent_options(self, value: Any) -> None:
         if value is None:
             handlers: tuple[ODCOptionHandler, ...] = (
-                ODCOptionHandler("db_username", self.env, legacy_env_aliases=['DB_USERNAME'],
-                                 default=_DEFAULT_DB_USER),
-                ODCOptionHandler("db_password", self.env, legacy_env_aliases=['DB_PASSWORD']),
-                ODCOptionHandler("db_hostname", self.env, legacy_env_aliases=['DB_HOSTNAME'],
-                                 default=_DEFAULT_HOSTNAME),
-                IntOptionHandler("db_port", self.env, default=5432, legacy_env_aliases=['DB_PORT'],
-                                 minval=1, maxval=65535),
-                ODCOptionHandler("db_database", self.env, legacy_env_aliases=['DB_DATABASE'],
-                                 default=_DEFAULT_DATABASE),
+                ODCOptionHandler(
+                    "db_username",
+                    self.env,
+                    legacy_env_aliases=["DB_USERNAME"],
+                    default=_DEFAULT_DB_USER,
+                ),
+                ODCOptionHandler(
+                    "db_password", self.env, legacy_env_aliases=["DB_PASSWORD"]
+                ),
+                ODCOptionHandler(
+                    "db_hostname",
+                    self.env,
+                    legacy_env_aliases=["DB_HOSTNAME"],
+                    default=_DEFAULT_HOSTNAME,
+                ),
+                IntOptionHandler(
+                    "db_port",
+                    self.env,
+                    default=5432,
+                    legacy_env_aliases=["DB_PORT"],
+                    minval=1,
+                    maxval=65535,
+                ),
+                ODCOptionHandler(
+                    "db_database",
+                    self.env,
+                    legacy_env_aliases=["DB_DATABASE"],
+                    default=_DEFAULT_DATABASE,
+                ),
             )
         else:
             # These pseudo-handlers extract the equivalent config from the url returned by this handler.
@@ -264,7 +316,13 @@ class PostgresURLOptionHandler(ODCOptionHandler):
 
 
 class PostgresURLPartHandler(ODCOptionHandler):
-    def __init__(self, urlhandler: PostgresURLOptionHandler, urlpart: str, name: str, env: "ODCEnvironment") -> None:
+    def __init__(
+        self,
+        urlhandler: PostgresURLOptionHandler,
+        urlpart: str,
+        name: str,
+        env: "ODCEnvironment",
+    ) -> None:
         self.urlhandler = urlhandler
         self.urlpart = urlpart
         super().__init__(name, env)
@@ -274,7 +332,7 @@ class PostgresURLPartHandler(ODCOptionHandler):
         url = self.env._normalised[self.urlhandler.name]
         purl = urlparse(url)
         part = getattr(purl, self.urlpart)
-        if self.urlpart == "path" and part.startswith('/'):
+        if self.urlpart == "path" and part.startswith("/"):
             # Remove leading slash
             return str(part)[1:]
         else:
@@ -288,15 +346,19 @@ class PostgresURLPartHandler(ODCOptionHandler):
 
 def config_options_for_psql_driver(env: "ODCEnvironment") -> list[ODCOptionHandler]:
     """
-       Config options for shared use by postgres-based index drivers
-       (i.e. postgres and postgis drivers)
+    Config options for shared use by postgres-based index drivers
+    (i.e. postgres and postgis drivers)
     """
     return [
-        PostgresURLOptionHandler("db_url", env,
-                                 legacy_env_aliases=['DATACUBE_DB_URL']),
-        IAMAuthenticationOptionHandler("db_iam_authentication", env,
-                                       legacy_env_aliases=['DATACUBE_IAM_AUTHENTICATION']),
-        IntOptionHandler("db_connection_timeout", env, default=_DEFAULT_CONN_TIMEOUT, minval=1)
+        PostgresURLOptionHandler("db_url", env, legacy_env_aliases=["DATACUBE_DB_URL"]),
+        IAMAuthenticationOptionHandler(
+            "db_iam_authentication",
+            env,
+            legacy_env_aliases=["DATACUBE_IAM_AUTHENTICATION"],
+        ),
+        IntOptionHandler(
+            "db_connection_timeout", env, default=_DEFAULT_CONN_TIMEOUT, minval=1
+        ),
     ]
 
 

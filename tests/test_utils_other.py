@@ -7,6 +7,7 @@ Test utility functions from :module:`datacube.utils`
 
 
 """
+
 import os
 import pathlib
 import string
@@ -49,44 +50,78 @@ from datacube.utils.uris import (
 
 def test_stats_dates() -> None:
     # Winter for 1990
-    winter_1990 = list(date_sequence(start=to_datetime('1990-06-01'), end=to_datetime('1990-09-01'), step_size='3m',
-                                     stats_duration='3m'))
-    assert winter_1990 == [(parse('1990-06-01'), parse('1990-09-01'))]
+    winter_1990 = list(
+        date_sequence(
+            start=to_datetime("1990-06-01"),
+            end=to_datetime("1990-09-01"),
+            step_size="3m",
+            stats_duration="3m",
+        )
+    )
+    assert winter_1990 == [(parse("1990-06-01"), parse("1990-09-01"))]
 
     # Every winter from 1990 - 1992
-    three_years_of_winter = list(date_sequence(start=to_datetime('1990-06-01'), end=to_datetime('1992-09-01'),
-                                               step_size='1y',
-                                               stats_duration='3m'))
-    assert three_years_of_winter == [(parse('1990-06-01'), parse('1990-09-01')),
-                                     (parse('1991-06-01'), parse('1991-09-01')),
-                                     (parse('1992-06-01'), parse('1992-09-01'))]
+    three_years_of_winter = list(
+        date_sequence(
+            start=to_datetime("1990-06-01"),
+            end=to_datetime("1992-09-01"),
+            step_size="1y",
+            stats_duration="3m",
+        )
+    )
+    assert three_years_of_winter == [
+        (parse("1990-06-01"), parse("1990-09-01")),
+        (parse("1991-06-01"), parse("1991-09-01")),
+        (parse("1992-06-01"), parse("1992-09-01")),
+    ]
 
     # Full years from 1990 - 1994
-    five_full_years = list(date_sequence(start=to_datetime('1990-01-01'), end=to_datetime('1995'), step_size='1y',
-                                         stats_duration='1y'))
-    assert five_full_years == [(parse('1990-01-01'), parse('1991-01-01')),
-                               (parse('1991-01-01'), parse('1992-01-01')),
-                               (parse('1992-01-01'), parse('1993-01-01')),
-                               (parse('1993-01-01'), parse('1994-01-01')),
-                               (parse('1994-01-01'), parse('1995-01-01'))]
+    five_full_years = list(
+        date_sequence(
+            start=to_datetime("1990-01-01"),
+            end=to_datetime("1995"),
+            step_size="1y",
+            stats_duration="1y",
+        )
+    )
+    assert five_full_years == [
+        (parse("1990-01-01"), parse("1991-01-01")),
+        (parse("1991-01-01"), parse("1992-01-01")),
+        (parse("1992-01-01"), parse("1993-01-01")),
+        (parse("1993-01-01"), parse("1994-01-01")),
+        (parse("1994-01-01"), parse("1995-01-01")),
+    ]
 
     # Every season (three months), starting in March, from 1990 until end 1992-02
-    two_years_of_seasons = list(date_sequence(start=to_datetime('1990-03-01'), end=to_datetime('1992-03'),
-                                              step_size='3m',
-                                              stats_duration='3m'))
+    two_years_of_seasons = list(
+        date_sequence(
+            start=to_datetime("1990-03-01"),
+            end=to_datetime("1992-03"),
+            step_size="3m",
+            stats_duration="3m",
+        )
+    )
     assert len(two_years_of_seasons) == 8
-    assert two_years_of_seasons == [(parse('1990-03-01'), parse('1990-06-01')),
-                                    (parse('1990-06-01'), parse('1990-09-01')),
-                                    (parse('1990-09-01'), parse('1990-12-01')),
-                                    (parse('1990-12-01'), parse('1991-03-01')),
-                                    (parse('1991-03-01'), parse('1991-06-01')),
-                                    (parse('1991-06-01'), parse('1991-09-01')),
-                                    (parse('1991-09-01'), parse('1991-12-01')),
-                                    (parse('1991-12-01'), parse('1992-03-01'))]  # Leap year!
+    assert two_years_of_seasons == [
+        (parse("1990-03-01"), parse("1990-06-01")),
+        (parse("1990-06-01"), parse("1990-09-01")),
+        (parse("1990-09-01"), parse("1990-12-01")),
+        (parse("1990-12-01"), parse("1991-03-01")),
+        (parse("1991-03-01"), parse("1991-06-01")),
+        (parse("1991-06-01"), parse("1991-09-01")),
+        (parse("1991-09-01"), parse("1991-12-01")),
+        (parse("1991-12-01"), parse("1992-03-01")),
+    ]  # Leap year!
 
     # Every month from 1990-01 to 1990-06
-    monthly = list(date_sequence(start=to_datetime('1990-01-01'), end=to_datetime('1990-07-01'), step_size='1m',
-                                 stats_duration='1m'))
+    monthly = list(
+        date_sequence(
+            start=to_datetime("1990-01-01"),
+            end=to_datetime("1990-07-01"),
+            step_size="1m",
+            stats_duration="1m",
+        )
+    )
     assert len(monthly) == 6
 
     # Complex
@@ -94,65 +129,78 @@ def test_stats_dates() -> None:
 
 
 def test_uri_to_local_path() -> None:
-    if os.name == 'nt':
-        assert 'C:\\tmp\\test.tmp' == str(uri_to_local_path('file:///C:/tmp/test.tmp'))
-        assert '\\\\remote\\path\\file.txt' == str(uri_to_local_path('file://remote/path/file.txt'))
+    if os.name == "nt":
+        assert "C:\\tmp\\test.tmp" == str(uri_to_local_path("file:///C:/tmp/test.tmp"))
+        assert "\\\\remote\\path\\file.txt" == str(
+            uri_to_local_path("file://remote/path/file.txt")
+        )
 
     else:
-        assert '/tmp/something.txt' == str(uri_to_local_path('file:///tmp/something.txt'))
+        assert "/tmp/something.txt" == str(
+            uri_to_local_path("file:///tmp/something.txt")
+        )
 
         with pytest.raises(ValueError):
-            uri_to_local_path('file://remote/path/file.txt')
+            uri_to_local_path("file://remote/path/file.txt")
 
     assert uri_to_local_path(None) is None
 
     with pytest.raises(ValueError):
-        uri_to_local_path('ftp://example.com/tmp/something.txt')
+        uri_to_local_path("ftp://example.com/tmp/something.txt")
 
 
-@pytest.mark.parametrize("base", [
-    "s3://foo",
-    "gs://foo",
-    "wasb://foo",
-    "wasbs://foo",
-    "/vsizip//vsicurl/https://host.tld/some/path",
-])
+@pytest.mark.parametrize(
+    "base",
+    [
+        "s3://foo",
+        "gs://foo",
+        "wasb://foo",
+        "wasbs://foo",
+        "/vsizip//vsicurl/https://host.tld/some/path",
+    ],
+)
 def test_uri_resolve(base) -> None:
-    abs_path = '/abs/path/to/something'
-    some_uri = 'http://example.com/file.txt'
+    abs_path = "/abs/path/to/something"
+    some_uri = "http://example.com/file.txt"
 
     assert uri_resolve(base, abs_path) == "file://" + abs_path
     assert uri_resolve(base, some_uri) is some_uri
     assert uri_resolve(base, None) is base
-    assert uri_resolve(base, '') is base
-    assert uri_resolve(base, 'relative/path') == base + '/relative/path'
-    assert uri_resolve(base + '/', 'relative/path') == base + '/relative/path'
-    assert uri_resolve(base + '/some/dir/', 'relative/path') == base + '/some/dir/relative/path'
+    assert uri_resolve(base, "") is base
+    assert uri_resolve(base, "relative/path") == base + "/relative/path"
+    assert uri_resolve(base + "/", "relative/path") == base + "/relative/path"
+    assert (
+        uri_resolve(base + "/some/dir/", "relative/path")
+        == base + "/some/dir/relative/path"
+    )
 
     if not is_vsipath(base):
-        assert uri_resolve(base + '/some/dir/file.txt', 'relative/path') == base + '/some/dir/relative/path'
+        assert (
+            uri_resolve(base + "/some/dir/file.txt", "relative/path")
+            == base + "/some/dir/relative/path"
+        )
 
 
 def test_pick_uri() -> None:
-    f, s, h = ('file://a', 's3://b', 'http://c')
+    f, s, h = ("file://a", "s3://b", "http://c")
 
     with suppress_deprecations():
         assert pick_uri([f, s, h]) is f  # Test of deprecated function
         assert pick_uri([s, h, f]) is f  # Test of deprecated function
         assert pick_uri([s, h]) is s  # Test of deprecated function
         assert pick_uri([h, s]) is h  # Test of deprecated function
-        assert pick_uri([f, s, h], 'http:') is h  # Test of deprecated function
-        assert pick_uri([f, s, h], 's3:') is s  # Test of deprecated function
-        assert pick_uri([f, s, h], 'file:') is f  # Test of deprecated function
+        assert pick_uri([f, s, h], "http:") is h  # Test of deprecated function
+        assert pick_uri([f, s, h], "s3:") is s  # Test of deprecated function
+        assert pick_uri([f, s, h], "file:") is f  # Test of deprecated function
 
         with pytest.raises(ValueError):
             pick_uri([])  # Test of deprecated function
 
         with pytest.raises(ValueError):
-            pick_uri([f, s, h], 'ftp:')  # Test of deprecated function
+            pick_uri([f, s, h], "ftp:")  # Test of deprecated function
 
         with pytest.raises(ValueError):
-            pick_uri([s, h], 'file:')  # Test of deprecated function
+            pick_uri([s, h], "file:")  # Test of deprecated function
 
 
 @given(integers(min_value=10, max_value=30))
@@ -164,7 +212,7 @@ def test_gen_pass(n_bytes) -> None:
     assert password1 != password2
 
 
-@given(text(alphabet=string.digits + string.ascii_letters + ' ,:.![]?', max_size=20))
+@given(text(alphabet=string.digits + string.ascii_letters + " ,:.![]?", max_size=20))
 def test_write_user_secret_file(txt) -> None:
     fname = ".tst-datacube-uefvwr4cfkkl0ijk.txt"
 
@@ -176,83 +224,83 @@ def test_write_user_secret_file(txt) -> None:
 
 
 def test_testutils_mk_sample() -> None:
-    pp = mk_sample_product('tt', measurements=[('aa', 'int16', -999),
-                                               ('bb', 'float32', np.nan)])
-    assert set(pp.measurements) == {'aa', 'bb'}
+    pp = mk_sample_product(
+        "tt", measurements=[("aa", "int16", -999), ("bb", "float32", np.nan)]
+    )
+    assert set(pp.measurements) == {"aa", "bb"}
 
-    pp = mk_sample_product('tt', measurements=['aa', 'bb'])
-    assert set(pp.measurements) == {'aa', 'bb'}
+    pp = mk_sample_product("tt", measurements=["aa", "bb"])
+    assert set(pp.measurements) == {"aa", "bb"}
 
-    pp = mk_sample_product('tt', measurements=[{'name': n} for n in ['aa', 'bb']])
-    assert set(pp.measurements) == {'aa', 'bb'}
+    pp = mk_sample_product("tt", measurements=[{"name": n} for n in ["aa", "bb"]])
+    assert set(pp.measurements) == {"aa", "bb"}
 
     with pytest.raises(ValueError):
-        mk_sample_product('tt', measurements=[None])
+        mk_sample_product("tt", measurements=[None])
 
 
 def test_testutils_write_files() -> None:
     from datacube.testutils import assert_file_structure, write_files
 
-    files = {'a.txt': 'string',
-             'aa.txt': ('line1\n', 'line2\n')}
+    files = {"a.txt": "string", "aa.txt": ("line1\n", "line2\n")}
 
     pp = write_files(files)
     assert pp.exists()
     assert_file_structure(pp, files)
 
     # test that we detect missing files
-    (pp / 'a.txt').unlink()
+    (pp / "a.txt").unlink()
 
     with pytest.raises(AssertionError):
         assert_file_structure(pp, files)
 
     with pytest.raises(AssertionError):
-        assert_file_structure(pp, {'aa.txt': 3})
+        assert_file_structure(pp, {"aa.txt": 3})
 
     with pytest.raises(ValueError):
-        write_files({'tt': 3})
+        write_files({"tt": 3})
 
 
 def test_part_uri() -> None:
-    base = 'file:///foo.txt'
+    base = "file:///foo.txt"
 
     for i in range(10):
         assert get_part_from_uri(mk_part_uri(base, i)) == i
 
-    assert get_part_from_uri('file:///f.txt') is None
-    assert get_part_from_uri('file:///f.txt#something_else') is None
-    assert get_part_from_uri('file:///f.txt#part=aa') == 'aa'
-    assert get_part_from_uri('file:///f.txt#part=111') == 111
+    assert get_part_from_uri("file:///f.txt") is None
+    assert get_part_from_uri("file:///f.txt#something_else") is None
+    assert get_part_from_uri("file:///f.txt#part=aa") == "aa"
+    assert get_part_from_uri("file:///f.txt#part=111") == 111
 
 
 def test_xr_apply() -> None:
-    src = xr.DataArray(np.asarray([1, 2, 3], dtype='uint8'), dims=['time'])
-    dst = xr_apply(src, lambda _, v: v, dtype='float32')
+    src = xr.DataArray(np.asarray([1, 2, 3], dtype="uint8"), dims=["time"])
+    dst = xr_apply(src, lambda _, v: v, dtype="float32")
 
-    assert dst.dtype.name == 'float32'
+    assert dst.dtype.name == "float32"
     assert dst.shape == src.shape
     assert dst.values.tolist() == [1, 2, 3]
 
     dst = xr_apply(src, lambda _, v: v)
-    assert dst.dtype.name == 'uint8'
+    assert dst.dtype.name == "uint8"
     assert dst.shape == src.shape
     assert dst.values.tolist() == [1, 2, 3]
 
     dst = xr_apply(src, lambda idx, _, v: idx[0] + v, with_numeric_index=True)
-    assert dst.dtype.name == 'uint8'
+    assert dst.dtype.name == "uint8"
     assert dst.shape == src.shape
     assert dst.values.tolist() == [0 + 1, 1 + 2, 2 + 3]
 
 
 def test_sorted_items() -> None:
-    aa = {'c': 1, 'b': {}, 'a': []}
+    aa = {"c": 1, "b": {}, "a": []}
 
-    assert ''.join(k for k, _ in sorted_items(aa)) == 'abc'
-    assert ''.join(k for k, _ in sorted_items(aa, key=lambda x: x)) == 'abc'
-    assert ''.join(k for k, _ in sorted_items(aa, reverse=True)) == 'cba'
+    assert "".join(k for k, _ in sorted_items(aa)) == "abc"
+    assert "".join(k for k, _ in sorted_items(aa, key=lambda x: x)) == "abc"
+    assert "".join(k for k, _ in sorted_items(aa, reverse=True)) == "cba"
 
-    remap = {'c': 0, 'a': 1, 'b': 2}
-    assert ''.join(k for k, _ in sorted_items(aa, key=lambda x: remap[x])) == 'cab'
+    remap = {"c": 0, "a": 1, "b": 2}
+    assert "".join(k for k, _ in sorted_items(aa, key=lambda x: remap[x])) == "cab"
 
     assert sorted_items(None) == []
 
@@ -260,26 +308,26 @@ def test_sorted_items() -> None:
 def test_default_base_dir(monkeypatch) -> None:
     def set_pwd(p) -> None:
         if p is None:
-            monkeypatch.delenv('PWD')
+            monkeypatch.delenv("PWD")
         else:
-            monkeypatch.setenv('PWD', str(p))
+            monkeypatch.setenv("PWD", str(p))
 
-    cwd = Path('.').resolve()
+    cwd = Path(".").resolve()
 
     # Default base dir (once resolved) will never be different from cwd
     assert default_base_dir().resolve() == cwd
 
     # should work when PWD is not set
     set_pwd(None)
-    assert 'PWD' not in os.environ
+    assert "PWD" not in os.environ
     assert default_base_dir() == cwd
 
     # should work when PWD is not absolute path
-    set_pwd('this/is/not/a/valid/path')
+    set_pwd("this/is/not/a/valid/path")
     assert default_base_dir() == cwd
 
     # should be cwd when PWD points to some other dir
-    set_pwd(cwd / 'deeper')
+    set_pwd(cwd / "deeper")
     assert default_base_dir() == cwd
 
     set_pwd(cwd.parent)
@@ -300,43 +348,43 @@ def test_time_info() -> None:
 
     from datacube.model.utils import time_info
 
-    date = '2019-03-03T00:00:00'
+    date = "2019-03-03T00:00:00"
     ee = time_info(datetime(2019, 3, 3))
-    assert ee['extent']['from_dt'] == date
-    assert ee['extent']['to_dt'] == date
-    assert ee['extent']['center_dt'] == date
-    assert len(ee['extent']) == 3
+    assert ee["extent"]["from_dt"] == date
+    assert ee["extent"]["to_dt"] == date
+    assert ee["extent"]["center_dt"] == date
+    assert len(ee["extent"]) == 3
 
     ee = time_info(datetime(2019, 3, 3), key_time=datetime(2019, 4, 4))
-    assert ee['extent']['from_dt'] == date
-    assert ee['extent']['to_dt'] == date
-    assert ee['extent']['center_dt'] == date
-    assert ee['extent']['key_time'] == '2019-04-04T00:00:00'
-    assert len(ee['extent']) == 4
+    assert ee["extent"]["from_dt"] == date
+    assert ee["extent"]["to_dt"] == date
+    assert ee["extent"]["center_dt"] == date
+    assert ee["extent"]["key_time"] == "2019-04-04T00:00:00"
+    assert len(ee["extent"]) == 4
 
 
 def test_normalise_path() -> None:
-    cwd = Path('.').resolve()
-    assert normalise_path('.').resolve() == cwd
+    cwd = Path(".").resolve()
+    assert normalise_path(".").resolve() == cwd
 
-    p = Path('/a/b/c/d.txt')
+    p = Path("/a/b/c/d.txt")
     assert normalise_path(p) == Path(p)
     assert normalise_path(str(p)) == Path(p)
 
-    base = Path('/a/b/')
-    p = Path('c/d.txt')
+    base = Path("/a/b/")
+    p = Path("c/d.txt")
     assert normalise_path(p, base) == (base / p)
     assert normalise_path(str(p), str(base)) == (base / p)
     assert normalise_path(p) == (cwd / p)
 
     with pytest.raises(ValueError):
-        normalise_path(p, 'not/absolute/path')
+        normalise_path(p, "not/absolute/path")
 
 
 def test_testutils_testimage() -> None:
     from datacube.testutils import mk_test_image, split_test_image
 
-    for dtype in ('uint16', 'uint32', 'int32', 'float32'):
+    for dtype in ("uint16", "uint32", "int32", "float32"):
         aa = mk_test_image(128, 64, dtype=dtype, nodata=None)
         assert aa.shape == (64, 128)
         assert aa.dtype == dtype
@@ -352,7 +400,7 @@ def test_testutils_gtif(tmpdir) -> None:
     from datacube.testutils import mk_test_image
     from datacube.testutils.io import rio_slurp, write_gtiff
 
-    w, h, dtype, nodata, ndw = 96, 64, 'int16', -999, 7
+    w, h, dtype, nodata, ndw = 96, 64, "int16", -999, 7
 
     aa = mk_test_image(w, h, dtype, nodata, nodata_width=ndw)
     bb = mk_test_image(w, h, dtype, nodata=None)
@@ -368,16 +416,24 @@ def test_testutils_gtif(tmpdir) -> None:
     fname = pathlib.Path(str(tmpdir / "aa.tiff"))
     fname5 = pathlib.Path(str(tmpdir / "aa5.tiff"))
 
-    aa_meta = write_gtiff(fname, aa, nodata=nodata,
-                          blocksize=128,
-                          resolution=(100, -100),
-                          offset=(12300, 11100),
-                          overwrite=True)
+    aa_meta = write_gtiff(
+        fname,
+        aa,
+        nodata=nodata,
+        blocksize=128,
+        resolution=(100, -100),
+        offset=(12300, 11100),
+        overwrite=True,
+    )
 
-    aa5_meta = write_gtiff(str(fname5), aa5, nodata=nodata,
-                           resolution=(100, -100),
-                           offset=(12300, 11100),
-                           overwrite=True)
+    aa5_meta = write_gtiff(
+        str(fname5),
+        aa5,
+        nodata=nodata,
+        resolution=(100, -100),
+        offset=(12300, 11100),
+        overwrite=True,
+    )
 
     assert fname.exists()
     assert fname5.exists()
@@ -390,8 +446,7 @@ def test_testutils_gtif(tmpdir) -> None:
 
     assert aa_meta_.path is fname
 
-    (sx, _, tx,
-     _, sy, ty, *_) = aa5_meta_.transform
+    (sx, _, tx, _, sy, ty, *_) = aa5_meta_.transform
 
     assert (tx, ty) == (12300, 11100)
     assert (sx, sy) == (100, -100)
@@ -404,13 +459,10 @@ def test_testutils_gtif(tmpdir) -> None:
 
     # check that overwrite is off by default
     with pytest.raises(IOError):
-        write_gtiff(fname, aa, nodata=nodata,
-                    blocksize=128)
+        write_gtiff(fname, aa, nodata=nodata, blocksize=128)
 
     # check that overwrite re-writes file
-    write_gtiff(fname, bb[:32, :32],
-                geobox=aa_meta.geobox[:32, :32],
-                overwrite=True)
+    write_gtiff(fname, bb[:32, :32], geobox=aa_meta.geobox[:32, :32], overwrite=True)
 
     bb_, mm = rio_slurp(fname, (32, 32))
     np.testing.assert_array_equal(bb[:32, :32], bb_)
@@ -429,21 +481,20 @@ def test_testutils_geobox() -> None:
 
     assert rio_geobox({}) is None
 
-    transform = Affine(10, 0, 4676,
-                       0, -10, 171878)
+    transform = Affine(10, 0, 4676, 0, -10, 171878)
 
     shape = (100, 640)
     h, w = shape
     crs = CRS.from_epsg(3578)
 
-    meta = {'width': w, 'height': h, 'transform': transform, 'crs': crs}
+    meta = {"width": w, "height": h, "transform": transform, "crs": crs}
     gbox = rio_geobox(meta)
 
     assert gbox.shape == shape
     assert gbox.crs.epsg == 3578
     assert gbox.transform == transform
 
-    wkt = '''PROJCS["unnamed",
+    wkt = """PROJCS["unnamed",
     GEOGCS["NAD83",
        DATUM["North_American_Datum_1983",
              SPHEROID["GRS 1980",6378137,298.257222101, AUTHORITY["EPSG","7019"]],
@@ -459,27 +510,30 @@ def test_testutils_geobox() -> None:
     PARAMETER["false_easting",500000],
     PARAMETER["false_northing",500000],
     UNIT["Meter",1]]
-    '''
+    """
 
     crs_ = dc_crs_from_rio(CRS.from_wkt(wkt))
     assert crs_.epsg is None
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("/foo/bar/file.txt", False),
-    ("file:///foo/bar/file.txt", True),
-    ("test.bar", False),
-    ("s3://mybucket/objname.tiff", True),
-    ("gs://mybucket/objname.tiff", True),
-    ("wasb://mybucket/objname.tiff", True),
-    ("wasbs://mybucket/objname.tiff", True),
-    ("ftp://host.name/filename.txt", True),
-    ("https://host.name.com/path/file.txt", True),
-    ("http://host.name.com/path/file.txt", True),
-    ("sftp://user:pass@host.name.com/path/file.txt", True),
-    ("file+gzip://host.name.com/path/file.txt", True),
-    ("bongo:host.name.com/path/file.txt", False),
-])
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        ("/foo/bar/file.txt", False),
+        ("file:///foo/bar/file.txt", True),
+        ("test.bar", False),
+        ("s3://mybucket/objname.tiff", True),
+        ("gs://mybucket/objname.tiff", True),
+        ("wasb://mybucket/objname.tiff", True),
+        ("wasbs://mybucket/objname.tiff", True),
+        ("ftp://host.name/filename.txt", True),
+        ("https://host.name.com/path/file.txt", True),
+        ("http://host.name.com/path/file.txt", True),
+        ("sftp://user:pass@host.name.com/path/file.txt", True),
+        ("file+gzip://host.name.com/path/file.txt", True),
+        ("bongo:host.name.com/path/file.txt", False),
+    ],
+)
 def test_is_url(test_input, expected) -> None:
     assert is_url(test_input) == expected
     if expected:
@@ -487,42 +541,42 @@ def test_is_url(test_input, expected) -> None:
 
 
 def test_valid_mask() -> None:
-    xx = np.zeros((4, 8), dtype='float32')
+    xx = np.zeros((4, 8), dtype="float32")
     mm = valid_mask(xx, 0)
-    assert mm.dtype == 'bool'
+    assert mm.dtype == "bool"
     assert mm.shape == xx.shape
     assert not mm.all()
     assert not mm.any()
     nn = invalid_mask(xx, 0)
-    assert nn.dtype == 'bool'
+    assert nn.dtype == "bool"
     assert nn.shape == xx.shape
     assert nn.all()
     assert nn.any()
 
     mm = valid_mask(xx, 13)
-    assert mm.dtype == 'bool'
+    assert mm.dtype == "bool"
     assert mm.shape == xx.shape
     assert mm.all()
     nn = invalid_mask(xx, 13)
-    assert nn.dtype == 'bool'
+    assert nn.dtype == "bool"
     assert nn.shape == xx.shape
     assert not nn.any()
 
     mm = valid_mask(xx, None)
-    assert mm.dtype == 'bool'
+    assert mm.dtype == "bool"
     assert mm.shape == xx.shape
     assert mm.all()
     nn = invalid_mask(xx, None)
-    assert nn.dtype == 'bool'
+    assert nn.dtype == "bool"
     assert nn.shape == xx.shape
     assert not nn.any()
 
     mm = valid_mask(xx, np.nan)
-    assert mm.dtype == 'bool'
+    assert mm.dtype == "bool"
     assert mm.shape == xx.shape
     assert mm.all()
     nn = invalid_mask(xx, np.nan)
-    assert nn.dtype == 'bool'
+    assert nn.dtype == "bool"
     assert nn.shape == xx.shape
     assert not nn.any()
 
@@ -536,59 +590,60 @@ def test_valid_mask() -> None:
 
 
 def test_num2numpy() -> None:
-    assert num2numpy(None, 'int8') is None
-    assert num2numpy(-1, 'int8').dtype == np.dtype('int8')
-    assert num2numpy(-1, 'int8').dtype == np.int8(-1)
+    assert num2numpy(None, "int8") is None
+    assert num2numpy(-1, "int8").dtype == np.dtype("int8")
+    assert num2numpy(-1, "int8").dtype == np.int8(-1)
 
-    assert num2numpy(-1, 'uint8') is None
-    assert num2numpy(256, 'uint8') is None
-    assert num2numpy(-1, 'uint16') is None
-    assert num2numpy(-1, 'uint32') is None
+    assert num2numpy(-1, "uint8") is None
+    assert num2numpy(256, "uint8") is None
+    assert num2numpy(-1, "uint16") is None
+    assert num2numpy(-1, "uint32") is None
     try:
         # Numpy 1.x supports wrapping of unsisinged types
-        assert num2numpy(-1, 'uint8', ignore_range=True) == np.uint8(255)
+        assert num2numpy(-1, "uint8", ignore_range=True) == np.uint8(255)
     except OverflowError:
         # Numpy 2.0 will throw Overflow error rather than wrapping
         pass
 
-    assert num2numpy(0, 'uint8') == 0
-    assert num2numpy(255, 'uint8') == 255
-    assert num2numpy(-128, 'int8') == -128
-    assert num2numpy(127, 'int8') == 127
-    assert num2numpy(128, 'int8') is None
+    assert num2numpy(0, "uint8") == 0
+    assert num2numpy(255, "uint8") == 255
+    assert num2numpy(-128, "int8") == -128
+    assert num2numpy(127, "int8") == 127
+    assert num2numpy(128, "int8") is None
 
-    assert num2numpy(3.3, np.dtype('float32')).dtype == np.dtype('float32')
-    assert num2numpy(3.3, np.float32).dtype == np.dtype('float32')
-    assert num2numpy(3.3, np.float64).dtype == np.dtype('float64')
+    assert num2numpy(3.3, np.dtype("float32")).dtype == np.dtype("float32")
+    assert num2numpy(3.3, np.float32).dtype == np.dtype("float32")
+    assert num2numpy(3.3, np.float64).dtype == np.dtype("float64")
 
 
 def test_utils_math() -> None:
-    xx = xr.DataArray(np.zeros((3, 4)),
-                      name='xx',
-                      dims=('y', 'x'),
-                      coords={'x': np.arange(4),
-                              'y': np.arange(3)})
-    xx_t = unsqueeze_data_array(xx, 'time', 0)
-    assert xx_t.dims == ('time', 'y', 'x')
-    assert 'time' in xx_t.coords
+    xx = xr.DataArray(
+        np.zeros((3, 4)),
+        name="xx",
+        dims=("y", "x"),
+        coords={"x": np.arange(4), "y": np.arange(3)},
+    )
+    xx_t = unsqueeze_data_array(xx, "time", 0)
+    assert xx_t.dims == ("time", "y", "x")
+    assert "time" in xx_t.coords
     assert xx_t.data.shape == (1, 3, 4)
 
-    ds = unsqueeze_dataset(xx.to_dataset(), 'time')
-    assert ds.xx.dims == ('time', 'y', 'x')
-    assert 'time' in ds.xx.coords
+    ds = unsqueeze_dataset(xx.to_dataset(), "time")
+    assert ds.xx.dims == ("time", "y", "x")
+    assert "time" in ds.xx.coords
     assert ds.xx.data.shape == (1, 3, 4)
 
 
 def test_check_write_path(tmpdir) -> None:
     tmpdir = Path(str(tmpdir))
-    some_path = tmpdir/"_should_not_exist-5125177.txt"
+    some_path = tmpdir / "_should_not_exist-5125177.txt"
     assert not some_path.exists()
     assert check_write_path(some_path, overwrite=False) is some_path
     assert check_write_path(str(some_path), overwrite=False) == some_path
     assert isinstance(check_write_path(str(some_path), overwrite=False), Path)
 
-    p = tmpdir/"ttt.tmp"
-    with open(str(p), 'w') as f:
+    p = tmpdir / "ttt.tmp"
+    with open(str(p), "w") as f:
         f.write("text")
 
     assert p.exists()

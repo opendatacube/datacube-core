@@ -14,7 +14,7 @@ from sqlalchemy.sql.expression import ClauseElement, Executable
 from sqlalchemy.sql.functions import GenericFunction
 from sqlalchemy.types import Double
 
-SCHEMA_NAME = 'odc'
+SCHEMA_NAME = "odc"
 
 
 class CreateView(Executable, ClauseElement):
@@ -47,7 +47,7 @@ INSTALL_TRIGGER_SQL_TEMPLATE = [
     before update on {schema}.{table}
     for each row
     execute procedure {schema}.set_row_update_time();
-    """
+    """,
 ]
 
 TYPES_INIT_SQL: list[str] = [
@@ -57,13 +57,13 @@ TYPES_INIT_SQL: list[str] = [
         subtype = float8,
         subtype_diff = float8mi
     )
-    """
+    """,
 ]
 
 
 # pylint: disable=abstract-method
 class FLOAT8RANGE(AbstractRange[Range[Double]]):
-    __visit_name__ = 'FLOAT8RANGE'
+    __visit_name__ = "FLOAT8RANGE"
 
 
 @compiles(FLOAT8RANGE)
@@ -74,20 +74,21 @@ def visit_float8range(element, compiler, **kw) -> str:
 # pylint: disable=too-many-ancestors
 class Float8Range(GenericFunction):
     type = FLOAT8RANGE  # type: ignore[assignment]
-    package = 'odc'
-    identifier = 'float8range'
+    package = "odc"
+    identifier = "float8range"
     inherit_cache = False
 
-    name = 'float8range'
+    name = "float8range"
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.packagenames = (f'{SCHEMA_NAME}',)
+        self.packagenames = (f"{SCHEMA_NAME}",)
 
 
 class PGNAME(sqltypes.Text):
     """Postgres 'NAME' type."""
-    __visit_name__ = 'NAME'
+
+    __visit_name__ = "NAME"
 
 
 @compiles(PGNAME)
@@ -108,12 +109,17 @@ def pg_column_exists(conn, table, column) -> bool:
     Does a postgres object exist?
     :rtype bool
     """
-    return conn.execute(text(f"""
+    return (
+        conn.execute(
+            text(f"""
                         SELECT 1 FROM pg_attribute
                         WHERE attrelid = to_regclass('{table}')
                         AND attname = '{column}'
                         AND NOT attisdropped
-                        """)).scalar() is not None
+                        """)
+        ).scalar()
+        is not None
+    )
 
 
 def escape_pg_identifier(engine, name: str):

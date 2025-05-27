@@ -2,16 +2,14 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" threads related stuff
-"""
+"""threads related stuff"""
 
 from concurrent.futures import Future
 from functools import partial
 
 
 class FakeThreadPoolExecutor:
-    """ Limited version of ThreadPool that executes in the current thread.
-    """
+    """Limited version of ThreadPool that executes in the current thread."""
 
     def submit(self, fn, *args, **kwargs) -> Future:
         f: Future = Future()
