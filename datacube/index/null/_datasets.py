@@ -19,7 +19,13 @@ class DatasetResource(AbstractDatasetResource):
         super().__init__(index)
 
     @override
-    def get_unsafe(self, id_: DSID, include_sources: bool = False, include_deriveds: bool = False, max_depth: int = 0):
+    def get_unsafe(
+        self,
+        id_: DSID,
+        include_sources: bool = False,
+        include_deriveds: bool = False,
+        max_depth: int = 0,
+    ):
         raise KeyError(id_)
 
     @override
@@ -39,9 +45,12 @@ class DatasetResource(AbstractDatasetResource):
         return [False for id_ in ids_]
 
     @override
-    def add(self, dataset: Dataset,
-            with_lineage: bool = True,
-            archive_less_mature: int | None = None) -> Dataset:
+    def add(
+        self,
+        dataset: Dataset,
+        with_lineage: bool = True,
+        archive_less_mature: int | None = None,
+    ) -> Dataset:
         raise NotImplementedError()
 
     @override
@@ -49,7 +58,9 @@ class DatasetResource(AbstractDatasetResource):
         return []
 
     @override
-    def can_update(self, dataset, updates_allowed=None) -> tuple[bool, Iterable, Iterable]:
+    def can_update(
+        self, dataset, updates_allowed=None
+    ) -> tuple[bool, Iterable, Iterable]:
         raise NotImplementedError()
 
     @override
@@ -75,7 +86,7 @@ class DatasetResource(AbstractDatasetResource):
     @deprecat(
         reason="Multiple locations per dataset are now deprecated.  Please use the 'get_location' method.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @override
     def get_locations(self, id_) -> list:
@@ -87,9 +98,9 @@ class DatasetResource(AbstractDatasetResource):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Archived locations may not be accessible in future releases.",
+        "Archived locations may not be accessible in future releases.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @override
     def get_archived_locations(self, id_) -> list:
@@ -97,9 +108,9 @@ class DatasetResource(AbstractDatasetResource):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Archived locations may not be accessible in future releases.",
+        "Archived locations may not be accessible in future releases.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @override
     def get_archived_location_times(self, id_) -> list:
@@ -107,9 +118,9 @@ class DatasetResource(AbstractDatasetResource):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Dataset location can be set or updated with the update() method.",
+        "Dataset location can be set or updated with the update() method.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @override
     def add_location(self, id_, uri) -> bool:
@@ -121,9 +132,9 @@ class DatasetResource(AbstractDatasetResource):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Dataset location can be set or updated with the update() method.",
+        "Dataset location can be set or updated with the update() method.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @override
     def remove_location(self, id_, uri) -> bool:
@@ -131,10 +142,10 @@ class DatasetResource(AbstractDatasetResource):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Archived locations may not be accessible in future releases. "
-               "Dataset location can be set or updated with the update() method.",
+        "Archived locations may not be accessible in future releases. "
+        "Dataset location can be set or updated with the update() method.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @override
     def archive_location(self, id_, uri) -> bool:
@@ -142,10 +153,10 @@ class DatasetResource(AbstractDatasetResource):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Archived locations may not be restorable in future releases. "
-               "Dataset location can be set or updated with the update() method.",
+        "Archived locations may not be restorable in future releases. "
+        "Dataset location can be set or updated with the update() method.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @override
     def restore_location(self, id_, uri) -> bool:
@@ -160,13 +171,18 @@ class DatasetResource(AbstractDatasetResource):
             "source_filter": {
                 "reason": "Filtering by source metadata is deprecated and will be removed in future.",
                 "version": "1.9.0",
-                "category": ODC2DeprecationWarning
-
+                "category": ODC2DeprecationWarning,
             }
         }
     )
     @override
-    def search(self, limit: int | None = None, archived: bool | None = False, order_by=None, **query) -> list:
+    def search(
+        self,
+        limit: int | None = None,
+        archived: bool | None = False,
+        order_by=None,
+        **query,
+    ) -> list:
         return []
 
     @override
@@ -174,10 +190,15 @@ class DatasetResource(AbstractDatasetResource):
         return []
 
     @override
-    def search_returning(self,
-                         field_names: Iterable[str] | None = None, custom_offsets=None,
-                         limit: int | None = None, archived: bool | None = False, order_by=None,
-                         **query) -> list:
+    def search_returning(
+        self,
+        field_names: Iterable[str] | None = None,
+        custom_offsets=None,
+        limit: int | None = None,
+        archived: bool | None = False,
+        order_by=None,
+        **query,
+    ) -> list:
         return []
 
     @override
@@ -189,33 +210,43 @@ class DatasetResource(AbstractDatasetResource):
         return []
 
     @override
-    def count_by_product_through_time(self, period: str, archived: bool | None = False, **query) -> list:
+    def count_by_product_through_time(
+        self, period: str, archived: bool | None = False, **query
+    ) -> list:
         return []
 
     @override
-    def count_product_through_time(self, period: str, archived: bool | None = False, **query) -> list:
+    def count_product_through_time(
+        self, period: str, archived: bool | None = False, **query
+    ) -> list:
         return []
 
     @deprecat(
         reason="This method is deprecated and will be removed in 2.0.  "
-               "Consider migrating to search_returning()",
+        "Consider migrating to search_returning()",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @override
     def search_summaries(self, **query) -> list:
         return []
 
     @override
-    def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
+    def temporal_extent(
+        self, ids: Iterable[DSID]
+    ) -> tuple[datetime.datetime, datetime.datetime]:
         raise KeyError(str(ids))
 
     # pylint: disable=redefined-outer-name
     @override
-    def search_returning_datasets_light(self,
-                                        field_names: tuple,
-                                        custom_offsets=None, limit: int | None = None,
-                                        archived: bool | None = False, **query) -> list:
+    def search_returning_datasets_light(
+        self,
+        field_names: tuple,
+        custom_offsets=None,
+        limit: int | None = None,
+        archived: bool | None = False,
+        **query,
+    ) -> list:
         return []
 
     @override

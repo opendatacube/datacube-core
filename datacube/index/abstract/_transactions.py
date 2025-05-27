@@ -36,7 +36,9 @@ class AbstractTransaction(ABC):
         """
         with self._obj_lock:
             if self._connection is not None:
-                raise ValueError("Cannot start a new transaction as one is already active")
+                raise ValueError(
+                    "Cannot start a new transaction as one is already active"
+                )
             self._tls_stash()
 
     def commit(self) -> None:

@@ -10,8 +10,9 @@ from datacube.index.abstract import AbstractUserResource
 
 
 class User:
-    def __init__(self, username: str, password: str, role: str,
-                 description: str | None = None) -> None:
+    def __init__(
+        self, username: str, password: str, role: str, description: str | None = None
+    ) -> None:
         self.username = username
         self.password = password
         self.default_role = role
@@ -27,18 +28,16 @@ class UserResource(AbstractUserResource):
     def __init__(self) -> None:
         self.roles = [
             "local_user",
-
             # For backwards compatibility with default driver
             "agdc_user",
             "agdc_ingest",
             "agdc_manage",
             "agdc_admin",
-
             # For forwards compatibility with future driver(s)
             "odc_user",
             "odc_ingest",
             "odc_manage",
-            "odc_admin"
+            "odc_admin",
         ]
         self.users = {
             "localuser": User("localuser", "password123", "local_user", "Default user")
@@ -55,8 +54,9 @@ class UserResource(AbstractUserResource):
             self.users[user].grant_role(role)
 
     @override
-    def create_user(self, username: str, password: str,
-                    role: str, description: str | None = None) -> None:
+    def create_user(
+        self, username: str, password: str, role: str, description: str | None = None
+    ) -> None:
         if username in self.users:
             raise ValueError(f"User {username} already exists")
         if role not in self.roles:
@@ -73,4 +73,6 @@ class UserResource(AbstractUserResource):
 
     @override
     def list_users(self) -> Iterable[tuple[str, str, str | None]]:
-        return [(u.default_role, u.username, u.description) for u in self.users.values()]
+        return [
+            (u.default_role, u.username, u.description) for u in self.users.values()
+        ]

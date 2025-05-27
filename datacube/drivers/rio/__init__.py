@@ -2,5 +2,4 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" RasterIO based driver
-"""
+"""RasterIO based driver"""

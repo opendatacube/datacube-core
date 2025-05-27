@@ -17,12 +17,17 @@ def test_support_validation(non_geo_dataset_doc, eo_dataset_doc) -> None:
     with pytest.raises(ValueError, match="EO3 cannot be set to False"):
         resolver = Doc2Dataset(idx, eo3=False)
 
-    with pytest.raises(ValueError, match="fail_on_missing_lineage is not supported for this index driver"):
+    with pytest.raises(
+        ValueError,
+        match="fail_on_missing_lineage is not supported for this index driver",
+    ):
         resolver = Doc2Dataset(idx, fail_on_missing_lineage=True)
 
     idx.supports_lineage = True
     idx.supports_external_lineage = True
-    with pytest.raises(ValueError, match="Cannot provide a default home_index when skip_lineage"):
+    with pytest.raises(
+        ValueError, match="Cannot provide a default home_index when skip_lineage"
+    ):
         resolver = Doc2Dataset(idx, home_index="right_here", skip_lineage=True)
 
     idx.supports_legacy = True

@@ -9,7 +9,8 @@ from datacube.utils.masking import valid_data_mask
 
 
 def formula_parser() -> lark.Lark:
-    return lark.Lark("""
+    return lark.Lark(
+        """
                 ?expr: num_expr | bool_expr
 
                 ?bool_expr: or_clause | comparison_clause
@@ -66,7 +67,9 @@ def formula_parser() -> lark.Lark:
                 %import common.CNAME -> NAME
 
                 %ignore WS_INLINE
-                """, start='expr')
+                """,
+        start="expr",
+    )
 
 
 @lark.v_args(inline=True)
@@ -130,6 +133,7 @@ def evaluate_type(formula, env, parser, evaluator):
     a corresponding evaluator class, and an environment.
     The environment is a dict-like object (such as an `xarray.Dataset`) that maps variable names to values.
     """
+
     @lark.v_args(inline=True)
     class TypeEvaluator(evaluator):
         def var_name(self, key):
@@ -143,6 +147,7 @@ def evaluate_data(formula, env, parser, evaluator):
     Evaluates a formula given a parser, a corresponding evaluator class, and an environment.
     The environment is a dict-like object (such as an `xarray.Dataset`) that maps variable names to values.
     """
+
     @lark.v_args(inline=True)
     class DataEvaluator(evaluator):
         def var_name(self, key):
@@ -156,6 +161,7 @@ def evaluate_nodata_mask(formula, env, parser, evaluator):
     Evaluates the nodata mask for a formula given a parser, a corresponding evaluator class, and an environment.
     The environment is a dict-like object (such as an `xarray.Dataset`) that maps variable names to values.
     """
+
     @lark.v_args(inline=True)
     class NodataMaskEvaluator(evaluator):
         def var_name(self, key):

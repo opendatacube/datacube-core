@@ -14,6 +14,7 @@ def test_extract_geom() -> None:
     p3 = box(-112.7, 42.4, -109.6, 45.1, crs="epsg:4326")
 
     from datacube.index._spatial import extract_geom_from_query
+
     geom = extract_geom_from_query(geopolygon=[p1, p2, p3])
     assert geom.contains(p1)
     assert geom.contains(p2)
@@ -28,7 +29,11 @@ def test_extract_geom() -> None:
         geom = extract_geom_from_query(geopolygon=p3, crs="epsg:3577")
 
     with pytest.raises(ValueError):
-        geom = extract_geom_from_query(latitude=(22, 23), y=(10011.1, 585585.5), crs="epsg:3577")
+        geom = extract_geom_from_query(
+            latitude=(22, 23), y=(10011.1, 585585.5), crs="epsg:3577"
+        )
 
     with pytest.raises(ValueError):
-        geom = extract_geom_from_query(lon=(22, 23), x=(10011.1, 585585.5), crs="epsg:3577")
+        geom = extract_geom_from_query(
+            lon=(22, 23), x=(10011.1, 585585.5), crs="epsg:3577"
+        )

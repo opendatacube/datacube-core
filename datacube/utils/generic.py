@@ -47,7 +47,7 @@ def map_with_lookahead(it, if_one=None, if_many=None) -> Iterable:
 
 
 def qmap(func, q, eos_marker=EOS):
-    """ Converts queue to an iterator.
+    """Converts queue to an iterator.
 
     For every `item` in the `q` that is not `eos_marker`, `yield proc(item)`
 
@@ -66,9 +66,9 @@ def qmap(func, q, eos_marker=EOS):
 
 
 def it2q(its: Iterator, q, eos_marker=EOS) -> None:
-    """ Convert iterator into a Queue
+    """Convert iterator into a Queue
 
-        [1, 2, 3] => [1, 2, 3, eos_marker]
+    [1, 2, 3] => [1, 2, 3, eos_marker]
     """
     try:
         for x in its:
@@ -77,10 +77,10 @@ def it2q(its: Iterator, q, eos_marker=EOS) -> None:
         q.put(eos_marker, block=True)
 
 
-def thread_local_cache(name: str,
-                       initial_value: Any = None,
-                       purge: bool = False) -> Any:
-    """ Define/get thread local object with a given name.
+def thread_local_cache(
+    name: str, initial_value: Any = None, purge: bool = False
+) -> Any:
+    """Define/get thread local object with a given name.
 
     :param name:          name for this cache
     :param initial_value: Initial value if not set for this thread

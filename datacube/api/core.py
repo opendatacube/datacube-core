@@ -205,7 +205,6 @@ class Datacube:
         # Optionally compute dataset count for each product and add to row/cols
         # Product lists are sorted by product name to ensure 1:1 match
         if dataset_count:
-
             # Load counts
             counts = [(p.name, c) for p, c in self.index.datasets.count_by_product()]
 
@@ -812,9 +811,7 @@ class Datacube:
         shape_default = (
             tuple(c.size for k, c in coords.items() if k in dims_default) + geobox.shape
         )
-        coords_default: OrderedDict[str, xarray.DataArray] = OrderedDict(
-            **coords
-        )
+        coords_default: OrderedDict[str, xarray.DataArray] = OrderedDict(**coords)
         coords_default.update(
             [(str(k), v) for k, v in xr_coords(geobox, spatial_ref).items()]
         )
@@ -930,7 +927,6 @@ class Datacube:
         extra_dims: ExtraDimensions | None = None,
         patch_url: Callable[[str], str] | None = None,
     ) -> xarray.Dataset:
-
         def mk_cbk(cbk: ProgressFunction | None) -> ProgressFunction | None:
             if cbk is None:
                 return None
@@ -1193,9 +1189,7 @@ def output_geobox(
         if isinstance(like, LegacyGeoGeoBox):
             # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
             crs = None if like.crs is None else CRS(like.crs._str)
-            return GeoBox(
-                shape=(like.height, like.width), affine=like.affine, crs=crs
-            )
+            return GeoBox(shape=(like.height, like.width), affine=like.affine, crs=crs)
         # Is an Xarray object
         return like.odc.geobox
 
@@ -1224,8 +1218,7 @@ def output_geobox(
         align = align or grid_spec.alignment
     else:
         raise ValueError(
-            "Product has no default CRS. \n"
-            "Must specify 'output_crs' and 'resolution'"
+            "Product has no default CRS.\nMust specify 'output_crs' and 'resolution'"
         )
 
     # Try figuring out bounds
@@ -1363,10 +1356,12 @@ def _calculate_chunk_sizes(
             f"Unknown dask_chunk dimension {bad_keys}. Valid dimensions are: {valid_keys}"
         )
 
-    chunk_maxsz = dict(zip(
+    chunk_maxsz = dict(
+        zip(
             sources.dims + extra_dim_names + geobox.dimensions,
             sources.shape + extra_dim_shapes + geobox.shape,
-        ))
+        )
+    )
 
     # defaults: 1 for non-spatial, whole dimension for Y/X
     chunk_defaults = dict(
@@ -1457,9 +1452,7 @@ def _make_dask_array(
                 if "extra_dim" in measurement:
                     assert extra_dims is not None  # For type checker
                     index_subset = extra_dims.measurements_index(measurement.extra_dim)
-                    for result_index, _ in numpy.ndenumerate(
-                        range(*index_subset)
-                    ):
+                    for result_index, _ in numpy.ndenumerate(range(*index_subset)):
                         dsk[key_prefix + result_index + idx] = val3d
                 else:
                     dsk[key_prefix + idx] = val3d
@@ -1478,7 +1471,9 @@ def _make_dask_array(
                     # Do extra_dim subsetting here
                     assert extra_dims is not None  # For type checker
                     index_subset = extra_dims.measurements_index(measurement.extra_dim)
-                    for result_index, extra_dim_index in enumerate(range(*index_subset)):  # type: ignore[assignment]
+                    for result_index, extra_dim_index in enumerate(  # type: ignore[assignment]
+                        range(*index_subset)
+                    ):
                         dsk[key_prefix + (result_index,) + idx] = val + (
                             extra_dim_index,
                             patch_url,

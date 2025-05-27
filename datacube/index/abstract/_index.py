@@ -116,24 +116,23 @@ class AbstractIndex(ABC):
 
     @classmethod
     @abstractmethod
-    def from_config(cls,
-                    cfg_env: ODCEnvironment,
-                    application_name: str | None = None,
-                    validate_connection: bool = True
-                   ) -> "AbstractIndex":
+    def from_config(
+        cls,
+        cfg_env: ODCEnvironment,
+        application_name: str | None = None,
+        validate_connection: bool = True,
+    ) -> "AbstractIndex":
         """Instantiate a new index from an ODCEnvironment configuration object"""
 
     @classmethod
     @abstractmethod
-    def get_dataset_fields(cls,
-                           doc: dict
-                          ) -> Mapping[str, Field]:
+    def get_dataset_fields(cls, doc: dict) -> Mapping[str, Field]:
         """Return dataset search fields from a metadata type document"""
 
     @abstractmethod
-    def init_db(self,
-                with_default_types: bool = True,
-                with_permissions: bool = True) -> bool:
+    def init_db(
+        self, with_default_types: bool = True, with_permissions: bool = True
+    ) -> bool:
         """
         Initialise an empty database.
 
@@ -158,7 +157,9 @@ class AbstractIndex(ABC):
         :return: True if the spatial index was successfully created (or already exists)
         """
         if not self.supports_spatial_indexes:
-            raise NotImplementedError("This index driver does not support the Spatial Index API")
+            raise NotImplementedError(
+                "This index driver does not support the Spatial Index API"
+            )
         else:
             raise NotImplementedError()
 
@@ -171,15 +172,18 @@ class AbstractIndex(ABC):
         :return: An iterable of CRSs for which spatial indexes exist in the index
         """
         if not self.supports_spatial_indexes:
-            raise NotImplementedError("This index driver does not support the Spatial Index API")
+            raise NotImplementedError(
+                "This index driver does not support the Spatial Index API"
+            )
         else:
             raise NotImplementedError()
 
-    def update_spatial_index(self,
-                             crses: Sequence[CRS] = [],
-                             product_names: Sequence[str] = [],
-                             dataset_ids: Sequence[DSID] = []
-                             ) -> int:
+    def update_spatial_index(
+        self,
+        crses: Sequence[CRS] = [],
+        product_names: Sequence[str] = [],
+        dataset_ids: Sequence[DSID] = [],
+    ) -> int:
         """
         Populate a newly created spatial index (or indexes).
 
@@ -203,7 +207,9 @@ class AbstractIndex(ABC):
                  number of spatial indexes updated.
         """
         if not self.supports_spatial_indexes:
-            raise NotImplementedError("This index driver does not support the Spatial Index API")
+            raise NotImplementedError(
+                "This index driver does not support the Spatial Index API"
+            )
         else:
             raise NotImplementedError()
 
@@ -220,15 +226,19 @@ class AbstractIndex(ABC):
                  False if spatial index could not be dropped.
         """
         if not self.supports_spatial_indexes:
-            raise NotImplementedError("This index driver does not support the Spatial Index API")
+            raise NotImplementedError(
+                "This index driver does not support the Spatial Index API"
+            )
         else:
             raise NotImplementedError()
 
-    def clone(self,
-              origin_index: "AbstractIndex",
-              batch_size: int = 1000,
-              skip_lineage: bool = False,
-              lineage_only: bool = False) -> Mapping[str, BatchStatus]:
+    def clone(
+        self,
+        origin_index: "AbstractIndex",
+        batch_size: int = 1000,
+        skip_lineage: bool = False,
+        lineage_only: bool = False,
+    ) -> Mapping[str, BatchStatus]:
         """
         Clone an existing index into this one.
 
@@ -273,28 +283,40 @@ class AbstractIndex(ABC):
                 for crs in origin_index.spatial_indexes(refresh=True):
                     report_to_user(f"Creating spatial index for CRS {crs}")
                     self.create_spatial_index(crs)
-                self.update_spatial_index(list(origin_index.spatial_indexes(refresh=False)))
+                self.update_spatial_index(
+                    list(origin_index.spatial_indexes(refresh=False))
+                )
             # Clone Metadata Types
             report_to_user("Cloning Metadata Types:")
-            results["metadata_types"] = self.metadata_types.bulk_add(origin_index.metadata_types.get_all_docs(),
-                                                                     batch_size=batch_size)
+            results["metadata_types"] = self.metadata_types.bulk_add(
+                origin_index.metadata_types.get_all_docs(), batch_size=batch_size
+            )
             res = results["metadata_types"]
-            msg = f'{res.completed} metadata types loaded ({res.skipped} skipped) in ' \
-                  f'{res.seconds_elapsed:.2f}seconds ' \
-                  f'({res.completed * 60 / res.seconds_elapsed:.2f} metadata_types/min)'
+            msg = (
+                f"{res.completed} metadata types loaded ({res.skipped} skipped) in "
+                f"{res.seconds_elapsed:.2f}seconds "
+                f"({res.completed * 60 / res.seconds_elapsed:.2f} metadata_types/min)"
+            )
             report_to_user(msg, logger=_LOG)
             if res.safe:
-                metadata_cache = {name: self.metadata_types.get_by_name_unsafe(name) for name in res.safe}
+                metadata_cache = {
+                    name: self.metadata_types.get_by_name_unsafe(name)
+                    for name in res.safe
+                }
             else:
                 metadata_cache = {}
             # Clone Products
             report_to_user("Cloning Products:")
-            results["products"] = self.products.bulk_add(origin_index.products.get_all_docs(),
-                                                         metadata_types=metadata_cache,
-                                                         batch_size=batch_size)
+            results["products"] = self.products.bulk_add(
+                origin_index.products.get_all_docs(),
+                metadata_types=metadata_cache,
+                batch_size=batch_size,
+            )
             res = results["products"]
-            msg = f'{res.completed} products loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
-                  f'({res.completed * 60 / res.seconds_elapsed:.2f} products/min)'
+            msg = (
+                f"{res.completed} products loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds "
+                f"({res.completed * 60 / res.seconds_elapsed:.2f} products/min)"
+            )
             report_to_user(msg, logger=_LOG)
             # Clone Datasets (group by product for now for convenience)
             report_to_user("Cloning Datasets:")
@@ -303,23 +325,35 @@ class AbstractIndex(ABC):
             else:
                 products = []
             results["datasets"] = self.datasets.bulk_add(
-                origin_index.datasets.get_all_docs(products=products, batch_size=batch_size),
-                batch_size=batch_size
+                origin_index.datasets.get_all_docs(
+                    products=products, batch_size=batch_size
+                ),
+                batch_size=batch_size,
             )
             res = results["datasets"]
             report_to_user("")
-            msg = f'{res.completed} datasets loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
-                  f'({res.completed * 60 / res.seconds_elapsed:.2f} datasets/min)'
+            msg = (
+                f"{res.completed} datasets loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds "
+                f"({res.completed * 60 / res.seconds_elapsed:.2f} datasets/min)"
+            )
             report_to_user(msg, logger=_LOG)
-        if not self.supports_lineage or not origin_index.supports_lineage or skip_lineage:
+        if (
+            not self.supports_lineage
+            or not origin_index.supports_lineage
+            or skip_lineage
+        ):
             report_to_user("Skipping lineage")
             return results
         report_to_user("Cloning Lineage:")
-        results["lineage"] = self.lineage.bulk_add(origin_index.lineage.get_all_lineage(batch_size), batch_size)
+        results["lineage"] = self.lineage.bulk_add(
+            origin_index.lineage.get_all_lineage(batch_size), batch_size
+        )
         res = results["lineage"]
         report_to_user("")
-        msg = f'{res.completed} lineage relations loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds ' \
-              f'({res.completed * 60 / res.seconds_elapsed:.2f} lineage relations/min)'
+        msg = (
+            f"{res.completed} lineage relations loaded ({res.skipped} skipped) in {res.seconds_elapsed:.2f}seconds "
+            f"({res.completed * 60 / res.seconds_elapsed:.2f} lineage relations/min)"
+        )
         report_to_user(msg, logger=_LOG)
         return results
 
@@ -361,29 +395,31 @@ class AbstractIndexDriver(ABC):
     Abstract base class for an IndexDriver.  All IndexDrivers should inherit from this base class
     and implement all abstract methods.
     """
-    @classmethod
-    @abstractmethod
-    def index_class(cls) -> type[AbstractIndex]:
-        ...
 
     @classmethod
-    def connect_to_index(cls,
-                         config_env: ODCEnvironment,
-                         application_name: str | None = None,
-                         validate_connection: bool = True
-                        ) -> "AbstractIndex":
-        return cls.index_class().from_config(config_env, application_name, validate_connection)
+    @abstractmethod
+    def index_class(cls) -> type[AbstractIndex]: ...
+
+    @classmethod
+    def connect_to_index(
+        cls,
+        config_env: ODCEnvironment,
+        application_name: str | None = None,
+        validate_connection: bool = True,
+    ) -> "AbstractIndex":
+        return cls.index_class().from_config(
+            config_env, application_name, validate_connection
+        )
 
     @staticmethod
     @abstractmethod
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
-               "Please use the 'index.metadata_type.from_doc()' instead.",
-        version='1.9.0',
-        category=ODC2DeprecationWarning)
-    def metadata_type_from_doc(definition: dict
-                              ) -> MetadataType:
-        ...
+        "Please use the 'index.metadata_type.from_doc()' instead.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning,
+    )
+    def metadata_type_from_doc(definition: dict) -> MetadataType: ...
 
     @staticmethod
     def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:

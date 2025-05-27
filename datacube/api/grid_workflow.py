@@ -30,6 +30,7 @@ if typing.TYPE_CHECKING:
     from datacube.index import Index
     from datacube.model import Product
 
+
 class GridWorkflowException(DatacubeException):
     """An ODC Exception raised while building or running Grid Workflows"""
 
@@ -84,25 +85,22 @@ class Tile:
 
     @property
     def dims(self) -> tuple[Hashable, ...]:
-        """Names of the dimensions, eg ``('time', 'y', 'x')``
-        """
+        """Names of the dimensions, eg ``('time', 'y', 'x')``"""
         return self.sources.dims + self.geobox.dimensions
 
     @property
     def shape(self) -> tuple[int, ...]:
-        """Lengths of each dimension, eg ``(285, 4000, 4000)``
-        """
+        """Lengths of each dimension, eg ``(285, 4000, 4000)``"""
         return self.sources.shape + self.geobox.shape
 
     @property
     def product(self) -> Product:
-        """
-        """
+        """ """
         return self.sources.values[0][0].product
 
     def __getitem__(self, chunk):
         sources = _fast_slice(self.sources, chunk[: len(self.sources.shape)])
-        geobox = self.geobox[chunk[len(self.sources.shape):]]
+        geobox = self.geobox[chunk[len(self.sources.shape) :]]
         return Tile(sources, geobox)
 
     # TODO(csiro) Split on time range
@@ -120,7 +118,9 @@ class Tile:
             indexer[axis] = slice(i, min(size, i + step))
             yield self.sources[dim].values[i], self[tuple(indexer)]
 
-    def split_by_time(self, freq: str = "A", time_dim: str = "time", **kwargs) -> Generator[tuple[str, Tile]]:
+    def split_by_time(
+        self, freq: str = "A", time_dim: str = "time", **kwargs
+    ) -> Generator[tuple[str, Tile]]:
         """
         Splits along the `time` dimension, into periods, using pandas offsets, such as:
         :
@@ -188,7 +188,9 @@ class GridWorkflow:
             # Otherwise, attempt to get the grid_spec by the provided product
             # which may or may not have one.
             if product is None:
-                raise GridWorkflowException("Have to supply either grid_spec or product")
+                raise GridWorkflowException(
+                    "Have to supply either grid_spec or product"
+                )
 
             if isinstance(product, str):
                 product = self.index.products.get_by_name(product)
@@ -203,14 +205,13 @@ class GridWorkflow:
 
             self.grid_spec = product.grid_spec
 
-
     def cell_observations(
         self,
-        cell_index: tuple[int, int]|None = None,
-        geopolygon: Geometry|None =None,
-        tile_buffer: tuple[float, float]|None = None,
-        **indexers: QueryField
-    ) -> dict[tuple[int, int], dict[str, Dataset|GeoBox]]:
+        cell_index: tuple[int, int] | None = None,
+        geopolygon: Geometry | None = None,
+        tile_buffer: tuple[float, float] | None = None,
+        **indexers: QueryField,
+    ) -> dict[tuple[int, int], dict[str, Dataset | GeoBox]]:
         """
         List datasets, grouped by cell.
 
@@ -234,8 +235,10 @@ class GridWorkflow:
         # TODO: split this method into 3: cell/polygon/unconstrained querying
 
         if tile_buffer is not None and geopolygon is not None:
-            raise GridWorkflowException("Cannot process tile_buffering and geopolygon together.")
-        cells: dict[tuple[int, int], dict[str, Dataset|GeoBox]] = {}
+            raise GridWorkflowException(
+                "Cannot process tile_buffering and geopolygon together."
+            )
+        cells: dict[tuple[int, int], dict[str, Dataset | GeoBox]] = {}
 
         def add_dataset_to_cells(tile_index, tile_geobox, dataset_):
             cells.setdefault(tile_index, {"datasets": [], "geobox": tile_geobox})[
@@ -348,11 +351,13 @@ class GridWorkflow:
             coord = sources[sources.dims[0]]
             for i in range(coord.size):
                 tile_index = cell_index + (coord.values[i],)
-                tiles[tile_index] = Tile(sources[i:i + 1], geobox)
+                tiles[tile_index] = Tile(sources[i : i + 1], geobox)
 
         return tiles
 
-    def list_cells(self, cell_index: tuple[int, int]|None =None, **query) -> dict[tuple[int, int], Tile]:
+    def list_cells(
+        self, cell_index: tuple[int, int] | None = None, **query
+    ) -> dict[tuple[int, int], Tile]:
         """
         List cells that match the query.
 
@@ -372,7 +377,9 @@ class GridWorkflow:
         observations = self.cell_observations(cell_index, **query)
         return self.group_into_cells(observations, query_group_by(**query))
 
-    def list_tiles(self, cell_index: tuple[int, int]|None=None, **query) -> dict[tuple[int, int, np.datetime64], Tile]:
+    def list_tiles(
+        self, cell_index: tuple[int, int] | None = None, **query
+    ) -> dict[tuple[int, int, np.datetime64], Tile]:
         """
         List tiles of data, sorted by cell.
         ::

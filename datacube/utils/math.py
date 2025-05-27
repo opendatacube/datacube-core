@@ -16,11 +16,9 @@ from odc.geo.xr import spatial_dims as xr_spatial_dims
 from datacube.migration import ODC2DeprecationWarning
 
 
-def unsqueeze_data_array(da: xr.DataArray,
-                         dim: str,
-                         pos: int,
-                         coord: Any = 0,
-                         attrs: dict | None = None) -> xr.DataArray:
+def unsqueeze_data_array(
+    da: xr.DataArray, dim: str, pos: int, coord: Any = 0, attrs: dict | None = None
+) -> xr.DataArray:
     """
     Add a 1-length dimension to a data array.
 
@@ -40,38 +38,65 @@ def unsqueeze_data_array(da: xr.DataArray,
     return xr.DataArray(new_data, dims=new_dims, coords=new_coords, attrs=da.attrs)
 
 
-def unsqueeze_dataset(ds: xr.Dataset, dim: str, coord: int = 0, pos: int = 0) -> xr.Dataset:
+def unsqueeze_dataset(
+    ds: xr.Dataset, dim: str, coord: int = 0, pos: int = 0
+) -> xr.Dataset:
     ds = ds.map(unsqueeze_data_array, dim=dim, pos=pos, keep_attrs=True, coord=coord)
     return ds
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
-def spatial_dims(xx: xr.DataArray | xr.Dataset,
-                 relaxed: bool = False) -> tuple[str, str] | None:
+@deprecat(
+    reason="This method has been moved to odc-geo.",
+    version="1.9.0",
+    category=ODC2DeprecationWarning,
+)
+def spatial_dims(
+    xx: xr.DataArray | xr.Dataset, relaxed: bool = False
+) -> tuple[str, str] | None:
     return xr_spatial_dims(xx, relaxed)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
+@deprecat(
+    reason="This method has been moved to odc-geo.",
+    version="1.9.0",
+    category=ODC2DeprecationWarning,
+)
 def maybe_zero(x: float, tol: float) -> float:
     return geomath.maybe_zero(x, tol)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
+@deprecat(
+    reason="This method has been moved to odc-geo.",
+    version="1.9.0",
+    category=ODC2DeprecationWarning,
+)
 def maybe_int(x: float, tol: float) -> int | float:
     return geomath.maybe_int(x, tol)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
+@deprecat(
+    reason="This method has been moved to odc-geo.",
+    version="1.9.0",
+    category=ODC2DeprecationWarning,
+)
 def snap_scale(s, tol: float = 1e-6):
     return geomath.snap_scale(s, tol)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
+@deprecat(
+    reason="This method has been moved to odc-geo.",
+    version="1.9.0",
+    category=ODC2DeprecationWarning,
+)
 def clamp(x, lo, up):
     return geomath.clamp(x, lo, up)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
+@deprecat(
+    reason="This method has been moved to odc-geo.",
+    version="1.9.0",
+    category=ODC2DeprecationWarning,
+)
 def is_almost_int(x: float, tol: float):
     return geomath.is_almost_int(x, tol)
 
@@ -80,7 +105,7 @@ def dtype_is_float(dtype) -> bool:
     """
     Check if `dtype` is floating-point.
     """
-    return numpy.dtype(dtype).kind == 'f'
+    return numpy.dtype(dtype).kind == "f"
 
 
 def valid_mask(xx, nodata):
@@ -130,7 +155,7 @@ def num2numpy(x, dtype, ignore_range=None):
     if isinstance(dtype, str | type):
         dtype = numpy.dtype(dtype)
 
-    if ignore_range or dtype.kind == 'f':
+    if ignore_range or dtype.kind == "f":
         return dtype.type(x)
 
     info = numpy.iinfo(dtype)
@@ -140,12 +165,20 @@ def num2numpy(x, dtype, ignore_range=None):
     return None
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
+@deprecat(
+    reason="This method has been moved to odc-geo.",
+    version="1.9.0",
+    category=ODC2DeprecationWarning,
+)
 def data_resolution_and_offset(data, fallback_resolution: float | None = None):
     return geomath.data_resolution_and_offset(data, fallback_resolution)
 
 
-@deprecat(reason='This method has been moved to odc-geo.', version='1.9.0', category=ODC2DeprecationWarning)
+@deprecat(
+    reason="This method has been moved to odc-geo.",
+    version="1.9.0",
+    category=ODC2DeprecationWarning,
+)
 def affine_from_axis(xx, yy, fallback_resolution: SomeResolution | None = None):
     return geomath.affine_from_axis(xx, yy, fallback_resolution)
 
@@ -170,4 +203,6 @@ def iter_slices(shape: tuple[int, ...], chunk_size: tuple[int, ...]) -> Iterator
     num_grid_chunks = [ceil(s / float(c)) for s, c in zip(shape, chunk_size)]
     for grid_index in numpy.ndindex(*num_grid_chunks):
         yield tuple(
-            slice(min(d * c, stop), min((d + 1) * c, stop)) for d, c, stop in zip(grid_index, chunk_size, shape))
+            slice(min(d * c, stop), min((d + 1) * c, stop))
+            for d, c, stop in zip(grid_index, chunk_size, shape)
+        )

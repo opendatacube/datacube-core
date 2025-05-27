@@ -31,6 +31,7 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 class ProductResource(AbstractProductResource):
     def __init__(self, index: AbstractIndex) -> None:
         from datacube.index.memory.index import Index
+
         self._index: Index = cast(Index, index)
         self.by_id: dict[int, Product] = {}
         self.by_name: dict[str, Product] = {}
@@ -41,18 +42,23 @@ class ProductResource(AbstractProductResource):
         Product.validate(product.definition)  # type: ignore[attr-defined]
         existing = self.get_by_name(product.name)
         if existing:
-            _LOG.warning(f"Product {product.name} is already in the database, checking for differences")
+            _LOG.warning(
+                f"Product {product.name} is already in the database, checking for differences"
+            )
             check_doc_unchanged(
                 existing.definition,
                 jsonify_document(product.definition),
-                f'Metadata Type {product.name}'
+                f"Metadata Type {product.name}",
             )
         else:
             mdt = self._index.metadata_types.get_by_name(product.metadata_type.name)
             if mdt is None:
-                _LOG.warning(f'Adding metadata_type "{product.metadata_type.name}" as it doesn\'t exist')
-                product.metadata_type = self._index.metadata_types.add(product.metadata_type,
-                                                                       allow_table_lock=allow_table_lock)
+                _LOG.warning(
+                    f'Adding metadata_type "{product.metadata_type.name}" as it doesn\'t exist'
+                )
+                product.metadata_type = self._index.metadata_types.add(
+                    product.metadata_type, allow_table_lock=allow_table_lock
+                )
             clone = self.clone(product)
             clone.id = self.next_id
             self.next_id += 1
@@ -61,39 +67,53 @@ class ProductResource(AbstractProductResource):
         return cast(Product, self.get_by_name(product.name))
 
     @override
-    def can_update(self, product: Product,
-                   allow_unsafe_updates: bool = False,
-                   allow_table_lock: bool = False
-                  ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
+    def can_update(
+        self,
+        product: Product,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         Product.validate(product.definition)  # type: ignore[attr-defined]
 
         existing = self.get_by_name(product.name)
         if not existing:
-            raise ValueError(f"Unknown product {product.name}, cannot update - add first")
+            raise ValueError(
+                f"Unknown product {product.name}, cannot update - add first"
+            )
 
         updates_allowed: dict[Offset, AllowPolicy] = {
-            ('description',): changes.allow_any,
-            ('license',): changes.allow_any,
-            ('metadata_type',): changes.allow_any,
-
+            ("description",): changes.allow_any,
+            ("license",): changes.allow_any,
+            ("metadata_type",): changes.allow_any,
             # You can safely make the match rules looser but not tighter.
             # Tightening them could exclude datasets already matched to the product.
             # (which would make search results wrong)
-            ('metadata',): changes.allow_truncation,
-
+            ("metadata",): changes.allow_truncation,
             # Some old storage fields should not be in the product definition any more: allow removal.
-            ('storage', 'chunking'): changes.allow_removal,
-            ('storage', 'driver'): changes.allow_removal,
-            ('storage', 'dimension_order'): changes.allow_removal,
+            ("storage", "chunking"): changes.allow_removal,
+            ("storage", "driver"): changes.allow_removal,
+            ("storage", "dimension_order"): changes.allow_removal,
         }
-        doc_changes = get_doc_changes(existing.definition, jsonify_document(product.definition))
+        doc_changes = get_doc_changes(
+            existing.definition, jsonify_document(product.definition)
+        )
         good_changes, bad_changes = classify_changes(doc_changes, updates_allowed)
 
         for offset, old_val, new_val in good_changes:
-            _LOG.info("Safe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+            _LOG.info(
+                "Safe change in %s from %r to %r",
+                _readable_offset(offset),
+                old_val,
+                new_val,
+            )
 
         for offset, old_val, new_val in bad_changes:
-            _LOG.warning("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+            _LOG.warning(
+                "Unsafe change in %s from %r to %r",
+                _readable_offset(offset),
+                old_val,
+                new_val,
+            )
 
         return (
             (allow_unsafe_updates or not bad_changes),
@@ -102,22 +122,31 @@ class ProductResource(AbstractProductResource):
         )
 
     @override
-    def update(self, product: Product,
-               allow_unsafe_updates: bool = False,
-               allow_table_lock: bool = False) -> Product:
-        can_update, safe_changes, unsafe_changes = self.can_update(product, allow_unsafe_updates)
+    def update(
+        self,
+        product: Product,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ) -> Product:
+        can_update, safe_changes, unsafe_changes = self.can_update(
+            product, allow_unsafe_updates
+        )
 
         if not safe_changes and not unsafe_changes:
             _LOG.warning(f"No changes detected for product {product.name}")
             return cast(Product, self.get_by_name(product.name))
 
         if not can_update:
-            errs = ", ".join(_readable_offset(offset) for offset, _, _ in unsafe_changes)
+            errs = ", ".join(
+                _readable_offset(offset) for offset, _, _ in unsafe_changes
+            )
             raise ValueError(f"Unsafe changes in {product.name}: {errs}")
 
         existing = cast(Product, self.get_by_name(product.name))
         if product.metadata_type.name != existing.metadata_type.name:
-            raise ValueError("Unsafe change: cannot (currently) switch metadata types for a product")
+            raise ValueError(
+                "Unsafe change: cannot (currently) switch metadata types for a product"
+            )
 
         _LOG.info(f"Updating product {product.name}")
 
@@ -128,15 +157,23 @@ class ProductResource(AbstractProductResource):
         return cast(Product, self.get_by_name(product.name))
 
     @override
-    def delete(self, products: Iterable[Product], allow_delete_active: bool = False) -> Sequence[Product]:
+    def delete(
+        self, products: Iterable[Product], allow_delete_active: bool = False
+    ) -> Sequence[Product]:
         deleted = []
         for product in products:
-            datasets = self._index.datasets.search_returning(('id',), archived=None, product=product.name)
+            datasets = self._index.datasets.search_returning(
+                ("id",), archived=None, product=product.name
+            )
             if datasets:
-                purged = self._index.datasets.purge([ds.id for ds in datasets],  # type: ignore[attr-defined]
-                                                    allow_delete_active)
+                purged = self._index.datasets.purge(
+                    [ds.id for ds in datasets],  # type: ignore[attr-defined]
+                    allow_delete_active,
+                )
                 if len(purged) != len(list(datasets)):
-                    _LOG.warning(f"Product {product.name} cannot be deleted because it has active datasets.")
+                    _LOG.warning(
+                        f"Product {product.name} cannot be deleted because it has active datasets."
+                    )
                     continue
             if product.id is not None:
                 del self.by_id[product.id]
@@ -165,9 +202,11 @@ class ProductResource(AbstractProductResource):
         for prod in self.get_all():
             unmatched = query.copy()
             # Skip non-matched if user specified specific products/metadata_types
-            if prod.name not in listify(unmatched.pop('product', prod.name)):
+            if prod.name not in listify(unmatched.pop("product", prod.name)):
                 continue
-            if prod.metadata_type.name not in listify(unmatched.pop('metadata_type', prod.metadata_type.name)):
+            if prod.metadata_type.name not in listify(
+                unmatched.pop("metadata_type", prod.metadata_type.name)
+            ):
                 continue
             # Check that all search keys match this product
             for key, value in list(unmatched.items()):
@@ -175,7 +214,7 @@ class ProductResource(AbstractProductResource):
                 if not field:
                     # Product doesn't have this field - can't match
                     break
-                if not hasattr(field, 'extract'):
+                if not hasattr(field, "extract"):
                     # non-document/native field (??)
                     continue
                 if field.extract(prod.metadata_doc) is None:
@@ -206,7 +245,7 @@ class ProductResource(AbstractProductResource):
         return Product(
             self._index.metadata_types.clone(orig.metadata_type),
             jsonify_document(orig.definition),
-            id_=orig.id
+            id_=orig.id,
         )
 
     @override
@@ -214,14 +253,20 @@ class ProductResource(AbstractProductResource):
         return None
 
     @override
-    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+    def temporal_extent(
+        self, product: str | Product
+    ) -> tuple[datetime.datetime, datetime.datetime]:
         if isinstance(product, str):
             product = self._index.products.get_by_name_unsafe(product)
         ids: Iterable[UUID] = self._index.datasets._by_product.get(product.name, [])
         if len(list(ids)) == 0:
-            raise RuntimeError("Product has no datasets and therefore no temporal extent")
+            raise RuntimeError(
+                "Product has no datasets and therefore no temporal extent"
+            )
         return self._index.datasets.temporal_extent(ids)
 
     @override
     def most_recent_change(self, product: str | Product) -> datetime.datetime | None:
-        raise NotImplementedError("product most recent change is not currently supported by the memory index driver.")
+        raise NotImplementedError(
+            "product most recent change is not currently supported by the memory index driver."
+        )

@@ -21,11 +21,21 @@ class ProductResource(AbstractProductResource):
         raise NotImplementedError()
 
     @override
-    def can_update(self, product: Product, allow_unsafe_updates: bool = False, allow_table_lock: bool = False):
+    def can_update(
+        self,
+        product: Product,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ):
         raise NotImplementedError()
 
     @override
-    def update(self, product: Product, allow_unsafe_updates: bool = False, allow_table_lock: bool = False):
+    def update(
+        self,
+        product: Product,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ):
         raise NotImplementedError()
 
     @override
@@ -53,11 +63,15 @@ class ProductResource(AbstractProductResource):
         return []
 
     @override
-    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+    def temporal_extent(
+        self, product: str | Product
+    ) -> tuple[datetime.datetime, datetime.datetime]:
         raise KeyError(str(product))
 
     @override
-    def spatial_extent(self, product: Product | str, crs: CRS | None = None) -> Geometry | None:
+    def spatial_extent(
+        self, product: Product | str, crs: CRS | None = None
+    ) -> Geometry | None:
         raise KeyError(str(product))
 
     @override

@@ -32,6 +32,7 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 # in a useful way.
 class SpatialIndexORMRegistry:
     """Threadsafe global registry of SpatialIndex ORM classes, indexed by EPSG/SRID code."""
+
     _registry: dict[int, type[SpatialIndex]] = {}
     _lock = Lock()
 
@@ -70,23 +71,28 @@ class SpatialIndexORMRegistry:
         Note: Called within registry lock.
         """
         attributes = {
-            '__tablename__': f"spatial_{epsg}",
-            '__table_args__': (
+            "__tablename__": f"spatial_{epsg}",
+            "__table_args__": (
                 METADATA,
                 {
                     "schema": SCHEMA_NAME,
-                    "comment": "A product or dataset type, family of related datasets."
-                }
+                    "comment": "A product or dataset type, family of related datasets.",
+                },
             ),
-            "dataset_ref": mapped_column(postgres.UUID(as_uuid=True), ForeignKey(Dataset.id),
-                                         primary_key=True,
-                                         nullable=False,
-                                         comment="The dataset being indexed"),
-            "extent": mapped_column(Geometry('MULTIPOLYGON', srid=epsg),
-                                    nullable=False,
-                                    comment="The extent of the dataset")
+            "dataset_ref": mapped_column(
+                postgres.UUID(as_uuid=True),
+                ForeignKey(Dataset.id),
+                primary_key=True,
+                nullable=False,
+                comment="The dataset being indexed",
+            ),
+            "extent": mapped_column(
+                Geometry("MULTIPOLYGON", srid=epsg),
+                nullable=False,
+                comment="The extent of the dataset",
+            ),
         }
-        return type(f'SpatialIdx{epsg}', (SpatialIndex, Base), attributes)
+        return type(f"SpatialIdx{epsg}", (SpatialIndex, Base), attributes)
 
 
 def is_spindex_table_name(name: str) -> bool:
@@ -127,7 +133,9 @@ def spindex_for_crs(crs: CRS) -> type[SpatialIndex]:
         return spindex_for_epsg(crs_to_epsg(crs))
     except ValueError:
         # Postgis identifies CRSs by a numeric "SRID" which is equivalent to EPSG number.
-        raise ValueError(f"Cannot create a postgis spatial index for a non-EPSG-style CRS: {crs!s}") from None
+        raise ValueError(
+            f"Cannot create a postgis spatial index for a non-EPSG-style CRS: {crs!s}"
+        ) from None
 
 
 def spindex_for_record(rec: SpatialIndexRecord) -> type[SpatialIndex]:
@@ -140,7 +148,8 @@ def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> None:
     with Session(engine) as session:
         results = session.execute(
             select(SpatialIndexRecord.srid).where(
-                SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:]))  # type: ignore[arg-type,attr-defined]
+                SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:])  # type: ignore[arg-type,attr-defined]
+            )
         )
         for _ in results:
             # SpatialIndexRecord exists - actual index assumed to exist too.
@@ -169,7 +178,8 @@ def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> bool:
     with Session(engine) as session:
         results = session.execute(
             select(SpatialIndexRecord).where(
-                SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:]))  # type: ignore[arg-type,attr-defined]
+                SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:])  # type: ignore[arg-type,attr-defined]
+            )
         )
         spidx_record = None
         for result in results:
@@ -178,15 +188,19 @@ def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> bool:
         record_del_result = False
         if spidx_record:
             del_res = session.execute(
-                delete(SpatialIndexRecord).where(SpatialIndexRecord.srid == spidx_record.srid)
+                delete(SpatialIndexRecord).where(
+                    SpatialIndexRecord.srid == spidx_record.srid
+                )
             )
-            record_del_result = (del_res.rowcount == 1)
+            record_del_result = del_res.rowcount == 1
 
         drop_res = session.execute(
             DropTable(sp_idx.__table__, if_exists=True)  # type: ignore[attr-defined]
         )
-        drop_table_result = (drop_res.rowcount == 1)  # type: ignore[attr-defined]
-        _LOG.warning(f"spindex record deleted: {record_del_result}   table dropped: {drop_table_result}")
+        drop_table_result = drop_res.rowcount == 1  # type: ignore[attr-defined]
+        _LOG.warning(
+            f"spindex record deleted: {record_del_result}   table dropped: {drop_table_result}"
+        )
 
     return True
 
@@ -217,7 +231,9 @@ def promote_to_multipolygon(geom: Geom) -> Geom:
         geom = multipolygon([polycoords], crs=geom.crs)
         return geom
     else:
-        raise ValueError(f"Cannot promote geometry type {geom.geom_type} to multi-polygon")
+        raise ValueError(
+            f"Cannot promote geometry type {geom.geom_type} to multi-polygon"
+        )
 
 
 def geom_alchemy(geom: Geom) -> str:
@@ -250,7 +266,9 @@ def sanitise_extent(extent, crs) -> Geom:
         return extent.to_crs(crs)
 
 
-def generate_dataset_spatial_values(dataset_id, crs, extent: Geom | None) -> dict[str, str] | None:
+def generate_dataset_spatial_values(
+    dataset_id, crs, extent: Geom | None
+) -> dict[str, str] | None:
     extent = sanitise_extent(extent, crs)
     if extent is None:
         return None
@@ -264,11 +282,14 @@ def extract_geometry_from_eo3_projection(eo3_gs_doc) -> Geom | None:
     if valid_data:
         return Geom(valid_data, crs=native_crs)
     else:
-        geo_ref_points = eo3_gs_doc.get('geo_ref_points')
+        geo_ref_points = eo3_gs_doc.get("geo_ref_points")
         if geo_ref_points:
             return polygon(
-                [(geo_ref_points[key]['x'], geo_ref_points[key]['y']) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
-                crs=native_crs
+                [
+                    (geo_ref_points[key]["x"], geo_ref_points[key]["y"])
+                    for key in ("ll", "ul", "ur", "lr", "ll")
+                ],
+                crs=native_crs,
             )
         else:
             return None

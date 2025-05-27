@@ -25,10 +25,14 @@ class SafeDatacubeDumper(yaml.SafeDumper):  # pylint: disable=too-many-ancestors
 
 
 def _dict_representer(dumper: SafeDatacubeDumper, data: OrderedDict) -> yaml.Node:
-    return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+    return dumper.represent_mapping(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items()
+    )
 
 
-def _reduced_accuracy_decimal_representer(dumper: SafeDatacubeDumper, data: Decimal) -> yaml.Node:
+def _reduced_accuracy_decimal_representer(
+    dumper: SafeDatacubeDumper, data: Decimal
+) -> yaml.Node:
     return dumper.represent_float(float(data))
 
 
@@ -43,8 +47,8 @@ def _range_representer(dumper: SafeDatacubeDumper, data: Range) -> yaml.Node:
 
     return dumper.represent_mapping(
         yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        (('begin', begin), ('end', end)),
-        flow_style=True
+        (("begin", begin), ("end", end)),
+        flow_style=True,
     )
 
 

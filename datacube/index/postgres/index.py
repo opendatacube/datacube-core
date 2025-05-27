@@ -53,6 +53,7 @@ class Index(AbstractIndex):
     :type products: datacube.index._products.ProductResource
     :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
+
     #   Metadata type support flags
     supports_legacy = True
     supports_eo3 = True
@@ -120,12 +121,17 @@ class Index(AbstractIndex):
 
     @classmethod
     @override
-    def from_config(cls,
-                    config_env: ODCEnvironment,
-                    application_name: str | None = None,
-                    validate_connection: bool = True) -> "Index":
-        db = PostgresDb.from_config(config_env, application_name=application_name,
-                                    validate_connection=validate_connection)
+    def from_config(
+        cls,
+        config_env: ODCEnvironment,
+        application_name: str | None = None,
+        validate_connection: bool = True,
+    ) -> "Index":
+        db = PostgresDb.from_config(
+            config_env,
+            application_name=application_name,
+            validate_connection=validate_connection,
+        )
         return cls(db, config_env)
 
     @classmethod
@@ -138,9 +144,11 @@ class Index(AbstractIndex):
         is_new = self._db.init(with_permissions=with_permissions)
 
         if is_new and with_default_types:
-            _LOG.info('Adding default metadata types.')
+            _LOG.info("Adding default metadata types.")
             for doc in default_metadata_type_docs():
-                self.metadata_types.add(self.metadata_types.from_doc(doc), allow_table_lock=True)
+                self.metadata_types.add(
+                    self.metadata_types.from_doc(doc), allow_table_lock=True
+                )
 
         return is_new
 
@@ -209,7 +217,7 @@ class Index(AbstractIndex):
 
 
 class PostgresIndexDriver(AbstractIndexDriver):
-    aliases = ['legacy', 'default']
+    aliases = ["legacy", "default"]
 
     @classmethod
     @override
@@ -220,16 +228,18 @@ class PostgresIndexDriver(AbstractIndexDriver):
     @override
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
-               "Please use the 'index.metadata_type.from_doc()' instead.",
-        version='1.9.0',
-        category=ODC2DeprecationWarning)
+        "Please use the 'index.metadata_type.from_doc()' instead.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning,
+    )
     def metadata_type_from_doc(definition: dict) -> MetadataType:
         """
         :param definition:
         """
         MetadataType.validate(definition)  # type: ignore
-        return MetadataType(definition,
-                            dataset_search_fields=Index.get_dataset_fields(definition))
+        return MetadataType(
+            definition, dataset_search_fields=Index.get_dataset_fields(definition)
+        )
 
     @staticmethod
     @override

@@ -22,18 +22,17 @@ from datacube.testutils import mk_sample_dataset, suppress_deprecations
 
 
 def test_new_datasource_fallback() -> None:
-    bands = [{'name': 'green',
-              'path': ''}]
-    dataset = mk_sample_dataset(bands, 'file:///foo', format='GeoTiff')
+    bands = [{"name": "green", "path": ""}]
+    dataset = mk_sample_dataset(bands, "file:///foo", format="GeoTiff")
 
-    assert dataset.uri_scheme == 'file'
+    assert dataset.uri_scheme == "file"
 
-    rdr = new_datasource(BandInfo(dataset, 'green'))
+    rdr = new_datasource(BandInfo(dataset, "green"))
     assert rdr is not None
     assert isinstance(rdr, RasterDatasetDataSource)
 
     # check that None format works
-    band = BandInfo(mk_sample_dataset(bands, 'file:///file', format=None), 'green')
+    band = BandInfo(mk_sample_dataset(bands, "file:///file", format=None), "green")
     rdr = new_datasource(band)
     assert rdr is not None
     assert isinstance(rdr, RasterDatasetDataSource)
@@ -46,44 +45,51 @@ def test_reader_drivers() -> None:
 
 def test_writer_drivers() -> None:
     available_drivers = writer_drivers()
-    assert 'netcdf' in available_drivers
-    assert 'NetCDF CF' in available_drivers
+    assert "netcdf" in available_drivers
+    assert "NetCDF CF" in available_drivers
 
 
 def test_index_drivers() -> None:
     available_drivers = index_drivers()
-    assert 'default' in available_drivers
-    assert 'null' in available_drivers
-    assert 'memory' in available_drivers
+    assert "default" in available_drivers
+    assert "null" in available_drivers
+    assert "memory" in available_drivers
 
 
 def test_default_injection() -> None:
-    cache = IndexDriverCache('datacube.plugins.index-no-such-prefix')
-    assert set(cache.drivers()) == {'default', 'postgres', 'legacy', 'postgis', 'memory'}
+    cache = IndexDriverCache("datacube.plugins.index-no-such-prefix")
+    assert set(cache.drivers()) == {
+        "default",
+        "postgres",
+        "legacy",
+        "postgis",
+        "memory",
+    }
 
 
 def test_netcdf_driver_import() -> None:
     try:
         import datacube.drivers.netcdf.driver
     except ImportError:
-        assert False and 'Failed to load netcdf writer driver'
+        assert False and "Failed to load netcdf writer driver"
 
     assert datacube.drivers.netcdf.driver.reader_driver_init is not None
 
 
 def test_writer_driver_mk_uri() -> None:
     from datacube.drivers.netcdf.driver import NetcdfWriterDriver
+
     writer_driver = NetcdfWriterDriver()
 
-    assert writer_driver.uri_scheme == 'file'
+    assert writer_driver.uri_scheme == "file"
 
-    file_path = '/path/to/my_file.nc'
+    file_path = "/path/to/my_file.nc"
     file_uri = writer_driver.mk_uri(file_path=file_path)
-    assert file_uri == f'file://{file_path}'
+    assert file_uri == f"file://{file_path}"
 
 
 def test_metadata_type_from_doc() -> None:
-    metadata_doc = yaml.safe_load('''
+    metadata_doc = yaml.safe_load("""
 name: minimal
 description: minimal metadata definition
 dataset:
@@ -95,7 +101,7 @@ dataset:
         some_custom_field:
             description: some custom field
             offset: [a,b,c,custom]
-    ''')
+    """)
 
     for name in index_drivers():
         driver = index_driver_by_name(name)
@@ -103,8 +109,8 @@ dataset:
             metadata = driver.metadata_type_from_doc(metadata_doc)  # deprecated method
             assert isinstance(metadata, MetadataType)
             assert metadata.id is None
-            assert metadata.name == 'minimal'
-            assert 'some_custom_field' in metadata.dataset_fields
+            assert metadata.name == "minimal"
+            assert "some_custom_field" in metadata.dataset_fields
 
 
 def test_reader_cache_throws_on_missing_fallback() -> None:
@@ -114,7 +120,7 @@ def test_reader_cache_throws_on_missing_fallback() -> None:
     assert rdrs is not None
 
     with pytest.raises(KeyError):
-        rdrs('file', 'aint-such-format')
+        rdrs("file", "aint-such-format")
 
 
 def test_driver_singleton() -> None:
@@ -126,9 +132,9 @@ def test_driver_singleton() -> None:
     factory = MagicMock(return_value=result)
     obj = SimpleNamespace()
 
-    assert singleton_setup(obj, 'xx', factory) is result
-    assert singleton_setup(obj, 'xx', factory) is result
-    assert singleton_setup(obj, 'xx', factory) is result
+    assert singleton_setup(obj, "xx", factory) is result
+    assert singleton_setup(obj, "xx", factory) is result
+    assert singleton_setup(obj, "xx", factory) is result
     assert obj.xx is result
 
     factory.assert_called_once_with()

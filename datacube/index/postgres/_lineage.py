@@ -24,7 +24,7 @@ class LineageResource(NoLineageResource, IndexResourceAddIn):
                 yield LineageRelation(
                     derived_id=row.dataset_ref,
                     classifier=row.classifier,
-                    source_id=row.source_dataset_ref
+                    source_id=row.source_dataset_ref,
                 )
 
     @override

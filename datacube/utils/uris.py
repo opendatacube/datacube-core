@@ -14,7 +14,7 @@ from deprecat import deprecat
 
 from datacube.migration import ODC2DeprecationWarning
 
-URL_RE: re.Pattern[str] = re.compile(r'\A\s*[\w\d\+]+://')
+URL_RE: re.Pattern[str] = re.compile(r"\A\s*[\w\d\+]+://")
 
 
 def split_uri(uri):
@@ -22,11 +22,11 @@ def split_uri(uri):
     Split the scheme and the remainder of the URI.
 
     """
-    idx = uri.find(':')
+    idx = uri.find(":")
     if idx < 0:
         raise ValueError("Not a URI")
 
-    return uri[:idx], uri[idx+1:]
+    return uri[:idx], uri[idx + 1 :]
 
 
 def is_url(url_str: str) -> bool:
@@ -40,18 +40,17 @@ def is_url(url_str: str) -> bool:
 
 
 def is_vsipath(path: str) -> bool:
-    """ Check if string is a GDAL "/vsi.*" path
-    """
+    """Check if string is a GDAL "/vsi.*" path"""
     path = path.lower()
     return path.startswith("/vsi")
 
 
 def vsi_join(base: str, path: str) -> str:
-    """ Extend GDAL's vsi path
+    """Extend GDAL's vsi path
 
-        Basically just base/path, but taking care of trailing `/` in base
+    Basically just base/path, but taking care of trailing `/` in base
     """
-    return base.rstrip('/') + '/' + path
+    return base.rstrip("/") + "/" + path
 
 
 def uri_to_local_path(local_uri: str | None) -> pathlib.Path | None:
@@ -71,24 +70,25 @@ def uri_to_local_path(local_uri: str | None) -> pathlib.Path | None:
         return None
 
     components = urlparse(local_uri)
-    if components.scheme != 'file':
-        raise ValueError(f'Only file URIs currently supported. Tried {components.scheme!r}.')
+    if components.scheme != "file":
+        raise ValueError(
+            f"Only file URIs currently supported. Tried {components.scheme!r}."
+        )
 
     path = url2pathname(components.path)
 
     if components.netloc:
-        if os.name == 'nt':
-            path = f'//{components.netloc}{path}'
+        if os.name == "nt":
+            path = f"//{components.netloc}{path}"
         else:
-            raise ValueError('Only know how to use `netloc` urls on Windows')
+            raise ValueError("Only know how to use `netloc` urls on Windows")
 
     return pathlib.Path(path)
 
 
 def mk_part_uri(uri: str, idx: int) -> str:
-    """ Appends fragment part to the uri recording index of the part
-    """
-    return f'{uri}#part={idx:d}'
+    """Appends fragment part to the uri recording index of the part"""
+    return f"{uri}#part={idx:d}"
 
 
 def get_part_from_uri(uri: str) -> int | None:
@@ -107,7 +107,7 @@ def get_part_from_uri(uri: str) -> int | None:
             return v
 
     opts = dict(parse_qsl(urlparse(uri).fragment))
-    return maybe_int(opts.get('part', None))
+    return maybe_int(opts.get("part", None))
 
 
 def as_url(maybe_uri: str) -> str:
@@ -119,18 +119,18 @@ def as_url(maybe_uri: str) -> str:
 
 def default_base_dir() -> pathlib.Path:
     """Return absolute path to current directory. If PWD environment variable is
-       set correctly return that, note that PWD might be set to "symlinked"
-       path instead of "real" path.
+    set correctly return that, note that PWD might be set to "symlinked"
+    path instead of "real" path.
 
-       Only return PWD instead of cwd when:
+    Only return PWD instead of cwd when:
 
-       1. PWD exists (i.e. launched from interactive shell)
-       2. Contains Absolute path (sanity check)
-       3. Absolute ath in PWD resolves to the same directory as cwd (process didn't call chdir after starting)
+    1. PWD exists (i.e. launched from interactive shell)
+    2. Contains Absolute path (sanity check)
+    3. Absolute ath in PWD resolves to the same directory as cwd (process didn't call chdir after starting)
     """
-    cwd = pathlib.Path('.').resolve()
+    cwd = pathlib.Path(".").resolve()
 
-    _pwd = os.environ.get('PWD')
+    _pwd = os.environ.get("PWD")
     if _pwd is None:
         return cwd
 
@@ -149,14 +149,15 @@ def default_base_dir() -> pathlib.Path:
     return pwd
 
 
-def normalise_path(p: str | pathlib.Path,
-                   base: str | pathlib.Path | None = None) -> pathlib.Path:
+def normalise_path(
+    p: str | pathlib.Path, base: str | pathlib.Path | None = None
+) -> pathlib.Path:
     """Turn path into absolute path resolving any `../` and `.`
 
-       If path is relative prepend `base` path to it, `base` if set should be
-       an absolute path. If not set, current working directory (as seen by the
-       user launching the process, including any possible symlinks) will be
-       used.
+    If path is relative prepend `base` path to it, `base` if set should be
+    an absolute path. If not set, current working directory (as seen by the
+    user launching the process, including any possible symlinks) will be
+    used.
     """
     assert isinstance(p, str | pathlib.Path)
     assert isinstance(base, str | pathlib.Path | type(None))
@@ -205,13 +206,14 @@ def uri_resolve(base: str, path: str | None = None) -> str:
 
 @deprecat(
     reason="Multiple uris are deprecated. Please ensure that datasets only have one location",
-    version='1.9.0',
-    category=ODC2DeprecationWarning)
+    version="1.9.0",
+    category=ODC2DeprecationWarning,
+)
 def pick_uri(uris: list[str], scheme: str | None = None) -> str:
-    """ If scheme is supplied:
-          Return first uri matching the scheme or raises Exception
-        If scheme is not supplied:
-          Return first `file:` uri, or failing that the very first uri
+    """If scheme is supplied:
+      Return first uri matching the scheme or raises Exception
+    If scheme is not supplied:
+      Return first `file:` uri, or failing that the very first uri
     """
 
     def pick(uris: list[str], scheme: str) -> str | None:
@@ -221,15 +223,15 @@ def pick_uri(uris: list[str], scheme: str | None = None) -> str:
         return None
 
     if len(uris) < 1:
-        raise ValueError('No uris on a dataset')
+        raise ValueError("No uris on a dataset")
 
-    base_uri = pick(uris, scheme or 'file:')
+    base_uri = pick(uris, scheme or "file:")
 
     if base_uri is not None:
         return base_uri
 
     if scheme is not None:
-        raise ValueError('No uri with required scheme was found')
+        raise ValueError("No uri with required scheme was found")
 
     return uris[0]
 
@@ -248,9 +250,9 @@ def register_scheme(*schemes) -> None:
 # schemes support relative offsets. By default only well known types are
 # understood. So here we register more common blob store url protocols.
 register_scheme(
-    's3',         # `s3://...`      -- AWS S3 Object Store
-    'gs',         # `gs://...`      -- Google Cloud Storage
-    'wasb',       # `wasb[s]://...` -- Windows Azure Storage Blob
-    'wasbs',
-    'az',
+    "s3",  # `s3://...`      -- AWS S3 Object Store
+    "gs",  # `gs://...`      -- Google Cloud Storage
+    "wasb",  # `wasb[s]://...` -- Windows Azure Storage Blob
+    "wasbs",
+    "az",
 )

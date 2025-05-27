@@ -74,9 +74,7 @@ def sample_grid_workflow():
     crs = CRS("EPSG:3577")
     pixel = 10  # square pixel linear dimension in crs units
     grid = 10  # size of a single tile in pixels
-    gridspec = GridSpec(
-        crs=crs, tile_shape=(grid, grid), resolution=Resolution(pixel)
-    )
+    gridspec = GridSpec(crs=crs, tile_shape=(grid, grid), resolution=Resolution(pixel))
     fakedataset = MagicMock()
     fakedataset.extent = gridspec.tile_geobox((1, -2)).extent
     fakedataset.center_time = datetime.datetime(2001, 2, 15)
@@ -100,7 +98,8 @@ def test_gridworkflow_str_repr(sample_grid_workflow):
 def test_gridworkflow_cell_observations(sample_grid_workflow):
     gw, gridspec, _, _ = sample_grid_workflow
     query = {
-        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+        "product": "fake_product_name",
+        "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59"),
     }
     assert list(gw.cell_observations(**query).keys()) == [(1, -2)]
     assert list(
@@ -113,7 +112,8 @@ def test_gridworkflow_cell_observations(sample_grid_workflow):
 def test_gridworkflow_cell_observations_errors(sample_grid_workflow):
     gw, gridspec, _, _ = sample_grid_workflow
     query = {
-        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+        "product": "fake_product_name",
+        "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59"),
     }
     # It's invalid to supply tile_buffer and geopolygon at the same time
     with pytest.raises(GridWorkflowException) as e:
@@ -121,7 +121,7 @@ def test_gridworkflow_cell_observations_errors(sample_grid_workflow):
             gw.cell_observations(
                 **query,
                 tile_buffer=(1, 1),
-                geopolygon=gridspec.tile_geobox((1, -2)).extent
+                geopolygon=gridspec.tile_geobox((1, -2)).extent,
             ).keys()
         )
     assert str(e.value) == "Cannot process tile_buffering and geopolygon together."
@@ -130,7 +130,8 @@ def test_gridworkflow_cell_observations_errors(sample_grid_workflow):
 def test_gridworkflow_list_tiles_unpadded(sample_grid_workflow):
     gw, _, _, _ = sample_grid_workflow
     query = {
-        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+        "product": "fake_product_name",
+        "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59"),
     }
     assert len(gw.list_tiles(**query)) == 1
 
@@ -138,7 +139,8 @@ def test_gridworkflow_list_tiles_unpadded(sample_grid_workflow):
 def test_gridworkflow_list_tiles_padded(sample_grid_workflow):
     gw, _, _, _ = sample_grid_workflow
     query = {
-        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+        "product": "fake_product_name",
+        "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59"),
     }
     assert len(gw.list_tiles(tile_buffer=(20, 20), **query)) == 9
 
@@ -146,7 +148,8 @@ def test_gridworkflow_list_tiles_padded(sample_grid_workflow):
 def test_gridworkflow_list_tiles_multiple_datasets(sample_grid_workflow):
     gw, gridspec, fakedataset, fakeindex = sample_grid_workflow
     query = {
-        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+        "product": "fake_product_name",
+        "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59"),
     }
 
     # Add dataset to cell (2,-2)
@@ -168,7 +171,8 @@ def test_gridworkflow_list_tiles_multiple_datasets(sample_grid_workflow):
 def test_gridworkflow_returned_tile_properties(sample_grid_workflow):
     gw, gridspec, fakedataset, fakeindex = sample_grid_workflow
     query = {
-        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+        "product": "fake_product_name",
+        "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59"),
     }
     np_time = numpy.datetime64(fakedataset.center_time, "ns")
 
@@ -198,7 +202,8 @@ def test_gridworkflow_returned_tile_properties(sample_grid_workflow):
 def test_gridworkflow_loading(sample_grid_workflow):
     gw, _, fakedataset, _ = sample_grid_workflow
     query = {
-        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+        "product": "fake_product_name",
+        "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59"),
     }
     np_time = numpy.datetime64(fakedataset.center_time, "ns")
     tile = gw.list_tiles(**query)[1, -2, np_time]
@@ -226,7 +231,8 @@ def test_gridworkflow_loading(sample_grid_workflow):
 def test_gridworkflow_cell_index_extract(sample_grid_workflow):
     gw, gridspec, fakedataset, fakeindex = sample_grid_workflow
     query = {
-        "product": "fake_product_name", "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59")
+        "product": "fake_product_name",
+        "time": ("2001-1-1 00:00:00", "2001-3-31 23:59:59"),
     }
     np_time = numpy.datetime64(fakedataset.center_time, "ns")
 
@@ -259,9 +265,7 @@ def test_gridworkflow_with_time_depth():
     crs = CRS("EPSG:4326")
 
     pixel = 10  # square pixel linear dimension in crs units
-    gridspec = GridSpec(
-        crs=crs, tile_shape=(10, 10), resolution=Resolution(pixel)
-    )
+    gridspec = GridSpec(crs=crs, tile_shape=(10, 10), resolution=Resolution(pixel))
 
     def make_fake_datasets(num_datasets: int):
         start_time = datetime.datetime(2001, 2, 15)
@@ -283,7 +287,6 @@ def test_gridworkflow_with_time_depth():
 
     cells = gw.list_cells(**query)
     for _, cell in cells.items():
-
         #  test Tile.split()
         for _, tile in cell.split("time"):
             assert tile.shape == (1, 10, 10)

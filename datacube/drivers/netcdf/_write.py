@@ -20,22 +20,28 @@ def _get_units(coord) -> str:
     2. 'seconds since 1970-01-01 00:00:00' if coord dtype is datetime
     3. '1' otherwise
     """
-    units = getattr(coord, 'units', None)
+    units = getattr(coord, "units", None)
     if units is not None:
         return units
-    dtype = getattr(coord.values, 'dtype', None)
+    dtype = getattr(coord.values, "dtype", None)
     if dtype is None:
-        return '1'
+        return "1"
 
-    if dtype.kind == 'M':
-        return 'seconds since 1970-01-01 00:00:00'
+    if dtype.kind == "M":
+        return "seconds since 1970-01-01 00:00:00"
 
-    return '1'
+    return "1"
 
 
-def create_netcdf_storage_unit(filename: Path,
-                               crs, coordinates, variables, variable_params, global_attributes=None,
-                               netcdfparams=None):
+def create_netcdf_storage_unit(
+    filename: Path,
+    crs,
+    coordinates,
+    variables,
+    variable_params,
+    global_attributes=None,
+    netcdfparams=None,
+):
     """
     Create a NetCDF file on disk.
 
@@ -51,14 +57,14 @@ def create_netcdf_storage_unit(filename: Path,
     """
     filename = Path(filename)
     if filename.exists():
-        raise RuntimeError(f'Storage Unit already exists: {filename}')
+        raise RuntimeError(f"Storage Unit already exists: {filename}")
 
     try:
         filename.parent.mkdir(parents=True)
     except OSError:
         pass
 
-    _LOG.info('Creating storage unit: %s', filename)
+    _LOG.info("Creating storage unit: %s", filename)
 
     nco = netcdf_writer.create_netcdf(str(filename), **(netcdfparams or {}))
 
@@ -72,11 +78,15 @@ def create_netcdf_storage_unit(filename: Path,
     for name, variable in variables.items():
         has_crs = all(dim in variable.dims for dim in crs.dimensions)
         var_params = variable_params.get(name, {})
-        data_var = netcdf_writer.create_variable(nco, name, variable,
-                                                 grid_mapping=grid_mapping if has_crs else None,
-                                                 **var_params)
+        data_var = netcdf_writer.create_variable(
+            nco,
+            name,
+            variable,
+            grid_mapping=grid_mapping if has_crs else None,
+            **var_params,
+        )
 
-        for key, value in var_params.get('attrs', {}).items():
+        for key, value in var_params.get("attrs", {}).items():
             setattr(data_var, key, value)
 
     for key, value in (global_attributes or {}).items():
@@ -85,8 +95,13 @@ def create_netcdf_storage_unit(filename: Path,
     return nco
 
 
-def write_dataset_to_netcdf(dataset, filename: Path, global_attributes=None, variable_params=None,
-                            netcdfparams=None) -> None:
+def write_dataset_to_netcdf(
+    dataset,
+    filename: Path,
+    global_attributes=None,
+    variable_params=None,
+    netcdfparams=None,
+) -> None:
     """
     Write a Data Cube style xarray Dataset to a NetCDF file
 
@@ -106,20 +121,24 @@ def write_dataset_to_netcdf(dataset, filename: Path, global_attributes=None, var
     filename = Path(filename)
 
     if not dataset.data_vars.keys():
-        raise DatacubeException('Cannot save empty dataset to disk.')
+        raise DatacubeException("Cannot save empty dataset to disk.")
 
     if dataset.odc.geobox is None:
-        raise DatacubeException('Dataset geobox property is None, cannot write to NetCDF file.')
+        raise DatacubeException(
+            "Dataset geobox property is None, cannot write to NetCDF file."
+        )
 
     try:
         HDF5_LOCK.acquire(blocking=True)
-        nco = create_netcdf_storage_unit(filename,
-                                         dataset.odc.geobox.crs,
-                                         dataset.coords,
-                                         dataset.data_vars,
-                                         variable_params,
-                                         global_attributes,
-                                         netcdfparams)
+        nco = create_netcdf_storage_unit(
+            filename,
+            dataset.odc.geobox.crs,
+            dataset.coords,
+            dataset.data_vars,
+            variable_params,
+            global_attributes,
+            netcdfparams,
+        )
 
         for name, variable in dataset.data_vars.items():
             nco[name][:] = netcdf_writer.netcdfy_data(variable.values)

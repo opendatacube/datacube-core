@@ -27,26 +27,29 @@ def benchmark(test, dc, label, n):
         if last_count and count != last_count:
             print(f"Count mismatch in {label}: {count} vs {last_count}")
         last_count = count
-        print(f"Test {label}#{i+1}: {end-start}s   ({first-start}s to first returned dataset)")
+        print(
+            f"Test {label}#{i + 1}: {end - start}s   ({first - start}s to first returned dataset)"
+        )
         total += end - start
         total_first += first - start
     print(f"Test {label}-count: {count} rows")
-    print(f"Test {label}-avg: {total/n}s  ({total/(n*count)})s/row")
-    print(f"Test {label}-avg-to-first-return: {total_first/n}s  ({total/(n*count)})s/row")
+    print(f"Test {label}-avg: {total / n}s  ({total / (n * count)})s/row")
+    print(
+        f"Test {label}-avg-to-first-return: {total_first / n}s  ({total / (n * count)})s/row"
+    )
     print()
     print("-----------------------------------------------------------------")
 
 
 def test_less_than(dc):
     return dc.index.datasets.search(
-        product='ga_ls8c_ard_3',
-        cloud_cover=Range(None, 0.2)
+        product="ga_ls8c_ard_3", cloud_cover=Range(None, 0.2)
     )
 
 
 def test_geospatial_search(dc):
     return dc.index.datasets.search(
-        product='ga_ls8c_ard_3',
+        product="ga_ls8c_ard_3",
         lat=Range(-30.0, -25.0),
         lon=Range(140.0, 145.0),
     )
@@ -55,7 +58,7 @@ def test_geospatial_search(dc):
 def test_offset_geom(dc):
     if dc.index.supports_external_lineage:
         return dc.index.datasets.search(
-            product='ga_ls8c_ard_3',
+            product="ga_ls8c_ard_3",
             geometry=polygon(
                 [
                     [140.0, -25.0],
@@ -64,12 +67,12 @@ def test_offset_geom(dc):
                     [145.0, -30.0],
                     [140.0, -25.0],
                 ],
-                crs=CRS("epsg:4326")
-            )
+                crs=CRS("epsg:4326"),
+            ),
         )
     else:
         return dc.index.datasets.search(
-            product='ga_ls8c_ard_3',
+            product="ga_ls8c_ard_3",
             lat=Range(-30.0, -25.0),
             lon=Range(140.0, 145.0),
         )
@@ -77,8 +80,11 @@ def test_offset_geom(dc):
 
 def test_temporal_search(dc):
     return dc.index.datasets.search(
-        product='ga_ls8c_ard_3',
-        time=Range(datetime(2016, 1, 1, tzinfo=timezone.utc), datetime(2016, 4, 5, tzinfo=timezone.utc)),
+        product="ga_ls8c_ard_3",
+        time=Range(
+            datetime(2016, 1, 1, tzinfo=timezone.utc),
+            datetime(2016, 4, 5, tzinfo=timezone.utc),
+        ),
     )
 
 

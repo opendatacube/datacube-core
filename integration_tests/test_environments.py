@@ -22,15 +22,15 @@ db_hostname: alt-db.opendatacube.test
 
     cfg = ODCConfig(text=raw_config)
     cfg_env = cfg[None]
-    assert cfg_env.db_hostname == 'db.opendatacube.test'
-    alt_env = cfg['testalt']
-    assert alt_env.db_hostname == 'alt-db.opendatacube.test'
-    assert cfg_env.index_driver == 'default'
+    assert cfg_env.db_hostname == "db.opendatacube.test"
+    alt_env = cfg["testalt"]
+    assert alt_env.db_hostname == "alt-db.opendatacube.test"
+    assert cfg_env.index_driver == "default"
 
     # Make sure the correct config is passed through the API
     # Parsed config:
-    db_url = f'postgresql+psycopg2://{cfg_env.db_username}@db.opendatacube.test:5432/datacube'
-    alt_db_url = f'postgresql+psycopg2://{alt_env.db_username}@alt-db.opendatacube.test:5432/datacube'
+    db_url = f"postgresql+psycopg2://{cfg_env.db_username}@db.opendatacube.test:5432/datacube"
+    alt_db_url = f"postgresql+psycopg2://{alt_env.db_username}@alt-db.opendatacube.test:5432/datacube"
 
     with Datacube(env=cfg_env, validate_connection=False) as dc:
         assert str(dc.index.url) == db_url
@@ -39,5 +39,5 @@ db_hostname: alt-db.opendatacube.test
     with Datacube(config=cfg, validate_connection=False) as dc:
         assert str(dc.index.url) == db_url
     # When specific environment is loaded
-    with Datacube(config=cfg, env='testalt', validate_connection=False) as dc:
+    with Datacube(config=cfg, env="testalt", validate_connection=False) as dc:
         assert str(dc.index.url) == alt_db_url

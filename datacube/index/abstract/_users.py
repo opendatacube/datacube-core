@@ -26,11 +26,9 @@ class AbstractUserResource(ABC):
         """
 
     @abstractmethod
-    def create_user(self,
-                    username: str,
-                    password: str,
-                    role: str,
-                    description: str | None = None) -> None:
+    def create_user(
+        self, username: str, password: str, role: str, description: str | None = None
+    ) -> None:
         """
         Create a new user
         :param username: username of the new user
@@ -40,9 +38,7 @@ class AbstractUserResource(ABC):
         """
 
     @abstractmethod
-    def delete_user(self,
-                    *usernames: str
-                   ) -> None:
+    def delete_user(self, *usernames: str) -> None:
         """
         Delete database users
         :param usernames: usernames of users to be deleted

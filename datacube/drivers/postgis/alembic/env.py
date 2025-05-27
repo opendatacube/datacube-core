@@ -65,10 +65,20 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def include_name(name,
-                 type_: Literal['schema', 'table', 'column', 'index', 'unique_constraint', 'foreign_key_constraint'],
-                 parent_names: MutableMapping[
-                     Literal['schema_name', 'table_name', 'schema_qualified_table_name'], str | None]) -> bool:
+def include_name(
+    name,
+    type_: Literal[
+        "schema",
+        "table",
+        "column",
+        "index",
+        "unique_constraint",
+        "foreign_key_constraint",
+    ],
+    parent_names: MutableMapping[
+        Literal["schema_name", "table_name", "schema_qualified_table_name"], str | None
+    ],
+) -> bool:
     if type_ == "table":
         # Ignore postgis system table
         if name == "spatial_ref_sys" and parent_names["schema_name"] is None:
@@ -97,17 +107,17 @@ def include_name(name,
 
 def get_odc_env() -> ODCEnvironment:
     # In active Alembic Config?
-    cfg = config.attributes.get('cfg')
-    env = config.attributes.get('env')
-    raw_config = config.attributes.get('raw_config')
+    cfg = config.attributes.get("cfg")
+    env = config.attributes.get("env")
+    raw_config = config.attributes.get("raw_config")
     if not (cfg or env or raw_config):
         # No?  How about from alembic CLI -X args?
         x_args = context.get_x_argument(as_dictionary=True)
-        cfg = x_args.get('cfg')
+        cfg = x_args.get("cfg")
         if cfg:
-            cfg = cfg.split(':')
-        env = x_args.get('env')
-        raw_config = x_args.get('raw_config')
+            cfg = cfg.split(":")
+        env = x_args.get("env")
+        raw_config = x_args.get("raw_config")
     return ODCConfig.get_environment(env=env, config=cfg, raw_config=raw_config)
 
 
@@ -130,9 +140,7 @@ def run_migrations_online() -> None:
         connectable = index._db._engine
     else:
         db = PostGisDb.create(
-            get_odc_env(),
-            application_name="migration",
-            validate=False
+            get_odc_env(), application_name="migration", validate=False
         )
         connectable = db._engine
 

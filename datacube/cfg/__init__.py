@@ -46,5 +46,5 @@ __all__ = [
     "find_config",
     "parse_text",
     "psql_url_from_config",
-    "smells_like_ini"
+    "smells_like_ini",
 ]

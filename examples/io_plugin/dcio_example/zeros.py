@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" Sample plugin "reads" zeros each time every time
+"""Sample plugin "reads" zeros each time every time
 
 TODO: not implemented yet
 """
@@ -10,12 +10,12 @@ TODO: not implemented yet
 
 class ZerosReaderDriver:
     def __init__(self):
-        self.name = 'ZerosReader'
-        self.protocols = ['zero']
-        self.formats = ['0']
+        self.name = "ZerosReader"
+        self.protocols = ["zero"]
+        self.formats = ["0"]
 
     def supports(self, protocol, fmt):
-        return protocol == 'zero'
+        return protocol == "zero"
 
     def new_datasource(self, band):
         return None  # TODO

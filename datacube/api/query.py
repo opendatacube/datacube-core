@@ -6,7 +6,6 @@
 Storage Query and Access API module
 """
 
-
 import collections
 import datetime
 import logging
@@ -28,7 +27,9 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class GroupBy:
-    def __init__(self, group_by_func, dimension, units, sort_key=None, group_key=None) -> None:
+    def __init__(
+        self, group_by_func, dimension, units, sort_key=None, group_key=None
+    ) -> None:
         """
         GroupBy Object
 
@@ -53,12 +54,23 @@ class GroupBy:
         self.group_key = group_key
 
 
-OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan', 'product', 'geopolygon', 'like',
-              'source_filter')
+OTHER_KEYS = (
+    "measurements",
+    "group_by",
+    "output_crs",
+    "resolution",
+    "set_nan",
+    "product",
+    "geopolygon",
+    "like",
+    "source_filter",
+)
 
 
 class Query:
-    def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms) -> None:
+    def __init__(
+        self, index=None, product=None, geopolygon=None, like=None, **search_terms
+    ) -> None:
         """Parses search terms in preparation for querying the Data Cube Index.
 
         Create a :class:`Query` object by passing it a set of search terms as keyword arguments.
@@ -95,8 +107,11 @@ class Query:
         self.index = index
         self.product = product
         self.geopolygon = extract_geom_from_query(geopolygon=geopolygon, **search_terms)
-        if 'source_filter' in search_terms and search_terms['source_filter'] is not None:
-            self.source_filter: Query | None = Query(**search_terms['source_filter'])
+        if (
+            "source_filter" in search_terms
+            and search_terms["source_filter"] is not None
+        ):
+            self.source_filter: Query | None = Query(**search_terms["source_filter"])
         else:
             self.source_filter = None
 
@@ -118,23 +133,27 @@ class Query:
             unknown_keys = remaining_keys - set(index.products.get_field_names())
             # TODO: What about keys source filters, and what if the keys don't match up with this product...
             if unknown_keys:
-                raise LookupError('Unknown arguments: ', unknown_keys)
+                raise LookupError("Unknown arguments: ", unknown_keys)
 
         self.search = {}
         for key in remaining_keys:
             self.search.update(_values_to_search(**{key: search_terms[key]}))
 
         if like:
-            assert self.geopolygon is None, "'like' with other spatial bounding parameters is not supported"
-            self.geopolygon = getattr(like, 'extent', self.geopolygon)
+            assert self.geopolygon is None, (
+                "'like' with other spatial bounding parameters is not supported"
+            )
+            self.geopolygon = getattr(like, "extent", self.geopolygon)
 
-            if 'time' not in self.search:
-                time_coord = like.coords.get('time')
+            if "time" not in self.search:
+                time_coord = like.coords.get("time")
                 if time_coord is not None:
-                    self.search['time'] = _time_to_search_dims(
+                    self.search["time"] = _time_to_search_dims(
                         # convert from np.datetime64 to datetime.datetime
-                        (pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
-                         pandas_to_datetime(time_coord.values[-1]).to_pydatetime())
+                        (
+                            pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
+                            pandas_to_datetime(time_coord.values[-1]).to_pydatetime(),
+                        )
                     )
 
     @property
@@ -148,21 +167,21 @@ class Query:
         kwargs.update(self.search)
         if self.geopolygon:
             if self.index and self.index.supports_spatial_indexes:
-                kwargs['geopolygon'] = self.geopolygon
+                kwargs["geopolygon"] = self.geopolygon
             else:
                 geo_bb = lonlat_bounds(self.geopolygon, resolution="auto")
                 if math.isclose(geo_bb.bottom, geo_bb.top, abs_tol=1e-5):
-                    kwargs['lat'] = geo_bb.bottom
+                    kwargs["lat"] = geo_bb.bottom
                 else:
-                    kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
+                    kwargs["lat"] = Range(geo_bb.bottom, geo_bb.top)
                 if math.isclose(geo_bb.left, geo_bb.right, abs_tol=1e-5):
-                    kwargs['lon'] = geo_bb.left
+                    kwargs["lon"] = geo_bb.left
                 else:
-                    kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
+                    kwargs["lon"] = Range(geo_bb.left, geo_bb.right)
         if self.product:
-            kwargs['product'] = self.product
+            kwargs["product"] = self.product
         if self.source_filter:
-            kwargs['source_filter'] = self.source_filter.search_terms
+            kwargs["source_filter"] = self.source_filter.search_terms
         return kwargs
 
     @override
@@ -182,7 +201,9 @@ def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:
     return normalise_dt(ds.center_time)
 
 
-def query_group_by(group_by: str | GroupBy | None = 'time', **kwargs: QueryField) -> GroupBy:
+def query_group_by(
+    group_by: str | GroupBy | None = "time", **kwargs: QueryField
+) -> GroupBy:
     """
     Group by function for loading datasets
 
@@ -202,31 +223,37 @@ def query_group_by(group_by: str | GroupBy | None = 'time', **kwargs: QueryField
     if not isinstance(group_by, str):
         group_by = None
 
-    time_grouper = GroupBy(group_by_func=_extract_time_from_ds,
-                           dimension='time',
-                           units='seconds since 1970-01-01 00:00:00')
+    time_grouper = GroupBy(
+        group_by_func=_extract_time_from_ds,
+        dimension="time",
+        units="seconds since 1970-01-01 00:00:00",
+    )
 
-    solar_day_grouper = GroupBy(group_by_func=solar_day,
-                                dimension='time',
-                                units='seconds since 1970-01-01 00:00:00',
-                                sort_key=_extract_time_from_ds,
-                                group_key=lambda datasets: _extract_time_from_ds(datasets[0]))
+    solar_day_grouper = GroupBy(
+        group_by_func=solar_day,
+        dimension="time",
+        units="seconds since 1970-01-01 00:00:00",
+        sort_key=_extract_time_from_ds,
+        group_key=lambda datasets: _extract_time_from_ds(datasets[0]),
+    )
 
     group_by_map: dict[str | None, GroupBy] = {
         None: time_grouper,
-        'time': time_grouper,
-        'solar_day': solar_day_grouper
+        "time": time_grouper,
+        "solar_day": solar_day_grouper,
     }
 
     try:
         return group_by_map[group_by]
     except KeyError:
         raise LookupError(
-            f'No group by function for {group_by}, valid options are: {group_by_map.keys()}',
+            f"No group by function for {group_by}, valid options are: {group_by_map.keys()}",
         ) from None
 
 
-def _value_to_range(value: str | int | float | list[str | int | float]) -> tuple[float, float]:
+def _value_to_range(
+    value: str | int | float | list[str | int | float],
+) -> tuple[float, float]:
     if isinstance(value, str | float | int):
         value = float(value)
         return value, value
@@ -237,9 +264,9 @@ def _value_to_range(value: str | int | float | list[str | int | float]) -> tuple
 def _values_to_search(**kwargs) -> dict:
     search = {}
     for key, value in kwargs.items():
-        if key.lower() in ('time', 't'):
-            search['time'] = _time_to_search_dims(value)
-        elif key not in ['latitude', 'lat', 'y'] + ['longitude', 'lon', 'x']:
+        if key.lower() in ("time", "t"):
+            search["time"] = _time_to_search_dims(value)
+        elif key not in ["latitude", "lat", "y"] + ["longitude", "lon", "x"]:
             # If it's not a string, but is a sequence of length 2, then it's a Range
             if (
                 not isinstance(value, str)
@@ -258,7 +285,7 @@ def _time_to_search_dims(time_range):
         warnings.simplefilter("ignore", UserWarning)
         tr_start, tr_end = time_range, time_range
 
-        if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
+        if hasattr(time_range, "__iter__") and not isinstance(time_range, str):
             tmp = list(time_range)
             if len(tmp) > 2:
                 raise ValueError("Please supply start and end date only for time query")
@@ -272,7 +299,7 @@ def _time_to_search_dims(time_range):
             start = datetime.datetime.fromtimestamp(0)
         elif not isinstance(tr_start, datetime.datetime):
             # convert to datetime.datetime
-            if hasattr(tr_start, 'isoformat'):
+            if hasattr(tr_start, "isoformat"):
                 tr_start = tr_start.isoformat()
             start = pandas_to_datetime(tr_start).to_pydatetime()
         else:
@@ -282,7 +309,7 @@ def _time_to_search_dims(time_range):
             tr_end = datetime.datetime.now().strftime("%Y-%m-%d")
         # Attempt conversion to isoformat
         # allows pandas.Period to handle datetime objects
-        if hasattr(tr_end, 'isoformat'):
+        if hasattr(tr_end, "isoformat"):
             tr_end = tr_end.isoformat()
         # get end of period to ensure range is inclusive
         end = pandas.Period(tr_end).end_time.to_pydatetime()
@@ -303,9 +330,9 @@ def _convert_to_solar_time(utc, longitude: float) -> datetime.datetime:
 
 def _ds_mid_longitude(dataset: Dataset) -> float | None:
     m = dataset.metadata
-    if hasattr(m, 'lon'):
+    if hasattr(m, "lon"):
         lon = m.lon
-        return (lon.begin + lon.end)*0.5
+        return (lon.begin + lon.end) * 0.5
     return None
 
 
@@ -322,15 +349,16 @@ def solar_day(dataset: Dataset, longitude: float | None = None) -> np.datetime64
     if longitude is None:
         _lon = _ds_mid_longitude(dataset)
         if _lon is None:
-            raise ValueError('Cannot compute solar_day: dataset is missing spatial info')
+            raise ValueError(
+                "Cannot compute solar_day: dataset is missing spatial info"
+            )
         longitude = _lon
 
     solar_time = _convert_to_solar_time(utc, longitude)
-    return np.datetime64(solar_time.date(), 'D')
+    return np.datetime64(solar_time.date(), "D")
 
 
-def solar_offset(geom: Geometry | Dataset,
-                 precision: str = 'h') -> datetime.timedelta:
+def solar_offset(geom: Geometry | Dataset, precision: str = "h") -> datetime.timedelta:
     """
     Given a geometry or a Dataset compute offset to add to UTC timestamp to get solar day right.
 
@@ -344,11 +372,13 @@ def solar_offset(geom: Geometry | Dataset,
     else:
         _lon = _ds_mid_longitude(geom)
         if _lon is None:
-            raise ValueError('Cannot compute solar offset, dataset is missing spatial info')
+            raise ValueError(
+                "Cannot compute solar offset, dataset is missing spatial info"
+            )
         lon = _lon
 
-    if precision == 'h':
-        return datetime.timedelta(hours=round(lon*24/360))
+    if precision == "h":
+        return datetime.timedelta(hours=round(lon * 24 / 360))
 
     # 240 == (24*60*60)/360 (seconds of a day per degree of longitude)
-    return datetime.timedelta(seconds=int(lon*240))
+    return datetime.timedelta(seconds=int(lon * 240))

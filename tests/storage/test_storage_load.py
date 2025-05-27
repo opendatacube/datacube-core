@@ -2,8 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" Test New IO driver loading
-"""
+"""Test New IO driver loading"""
 
 import numpy as np
 
@@ -54,20 +53,19 @@ def test_new_xr_load(data_folder) -> None:
 
     tee_new_load_context(rdr, band_info_collector)
 
-    band_a = {"name": 'a',
-              "path": 'test.tif'}
+    band_a = {"name": "a", "path": "test.tif"}
 
-    band_b = {"name": 'b',
-              "band": 2,
-              "path": 'test.tif'}
+    band_b = {"name": "b", "band": 2, "path": "test.tif"}
 
     ds = mk_sample_dataset([band_a, band_b], base)
 
-    sources = Datacube.group_datasets([ds], 'time')
+    sources = Datacube.group_datasets([ds], "time")
 
-    im, meta = rio_slurp(str(data_folder) + '/test.tif')
-    measurements = [ds.product.measurements[n] for n in ('a', 'b')]
-    measurements[1]['fuser'] = lambda dst, src: _default_fuser(dst, src, measurements[1].nodata)
+    im, meta = rio_slurp(str(data_folder) + "/test.tif")
+    measurements = [ds.product.measurements[n] for n in ("a", "b")]
+    measurements[1]["fuser"] = lambda dst, src: _default_fuser(
+        dst, src, measurements[1].nodata
+    )
 
     xx, _ = xr_load(sources, meta.geobox, measurements, rdr)
 

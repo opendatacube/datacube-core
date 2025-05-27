@@ -18,6 +18,7 @@ class LineageDirection(Enum):
      - SOURCES indicates a lineage tree that contains the source datasets of the root node
      - DERIVED indicates a lineage tree that contains the derived datasets of the root node
     """
+
     SOURCES = 1
     DERIVED = 2
 
@@ -56,6 +57,7 @@ class LineageTree:
           Optional. Index drivers may not implement a home table, in which case this value
           will always be None.
     """
+
     direction: LineageDirection
     dataset_id: UUID
     children: dict[str, list["LineageTree"]] | None = None
@@ -66,7 +68,7 @@ class LineageTree:
         if not self.children and not other.children:
             children_equal = True
         else:
-            children_equal = (self.children == other.children)
+            children_equal = self.children == other.children
 
         return (
             self.dataset_id == other.dataset_id
@@ -80,10 +82,7 @@ class LineageTree:
             serial["home"] = self.home
         if self.children:
             serial[self.direction.label] = {
-                classifier: [
-                    child.serialise(False)
-                    for child in children
-                ]
+                classifier: [child.serialise(False) for child in children]
                 for classifier, children in self.children.items()
             }
         elif specify_direction_if_empty:
@@ -91,7 +90,9 @@ class LineageTree:
         return serial
 
     @classmethod
-    def deserialise(cls, serialised: SerialisedTree, direction: LineageDirection | None = None) -> "LineageTree":
+    def deserialise(
+        cls, serialised: SerialisedTree, direction: LineageDirection | None = None
+    ) -> "LineageTree":
         if "id" not in serialised:
             raise ValueError("Serialised Lineage tree node must have an id")
         id_ = UUID(cast(str, serialised["id"]))
@@ -102,9 +103,13 @@ class LineageTree:
             elif LineageDirection.DERIVED.label in serialised:
                 direction = LineageDirection.DERIVED
             else:
-                raise ValueError(f"Ambiguous direction for serialised Lineage Tree at {id_}")
+                raise ValueError(
+                    f"Ambiguous direction for serialised Lineage Tree at {id_}"
+                )
         if direction.opposite().label in serialised:
-            raise ValueError(f"Ambiguous direction for serialised Lineage Tree at {id_}")
+            raise ValueError(
+                f"Ambiguous direction for serialised Lineage Tree at {id_}"
+            )
         if serialised.get(direction.label):
             children = {
                 classifier: [
@@ -112,17 +117,21 @@ class LineageTree:
                     for child_tree in child_trees
                 ]
                 for classifier, child_trees in cast(
-                    dict[str, list[SerialisedTree]],
-                    serialised[direction.label]
+                    dict[str, list[SerialisedTree]], serialised[direction.label]
                 ).items()
             }
         else:
             children = {}
-        return LineageTree(dataset_id=id_,
-                           home=cast(str | None, home),
-                           direction=direction, children=children)
+        return LineageTree(
+            dataset_id=id_,
+            home=cast(str | None, home),
+            direction=direction,
+            children=children,
+        )
 
-    def find_subtree(self, dsid: UUID, _state: list["LineageTree"] | None = None) -> Optional["LineageTree"]:
+    def find_subtree(
+        self, dsid: UUID, _state: list["LineageTree"] | None = None
+    ) -> Optional["LineageTree"]:
         """
         Finds subtree with root at dsid, if there is one.
 
@@ -164,9 +173,12 @@ class LineageTree:
         return None
 
     @classmethod
-    def from_eo3_doc(cls, doc: Mapping[str, Any],
-                     home: str | None = None,
-                     home_derived: str | None = None) -> "LineageTree":
+    def from_eo3_doc(
+        cls,
+        doc: Mapping[str, Any],
+        home: str | None = None,
+        home_derived: str | None = None,
+    ) -> "LineageTree":
         """
         Generate a shallow (depth=1) LineageTree from an EO3 dataset document
 
@@ -179,11 +191,14 @@ class LineageTree:
         return cls.from_data(doc["id"], lineage, home=home, home_derived=home_derived)
 
     @classmethod
-    def from_data(cls, dsid: UUID,
-                  sources: Mapping[str, Sequence[UUID]] | None = None,
-                  direction: LineageDirection = LineageDirection.SOURCES,
-                  home: str | None = None,
-                  home_derived: str | None = None) -> "LineageTree":
+    def from_data(
+        cls,
+        dsid: UUID,
+        sources: Mapping[str, Sequence[UUID]] | None = None,
+        direction: LineageDirection = LineageDirection.SOURCES,
+        home: str | None = None,
+        home_derived: str | None = None,
+    ) -> "LineageTree":
         """
         Generate a shallow (depth=1) LineageTree from the sort of data found in an EO3 dataset
 
@@ -199,16 +214,12 @@ class LineageTree:
         else:
             children = {
                 classifier: [
-                    cls(direction=direction, dataset_id=der, home=home)
-                    for der in ders
+                    cls(direction=direction, dataset_id=der, home=home) for der in ders
                 ]
                 for classifier, ders in sources.items()
             }
         return cls(
-            direction=direction,
-            dataset_id=dsid,
-            children=children,
-            home=home_derived
+            direction=direction, dataset_id=dsid, children=children, home=home_derived
         )
 
     def child_datasets(self) -> set[UUID]:
@@ -239,6 +250,7 @@ class LineageIDPair:
     A lineage relationship between a source UUID, a derived UUID
     (no classifier)
     """
+
     derived_id: UUID
     source_id: UUID
 
@@ -250,6 +262,7 @@ class LineageRelation:
 
     A lineage relationship between a source UUID, a derived UUID, with a classifier string
     """
+
     classifier: str
     source_id: UUID
     derived_id: UUID
@@ -265,12 +278,15 @@ class LineageRelations:
     For converting between iterables of LineageRelations and LineageTrees.
     Enforces all lineage chains are acyclic.
     """
-    def __init__(self,
-                 tree: LineageTree | None = None,
-                 max_depth: int = 0,
-                 relations: Iterable[LineageRelation] | None = None,
-                 homes: Mapping[UUID, str] | None = None,
-                 clone: Optional["LineageRelations"] = None) -> None:
+
+    def __init__(
+        self,
+        tree: LineageTree | None = None,
+        max_depth: int = 0,
+        relations: Iterable[LineageRelation] | None = None,
+        homes: Mapping[UUID, str] | None = None,
+        clone: Optional["LineageRelations"] = None,
+    ) -> None:
         """
         All arguments are optional.  Default gives an empty LineageRelations, and:
 
@@ -327,7 +343,9 @@ class LineageRelations:
         """
         if id_ in self._homes:
             if self._homes[id_] and self._homes[id_] != home:
-                raise InconsistentLineageException(f"Tree contains inconsistent homes for dataset {id_}")
+                raise InconsistentLineageException(
+                    f"Tree contains inconsistent homes for dataset {id_}"
+                )
         else:
             self._homes[id_] = home
 
@@ -339,7 +357,9 @@ class LineageRelations:
             LineageRelation(
                 classifier=classifier,
                 derived_id=ids.derived_id,
-                source_id=ids.source_id))
+                source_id=ids.source_id,
+            )
+        )
 
     def merge_new_lineage_relation(self, rel: LineageRelation) -> None:
         """
@@ -383,9 +403,12 @@ class LineageRelations:
         for ids, classifier in pool._relations_idx.items():
             self._merge_new_relation(ids, classifier)
 
-    def merge_tree(self, tree: LineageTree,
-                   nodes: dict[UUID, LineageTree] | None = None,
-                   max_depth: int = 0) -> None:
+    def merge_tree(
+        self,
+        tree: LineageTree,
+        nodes: dict[UUID, LineageTree] | None = None,
+        max_depth: int = 0,
+    ) -> None:
         """
         Merge in a LineageTree, ensuring it is consistent with the collection so far.
 
@@ -422,26 +445,32 @@ class LineageRelations:
         for classifier, children in tree.children.items():
             for child in children:
                 if child.direction != tree.direction:
-                    raise InconsistentLineageException("Tree contains both derived and source nodes")
+                    raise InconsistentLineageException(
+                        "Tree contains both derived and source nodes"
+                    )
                 if tree.direction == LineageDirection.SOURCES:
-                    ids = LineageIDPair(derived_id=tree.dataset_id, source_id=child.dataset_id)
+                    ids = LineageIDPair(
+                        derived_id=tree.dataset_id, source_id=child.dataset_id
+                    )
                 else:
-                    ids = LineageIDPair(derived_id=child.dataset_id, source_id=tree.dataset_id)
+                    ids = LineageIDPair(
+                        derived_id=child.dataset_id, source_id=tree.dataset_id
+                    )
                 self._merge_new_relation(ids, classifier)
                 if recurse:
-                    self.merge_tree(
-                        child,
-                        nodes=nodes,
-                        max_depth=next_max_depth
-                    )
+                    self.merge_tree(child, nodes=nodes, max_depth=next_max_depth)
         return
 
-    def relations_diff(self,
-                       existing_relations: Optional["LineageRelations"] = None,
-                       allow_updates: bool = False) -> tuple[Mapping[LineageIDPair, str],
-                                                             Mapping[LineageIDPair, str],
-                                                             Mapping[UUID, str],
-                                                             Mapping[UUID, str]]:
+    def relations_diff(
+        self,
+        existing_relations: Optional["LineageRelations"] = None,
+        allow_updates: bool = False,
+    ) -> tuple[
+        Mapping[LineageIDPair, str],
+        Mapping[LineageIDPair, str],
+        Mapping[UUID, str],
+        Mapping[UUID, str],
+    ]:
         """
         Compare to another LineageRelations object, returning records to be added to or updated in
         the other LinearRelations collection to consistently merge this collection into it.
@@ -460,10 +489,7 @@ class LineageRelations:
             Homes that need to up updated in existing_relations to merge with this collection.
         """
         if not existing_relations:
-            return (
-                self._relations_idx, {},
-                self._homes, {}
-            )
+            return (self._relations_idx, {}, self._homes, {})
         relations_to_add = {}
         relations_to_update = {}
         homes_to_add = {}
@@ -493,17 +519,15 @@ class LineageRelations:
                     relations_to_add[ids] = classifier
                 elif classifier != existing_relations._relations_idx[ids]:
                     relations_to_update[ids] = classifier
-        return (
-            relations_to_add, relations_to_update,
-            homes_to_add, homes_to_update
-        )
+        return (relations_to_add, relations_to_update, homes_to_add, homes_to_update)
 
-    def extract_tree(self,
-                     root: UUID,
-                     direction: LineageDirection = LineageDirection.SOURCES,
-                     parents: set[UUID] | None = None,
-                     so_far: set[UUID] | None = None,
-                     ) -> LineageTree:
+    def extract_tree(
+        self,
+        root: UUID,
+        direction: LineageDirection = LineageDirection.SOURCES,
+        parents: set[UUID] | None = None,
+        so_far: set[UUID] | None = None,
+    ) -> LineageTree:
         """
         Extract a LineageTree from this LineageRelations collection.
 
@@ -528,7 +552,9 @@ class LineageRelations:
         parents.add(root)
         if root in so_far:
             # Shortcut duplicates for handling diamond-dependencies
-            return LineageTree(dataset_id=root, direction=direction, home=self._homes.get(root))
+            return LineageTree(
+                dataset_id=root, direction=direction, home=self._homes.get(root)
+            )
         so_far.add(root)
 
         children: dict[str, list[LineageTree]] = {}
@@ -546,6 +572,6 @@ class LineageRelations:
             dataset_id=root,
             direction=direction,
             children=children,
-            home=self._homes.get(root)
+            home=self._homes.get(root),
         )
         return tree

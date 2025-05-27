@@ -18,8 +18,9 @@ class UserResource(AbstractUserResource):
         raise NotImplementedError()
 
     @override
-    def create_user(self, username: str, password: str,
-                    role: str, description: str | None = None) -> None:
+    def create_user(
+        self, username: str, password: str, role: str, description: str | None = None
+    ) -> None:
         raise NotImplementedError()
 
     @override

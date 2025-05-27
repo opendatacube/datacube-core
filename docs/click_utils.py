@@ -27,48 +27,52 @@ class ClickHelpDirective(Directive):
 def find_script_callable_from_env(name, env):
     commands = env.config.click_utils_commands
 
-    module, function_name = commands[name].split(':')
+    module, function_name = commands[name].split(":")
     module = importlib.import_module(module)
     return getattr(module, function_name)
 
 
 def find_script_callable(name):
     from importlib.metadata import entry_points
-    return next(iter(entry_points(group='console_scripts', name=name))).load()
+
+    return next(iter(entry_points(group="console_scripts", name=name))).load()
 
 
 def generate_help_text(command, prefix):
     ctx = click.Context(command)
     help_opts = command.get_help_option(ctx).opts
-    full_cmd = ' '.join(prefix)
-    block = section(None,
-                    title(None, full_cmd),
-                    ids=[make_id(full_cmd)], names=[full_cmd])
+    full_cmd = " ".join(prefix)
+    block = section(
+        None, title(None, full_cmd), ids=[make_id(full_cmd)], names=[full_cmd]
+    )
     if help_opts:
         h = f"$ {full_cmd} {help_opts[0]}\n" + command.get_help(ctx)
-        block.append(literal_block(None, h, language='console'))
+        block.append(literal_block(None, h, language="console"))
 
     if isinstance(command, click.core.MultiCommand):
         for c in command.list_commands(ctx):
             c = command.resolve_command(ctx, [c])[1]
-            block.append(generate_help_text(c, prefix+[c.name]))
+            block.append(generate_help_text(c, prefix + [c.name]))
 
     return block
 
 
 def make_block(command, opt, content):
     h = f"$ {command} {opt}\n" + content
-    return section(None,
-                   title(None, command),
-                   literal_block(None, h, language='console'),
-                   ids=[make_id(command)], names=[command])
+    return section(
+        None,
+        title(None, command),
+        literal_block(None, h, language="console"),
+        ids=[make_id(command)],
+        names=[command],
+    )
 
 
 class DatacubeDomain(Domain):
-    name = 'datacube'
-    label = 'Data Cube'
+    name = "datacube"
+    label = "Data Cube"
     directives = {
-        'click-help': ClickHelpDirective,
+        "click-help": ClickHelpDirective,
     }
 
     def merge_domaindata(self, docnames, otherdata):
@@ -76,10 +80,10 @@ class DatacubeDomain(Domain):
 
 
 def setup(app):
-    app.add_config_value('click_utils_commands', {}, 'html')
+    app.add_config_value("click_utils_commands", {}, "html")
 
     app.add_domain(DatacubeDomain)
     return {
-        'parallel_read_safe': True,
-        'parallel_write_safe': True,
+        "parallel_read_safe": True,
+        "parallel_write_safe": True,
     }

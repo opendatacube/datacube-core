@@ -74,24 +74,27 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         existing = self.get_by_name(metadata_type.name)
         if existing:
             # They've passed us the same one again. Make sure it matches what is stored.
-            _LOG.warning(f"Metadata Type {metadata_type.name} is already in the database, checking for differences")
+            _LOG.warning(
+                f"Metadata Type {metadata_type.name} is already in the database, checking for differences"
+            )
             check_doc_unchanged(
                 existing.definition,
                 jsonify_document(metadata_type.definition),
-                f'Metadata Type {metadata_type.name}'
+                f"Metadata Type {metadata_type.name}",
             )
         else:
             with self._db_connection(transaction=allow_table_lock) as connection:
                 connection.insert_metadata_type(
                     name=metadata_type.name,
                     definition=metadata_type.definition,
-                    concurrently=not allow_table_lock
+                    concurrently=not allow_table_lock,
                 )
         return self.get_by_name(metadata_type.name)
 
     @override
-    def can_update(self, metadata_type: MetadataType, allow_unsafe_updates: bool = False
-                   ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
+    def can_update(
+        self, metadata_type: MetadataType, allow_unsafe_updates: bool = False
+    ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         """
         Check if metadata type can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -105,30 +108,50 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
         existing = self.get_by_name(metadata_type.name)
         if not existing:
-            raise ValueError(f'Unknown metadata type {metadata_type.name}, cannot update - '
-                             'did you intend to add it?')
+            raise ValueError(
+                f"Unknown metadata type {metadata_type.name}, cannot update - "
+                "did you intend to add it?"
+            )
 
         updates_allowed: Mapping[Offset, AllowPolicy] = {
-            ('description',): changes.allow_any,
+            ("description",): changes.allow_any,
             # You can add new fields safely but not modify existing ones.
-            ('dataset',): changes.allow_extension,
-            ('dataset', 'search_fields'): changes.allow_extension
+            ("dataset",): changes.allow_extension,
+            ("dataset", "search_fields"): changes.allow_extension,
         }
 
-        doc_changes = get_doc_changes(existing.definition, jsonify_document(metadata_type.definition))
-        good_changes, bad_changes = changes.classify_changes(doc_changes, updates_allowed)
+        doc_changes = get_doc_changes(
+            existing.definition, jsonify_document(metadata_type.definition)
+        )
+        good_changes, bad_changes = changes.classify_changes(
+            doc_changes, updates_allowed
+        )
 
         for offset, old_val, new_val in good_changes:
-            _LOG.info("Safe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+            _LOG.info(
+                "Safe change in %s from %r to %r",
+                _readable_offset(offset),
+                old_val,
+                new_val,
+            )
 
         for offset, old_val, new_val in bad_changes:
-            _LOG.warning("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+            _LOG.warning(
+                "Unsafe change in %s from %r to %r",
+                _readable_offset(offset),
+                old_val,
+                new_val,
+            )
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
     @override
-    def update(self, metadata_type: MetadataType, allow_unsafe_updates: bool = False,
-               allow_table_lock: bool = False):
+    def update(
+        self,
+        metadata_type: MetadataType,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ):
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -143,19 +166,23 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
             If false, creation will be slower and cannot be done in a transaction.
         :rtype: datacube.model.MetadataType
         """
-        can_update, safe_changes, unsafe_changes = self.can_update(metadata_type, allow_unsafe_updates)
+        can_update, safe_changes, unsafe_changes = self.can_update(
+            metadata_type, allow_unsafe_updates
+        )
 
         if not safe_changes and not unsafe_changes:
             _LOG.warning("No changes detected for metadata type %s", metadata_type.name)
             return self.get_by_name(metadata_type.name)
 
         if not can_update:
-            raise ValueError(f"Unsafe changes in {metadata_type.name}: " + (
-                ", ".join(
-                    _readable_offset(offset)
-                    for offset, _, _ in unsafe_changes
+            raise ValueError(
+                f"Unsafe changes in {metadata_type.name}: "
+                + (
+                    ", ".join(
+                        _readable_offset(offset) for offset, _, _ in unsafe_changes
+                    )
                 )
-            ))
+            )
 
         _LOG.info("Updating metadata type %s", metadata_type.name)
 
@@ -163,18 +190,19 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
             connection.update_metadata_type(
                 name=metadata_type.name,
                 definition=metadata_type.definition,
-                concurrently=not allow_table_lock
+                concurrently=not allow_table_lock,
             )
 
-        self.get_by_name_unsafe.cache_clear()   # type: ignore[attr-defined]
-        self.get_unsafe.cache_clear()           # type: ignore[attr-defined]
+        self.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
+        self.get_unsafe.cache_clear()  # type: ignore[attr-defined]
         return self.get_by_name(metadata_type.name)
 
     @override
-    def update_document(self,
-                        definition: JsonDict,
-                        allow_unsafe_updates: bool = False,
-                        ) -> MetadataType:
+    def update_document(
+        self,
+        definition: JsonDict,
+        allow_unsafe_updates: bool = False,
+    ) -> MetadataType:
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -184,7 +212,9 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :rtype: datacube.model.MetadataType
         """
-        return self.update(self.from_doc(definition), allow_unsafe_updates=allow_unsafe_updates)
+        return self.update(
+            self.from_doc(definition), allow_unsafe_updates=allow_unsafe_updates
+        )
 
     # This is memoized in the constructor
     # pylint: disable=method-hidden
@@ -193,7 +223,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             record = connection.get_metadata_type(id_)
         if record is None:
-            raise KeyError('%s is not a valid MetadataType id')
+            raise KeyError("%s is not a valid MetadataType id")
         return self._make_from_query_row(record)
 
     # This is memoized in the constructor
@@ -203,12 +233,16 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             record = connection.get_metadata_type_by_name(name)
         if not record:
-            raise KeyError(f'{name} is not a valid MetadataType name')
+            raise KeyError(f"{name} is not a valid MetadataType name")
         return self._make_from_query_row(record)
 
     @override
-    def check_field_indexes(self, allow_table_lock: bool = False,
-                            rebuild_views: bool = False, rebuild_indexes: bool = False) -> None:
+    def check_field_indexes(
+        self,
+        allow_table_lock: bool = False,
+        rebuild_views: bool = False,
+        rebuild_indexes: bool = False,
+    ) -> None:
         """
         Create or replace per-field indexes and views.
         :param allow_table_lock:
@@ -261,5 +295,5 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         return MetadataType(
             definition,
             dataset_search_fields=self._db.get_dataset_fields(definition),
-            id_=id_
+            id_=id_,
         )

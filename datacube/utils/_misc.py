@@ -5,6 +5,7 @@
 """
 Utility functions
 """
+
 import logging
 import os
 import sys
@@ -12,6 +13,7 @@ import sys
 
 class DatacubeException(Exception):  # noqa: N818
     """Your Data Cube has malfunctioned"""
+
     pass
 
 
@@ -20,10 +22,13 @@ def gen_password(num_random_bytes: int = 12) -> str:
     Generate random password
     """
     import base64
-    return base64.urlsafe_b64encode(os.urandom(num_random_bytes)).decode('utf-8')
+
+    return base64.urlsafe_b64encode(os.urandom(num_random_bytes)).decode("utf-8")
 
 
-def report_to_user(msg: str, logger: logging.Logger | None = None, progress_indicator: bool = False) -> None:
+def report_to_user(
+    msg: str, logger: logging.Logger | None = None, progress_indicator: bool = False
+) -> None:
     """
     Report a message or progress indicator to the user, either via stdout or via the log if stdout
     is not a typewriter.

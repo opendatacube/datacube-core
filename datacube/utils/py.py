@@ -23,7 +23,7 @@ def import_function(func_ref):
     :param func_ref:
     :return: function
     """
-    module_name, _, func_name = func_ref.rpartition('.')
+    module_name, _, func_name = func_ref.rpartition(".")
     module = importlib.import_module(module_name)
     return getattr(module, func_name)
 
@@ -38,7 +38,7 @@ def ignore_exceptions_if(ignore_errors, errors: tuple[type[Exception]] | None = 
         try:
             yield
         except errors as e:
-            _LOG.warning('Ignoring Exception: %s', e)
+            _LOG.warning("Ignoring Exception: %s", e)
     else:
         yield
 

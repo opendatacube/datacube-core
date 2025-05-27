@@ -24,11 +24,7 @@ SPATIAL_KEYS: tuple[str, ...] = NON_GEOPOLYGON_SPATIAL_KEYS + ("geopolygon",)
 
 
 def strip_all_spatial_fields_from_query(q: QueryDict) -> QueryDict:
-    return {
-        k: v
-        for k, v in q.items()
-        if k not in SPATIAL_KEYS
-    }
+    return {k: v for k, v in q.items() if k not in SPATIAL_KEYS}
 
 
 def extract_geom_from_query(**q: QueryField) -> Geometry | None:
@@ -55,7 +51,9 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
                     geom = geom.union(Geometry(term))
         for spatial_key in NON_GEOPOLYGON_SPATIAL_KEYS:
             if spatial_key in q:
-                raise ValueError(f"Cannot specify spatial key {spatial_key} AND geopolygon in the same query")
+                raise ValueError(
+                    f"Cannot specify spatial key {spatial_key} AND geopolygon in the same query"
+                )
         assert geom and geom.crs
     else:
         # Old lat/lon--style spatial query (or no spatial query)
@@ -67,13 +65,15 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
             if coord in q:
                 if lon is not None:
                     raise ValueError(
-                        "Multiple horizontal coordinate ranges supplied: use only one of x, lon, longitude")
+                        "Multiple horizontal coordinate ranges supplied: use only one of x, lon, longitude"
+                    )
                 lon = q.get(coord)
         for coord in V_SPATIAL_KEYS:
             if coord in q:
                 if lat is not None:
                     raise ValueError(
-                        "Multiple vertical coordinate ranges supplied: use only one of y, lat, latitude")
+                        "Multiple vertical coordinate ranges supplied: use only one of y, lat, latitude"
+                    )
                 lat = q.get(coord)
         crs_in = None
         for coord in CRS_SPATIAL_KEYS:

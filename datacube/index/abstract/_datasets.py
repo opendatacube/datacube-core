@@ -42,12 +42,13 @@ class AbstractDatasetResource(ABC):
         self.types = self.products  # types is compatibility alias for products
 
     @abstractmethod
-    def get_unsafe(self,
-                   id_: DSID,
-                   include_sources: bool = False,
-                   include_deriveds: bool = False,
-                   max_depth: int = 0
-                   ) -> Dataset:
+    def get_unsafe(
+        self,
+        id_: DSID,
+        include_sources: bool = False,
+        include_deriveds: bool = False,
+        max_depth: int = 0,
+    ) -> Dataset:
         """
         Get dataset by id (Raises KeyError if id_ does not exist)
 
@@ -66,12 +67,13 @@ class AbstractDatasetResource(ABC):
         :rtype: Dataset model (None if not found)
         """
 
-    def get(self,
-            id_: DSID,
-            include_sources: bool = False,
-            include_deriveds: bool = False,
-            max_depth: int = 0
-            ) -> Dataset | None:
+    def get(
+        self,
+        id_: DSID,
+        include_sources: bool = False,
+        include_deriveds: bool = False,
+        max_depth: int = 0,
+    ) -> Dataset | None:
         """
         Get dataset by id (Return None if ``id_`` does not exist).
 
@@ -94,10 +96,9 @@ class AbstractDatasetResource(ABC):
         except KeyError:
             return None
 
-    def _check_get_legacy(self,
-                          include_deriveds: bool = False,
-                          max_depth: int = 0
-                          ) -> None:
+    def _check_get_legacy(
+        self, include_deriveds: bool = False, max_depth: int = 0
+    ) -> None:
         """
         Index drivers implementing the legacy lineage API can call this method to check get arguments
         """
@@ -106,7 +107,9 @@ class AbstractDatasetResource(ABC):
                 raise NotImplementedError(
                     "This index driver only supports the legacy lineage data - include_deriveds not supported."
                 )
-            if not self._index.supports_external_lineage and (include_deriveds or max_depth > 0):
+            if not self._index.supports_external_lineage and (
+                include_deriveds or max_depth > 0
+            ):
                 raise NotImplementedError(
                     "This index driver only supports the legacy lineage data - max_depth not supported."
                 )
@@ -122,8 +125,9 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="The 'get_derived' static method is deprecated in favour of the new lineage API.",
-        version='1.9.0',
-        category=ODC2DeprecationWarning)
+        version="1.9.0",
+        category=ODC2DeprecationWarning,
+    )
     @abstractmethod
     def get_derived(self, id_: DSID) -> Iterable[Dataset]:
         """
@@ -155,10 +159,12 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def add(self, dataset: Dataset,
-            with_lineage: bool = True,
-            archive_less_mature: int | None = None,
-           ) -> Dataset:
+    def add(
+        self,
+        dataset: Dataset,
+        with_lineage: bool = True,
+        archive_less_mature: int | None = None,
+    ) -> Dataset:
         """
         Add ``dataset`` to the index. No-op if it is already present.
 
@@ -177,10 +183,9 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def search_product_duplicates(self,
-                                  product: Product,
-                                  *args: str | Field
-                                 ) -> Iterable[tuple[tuple, Iterable[UUID]]]:
+    def search_product_duplicates(
+        self, product: Product, *args: str | Field
+    ) -> Iterable[tuple[tuple, Iterable[UUID]]]:
         """
         Find dataset ids who have duplicates of the given set of field names.
 
@@ -195,10 +200,11 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def can_update(self,
-                   dataset: Dataset,
-                   updates_allowed: Mapping[Offset, AllowPolicy] | None = None
-                  ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
+    def can_update(
+        self,
+        dataset: Dataset,
+        updates_allowed: Mapping[Offset, AllowPolicy] | None = None,
+    ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -208,11 +214,12 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def update(self,
-               dataset: Dataset,
-               updates_allowed: Mapping[Offset, AllowPolicy] | None = None,
-               archive_less_mature: int | None = None,
-              ) -> Dataset:
+    def update(
+        self,
+        dataset: Dataset,
+        updates_allowed: Mapping[Offset, AllowPolicy] | None = None,
+        archive_less_mature: int | None = None,
+    ) -> Dataset:
         """
         Update dataset metadata and location
         :param Dataset dataset: Dataset model with unpersisted updates
@@ -245,7 +252,9 @@ class AbstractDatasetResource(ABC):
         for lm_ds in less_mature_ids:
             _LOG.info(f"Archived less mature dataset: {lm_ds}")
 
-    def find_less_mature(self, ds: Dataset, delta: int | bool = 500) -> Iterable[Dataset]:
+    def find_less_mature(
+        self, ds: Dataset, delta: int | bool = 500
+    ) -> Iterable[Dataset]:
         """
         Find less mature versions of a dataset
 
@@ -273,7 +282,9 @@ class AbstractDatasetResource(ABC):
             # check that the dataset metadata includes all maturity-related properties
             # passing in the required props to enable greater extensibility should it be needed
             for prop in props:
-                if hasattr(dataset.metadata, prop) and (getattr(dataset.metadata, prop) is not None):
+                if hasattr(dataset.metadata, prop) and (
+                    getattr(dataset.metadata, prop) is not None
+                ):
                     return
                 raise ValueError(
                     f"Dataset {dataset.id} is missing property {prop} required for maturity check"
@@ -282,11 +293,15 @@ class AbstractDatasetResource(ABC):
         check_maturity_information(ds, ["region_code", "time", "dataset_maturity"])
 
         # 'expand' the date range by `delta` milliseconds to give a bit more leniency in datetime comparison
-        expanded_time_range = Range(ds.metadata.time.begin - timedelta(milliseconds=delta),
-                                    ds.metadata.time.end + timedelta(milliseconds=delta))
-        dupes = self.search(product=ds.product.name,
-                            region_code=ds.metadata.region_code,
-                            time=expanded_time_range)
+        expanded_time_range = Range(
+            ds.metadata.time.begin - timedelta(milliseconds=delta),
+            ds.metadata.time.end + timedelta(milliseconds=delta),
+        )
+        dupes = self.search(
+            product=ds.product.name,
+            region_code=ds.metadata.region_code,
+            time=expanded_time_range,
+        )
 
         less_mature = []
         for dupe in dupes:
@@ -324,7 +339,9 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def purge(self, ids: Iterable[DSID], allow_delete_active: bool = False) -> Sequence[DSID]:
+    def purge(
+        self, ids: Iterable[DSID], allow_delete_active: bool = False
+    ) -> Sequence[DSID]:
         """
         Delete datasets
 
@@ -348,7 +365,7 @@ class AbstractDatasetResource(ABC):
     @deprecat(
         reason="This method has been moved to the Product resource (i.e. dc.index.products.get_field_names)",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     def get_field_names(self, product_name: str | None = None) -> Iterable[str]:
         """
@@ -362,7 +379,7 @@ class AbstractDatasetResource(ABC):
     @deprecat(
         reason="Multiple locations per dataset are now deprecated.  Please use the 'get_location' method.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @abstractmethod
     def get_locations(self, id_: DSID) -> Iterable[str]:
@@ -384,9 +401,9 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Archived locations may not be accessible in future releases.",
+        "Archived locations may not be accessible in future releases.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @abstractmethod
     def get_archived_locations(self, id_: DSID) -> Iterable[str]:
@@ -399,14 +416,14 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Archived locations may not be accessible in future releases.",
+        "Archived locations may not be accessible in future releases.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @abstractmethod
-    def get_archived_location_times(self,
-                                    id_: DSID
-                                   ) -> Iterable[tuple[str, datetime.datetime]]:
+    def get_archived_location_times(
+        self, id_: DSID
+    ) -> Iterable[tuple[str, datetime.datetime]]:
         """
         Get each archived location along with the time it was archived.
 
@@ -416,9 +433,9 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Dataset location can be set or updated with the update() method.",
+        "Dataset location can be set or updated with the update() method.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @abstractmethod
     def add_location(self, id_: DSID, uri: str) -> bool:
@@ -431,10 +448,9 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def get_datasets_for_location(self,
-                                  uri: str,
-                                  mode: str | None = None
-                                 ) -> Iterable[Dataset]:
+    def get_datasets_for_location(
+        self, uri: str, mode: str | None = None
+    ) -> Iterable[Dataset]:
         """
         Find datasets that exist at the given URI
 
@@ -445,15 +461,12 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Dataset location can be set or updated with the update() method.",
+        "Dataset location can be set or updated with the update() method.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @abstractmethod
-    def remove_location(self,
-                        id_: DSID,
-                        uri: str
-                        ) -> bool:
+    def remove_location(self, id_: DSID, uri: str) -> bool:
         """
         Remove a location from the dataset if it exists.
 
@@ -464,16 +477,13 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Archived locations may not be accessible in future releases. "
-               "Dataset location can be set or updated with the update() method.",
+        "Archived locations may not be accessible in future releases. "
+        "Dataset location can be set or updated with the update() method.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @abstractmethod
-    def archive_location(self,
-                         id_: DSID,
-                         uri: str
-                         ) -> bool:
+    def archive_location(self, id_: DSID, uri: str) -> bool:
         """
         Archive a location of the dataset if it exists and is active.
 
@@ -484,16 +494,13 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
-               "Archived locations may not be restorable in future releases. "
-               "Dataset location can be set or updated with the update() method.",
+        "Archived locations may not be restorable in future releases. "
+        "Dataset location can be set or updated with the update() method.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @abstractmethod
-    def restore_location(self,
-                         id_: DSID,
-                         uri: str
-                         ) -> bool:
+    def restore_location(self, id_: DSID, uri: str) -> bool:
         """
         Un-archive a location of the dataset if it exists.
 
@@ -503,10 +510,9 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def search_by_metadata(self,
-                           metadata: JsonDict,
-                           archived: bool | None = False
-                           ) -> Iterable[Dataset]:
+    def search_by_metadata(
+        self, metadata: JsonDict, archived: bool | None = False
+    ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
@@ -524,18 +530,19 @@ class AbstractDatasetResource(ABC):
             "source_filter": {
                 "reason": "Filtering by source metadata is deprecated and will be removed in future.",
                 "version": "1.9.0",
-                "category": ODC2DeprecationWarning
-
+                "category": ODC2DeprecationWarning,
             }
         }
     )
     @abstractmethod
-    def search(self,
-               limit: int | None = None,
-               source_filter: QueryDict | None = None,
-               archived: bool | None = False,
-               order_by: Iterable[Any] | None = None,
-               **query: QueryField) -> Iterable[Dataset]:
+    def search(
+        self,
+        limit: int | None = None,
+        source_filter: QueryDict | None = None,
+        archived: bool | None = False,
+        order_by: Iterable[Any] | None = None,
+        **query: QueryField,
+    ) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
 
@@ -552,14 +559,15 @@ class AbstractDatasetResource(ABC):
         :return: Matching datasets
         """
 
-    def get_all_docs_for_product(self, product: Product, batch_size: int = 1000) -> Iterable[DatasetTuple]:
+    def get_all_docs_for_product(
+        self, product: Product, batch_size: int = 1000
+    ) -> Iterable[DatasetTuple]:
         for ds in self.search(product=[product.name]):
-            yield DatasetTuple(product,
-                               ds.metadata_doc,
-                               ds._uris)  # 2.0: ds.uri
+            yield DatasetTuple(product, ds.metadata_doc, ds._uris)  # 2.0: ds.uri
 
-    def get_all_docs(self, products: Iterable[Product] | None = None,
-                     batch_size: int = 1000) -> Iterable[DatasetTuple]:
+    def get_all_docs(
+        self, products: Iterable[Product] | None = None, batch_size: int = 1000
+    ) -> Iterable[DatasetTuple]:
         """
         Return all datasets in bulk, filtering by product names only. Do not instantiate models.
         Archived datasets and locations are excluded.
@@ -577,7 +585,9 @@ class AbstractDatasetResource(ABC):
         for product in products:
             yield from self.get_all_docs_for_product(product, batch_size=batch_size)
 
-    def _add_batch(self, batch_ds: Iterable[DatasetTuple], cache: dict[str, Any]) -> BatchStatus:
+    def _add_batch(
+        self, batch_ds: Iterable[DatasetTuple], cache: dict[str, Any]
+    ) -> BatchStatus:
         """
         Add a single "batch" of datasets, provided as DatasetTuples.
 
@@ -597,9 +607,9 @@ class AbstractDatasetResource(ABC):
             else:
                 kwargs = {"uri": ds_tup.uri}
             try:
-                ds = Dataset(product=ds_tup.product,
-                             metadata_doc=ds_tup.metadata,
-                             **kwargs)
+                ds = Dataset(
+                    product=ds_tup.product, metadata_doc=ds_tup.metadata, **kwargs
+                )
                 self.add(ds, with_lineage=False)
                 b_added += 1
             except DocumentMismatchError as e:
@@ -620,7 +630,9 @@ class AbstractDatasetResource(ABC):
         """
         return {}
 
-    def bulk_add(self, datasets: Iterable[DatasetTuple], batch_size: int = 1000) -> BatchStatus:
+    def bulk_add(
+        self, datasets: Iterable[DatasetTuple], batch_size: int = 1000
+    ) -> BatchStatus:
         """
         Add a group of Dataset documents in bulk.
 
@@ -630,8 +642,10 @@ class AbstractDatasetResource(ABC):
         :param batch_size: Number of datasets to add per batch (default 1000)
         :return: BatchStatus named tuple, with `safe` set to None.
         """
+
         def increment_progress() -> None:
             report_to_user(".", progress_indicator=True)
+
         n_batches = 0
         n_in_batch = 0
         added = 0
@@ -644,11 +658,13 @@ class AbstractDatasetResource(ABC):
             n_in_batch += 1
             if n_in_batch >= batch_size:
                 batch_result = self._add_batch(batch, inter_batch_cache)
-                _LOG.info("Batch %d/%d datasets added in %.2fs: (%.2fdatasets/min)",
-                          batch_result.completed,
-                          n_in_batch,
-                          batch_result.seconds_elapsed,
-                          batch_result.completed * 60 / batch_result.seconds_elapsed)
+                _LOG.info(
+                    "Batch %d/%d datasets added in %.2fs: (%.2fdatasets/min)",
+                    batch_result.completed,
+                    n_in_batch,
+                    batch_result.seconds_elapsed,
+                    batch_result.completed * 60 / batch_result.seconds_elapsed,
+                )
                 added += batch_result.completed
                 skipped += batch_result.skipped
                 batch = []
@@ -664,10 +680,9 @@ class AbstractDatasetResource(ABC):
         return BatchStatus(added, skipped, monotonic() - job_started)
 
     @abstractmethod
-    def search_by_product(self,
-                          archived: bool | None = False,
-                          **query: QueryField
-                         ) -> Iterable[tuple[Iterable[Dataset], Product]]:
+    def search_by_product(
+        self, archived: bool | None = False, **query: QueryField
+    ) -> Iterable[tuple[Iterable[Dataset], Product]]:
         """
         Perform a search, returning datasets grouped by product type.
 
@@ -679,14 +694,15 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def search_returning(self,
-                         field_names: Iterable[str] | None = None,
-                         custom_offsets: Mapping[str, Offset] | None = None,
-                         limit: int | None = None,
-                         archived: bool | None = False,
-                         order_by: Iterable[Any] | None = None,
-                         **query: QueryField
-                        ) -> Iterable[tuple]:
+    def search_returning(
+        self,
+        field_names: Iterable[str] | None = None,
+        custom_offsets: Mapping[str, Offset] | None = None,
+        limit: int | None = None,
+        archived: bool | None = False,
+        order_by: Iterable[Any] | None = None,
+        **query: QueryField,
+    ) -> Iterable[tuple]:
         """
         Perform a search, returning only the specified fields.
 
@@ -723,7 +739,9 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def count_by_product(self, archived: bool | None = False, **query: QueryField) -> Iterable[tuple[Product, int]]:
+    def count_by_product(
+        self, archived: bool | None = False, **query: QueryField
+    ) -> Iterable[tuple[Product, int]]:
         """
         Perform a search, returning a count of for each matching product type.
 
@@ -735,11 +753,9 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def count_by_product_through_time(self,
-                                      period: str,
-                                      archived: bool | None = False,
-                                      **query: QueryField
-                                     ) -> Iterable[tuple[Product, Iterable[tuple[Range, int]]]]:
+    def count_by_product_through_time(
+        self, period: str, archived: bool | None = False, **query: QueryField
+    ) -> Iterable[tuple[Product, Iterable[tuple[Range, int]]]]:
         """
         Perform a search, returning counts for each product grouped in time slices
         of the given period.
@@ -753,11 +769,9 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def count_product_through_time(self,
-                                   period: str,
-                                   archived: bool | None = False,
-                                   **query: QueryField
-                                  ) -> Iterable[tuple[Range, int]]:
+    def count_product_through_time(
+        self, period: str, archived: bool | None = False, **query: QueryField
+    ) -> Iterable[tuple[Range, int]]:
         """
         Perform a search, returning counts for a single product grouped in time slices
         of the given period.
@@ -774,9 +788,9 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="This method is deprecated and will be removed in 2.0.  "
-               "Consider migrating to search_returning()",
+        "Consider migrating to search_returning()",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     @abstractmethod
     def search_summaries(self, **query: QueryField) -> Iterable[Mapping[str, Any]]:
@@ -789,9 +803,9 @@ class AbstractDatasetResource(ABC):
 
     @deprecat(
         reason="This method is deprecated and will be removed in 2.0.  "
-               "Please use list(dc.index.datasets.search(...)) instead",
+        "Please use list(dc.index.datasets.search(...)) instead",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     def search_eager(self, **query: QueryField) -> Iterable[Dataset]:
         """
@@ -803,7 +817,9 @@ class AbstractDatasetResource(ABC):
         return list(self.search(**query))
 
     @abstractmethod
-    def temporal_extent(self, ids: Iterable[DSID]) -> tuple[datetime.datetime, datetime.datetime]:
+    def temporal_extent(
+        self, ids: Iterable[DSID]
+    ) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of an iterable of dataset ids.
 
@@ -816,11 +832,11 @@ class AbstractDatasetResource(ABC):
     @deprecat(
         reason="This method has been moved to the Product Resource and renamed 'temporal_extent()'",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
-    def get_product_time_bounds(self,
-                                product: str | Product
-                               ) -> tuple[datetime.datetime, datetime.datetime]:
+    def get_product_time_bounds(
+        self, product: str | Product
+    ) -> tuple[datetime.datetime, datetime.datetime]:
         """
         Returns the minimum and maximum acquisition time of the product.
 
@@ -830,13 +846,14 @@ class AbstractDatasetResource(ABC):
         return self._index.products.temporal_extent(product=product)
 
     @abstractmethod
-    def search_returning_datasets_light(self,
-                                        field_names: tuple[str, ...],
-                                        custom_offsets: Mapping[str, Offset] | None = None,
-                                        limit: int | None = None,
-                                        archived: bool | None = False,
-                                        **query: QueryField
-                                       ) -> Iterable[tuple]:
+    def search_returning_datasets_light(
+        self,
+        field_names: tuple[str, ...],
+        custom_offsets: Mapping[str, Offset] | None = None,
+        limit: int | None = None,
+        archived: bool | None = False,
+        **query: QueryField,
+    ) -> Iterable[tuple]:
         """
         This is a dataset search function that returns the results as objects of a dynamically
         generated Dataset class that is a subclass of tuple.
@@ -867,7 +884,9 @@ class AbstractDatasetResource(ABC):
         """
 
     @abstractmethod
-    def spatial_extent(self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")) -> Geometry | None:
+    def spatial_extent(
+        self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")
+    ) -> Geometry | None:
         """
         Return the combined spatial extent of the nominated datasets
 

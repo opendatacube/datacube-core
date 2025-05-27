@@ -19,11 +19,11 @@ from datacube.ui.click import cli
 from datacube.utils import gen_password
 from datacube.utils.serialise import SafeDatacubeDumper
 
-_LOG: logging.Logger = logging.getLogger('datacube-user')
-USER_ROLES = ('user', 'manage', 'admin')
+_LOG: logging.Logger = logging.getLogger("datacube-user")
+USER_ROLES = ("user", "manage", "admin")
 
 
-@cli.group(name='user', help='User management commands')
+@cli.group(name="user", help="User management commands")
 def user_cmd() -> None:
     pass
 
@@ -31,22 +31,22 @@ def user_cmd() -> None:
 def build_user_list(index):
     lstdct = []
     for role, user, description in index.users.list_users():
-        info = OrderedDict((
-            ('role', role),
-            ('user', user),
-            ('description', description)
-        ))
+        info = OrderedDict(
+            (("role", role), ("user", user), ("description", description))
+        )
         lstdct.append(info)
     return lstdct
 
 
 def _write_csv(index: Iterable) -> None:
-    writer = csv.DictWriter(sys.stdout, ['role', 'user', 'description'], extrasaction='ignore')
+    writer = csv.DictWriter(
+        sys.stdout, ["role", "user", "description"], extrasaction="ignore"
+    )
     writer.writeheader()
 
     def add_first_role(row):
-        roles_ = row['role']
-        row['role'] = roles_ if roles_ else None
+        roles_ = row["role"]
+        row["role"] = roles_ if roles_ else None
         return row
 
     writer.writerows(add_first_role(row) for row in index)
@@ -61,18 +61,25 @@ def _write_yaml(index: Iterable) -> None:
     (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
     """
 
-    return yaml.dump_all(index, sys.stdout, SafeDatacubeDumper, default_flow_style=False, indent=4)
+    return yaml.dump_all(
+        index, sys.stdout, SafeDatacubeDumper, default_flow_style=False, indent=4
+    )
 
 
 _OUTPUT_WRITERS = {
-    'csv': _write_csv,
-    'yaml': _write_yaml,
+    "csv": _write_csv,
+    "yaml": _write_yaml,
 }
 
 
-@user_cmd.command('list')
-@click.option('-f', help='Output format',
-              type=click.Choice(list(_OUTPUT_WRITERS)), default='yaml', show_default=True)
+@user_cmd.command("list")
+@click.option(
+    "-f",
+    help="Output format",
+    type=click.Choice(list(_OUTPUT_WRITERS)),
+    default="yaml",
+    show_default=True,
+)
 @ui.pass_index()
 def list_users(index, f: str) -> None:
     """
@@ -81,11 +88,9 @@ def list_users(index, f: str) -> None:
     _OUTPUT_WRITERS[f](build_user_list(index))
 
 
-@user_cmd.command('grant')
-@click.argument('role',
-                type=click.Choice(USER_ROLES),
-                nargs=1)
-@click.argument('users', nargs=-1)
+@user_cmd.command("grant")
+@click.argument("role", type=click.Choice(USER_ROLES), nargs=1)
+@click.argument("users", nargs=-1)
 @ui.pass_index()
 def grant(index, role: str, users: Iterable[str]) -> None:
     """
@@ -94,30 +99,37 @@ def grant(index, role: str, users: Iterable[str]) -> None:
     index.users.grant_role(role, *users)
 
 
-@user_cmd.command('create')
-@click.argument('role',
-                type=click.Choice(USER_ROLES), nargs=1)
-@click.argument('user', nargs=1)
-@click.option('--description')
+@user_cmd.command("create")
+@click.argument("role", type=click.Choice(USER_ROLES), nargs=1)
+@click.argument("user", nargs=1)
+@click.option("--description")
 @ui.pass_index()
 @ui.pass_config
-def create_user(cfg_env: ODCEnvironment, index: AbstractIndex, role: str, user: str, description: str) -> None:
+def create_user(
+    cfg_env: ODCEnvironment,
+    index: AbstractIndex,
+    role: str,
+    user: str,
+    description: str,
+) -> None:
     """
     Create a User
     """
     password = gen_password(12)
     index.users.create_user(user, password, role, description=description)
 
-    click.echo('{host}:{port}:*:{username}:{password}'.format(
-        host=index.url_parts.hostname or 'localhost',
-        port=index.url_parts.port,
-        username=user,
-        password=password
-    ))
+    click.echo(
+        "{host}:{port}:*:{username}:{password}".format(
+            host=index.url_parts.hostname or "localhost",
+            port=index.url_parts.port,
+            username=user,
+            password=password,
+        )
+    )
 
 
-@user_cmd.command('delete')
-@click.argument('users', nargs=-1)
+@user_cmd.command("delete")
+@click.argument("users", nargs=-1)
 @ui.pass_index()
 @ui.pass_config
 def delete_user(config, index, users: str) -> None:

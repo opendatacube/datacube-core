@@ -37,13 +37,13 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
     def get_source_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         return self.get_lineage_tree(id_, LineageDirection.SOURCES, max_depth)
 
-    def get_lineage_tree(self, id_: DSID, direction: LineageDirection, max_depth: int) -> LineageTree:
+    def get_lineage_tree(
+        self, id_: DSID, direction: LineageDirection, max_depth: int
+    ) -> LineageTree:
         id_ = dsid_to_uuid(id_)
         with self._db_connection() as connection:
             # Extract lineage relations into a collection
-            relations = connection.load_lineage_relations([id_],
-                                                          direction,
-                                                          max_depth)
+            relations = connection.load_lineage_relations([id_], direction, max_depth)
             rels = LineageRelations(relations=relations)
             # Extract home information into the collection
             homes = connection.select_homes(rels.dataset_ids)
@@ -53,26 +53,32 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
         return rels.extract_tree(id_, direction)
 
     @override
-    def add(self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False) -> None:
+    def add(
+        self, tree: LineageTree, max_depth: int = 0, allow_updates: bool = False
+    ) -> None:
         # Convert to a relations collection
         relations = LineageRelations(tree=tree, max_depth=max_depth)
         # and merge into index.
         self.merge(relations, allow_updates=allow_updates)
 
     @override
-    def merge(self, rels: LineageRelations, allow_updates: bool = False, validate_only: bool = False) -> None:
+    def merge(
+        self,
+        rels: LineageRelations,
+        allow_updates: bool = False,
+        validate_only: bool = False,
+    ) -> None:
         if allow_updates and validate_only:
             raise ValueError("Cannot validate-only AND allow updates")
         with self._db_connection() as connection:
             # Get all current relations one step forwards and backwards from all dataset ids in the tree.
             db_relations = LineageRelations(
                 relations=connection.get_all_relations(rels.dataset_ids),
-                homes=connection.select_homes(rels.dataset_ids)
+                homes=connection.select_homes(rels.dataset_ids),
             )
             # Check for consistency:
             new_rels, update_rels, new_homes, update_homes = rels.relations_diff(
-                existing_relations=db_relations,
-                allow_updates=allow_updates
+                existing_relations=db_relations, allow_updates=allow_updates
             )
             if validate_only:
                 # If we get to here, data is safe to add
@@ -98,24 +104,32 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
                     connection.insert_home(home, ids, allow_updates=allow_updates)
             # Merge Relations data
             rels_new = [
-                LineageRelation(classifier=classifier, derived_id=ids.derived_id, source_id=ids.source_id)
+                LineageRelation(
+                    classifier=classifier,
+                    derived_id=ids.derived_id,
+                    source_id=ids.source_id,
+                )
                 for ids, classifier in new_rels.items()
             ]
             rels_update = [
-                LineageRelation(classifier=classifier, derived_id=ids.derived_id, source_id=ids.source_id)
+                LineageRelation(
+                    classifier=classifier,
+                    derived_id=ids.derived_id,
+                    source_id=ids.source_id,
+                )
                 for ids, classifier in update_rels.items()
             ]
             connection.write_relations(rels_new, allow_updates=False)
             connection.write_relations(rels_update, allow_updates=True)
 
     @override
-    def remove(self, id_: DSID, direction: LineageDirection, max_depth: int = 0) -> None:
+    def remove(
+        self, id_: DSID, direction: LineageDirection, max_depth: int = 0
+    ) -> None:
         id_ = dsid_to_uuid(id_)
         with self._db_connection() as connection:
             # Convert tree to desired depth to lineage relations collection
-            relations = connection.load_lineage_relations([id_],
-                                                          direction,
-                                                          max_depth)
+            relations = connection.load_lineage_relations([id_], direction, max_depth)
             rels = LineageRelations(relations=relations)
             if direction == LineageDirection.SOURCES:
                 ids = list(rels.by_derived.keys())
@@ -149,7 +163,7 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
                 yield LineageRelation(
                     derived_id=row.derived_dataset_ref,
                     classifier=row.classifier,
-                    source_id=row.source_dataset_ref
+                    source_id=row.source_dataset_ref,
                 )
 
     @override

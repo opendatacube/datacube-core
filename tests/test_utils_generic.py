@@ -14,14 +14,16 @@ from datacube.utils.generic import (
 
 def test_map_with_lookahead() -> None:
     def if_one(x):
-        return 'one' + str(x)
+        return "one" + str(x)
 
     def if_many(x):
-        return 'many' + str(x)
+        return "many" + str(x)
 
     assert list(map_with_lookahead(iter([]), if_one, if_many)) == []
     assert list(map_with_lookahead(iter([1]), if_one, if_many)) == [if_one(1)]
-    assert list(map_with_lookahead(range(5), if_one, if_many)) == list(map(if_many, range(5)))
+    assert list(map_with_lookahead(range(5), if_one, if_many)) == list(
+        map(if_many, range(5))
+    )
     assert list(map_with_lookahead(range(10), if_one=if_one)) == list(range(10))
     assert list(map_with_lookahead(iter([1]), if_many=if_many)) == [1]
 

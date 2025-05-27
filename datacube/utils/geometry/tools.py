@@ -17,6 +17,7 @@ class WindowFromSlice:
     """
     Translate numpy slices to rasterio window tuples.
     """
+
     def __getitem__(self, roi):
         if roi is None:
             return None
@@ -25,8 +26,10 @@ class WindowFromSlice:
             raise ValueError("Need 2d roi")
 
         row, col = roi
-        return ((0 if row.start is None else row.start, row.stop),
-                (0 if col.start is None else col.start, col.stop))
+        return (
+            (0 if row.start is None else row.start, row.stop),
+            (0 if col.start is None else col.start, col.stop),
+        )
 
 
 w_ = WindowFromSlice()
@@ -51,20 +54,21 @@ def polygon_path(x, y=None):
     if y is None:
         y = x
 
-    return np.vstack([
-        np.vstack([x, np.full_like(x, y[0])]).T,
-        np.vstack([np.full_like(y, x[-1]), y]).T[1:],
-        np.vstack([x, np.full_like(x, y[-1])]).T[::-1][1:],
-        np.vstack([np.full_like(y, x[0]), y]).T[::-1][1:]]).T
+    return np.vstack(
+        [
+            np.vstack([x, np.full_like(x, y[0])]).T,
+            np.vstack([np.full_like(y, x[-1]), y]).T[1:],
+            np.vstack([x, np.full_like(x, y[-1])]).T[::-1][1:],
+            np.vstack([np.full_like(y, x[0]), y]).T[::-1][1:],
+        ]
+    ).T
 
 
 def gbox_boundary(gbox, pts_per_side: int = 16):
-    """Return points in pixel space along the perimeter of a GeoBox, or a 2d array.
-
-    """
+    """Return points in pixel space along the perimeter of a GeoBox, or a 2d array."""
     H, W = gbox.shape[:2]
-    xx = np.linspace(0, W, pts_per_side, dtype='float64')
-    yy = np.linspace(0, H, pts_per_side, dtype='float64')
+    xx = np.linspace(0, W, pts_per_side, dtype="float64")
+    yy = np.linspace(0, H, pts_per_side, dtype="float64")
 
     return polygon_path(xx, yy).T[:-1]
 
@@ -78,8 +82,8 @@ def roi_boundary(roi, pts_per_side: int = 2):
     :returns: Nx2 float64 array of X,Y points on the perimeter of the envelope defined by `roi`
     """
     yy, xx = roi
-    xx = np.linspace(xx.start, xx.stop, pts_per_side, dtype='float64')
-    yy = np.linspace(yy.start, yy.stop, pts_per_side, dtype='float64')
+    xx = np.linspace(xx.start, xx.stop, pts_per_side, dtype="float64")
+    yy = np.linspace(yy.start, yy.stop, pts_per_side, dtype="float64")
 
     return polygon_path(xx, yy).T[:-1]
 
@@ -89,26 +93,24 @@ def align_down(x, align):
 
 
 def align_up(x, align):
-    return align_down(x+(align-1), align)
+    return align_down(x + (align - 1), align)
 
 
 def scaled_down_roi(roi, scale: int) -> tuple[slice, ...]:
-    return tuple(slice(s.start//scale,
-                       align_up(s.stop, scale)//scale) for s in roi)
+    return tuple(slice(s.start // scale, align_up(s.stop, scale) // scale) for s in roi)
 
 
 def scaled_up_roi(roi, scale: int, shape=None) -> tuple[slice, ...]:
-    roi = tuple(slice(s.start*scale,
-                      s.stop*scale) for s in roi)
+    roi = tuple(slice(s.start * scale, s.stop * scale) for s in roi)
     if shape is not None:
-        roi = tuple(slice(min(dim, s.start),
-                          min(dim, s.stop))
-                    for s, dim in zip(roi, shape))
+        roi = tuple(
+            slice(min(dim, s.start), min(dim, s.stop)) for s, dim in zip(roi, shape)
+        )
     return roi
 
 
 def scaled_down_shape(shape, scale: int):
-    return tuple(align_up(s, scale)//scale for s in shape)
+    return tuple(align_up(s, scale) // scale for s in shape)
 
 
 def roi_shape(roi):
@@ -132,6 +134,7 @@ def roi_is_full(roi, shape) -> bool:
     :returns: True if roi covers region from (0,..) -> shape
               False otherwise
     """
+
     def slice_full(s, n) -> bool:
         return s.start in (0, None) and s.stop in (n, None)
 
@@ -161,7 +164,7 @@ def roi_normalise(roi, shape):
     def norm_slice(s, n):
         start = fill_if_none(s.start, 0)
         stop = fill_if_none(s.stop, n)
-        start, stop = [x if x >= 0 else n+x for x in (start, stop)]
+        start, stop = [x if x >= 0 else n + x for x in (start, stop)]
         return slice(start, stop, s.step)
 
     if not isinstance(shape, collections.abc.Sequence):
@@ -177,6 +180,7 @@ def roi_pad(roi, pad, shape):
     """
     Pad ROI on each side, with clamping (0,..) -> shape
     """
+
     def pad_slice(s, n):
         return slice(max(0, s.start - pad), min(n, s.stop + pad))
 
@@ -186,7 +190,9 @@ def roi_pad(roi, pad, shape):
     return tuple(pad_slice(s, n) for s, n in zip(roi, shape))
 
 
-def apply_affine(A: Affine, x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def apply_affine(
+    A: Affine, x: np.ndarray, y: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     """
     broadcast A*(x_i, y_i) across all elements of x/y arrays in any shape (usually 2d image)
     """
@@ -237,9 +243,7 @@ def is_affine_st(A, tol: float = 1e-10) -> bool:
     """
     True if Affine transform has scale and translation components only.
     """
-    (_, wx, _,
-     wy, _, _,
-     *_) = A
+    (_, wx, _, wy, _, _, *_) = A
 
     return abs(wx) < tol and abs(wy) < tol
 
@@ -267,17 +271,14 @@ def decompose_rws(A):
     from numpy.linalg import cholesky, det, inv
 
     if isinstance(A, Affine):
+
         def to_affine(m, t=(0, 0)):
             a, b, d, e = m.ravel()
             c, f = t
-            return Affine(a, b, c,
-                          d, e, f)
+            return Affine(a, b, c, d, e, f)
 
-        (a, b, c,
-         d, e, f,
-         *_) = A
-        R, W, S = decompose_rws(np.asarray([[a, b],
-                                            [d, e]], dtype='float64'))
+        (a, b, c, d, e, f, *_) = A
+        R, W, S = decompose_rws(np.asarray([[a, b], [d, e]], dtype="float64"))
 
         return to_affine(R, (c, f)), to_affine(W), to_affine(S)
 
@@ -292,7 +293,7 @@ def decompose_rws(A):
 
     ss = np.diag(WS)
     S = np.diag(ss)
-    W = WS @ np.diag(1.0/ss)
+    W = WS @ np.diag(1.0 / ss)
 
     return R, W, S
 
@@ -312,7 +313,7 @@ def affine_from_pts(X, Y) -> Affine:
 
     n = len(X)
 
-    XX = np.ones((n, 3), dtype='float64')
+    XX = np.ones((n, 3), dtype="float64")
     YY = np.vstack(Y)
     for i, x in enumerate(X):
         XX[i, :2] = x
@@ -320,8 +321,7 @@ def affine_from_pts(X, Y) -> Affine:
     mm, *_ = lstsq(XX, YY, rcond=-1)
     a, d, b, e, c, f = mm.ravel()
 
-    return Affine(a, b, c,
-                  d, e, f)
+    return Affine(a, b, c, d, e, f)
 
 
 def get_scale_from_linear_transform(A):
@@ -356,9 +356,9 @@ def get_scale_at_point(pt, tr, r=None):
     pts0 = [(0, 0), (-1, 0), (0, -1), (1, 0), (0, 1)]
     x0, y0 = pt
     if r is None:
-        XX = [(float(x+x0), float(y+y0)) for x, y in pts0]
+        XX = [(float(x + x0), float(y + y0)) for x, y in pts0]
     else:
-        XX = [(float(x*r+x0), float(y*r+y0)) for x, y in pts0]
+        XX = [(float(x * r + x0), float(y * r + y0)) for x, y in pts0]
     YY = tr(XX)
     A = affine_from_pts(XX, YY)
     return get_scale_from_linear_transform(A)
@@ -368,13 +368,14 @@ def _same_crs_pix_transform(src, dst):
     assert src.crs == dst.crs
 
     def transform(pts, A):
-        return [A*pt[:2] for pt in pts]
+        return [A * pt[:2] for pt in pts]
 
     _fwd = (~dst.transform) * src.transform  # src -> dst
-    _bwd = ~_fwd                             # dst -> src
+    _bwd = ~_fwd  # dst -> src
 
     def pt_tr(pts):
         return transform(pts, _fwd)
+
     pt_tr.back = lambda pts: transform(pts, _bwd)
     pt_tr.back.back = pt_tr
     pt_tr.linear = _fwd
@@ -407,8 +408,8 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> tuple[slice, s
     # x_d = (x_s - t)/s => 1/s * x_s + t*(-1/s)
     #
     # x_d = s_ * x_s + t_
-    s_ = 1.0/s
-    t_ = -t*s_
+    s_ = 1.0 / s
+    t_ = -t * s_
 
     if t < 0:
         #  |<------- ... D
@@ -419,7 +420,7 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> tuple[slice, s
         # |<---------... S
         _in = (min(floor(t), Ns), 0)
 
-    a = ceil(Nd*s + t)
+    a = ceil(Nd * s + t)
     if a <= Ns:
         # ...----->|    D
         # ...-------->| S
@@ -427,7 +428,7 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> tuple[slice, s
     else:
         # ...-------->|  D
         # ...----->|     S
-        _out = (Ns, max(0, ceil(Ns*s_ + t_)))
+        _out = (Ns, max(0, ceil(Ns * s_ + t_)))
 
     src, dst = (slice(_in[i], _out[i]) for i in range(2))
 
@@ -438,7 +439,12 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> tuple[slice, s
     return src, dst
 
 
-def box_overlap(src_shape, dst_shape, ST, tol: float) -> tuple[tuple[slice, slice], tuple[slice, slice]]:  # noqa: N803
+def box_overlap(
+    src_shape,
+    dst_shape,
+    ST,  # noqa: N803
+    tol: float,
+) -> tuple[tuple[slice, slice], tuple[slice, slice]]:
     """
     Given two image planes whose coordinate systems are related via scale and
     translation only, find overlapping regions within both.
@@ -451,9 +457,7 @@ def box_overlap(src_shape, dst_shape, ST, tol: float) -> tuple[tuple[slice, slic
     """
     from odc.geo.math import maybe_int, snap_scale
 
-    (sx, _, tx,
-     _, sy, ty,
-     *_) = ST
+    (sx, _, tx, _, sy, ty, *_) = ST
 
     sy = snap_scale(sy)
     sx = snap_scale(sx)
@@ -488,10 +492,11 @@ def native_pix_transform(src, dst):
 
     def transform(pts, params):
         A, f, B = params
-        return [B*pt[:2] for pt in [f(*(A*pt[:2])) for pt in pts]]
+        return [B * pt[:2] for pt in [f(*(A * pt[:2])) for pt in pts]]
 
     def tr(pts):
         return transform(pts, _fwd)
+
     tr.back = lambda pts: transform(pts, _bwd)
     tr.back.back = tr
     tr.linear = None
@@ -504,6 +509,7 @@ def roi_intersect(a, b):
     """
     Compute intersection of two ROIs
     """
+
     def slice_intersect(a, b):
         if a.stop < b.start:
             return slice(a.stop, a.stop)
@@ -526,10 +532,10 @@ def roi_intersect(a, b):
 
 
 def roi_center(roi):
-    """ Return center point of roi
-    """
+    """Return center point of roi"""
+
     def slice_center(s):
-        return (s.start + s.stop)*0.5
+        return (s.start + s.stop) * 0.5
 
     if isinstance(roi, slice):
         return slice_center(roi)
@@ -545,6 +551,7 @@ def roi_from_points(xy, shape, padding: int = 0, align=None):
     Returned roi is clipped (0,0) --> shape, so it won't stick outside of the
     valid region.
     """
+
     def to_roi(*args):
         return tuple(slice(v[0], v[1]) for v in args)
 
@@ -553,8 +560,8 @@ def roi_from_points(xy, shape, padding: int = 0, align=None):
 
     ny, nx = shape
 
-    _in = np.floor(xy.min(axis=0)).astype('int32') - padding
-    _out = np.ceil(xy.max(axis=0)).astype('int32') + padding
+    _in = np.floor(xy.min(axis=0)).astype("int32") - padding
+    _out = np.ceil(xy.max(axis=0)).astype("int32") + padding
 
     if align is not None:
         _in = align_down(_in, align)
@@ -569,7 +576,9 @@ def roi_from_points(xy, shape, padding: int = 0, align=None):
     return to_roi(yy, xx)
 
 
-def compute_reproject_roi(src, dst, tol: float = 0.05, padding: int | None = None, align=None) -> SimpleNamespace:
+def compute_reproject_roi(
+    src, dst, tol: float = 0.05, padding: int | None = None, align=None
+) -> SimpleNamespace:
     """Given two GeoBoxes find the region within the source GeoBox that overlaps
     with the destination GeoBox, and also compute the scale factor (>1 means
     shrink). Scale is chosen such that if you apply it to the source image
@@ -625,7 +634,9 @@ def compute_reproject_roi(src, dst, tol: float = 0.05, padding: int | None = Non
 
         # project src roi back into dst and compute roi from that
         xy = np.vstack(tr(roi_boundary(roi_src, pts_per_side)))
-        roi_dst = roi_from_points(xy, dst.shape, padding=0)  # no need to add padding twice
+        roi_dst = roi_from_points(
+            xy, dst.shape, padding=0
+        )  # no need to add padding twice
         return roi_src, roi_dst
 
     tr = native_pix_transform(src, dst)
@@ -650,12 +661,14 @@ def compute_reproject_roi(src, dst, tol: float = 0.05, padding: int | None = Non
         scale2 = get_scale_at_point(center_pt, tr)
 
     # change scale direction to be a shrink by factor
-    scale2 = tuple(1/s for s in scale2)
+    scale2 = tuple(1 / s for s in scale2)
     scale = min(scale2)
 
-    return SimpleNamespace(roi_src=roi_src,
-                           roi_dst=roi_dst,
-                           scale=scale,
-                           scale2=scale2,
-                           is_st=is_st,
-                           transform=tr)
+    return SimpleNamespace(
+        roi_src=roi_src,
+        roi_dst=roi_dst,
+        scale=scale,
+        scale2=scale2,
+        is_st=is_st,
+        transform=tr,
+    )

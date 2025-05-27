@@ -2,8 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" Tests for new RIO reader driver
-"""
+"""Tests for new RIO reader driver"""
+
 import warnings
 from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -35,27 +35,27 @@ UTC = timezone.utc
 def test_rio_rd_entry() -> None:
     rde = RDEntry()
 
-    assert 'file' in rde.protocols
-    assert 's3' in rde.protocols
+    assert "file" in rde.protocols
+    assert "s3" in rde.protocols
 
     assert GeoTIFF in rde.formats
     assert NetCDF in rde.formats
 
-    assert rde.supports('file', NetCDF) is True
-    assert rde.supports('s3', NetCDF) is False
+    assert rde.supports("file", NetCDF) is True
+    assert rde.supports("s3", NetCDF) is False
 
-    assert rde.supports('file', GeoTIFF) is True
-    assert rde.supports('s3', GeoTIFF) is True
+    assert rde.supports("file", GeoTIFF) is True
+    assert rde.supports("s3", GeoTIFF) is True
 
     assert rde.new_instance({}) is not None
-    assert rde.new_instance({'max_workers': 2}) is not None
+    assert rde.new_instance({"max_workers": 2}) is not None
 
     with pytest.raises(ValueError):
-        rde.new_instance({'pool': []})
+        rde.new_instance({"pool": []})
 
     # check pool reuse
     pool = ThreadPoolExecutor(max_workers=1)
-    rdr = rde.new_instance({'pool': pool})
+    rdr = rde.new_instance({"pool": pool})
     assert rdr._pool is pool
 
 
@@ -79,16 +79,18 @@ def test_rd_internals_roi() -> None:
 
 def test_rd_internals_bidx(data_folder) -> None:
     base = "file://" + str(data_folder) + "/metadata.yml"
-    bi = mk_band('a',
-                 base,
-                 path="multi_doc.nc",
-                 format=NetCDF,
-                 timestamp=datetime.fromtimestamp(1, UTC),
-                 layer='a')
-    assert bi.uri.endswith('multi_doc.nc')
+    bi = mk_band(
+        "a",
+        base,
+        path="multi_doc.nc",
+        format=NetCDF,
+        timestamp=datetime.fromtimestamp(1, UTC),
+        layer="a",
+    )
+    assert bi.uri.endswith("multi_doc.nc")
 
     rio_fname = _rio_uri(bi)
-    assert rio_fname.startswith('NETCDF:')
+    assert rio_fname.startswith("NETCDF:")
 
     with rasterio.open(rio_fname) as src:
         # timestamp search was removed
@@ -103,23 +105,23 @@ def test_rd_internals_bidx(data_folder) -> None:
         bi.band = 33
         assert _rio_band_idx(bi, src) == 33
 
-    bi = mk_band('a', base, path="test.tif", format=GeoTIFF)
+    bi = mk_band("a", base, path="test.tif", format=GeoTIFF)
 
-    with rasterio.open(_rio_uri(bi), 'r') as src:
+    with rasterio.open(_rio_uri(bi), "r") as src:
         # should default to 1
         assert _rio_band_idx(bi, src) == 1
 
         # layer containing int should become index
-        bi = mk_band('a', base, path="test.tif", format=GeoTIFF, layer=2)
+        bi = mk_band("a", base, path="test.tif", format=GeoTIFF, layer=2)
         assert _rio_band_idx(bi, src) == 2
 
         # band is the keyword
-        bi = mk_band('a', base, path="test.tif", format=GeoTIFF, band=3)
+        bi = mk_band("a", base, path="test.tif", format=GeoTIFF, band=3)
         assert _rio_band_idx(bi, src) == 3
 
     # TODO: make single time-slice netcdf, for now pretend that this tiff is netcdf
-    with rasterio.open(str(data_folder)+"/sample_tile_151_-29.tif", 'r') as src:
-        bi = mk_band('a', base, path='sample_tile_151_-29.tif', format=NetCDF)
+    with rasterio.open(str(data_folder) + "/sample_tile_151_-29.tif", "r") as src:
+        bi = mk_band("a", base, path="sample_tile_151_-29.tif", format=NetCDF)
         assert src.count == 1
         assert _rio_band_idx(bi, src) == 1
 
@@ -127,19 +129,19 @@ def test_rd_internals_bidx(data_folder) -> None:
 def test_rd_internals_uri() -> None:
     base = "file:///some/path/"
 
-    bi = mk_band('green', base, path="f.tiff", format=GeoTIFF)
-    assert _rio_uri(bi) == '/some/path/f.tiff'
+    bi = mk_band("green", base, path="f.tiff", format=GeoTIFF)
+    assert _rio_uri(bi) == "/some/path/f.tiff"
 
-    bi = mk_band('x', base, path="x.nc", layer='x', format=NetCDF)
+    bi = mk_band("x", base, path="x.nc", layer="x", format=NetCDF)
     assert _rio_uri(bi) == 'NETCDF:"/some/path/x.nc":x'
 
-    bi = mk_band('jj', 's3://some/path/config.yml', "jj.tiff")
-    assert _rio_uri(bi) == 's3://some/path/jj.tiff'
+    bi = mk_band("jj", "s3://some/path/config.yml", "jj.tiff")
+    assert _rio_uri(bi) == "s3://some/path/jj.tiff"
     assert _rio_uri(bi) is bi.uri
 
 
 def test_rio_driver_fail_to_open() -> None:
-    nosuch_uri = 'file:///this-file-hopefully/doesnot/exist-4718193.tiff'
+    nosuch_uri = "file:///this-file-hopefully/doesnot/exist-4718193.tiff"
     rde = RDEntry()
     rdr = rde.new_instance({})
 
@@ -148,7 +150,7 @@ def test_rio_driver_fail_to_open() -> None:
     load_ctx = rdr.new_load_context(iter([]), None)
     load_ctx = rdr.new_load_context(iter([]), load_ctx)
 
-    bi = mk_band('green', nosuch_uri)
+    bi = mk_band("green", nosuch_uri)
     assert bi.uri == nosuch_uri
     fut = rdr.open(bi, load_ctx)
 
@@ -165,7 +167,7 @@ def test_rio_driver_open(data_folder) -> None:
     assert rdr is not None
 
     load_ctx = rdr.new_load_context(iter([]), None)
-    bi = mk_band('b1', base, path="test.tif", format=GeoTIFF)
+    bi = mk_band("b1", base, path="test.tif", format=GeoTIFF)
     load_ctx = rdr.new_load_context(iter([bi]), load_ctx)
     fut = rdr.open(bi, load_ctx)
     assert isinstance(fut, Future)
@@ -183,7 +185,9 @@ def test_rio_driver_open(data_folder) -> None:
     assert xx.dtype == src.dtype
 
     # check overrides
-    bi = mk_band('b1', base, path="zeros_no_geo_int16_7x3.tif", format=GeoTIFF, nodata=None)
+    bi = mk_band(
+        "b1", base, path="zeros_no_geo_int16_7x3.tif", format=GeoTIFF, nodata=None
+    )
 
     # First verify that missing overrides in the band doesn't cause issues
     assert bi.crs is None
@@ -192,7 +196,7 @@ def test_rio_driver_open(data_folder) -> None:
 
     load_ctx = rdr.new_load_context(iter([bi]), load_ctx)
     with warnings.catch_warnings():
-        warnings.simplefilter('ignore', rasterio.errors.NotGeoreferencedWarning)
+        warnings.simplefilter("ignore", rasterio.errors.NotGeoreferencedWarning)
         src = rdr.open(bi, load_ctx).result()
 
     assert src.crs is None
@@ -206,7 +210,7 @@ def test_rio_driver_open(data_folder) -> None:
 
     load_ctx = rdr.new_load_context(iter([bi]), load_ctx)
     with warnings.catch_warnings():
-        warnings.simplefilter('ignore', rasterio.errors.NotGeoreferencedWarning)
+        warnings.simplefilter("ignore", rasterio.errors.NotGeoreferencedWarning)
         src = rdr.open(bi, load_ctx).result()
 
     assert src.crs == bi.crs
@@ -215,7 +219,7 @@ def test_rio_driver_open(data_folder) -> None:
 
 
 def test_testutils_iodriver(data_folder) -> None:
-    fpath = str(data_folder) + '/test.tif'
+    fpath = str(data_folder) + "/test.tif"
     src = open_reader(fpath)
     assert src is not None
     assert src.crs is not None

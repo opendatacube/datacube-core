@@ -5,6 +5,7 @@
 """
 Common methods for UI code.
 """
+
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -36,22 +37,22 @@ def get_metadata_path(possible_path: str | Path) -> str:
         return str(dataset_path)
 
     # Otherwise there may be a sibling file with appended suffix '.agdc-md.yaml'.
-    expected_name = dataset_path.parent.joinpath(f'{dataset_path.name}.agdc-md')
+    expected_name = dataset_path.parent.joinpath(f"{dataset_path.name}.agdc-md")
     found = _find_any_metadata_suffix(expected_name)
     if found:
         return str(found)
 
     # Otherwise if it's a directory, there may be an 'agdc-metadata.yaml' file describing all contained datasets.
     if dataset_path.is_dir():
-        expected_name = dataset_path.joinpath('agdc-metadata')
+        expected_name = dataset_path.joinpath("agdc-metadata")
         found = _find_any_metadata_suffix(expected_name)
         if found:
             return str(found)
 
     if is_supported_document_type(dataset_path):
-        raise ValueError(f'No such file {dataset_path}')
+        raise ValueError(f"No such file {dataset_path}")
     else:
-        raise ValueError(f'No supported metadata docs found for dataset {dataset_path}')
+        raise ValueError(f"No supported metadata docs found for dataset {dataset_path}")
 
 
 def _find_any_metadata_suffix(path: Path) -> Path | None:
@@ -64,12 +65,14 @@ def _find_any_metadata_suffix(path: Path) -> Path | None:
 
     :type path: pathlib.Path
     """
-    existing_paths = list(filter(is_supported_document_type, path.parent.glob(path.name + '*')))
+    existing_paths = list(
+        filter(is_supported_document_type, path.parent.glob(path.name + "*"))
+    )
     if not existing_paths:
         return None
 
     if len(existing_paths) > 1:
-        raise ValueError(f'Multiple matched metadata files: {existing_paths!r}')
+        raise ValueError(f"Multiple matched metadata files: {existing_paths!r}")
 
     return existing_paths[0]
 
@@ -113,6 +116,6 @@ def ui_path_doc_stream(paths, logger=None, uri: bool = True, raw: bool = False):
 
             except InvalidDocException:
                 if logger is not None:
-                    logger.error('Failed reading documents from %s', str(fname))
+                    logger.error("Failed reading documents from %s", str(fname))
 
     yield from _path_doc_stream(_resolve_doc_files(paths), uri=uri, raw=raw)

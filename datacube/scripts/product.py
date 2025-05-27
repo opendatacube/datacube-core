@@ -20,20 +20,22 @@ from datacube.ui.click import cli, exit_on_empty_file, print_help_msg
 from datacube.utils import InvalidDocException, read_documents
 from datacube.utils.serialise import SafeDatacubeDumper
 
-_LOG: logging.Logger = logging.getLogger('datacube-product')
+_LOG: logging.Logger = logging.getLogger("datacube-product")
 
 
-@cli.group(name='product', help='Product commands')
+@cli.group(name="product", help="Product commands")
 def product_cli() -> None:
     pass
 
 
-@product_cli.command('add')
-@click.option('--allow-exclusive-lock/--forbid-exclusive-lock', is_flag=True, default=False,
-              help='Allow index to be locked from other users while updating (default: false)')
-@click.argument('files',
-                type=str,
-                nargs=-1)
+@product_cli.command("add")
+@click.option(
+    "--allow-exclusive-lock/--forbid-exclusive-lock",
+    is_flag=True,
+    default=False,
+    help="Allow index to be locked from other users while updating (default: false)",
+)
+@click.argument("files", type=str, nargs=-1)
 @ui.pass_index()
 def add_products(index: Index, allow_exclusive_lock: bool, files: list) -> None:
     """
@@ -44,10 +46,10 @@ def add_products(index: Index, allow_exclusive_lock: bool, files: list) -> None:
         sys.exit(1)
 
     def on_ctrlc(sig, frame) -> None:
-        echo('''Can not abort `product add` without leaving database in bad state.
+        echo("""Can not abort `product add` without leaving database in bad state.
 
 This operation requires constructing a bunch of indexes and this takes time, the
-bigger your database the longer it will take. Just wait a bit.''')
+bigger your database the longer it will take. Just wait a bit.""")
 
     signal.signal(signal.SIGINT, on_ctrlc)
 
@@ -58,25 +60,38 @@ bigger your database the longer it will take. Just wait a bit.''')
             type_ = index.products.from_doc(parsed_doc)
             echo(f'Adding "{type_.name}" (this might take a while)', nl=False)
             index.products.add(type_, allow_table_lock=allow_exclusive_lock)
-            echo(' DONE')
+            echo(" DONE")
         except InvalidDocException as e:
             _LOG.exception(e)
-            _LOG.error('Invalid product definition: %s', descriptor_path)
+            _LOG.error("Invalid product definition: %s", descriptor_path)
             sys.exit(1)
 
 
-@product_cli.command('update')
+@product_cli.command("update")
 @click.option(
-    '--allow-unsafe/--forbid-unsafe', is_flag=True, default=False,
-    help="Allow unsafe updates (default: false)"
+    "--allow-unsafe/--forbid-unsafe",
+    is_flag=True,
+    default=False,
+    help="Allow unsafe updates (default: false)",
 )
-@click.option('--allow-exclusive-lock/--forbid-exclusive-lock', is_flag=True, default=False,
-              help='Allow index to be locked from other users while updating (default: false)')
-@click.option('--dry-run', '-d', is_flag=True, default=False,
-              help='Check if everything is ok')
-@click.argument('files', type=str, nargs=-1)
+@click.option(
+    "--allow-exclusive-lock/--forbid-exclusive-lock",
+    is_flag=True,
+    default=False,
+    help="Allow index to be locked from other users while updating (default: false)",
+)
+@click.option(
+    "--dry-run", "-d", is_flag=True, default=False, help="Check if everything is ok"
+)
+@click.argument("files", type=str, nargs=-1)
 @ui.pass_index()
-def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool, dry_run: bool, files: list) -> None:
+def update_products(
+    index: Index,
+    allow_unsafe: bool,
+    allow_exclusive_lock: bool,
+    dry_run: bool,
+    files: list,
+) -> None:
     """
     Update existing products.
 
@@ -97,7 +112,7 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
             type_ = index.products.from_doc(parsed_doc)
         except InvalidDocException as e:
             _LOG.exception(e)
-            _LOG.error('Invalid product definition: %s', descriptor_path)
+            _LOG.error("Invalid product definition: %s", descriptor_path)
             failures += 1
             continue
 
@@ -114,29 +129,37 @@ def update_products(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool
                 failures += 1
         else:
             can_update, safe_changes, unsafe_changes = index.products.can_update(
-                type_,
-                allow_unsafe_updates=allow_unsafe
+                type_, allow_unsafe_updates=allow_unsafe
             )
 
             if can_update:
-                echo(f'Can update "{type_.name}": {len(list(unsafe_changes))} unsafe '
-                     f'changes, {len(list(safe_changes))} safe changes')
+                echo(
+                    f'Can update "{type_.name}": {len(list(unsafe_changes))} unsafe '
+                    f"changes, {len(list(safe_changes))} safe changes"
+                )
             else:
-                echo(f'Cannot update "{type_.name}": {len(list(unsafe_changes))} unsafe'
-                     f'changes, {len(list(safe_changes))} safe changes')
+                echo(
+                    f'Cannot update "{type_.name}": {len(list(unsafe_changes))} unsafe'
+                    f"changes, {len(list(safe_changes))} safe changes"
+                )
     sys.exit(failures)
 
 
-@product_cli.command('delete', help="Delete products and all associated datasets")
+@product_cli.command("delete", help="Delete products and all associated datasets")
 @click.option(
-    '--force', is_flag=True, default=False,
-    help="Allow a product with active datasets to be deleted (default: false)"
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Allow a product with active datasets to be deleted (default: false)",
 )
-@click.option('--dry-run', '-d', is_flag=True, default=False,
-              help='Check if everything is ok')
-@click.argument('product_names', type=str, nargs=-1)
+@click.option(
+    "--dry-run", "-d", is_flag=True, default=False, help="Check if everything is ok"
+)
+@click.argument("product_names", type=str, nargs=-1)
 @ui.pass_index()
-def delete_products(index: Index, force: bool, dry_run: bool, product_names: list) -> None:
+def delete_products(
+    index: Index, force: bool, dry_run: bool, product_names: list
+) -> None:
     """
     Delete products.
 
@@ -153,29 +176,55 @@ def delete_products(index: Index, force: bool, dry_run: bool, product_names: lis
         sys.exit(1)
 
     if sys.stdin.isatty() and force:
-        click.confirm("Warning: you may be deleting active datasets. Proceed?", abort=True)
+        click.confirm(
+            "Warning: you may be deleting active datasets. Proceed?", abort=True
+        )
 
     if not dry_run:
         deleted = index.products.delete(products, force)
         not_deleted = set(product_names).difference({p.name for p in deleted})
         if not force and not_deleted:
-            click.echo(f"Product(s) {', '.join(not_deleted)} could not be deleted due to active datasets. "
-                       "Use the --force option to delete anyway.")
-        click.echo(f"{len(deleted)} out of {len(product_names)} products successfully deleted.")
+            click.echo(
+                f"Product(s) {', '.join(not_deleted)} could not be deleted due to active datasets. "
+                "Use the --force option to delete anyway."
+            )
+        click.echo(
+            f"{len(deleted)} out of {len(product_names)} products successfully deleted."
+        )
     else:
         click.echo(f"{len(products)} products not deleted (dry run)")
 
-    click.echo('Completed product deletion.')
+    click.echo("Completed product deletion.")
 
 
 def _write_csv(products) -> None:
     product_dicts = [prod.to_dict() for prod in products]
-    writer = csv.DictWriter(sys.stdout, ['id', 'name', 'description',
-                                         'ancillary_quality', 'latgqa_cep90', 'product_type',
-                                         'gqa_abs_iterative_mean_xy', 'gqa_ref_source', 'sat_path',
-                                         'gqa_iterative_stddev_xy', 'time', 'sat_row', 'orbit', 'gqa',
-                                         'instrument', 'gqa_abs_xy', 'crs', 'resolution', 'tile_shape',
-                                         'spatial_dimensions'], extrasaction='ignore')
+    writer = csv.DictWriter(
+        sys.stdout,
+        [
+            "id",
+            "name",
+            "description",
+            "ancillary_quality",
+            "latgqa_cep90",
+            "product_type",
+            "gqa_abs_iterative_mean_xy",
+            "gqa_ref_source",
+            "sat_path",
+            "gqa_iterative_stddev_xy",
+            "time",
+            "sat_row",
+            "orbit",
+            "gqa",
+            "instrument",
+            "gqa_abs_xy",
+            "crs",
+            "resolution",
+            "tile_shape",
+            "spatial_dimensions",
+        ],
+        extrasaction="ignore",
+    )
     writer.writeheader()
     writer.writerows(product_dicts)
 
@@ -190,25 +239,48 @@ def _write_yaml(products: list):
     """
     product_dicts = [prod.to_dict() for prod in products]
 
-    return yaml.dump_all(product_dicts, sys.stdout, Dumper=SafeDatacubeDumper, default_flow_style=False, indent=4)
+    return yaml.dump_all(
+        product_dicts,
+        sys.stdout,
+        Dumper=SafeDatacubeDumper,
+        default_flow_style=False,
+        indent=4,
+    )
 
 
 def _write_tab(products: list) -> None:
     df = pd.DataFrame(prod.to_dict() for prod in products)
 
     if df.empty:
-        echo('No products discovered :(')
+        echo("No products discovered :(")
         return
 
-    output_columns = ('id', 'name', 'description', 'ancillary_quality',
-                      'product_type', 'gqa_abs_iterative_mean_xy',
-                      'gqa_ref_source', 'sat_path',
-                      'gqa_iterative_stddev_xy', 'time', 'sat_row',
-                      'orbit', 'gqa', 'instrument', 'gqa_abs_xy', 'crs',
-                      'resolution', 'tile_shape', 'spatial_dimensions')
+    output_columns = (
+        "id",
+        "name",
+        "description",
+        "ancillary_quality",
+        "product_type",
+        "gqa_abs_iterative_mean_xy",
+        "gqa_ref_source",
+        "sat_path",
+        "gqa_iterative_stddev_xy",
+        "time",
+        "sat_row",
+        "orbit",
+        "gqa",
+        "instrument",
+        "gqa_abs_xy",
+        "crs",
+        "resolution",
+        "tile_shape",
+        "spatial_dimensions",
+    )
     # If the intersection of desired columns with available columns is empty, just use whatever IS in df
-    output_columns = tuple(col for col in output_columns if col in df.columns) or df.columns
-    echo(df.to_string(columns=output_columns, justify='left', index=False))
+    output_columns = (
+        tuple(col for col in output_columns if col in df.columns) or df.columns
+    )
+    echo(df.to_string(columns=output_columns, justify="left", index=False))
 
 
 def _default_lister(products) -> None:
@@ -219,21 +291,27 @@ def _default_lister(products) -> None:
     max_w = max(len(p.name) for p in products)
 
     for prod in products:
-        name = '{s:<{n}}'.format(s=prod.name, n=max_w)
-        echo(style(name, fg='green') + '  ' + prod.definition.get('description', ''))
+        name = "{s:<{n}}".format(s=prod.name, n=max_w)
+        echo(style(name, fg="green") + "  " + prod.definition.get("description", ""))
 
 
 LIST_OUTPUT_WRITERS = {
-    'default': _default_lister,
-    'csv': _write_csv,
-    'yaml': _write_yaml,
-    'tab': _write_tab,
+    "default": _default_lister,
+    "csv": _write_csv,
+    "yaml": _write_yaml,
+    "tab": _write_tab,
 }
 
 
-@product_cli.command('list')
-@click.option('-f', 'output_format', help='Output format',
-              type=click.Choice(list(LIST_OUTPUT_WRITERS)), default='default', show_default=True)
+@product_cli.command("list")
+@click.option(
+    "-f",
+    "output_format",
+    help="Output format",
+    type=click.Choice(list(LIST_OUTPUT_WRITERS)),
+    default="default",
+    show_default=True,
+)
 @ui.pass_datacube()
 def list_products(dc, output_format) -> None:
     """
@@ -246,10 +324,16 @@ def list_products(dc, output_format) -> None:
     writer(products)
 
 
-@product_cli.command('show')
-@click.option('-f', 'output_format', help='Output format',
-              type=click.Choice(['yaml', 'json']), default='yaml', show_default=True)
-@click.argument('product_name', nargs=-1)
+@product_cli.command("show")
+@click.option(
+    "-f",
+    "output_format",
+    help="Output format",
+    type=click.Choice(["yaml", "json"]),
+    default="yaml",
+    show_default=True,
+)
+@click.argument("product_name", nargs=-1)
 @ui.pass_datacube()
 def show_product(dc, product_name: str, output_format: str) -> None:
     """
@@ -263,24 +347,26 @@ def show_product(dc, product_name: str, output_format: str) -> None:
         for name in product_name:
             p = dc.index.products.get_by_name(name)
             if p is None:
-                echo(f'No such product: {name!r}', err=True)
+                echo(f"No such product: {name!r}", err=True)
                 sys.exit(1)
             else:
                 products.append(p)
 
     if len(products) == 0:
-        echo('No products', err=True)
+        echo("No products", err=True)
         sys.exit(1)
 
-    if output_format == 'yaml':
-        yaml.dump_all((p.definition for p in products),
-                      sys.stdout,
-                      Dumper=SafeDatacubeDumper,
-                      default_flow_style=False,
-                      indent=4)
-    elif output_format == 'json':
+    if output_format == "yaml":
+        yaml.dump_all(
+            (p.definition for p in products),
+            sys.stdout,
+            Dumper=SafeDatacubeDumper,
+            default_flow_style=False,
+            indent=4,
+        )
+    elif output_format == "json":
         if len(products) > 1:
-            echo('Can not output more than 1 product in json format', err=True)
+            echo("Can not output more than 1 product in json format", err=True)
             sys.exit(1)
         product, *_ = products
         click.echo_via_pager(json.dumps(product.definition, indent=4))

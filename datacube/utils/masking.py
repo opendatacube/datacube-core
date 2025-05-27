@@ -16,7 +16,7 @@ from xarray import DataArray, Dataset
 
 from datacube.utils.math import valid_mask
 
-FLAGS_ATTR_NAME = 'flags_definition'
+FLAGS_ATTR_NAME = "flags_definition"
 
 
 def list_flag_names(variable):
@@ -53,28 +53,28 @@ def describe_variable_flags(variable, with_pandas: bool = True):
     if not with_pandas:
         return describe_flags_def(flags_def)
 
-    return pandas.DataFrame.from_dict(flags_def, orient='index')
+    return pandas.DataFrame.from_dict(flags_def, orient="index")
 
 
 def describe_flags_def(flags_def) -> str:
-    return '\n'.join(generate_table(list(_table_contents(flags_def))))
+    return "\n".join(generate_table(list(_table_contents(flags_def))))
 
 
 def _table_contents(flags_def):
-    yield 'Flag name', 'Description', 'Bit. No', 'Value', 'Meaning'
+    yield "Flag name", "Description", "Bit. No", "Value", "Meaning"
     for name, defn in sorted(flags_def.items(), key=_order_bitdefs_by_bits):
-        name, desc = name, defn['description']
-        for value, meaning in defn['values'].items():
-            yield name, desc, str(defn['bits']), str(value), str(meaning)
-            name, desc = '', ''
+        name, desc = name, defn["description"]
+        for value, meaning in defn["values"].items():
+            yield name, desc, str(defn["bits"]), str(value), str(meaning)
+            name, desc = "", ""
 
 
 def _order_bitdefs_by_bits(bitdef):
     name, defn = bitdef
     try:
-        return min(defn['bits'])
+        return min(defn["bits"])
     except TypeError:
-        return defn['bits']
+        return defn["bits"]
 
 
 def make_mask(variable, **flags):
@@ -116,13 +116,13 @@ def valid_data_mask(data):
         return data.map(valid_data_mask)
 
     if not isinstance(data, DataArray):
-        raise TypeError(f'valid_data_mask not supported for type {type(data)}')
+        raise TypeError(f"valid_data_mask not supported for type {type(data)}")
 
-    nodata = data.attrs.get('nodata', None)
+    nodata = data.attrs.get("nodata", None)
 
-    return xarray.apply_ufunc(valid_mask, data, nodata,
-                              dask='parallelized',
-                              output_dtypes=[bool])
+    return xarray.apply_ufunc(
+        valid_mask, data, nodata, dask="parallelized", output_dtypes=[bool]
+    )
 
 
 def mask_invalid_data(data, keep_attrs: bool = True):
@@ -140,16 +140,16 @@ def mask_invalid_data(data, keep_attrs: bool = True):
         return data.map(mask_invalid_data, keep_attrs=keep_attrs, args=(keep_attrs,))
 
     if isinstance(data, DataArray):
-        if 'nodata' not in data.attrs:
+        if "nodata" not in data.attrs:
             return data
         out_data_array = data.where(data != data.nodata)
         if keep_attrs:
-            out_data_array.attrs = {key: value
-                                    for key, value in data.attrs.items()
-                                    if key != 'nodata'}
+            out_data_array.attrs = {
+                key: value for key, value in data.attrs.items() if key != "nodata"
+            }
         return out_data_array
 
-    raise TypeError(f'mask_invalid_data not supported for type {type(data)}')
+    raise TypeError(f"mask_invalid_data not supported for type {type(data)}")
 
 
 def create_mask_value(bits_def, **flags) -> tuple[int, int]:
@@ -162,25 +162,29 @@ def create_mask_value(bits_def, **flags) -> tuple[int, int]:
             raise ValueError(f'Unknown flag: "{flag_name}"')
 
         try:
-            [flag_value] = (bit_val
-                            for bit_val, val_ref in defn['values'].items()
-                            if val_ref == flag_ref)
+            [flag_value] = (
+                bit_val
+                for bit_val, val_ref in defn["values"].items()
+                if val_ref == flag_ref
+            )
             flag_value = int(flag_value)  # Might be string if coming from DB
         except ValueError:
-            raise ValueError(f'Unknown value {flag_ref} specified for flag {flag_name}') from None
+            raise ValueError(
+                f"Unknown value {flag_ref} specified for flag {flag_name}"
+            ) from None
 
-        if isinstance(defn['bits'], collections.abc.Iterable):  # Multi-bit flag
+        if isinstance(defn["bits"], collections.abc.Iterable):  # Multi-bit flag
             # Set mask
-            for bit in defn['bits']:
+            for bit in defn["bits"]:
                 mask = set_value_at_index(mask, bit, True)
 
-            shift = min(defn['bits'])
+            shift = min(defn["bits"])
             real_val = flag_value << shift
 
             value |= real_val
 
         else:
-            bit = defn['bits']
+            bit = defn["bits"]
             mask = set_value_at_index(mask, bit, True)
             value = set_value_at_index(value, bit, flag_value)
 
@@ -198,10 +202,9 @@ def mask_to_dict(bits_def, mask_value):
     """
     return_dict = {}
     for flag_name, flag_defn in bits_def.items():
-
         # Make bits a list, even if there is only one
-        flag_bits = flag_defn['bits']
-        if not isinstance(flag_defn['bits'], list):
+        flag_bits = flag_defn["bits"]
+        if not isinstance(flag_defn["bits"], list):
             flag_bits = [flag_bits]
 
         # The amount to shift flag_value to line up with mask_value
@@ -210,10 +213,10 @@ def mask_to_dict(bits_def, mask_value):
         # Mask our mask_value, we are only interested in the bits for this flag
         flag_mask = 0
         for i in flag_bits:
-            flag_mask |= (1 << i)
+            flag_mask |= 1 << i
         masked_mask_value = mask_value & flag_mask
 
-        for flag_value, value in flag_defn['values'].items():
+        for flag_value, value in flag_defn["values"].items():
             shifted_value = int(flag_value) << flag_shift
             if shifted_value == masked_mask_value:
                 assert flag_name not in return_dict
@@ -226,7 +229,7 @@ def get_flags_def(variable):
     if flags is not None:
         return flags
 
-    data_vars = getattr(variable, 'data_vars', None)
+    data_vars = getattr(variable, "data_vars", None)
 
     if data_vars is not None:
         # Maybe we have a DataSet, not a DataArray
@@ -235,7 +238,7 @@ def get_flags_def(variable):
             if flags is not None:
                 return flags
 
-    raise ValueError('No masking variable found')
+    raise ValueError("No masking variable found")
 
 
 def set_value_at_index(bitmask, index, value):
@@ -257,11 +260,11 @@ def set_value_at_index(bitmask, index, value):
     :type index: int
     :type value: bool
     """
-    bit_val = 2 ** index
+    bit_val = 2**index
     if value:
         bitmask |= bit_val
     else:
-        bitmask &= (~bit_val)
+        bitmask &= ~bit_val
     return bitmask
 
 
@@ -281,16 +284,16 @@ def generate_table(rows):
     # - print the header
     header, data = rows[0], rows[1:]
     yield (
-        ' | '.join(format(title, f"{width}s") for width, title in zip(widths, header))
+        " | ".join(format(title, f"{width}s") for width, title in zip(widths, header))
     )
 
     # Print the separator
-    first_col = ''
+    first_col = ""
     # - print the data
     for row in data:
-        if first_col == '' and row[0] != '':
+        if first_col == "" and row[0] != "":
             # - print the separator
-            yield '-+-'.join('-' * width for width in widths)
+            yield "-+-".join("-" * width for width in widths)
         first_col = row[0]
 
         yield (

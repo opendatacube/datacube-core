@@ -2,8 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" xarray 3D driver plugin for 3D support testing
-"""
+"""xarray 3D driver plugin for 3D support testing"""
+
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path

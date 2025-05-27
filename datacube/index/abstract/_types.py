@@ -27,6 +27,7 @@ class BatchStatus(NamedTuple):
         because they already exist in the index and are identical to the version
         being added.  May be None for internal functions and for datasets.
     """
+
     completed: int
     skipped: int
     seconds_elapsed: float
@@ -55,6 +56,7 @@ class DatasetTuple(NamedTuple):
     - metadata: The dataset metadata document
     - uri_: The dataset location or list of locations
     """
+
     product: Product
     metadata: JsonDict
     uri_: str | list[str]
@@ -78,8 +80,9 @@ class DatasetTuple(NamedTuple):
     @property
     @deprecat(
         reason="Multiple uris are deprecated. Please use the uri field and ensure that datasets only have one location",
-        version='1.9.0',
-        category=ODC2DeprecationWarning)
+        version="1.9.0",
+        category=ODC2DeprecationWarning,
+    )
     def uris(self) -> Sequence[str]:
         if isinstance(self.uri_, str):
             return [self.uri_]

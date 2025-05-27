@@ -16,20 +16,22 @@ from datacube.ui.click import cli, exit_on_empty_file, print_help_msg
 from datacube.utils import InvalidDocException, read_documents
 from datacube.utils.serialise import SafeDatacubeDumper
 
-_LOG: logging.Logger = logging.getLogger('datacube-md-type')
+_LOG: logging.Logger = logging.getLogger("datacube-md-type")
 
 
-@cli.group(name='metadata', help='Metadata type commands')
+@cli.group(name="metadata", help="Metadata type commands")
 def this_group() -> None:
     pass
 
 
-@this_group.command('add')
-@click.option('--allow-exclusive-lock/--forbid-exclusive-lock', is_flag=True, default=False,
-              help='Allow index to be locked from other users while updating (default: false)')
-@click.argument('files',
-                type=str,
-                nargs=-1)
+@this_group.command("add")
+@click.option(
+    "--allow-exclusive-lock/--forbid-exclusive-lock",
+    is_flag=True,
+    default=False,
+    help="Allow index to be locked from other users while updating (default: false)",
+)
+@click.argument("files", type=str, nargs=-1)
 @ui.pass_index()
 def add_metadata_types(index: Index, allow_exclusive_lock: bool, files: list) -> None:
     """
@@ -47,23 +49,35 @@ def add_metadata_types(index: Index, allow_exclusive_lock: bool, files: list) ->
             index.metadata_types.add(type_, allow_table_lock=allow_exclusive_lock)
         except InvalidDocException as e:
             _LOG.exception(e)
-            _LOG.error('Invalid metadata type definition: %s', descriptor_path)
+            _LOG.error("Invalid metadata type definition: %s", descriptor_path)
             continue
 
 
-@this_group.command('update')
+@this_group.command("update")
 @click.option(
-    '--allow-unsafe/--forbid-unsafe', is_flag=True, default=False,
-    help="Allow unsafe updates (default: false)"
+    "--allow-unsafe/--forbid-unsafe",
+    is_flag=True,
+    default=False,
+    help="Allow unsafe updates (default: false)",
 )
-@click.option('--allow-exclusive-lock/--forbid-exclusive-lock', is_flag=True, default=False,
-              help='Allow index to be locked from other users while updating (default: false)')
-@click.option('--dry-run', '-d', is_flag=True, default=False,
-              help='Check if everything is ok')
-@click.argument('files', type=str, nargs=-1)
+@click.option(
+    "--allow-exclusive-lock/--forbid-exclusive-lock",
+    is_flag=True,
+    default=False,
+    help="Allow index to be locked from other users while updating (default: false)",
+)
+@click.option(
+    "--dry-run", "-d", is_flag=True, default=False, help="Check if everything is ok"
+)
+@click.argument("files", type=str, nargs=-1)
 @ui.pass_index()
-def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock: bool,
-                          dry_run: bool, files: list) -> None:
+def update_metadata_types(
+    index: Index,
+    allow_unsafe: bool,
+    allow_exclusive_lock: bool,
+    dry_run: bool,
+    files: list,
+) -> None:
     """
     Update existing metadata types.
 
@@ -83,7 +97,7 @@ def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock
             type_ = index.metadata_types.from_doc(parsed_doc)
         except InvalidDocException as e:
             _LOG.exception(e)
-            _LOG.error('Invalid metadata type definition: %s', descriptor_path)
+            _LOG.error("Invalid metadata type definition: %s", descriptor_path)
             continue
 
         if not dry_run:
@@ -98,19 +112,31 @@ def update_metadata_types(index: Index, allow_unsafe: bool, allow_exclusive_lock
                 type_, allow_unsafe_updates=allow_unsafe
             )
             if can_update:
-                echo(f'Can update "{type_.name}": {len(list(unsafe_changes))} unsafe '
-                     f'changes, {len(list(safe_changes))} safe changes')
+                echo(
+                    f'Can update "{type_.name}": {len(list(unsafe_changes))} unsafe '
+                    f"changes, {len(list(safe_changes))} safe changes"
+                )
             else:
-                echo(f'Cannot update "{type_.name}": {len(list(unsafe_changes))} unsafe'
-                     f' changes, {len(list(safe_changes))} safe changes')
+                echo(
+                    f'Cannot update "{type_.name}": {len(list(unsafe_changes))} unsafe'
+                    f" changes, {len(list(safe_changes))} safe changes"
+                )
 
 
-@this_group.command('show')
-@click.option('-f', 'output_format', help='Output format',
-              type=click.Choice(['yaml', 'json']), default='yaml', show_default=True)
-@click.argument('metadata_type_name', nargs=-1)
+@this_group.command("show")
+@click.option(
+    "-f",
+    "output_format",
+    help="Output format",
+    type=click.Choice(["yaml", "json"]),
+    default="yaml",
+    show_default=True,
+)
+@click.argument("metadata_type_name", nargs=-1)
 @ui.pass_index()
-def show_metadata_type(index: Index, metadata_type_name: str, output_format: str) -> None:
+def show_metadata_type(
+    index: Index, metadata_type_name: str, output_format: str
+) -> None:
     """
     Show information about a metadata type.
     """
@@ -122,30 +148,34 @@ def show_metadata_type(index: Index, metadata_type_name: str, output_format: str
         for name in metadata_type_name:
             m = index.metadata_types.get_by_name(name)
             if m is None:
-                echo(f'No such metadata: {name!r}', err=True)
+                echo(f"No such metadata: {name!r}", err=True)
                 sys.exit(1)
             else:
                 mm.append(m)
 
     if len(mm) == 0:
-        echo('No metadata')
+        echo("No metadata")
         sys.exit(1)
 
-    if output_format == 'yaml':
-        yaml.dump_all((m.definition for m in mm),
-                      sys.stdout,
-                      Dumper=SafeDatacubeDumper,
-                      default_flow_style=False,
-                      indent=4)
-    elif output_format == 'json':
+    if output_format == "yaml":
+        yaml.dump_all(
+            (m.definition for m in mm),
+            sys.stdout,
+            Dumper=SafeDatacubeDumper,
+            default_flow_style=False,
+            indent=4,
+        )
+    elif output_format == "json":
         if len(mm) > 1:
-            echo('Can not output more than 1 metadata document in json format', err=True)
+            echo(
+                "Can not output more than 1 metadata document in json format", err=True
+            )
             sys.exit(1)
         m = mm[0]
         echo(json.dumps(m.definition, indent=4))
 
 
-@this_group.command('list')
+@this_group.command("list")
 @ui.pass_index()
 def list_metadata_types(index: Index) -> None:
     """
@@ -154,11 +184,11 @@ def list_metadata_types(index: Index) -> None:
     metadata_types = list(index.metadata_types.get_all())
 
     if not metadata_types:
-        echo('No metadata types found :(', err=True)
+        echo("No metadata types found :(", err=True)
         sys.exit(1)
 
     max_w = max(len(m.name) for m in metadata_types)
     for m in metadata_types:
-        description_short = m.definition.get('description', '').split('\n')[0]
-        name = '{s:<{n}}'.format(s=m.name, n=max_w)
-        echo(style(name, fg='green') + '  ' + description_short)
+        description_short = m.definition.get("description", "").split("\n")[0]
+        name = "{s:<{n}}".format(s=m.name, n=max_w)
+        echo(style(name, fg="green") + "  " + description_short)
