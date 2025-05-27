@@ -277,8 +277,6 @@ ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.3
     # via stack-data
-pycodestyle==2.13.0
-    # via datacube (pyproject.toml:dev)
 pycparser==2.22
     # via cffi
 pydata-sphinx-theme==0.16.1
