@@ -5,6 +5,11 @@
 What's New
 **********
 
+Next Release
+============
+
+- Run Ruff format on all code :pull:`1926`
+
 v1.9.4 (20 May 2025)
 ====================
 
@@ -25,11 +30,11 @@ See: :issue:`1749` and :pull:`1760`
 **Fixed Dask load crash in some cases**
 
 There was a regression in data loading with dask in Datacube 1.9. It only
-occurred in rare cases so only affected some people. 
+occurred in rare cases so only affected some people.
 
 The load failed whenever there were completely empty data chunks, which are
 rectangular in shape. That is, X != Y.
- 
+
 See :pull:`1780` and :issue:`1779` for details.
 
 **Cleaning and Tidying**
