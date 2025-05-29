@@ -17,10 +17,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-#    groups:
-#      uv-deps:
-#        patterns:
-#          - "*"
+    groups:
+      python-deps:
+        patterns:
+          - "*"
 #        exclude-patterns: # Packages updated almost every day.
 #          - "boto3"
 #          - "boto3-stubs"
