@@ -37,19 +37,19 @@ beautifulsoup4==4.13.4
     #   pydata-sphinx-theme
 bleach==6.2.0
     # via nbconvert
-boto3==1.38.24
+boto3==1.38.25
     # via
     #   datacube (pyproject.toml)
     #   moto
-boto3-stubs==1.38.24
+boto3-stubs==1.38.25
     # via datacube (pyproject.toml:dev)
-botocore==1.38.24
+botocore==1.38.25
     # via
     #   datacube (pyproject.toml)
     #   boto3
     #   moto
     #   s3transfer
-botocore-stubs==1.38.24
+botocore-stubs==1.38.25
     # via
     #   datacube (pyproject.toml:dev)
     #   boto3-stubs
@@ -450,7 +450,7 @@ types-redis==4.6.0.20241004
     # via datacube (pyproject.toml:dev)
 types-s3transfer==0.13.0
     # via boto3-stubs
-types-setuptools==80.8.0.20250521
+types-setuptools==80.9.0.20250529
     # via
     #   datacube (pyproject.toml:dev)
     #   types-cffi
