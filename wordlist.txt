@@ -141,7 +141,7 @@ dbs
 dea
 deafrica
 dem
-Dependabot
+dependabot
 Deprecations
 dev
 df
