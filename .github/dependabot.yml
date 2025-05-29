@@ -17,15 +17,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    groups:
-      uv-deps:
-        patterns:
-          - "*"
-        exclude-patterns: # Packages updated almost every day.
-          - "boto3"
-          - "boto3-stubs"
-          - "botocore"
-          - "botocore-stubs"
+#    groups:
+#      uv-deps:
+#        patterns:
+#          - "*"
+#        exclude-patterns: # Packages updated almost every day.
+#          - "boto3"
+#          - "boto3-stubs"
+#          - "botocore"
+#          - "botocore-stubs"
 #  - package-ecosystem: "uv"
 #    # Have two jobs with same eco-system/directory by setting target-branch
 #    # for one of them:
