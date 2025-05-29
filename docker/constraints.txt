@@ -41,7 +41,7 @@ boto3==1.38.24
     # via
     #   datacube (pyproject.toml)
     #   moto
-boto3-stubs==1.38.24
+boto3-stubs==1.38.25
     # via datacube (pyproject.toml:dev)
 botocore==1.38.24
     # via
