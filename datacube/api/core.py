@@ -34,10 +34,10 @@ from datacube.model.utils import xr_apply
 from datacube.storage import BandInfo, reproject_and_fuse
 from datacube.utils import ignore_exceptions_if
 from datacube.utils.dates import normalise_dt
-from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox
 
 if TYPE_CHECKING:
     from datacube.model import GridSpec
+    from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox
 
 from ..drivers import new_datasource
 from ..index import Index, extract_geom_from_query, index_connect
@@ -1186,6 +1186,8 @@ def output_geobox(
         if isinstance(like, GeoBox):
             # Is already a GeoBox
             return like
+        from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox
+
         if isinstance(like, LegacyGeoGeoBox):
             # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
             crs = None if like.crs is None else CRS(like.crs._str)
