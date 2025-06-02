@@ -136,7 +136,6 @@ def test_config_check(clirunner, index, cfg_env) -> None:
 
 
 def test_list_users_does_not_fail(clirunner, cfg_env, index) -> None:
-    """ """
     # We don't want to make assumptions about available users during test runs.
     # (They are host-global, not specific to the database)
     # So we're just checking that it doesn't fail (and the SQL etc is well formed)
