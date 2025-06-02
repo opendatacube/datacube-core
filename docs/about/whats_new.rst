@@ -12,6 +12,7 @@ Next Release
 - Run Ruff format on all code :pull:`1926`, :pull:`1927`
 - Group all dependabot updates in the 'uv' ecosystem. :pull:`1928`, :pull:`1934`
 - Move deprecated imports :pull:`1938`
+- Put coverage config in pyproject :pull:`1942`
 
 v1.9.4 (20 May 2025)
 ====================
