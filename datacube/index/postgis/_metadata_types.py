@@ -2,9 +2,12 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
 from collections.abc import Iterable, Mapping
 from time import monotonic
+from typing import TYPE_CHECKING
 
 from cachetools.func import lru_cache
 from typing_extensions import override
@@ -22,11 +25,15 @@ from datacube.utils.changes import (
 )
 from datacube.utils.documents import JsonDict
 
+if TYPE_CHECKING:
+    from datacube.drivers.postgis import PostGisDb
+    from datacube.index.postgis.index import Index
+
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
-    def __init__(self, db, index) -> None:
+    def __init__(self, db: PostGisDb, index: Index) -> None:
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
         """

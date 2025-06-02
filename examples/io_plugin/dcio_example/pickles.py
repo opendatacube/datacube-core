@@ -107,7 +107,7 @@ class PickleWriterDriver:
     def uri_scheme(self):
         return PROTOCOL
 
-    def mk_uri(self, file_path, storage_config):
+    def mk_uri(self, file_path: Path, storage_config: dict) -> str:
         """
         Constructs a URI from the file_path and storage config.
 
@@ -119,10 +119,9 @@ class PickleWriterDriver:
 
             mk_uri(file_path, storage_config) should return 'file:///path/to/my_file.pickled'
 
-        :param Path file_path: The file path of the file to be converted into a URI.
-        :param dict storage_config: The dict holding the storage config found in the ingest definition.
+        :param file_path: The file path of the file to be converted into a URI.
+        :param storage_config: The dict holding the storage config found in the ingest definition.
         :return: file_path as a URI that the Driver understands.
-        :rtype: str
         """
         return normalise_path(file_path).as_uri()
 

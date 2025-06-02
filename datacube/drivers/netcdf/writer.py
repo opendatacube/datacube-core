@@ -13,6 +13,7 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 from os import PathLike
 
+import netCDF4
 import numpy
 from netCDF4 import Dataset
 from odc.geo import CRS
@@ -78,7 +79,9 @@ def append_netcdf(netcdf_path) -> Dataset:
     return Dataset(netcdf_path, "a")
 
 
-def create_coordinate(nco, name: str, labels: Sequence[str], units):
+def create_coordinate(
+    nco: Dataset, name: str, labels: Sequence[str], units: str
+) -> netCDF4.Variable:
     """
     :type nco: netCDF4.Dataset
     :type name: str

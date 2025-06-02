@@ -69,14 +69,14 @@ class PgField(Field):
         return "btree"
 
     @override
-    def __eq__(self, value):
+    def __eq__(self, value) -> Expression:  # type: ignore[override]
         """
         :rtype: Expression
         """
         return EqualsExpression(self, value)
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> Expression:
         """
         :rtype: Expression
         """
@@ -221,14 +221,14 @@ class SimpleDocField(PgDocField):
         )
 
     @override
-    def __eq__(self, value):
+    def __eq__(self, value) -> Expression:  # type: ignore[override]
         """
         :rtype: Expression
         """
         return EqualsExpression(self, value)
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> Expression:
         """
         :rtype: Expression
         """
@@ -382,7 +382,7 @@ class RangeDocField(PgDocField):
         ).label(self.name)
 
     @override
-    def __eq__(self, value):
+    def __eq__(self, value) -> Expression:  # type: ignore[override]
         """
         :rtype: Expression
         """
@@ -417,7 +417,7 @@ class NumericRangeDocField(RangeDocField):
         )
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> Expression:
         """
         :rtype: Expression
         """
@@ -440,7 +440,7 @@ class IntRangeDocField(RangeDocField):
         )
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> Expression:
         """
         :rtype: Expression
         """
@@ -463,7 +463,7 @@ class DoubleRangeDocField(RangeDocField):
         )
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> Expression:
         """
         :rtype: Expression
         """
@@ -488,7 +488,7 @@ class DateRangeDocField(RangeDocField):
         )
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> Expression:
         """
         :rtype: Expression
         """
@@ -606,7 +606,7 @@ class EqualsExpression(PgExpression):
         return self.field.evaluate(ctx) == self.value
 
 
-def parse_fields(doc, table_column):
+def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
     """
     Parse a field spec document into objects.
 
