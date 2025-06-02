@@ -759,7 +759,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     @override
     def search_by_product(
         self, archived: bool | None = False, **query
-    ) -> Iterable[tuple]:
+    ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         """
         Perform a search, returning datasets grouped by product type.
 
@@ -829,7 +829,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             order_by=order_by,
         ):
             for columns in p_results:
-                coldict = columns._asdict()
+                coldict = columns._asdict()  # type: ignore[attr-defined]
 
                 def extract_field(f):
                     # Custom fields are not type-aware and returned as stringified json.
@@ -931,7 +931,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         limit: int | None = None,
         archived: bool | None = False,
         order_by=None,
-    ) -> Iterator:
+    ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         if "geopolygon" in query:
             raise NotImplementedError("Spatial search API not supported by this index.")
         if source_filter:
@@ -1060,7 +1060,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             query, return_fields=True, archived=archived
         ):
             for columns in results:
-                yield columns._asdict()
+                yield columns._asdict()  # type: ignore[attr-defined]
 
     @override
     def spatial_extent(self, ids, crs=None) -> None:
