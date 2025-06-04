@@ -8,11 +8,14 @@ What's New
 Next Release
 ============
 
+- index: add return types :pull:`1939`
 - Update dependencies :pull:`1925`
 - Run Ruff format on all code :pull:`1926`, :pull:`1927`
 - Group all dependabot updates in the 'uv' ecosystem. :pull:`1928`, :pull:`1934`
 - Move deprecated imports :pull:`1938`
 - index: fix search_by_product type :pull:`1944`
+- Put coverage config in pyproject :pull:`1942`
+- Fix alembic deprecation warning :pull:`1941`
 
 v1.9.4 (20 May 2025)
 ====================
