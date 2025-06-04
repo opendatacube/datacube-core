@@ -57,7 +57,9 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         return self._make(definition)
 
     @override
-    def add(self, metadata_type: MetadataType, allow_table_lock: bool = False):
+    def add(
+        self, metadata_type: MetadataType, allow_table_lock: bool = False
+    ) -> MetadataType:
         """
         :param datacube.model.MetadataType metadata_type:
         :param allow_table_lock:
@@ -82,14 +84,14 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
                 jsonify_document(metadata_type.definition),
                 f"Metadata Type {metadata_type.name}",
             )
-        else:
-            with self._db_connection(transaction=allow_table_lock) as connection:
-                connection.insert_metadata_type(
-                    name=metadata_type.name,
-                    definition=metadata_type.definition,
-                    concurrently=not allow_table_lock,
-                )
-        return self.get_by_name(metadata_type.name)
+            return existing
+        with self._db_connection(transaction=allow_table_lock) as connection:
+            connection.insert_metadata_type(
+                name=metadata_type.name,
+                definition=metadata_type.definition,
+                concurrently=not allow_table_lock,
+            )
+        return self.get_by_name_unsafe(metadata_type.name)
 
     @override
     def can_update(
@@ -151,7 +153,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         metadata_type: MetadataType,
         allow_unsafe_updates: bool = False,
         allow_table_lock: bool = False,
-    ):
+    ) -> MetadataType:
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -172,9 +174,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
         if not safe_changes and not unsafe_changes:
             _LOG.warning("No changes detected for metadata type %s", metadata_type.name)
-            return self.get_by_name(metadata_type.name)
-
-        if not can_update:
+        elif not can_update:
             raise ValueError(
                 f"Unsafe changes in {metadata_type.name}: "
                 + (
@@ -183,19 +183,19 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
                     )
                 )
             )
+        else:
+            _LOG.info("Updating metadata type %s", metadata_type.name)
 
-        _LOG.info("Updating metadata type %s", metadata_type.name)
+            with self._db_connection(transaction=allow_table_lock) as connection:
+                connection.update_metadata_type(
+                    name=metadata_type.name,
+                    definition=metadata_type.definition,
+                    concurrently=not allow_table_lock,
+                )
 
-        with self._db_connection(transaction=allow_table_lock) as connection:
-            connection.update_metadata_type(
-                name=metadata_type.name,
-                definition=metadata_type.definition,
-                concurrently=not allow_table_lock,
-            )
-
-        self.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
-        self.get_unsafe.cache_clear()  # type: ignore[attr-defined]
-        return self.get_by_name(metadata_type.name)
+            self.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
+            self.get_unsafe.cache_clear()  # type: ignore[attr-defined]
+        return self.get_by_name_unsafe(metadata_type.name)
 
     @override
     def update_document(

@@ -117,7 +117,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
 
         if not safe_changes and not unsafe_changes:
             _LOG.warning(f"No changes detected for metadata type {metadata_type.name}")
-            return cast(MetadataType, self.get_by_name(metadata_type.name))
+            return self.get_by_name_unsafe(metadata_type.name)
 
         if not can_update:
             errs = ", ".join(_readable_offset(change[0]) for change in unsafe_changes)
