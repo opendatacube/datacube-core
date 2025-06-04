@@ -95,7 +95,6 @@ class Tile:
 
     @property
     def product(self) -> Product:
-        """ """
         return self.sources.values[0][0].product
 
     def __getitem__(self, chunk):
