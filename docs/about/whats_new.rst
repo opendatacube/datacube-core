@@ -14,7 +14,7 @@ Next Release
 - Group all dependabot updates in the 'uv' ecosystem. :pull:`1928`, :pull:`1934`
 - Move deprecated imports :pull:`1938`
 - Fix alembic deprecation warning :pull:`1941`
-- ``archive-less-mature`` runs when reindexing datasets :pull:`1948`
+- ``archive-less-mature`` runs when re-indexing datasets :pull:`1948`
 
 v1.9.4 (20 May 2025)
 ====================
