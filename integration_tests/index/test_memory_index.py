@@ -678,7 +678,7 @@ def test_mem_ds_search_and_count_by_product(mem_eo3_data: tuple) -> None:
     assert not list(dc.index.datasets.search_by_product(platform="deplatformed"))
     lds = list(dc.index.datasets.search_by_product(platform="landsat-8"))
     assert len(lds) == 2
-    for dss, product in lds:
+    for product, dss in lds:
         for ds in dss:
             assert ds.product.name == product.name
     lds = list(dc.index.datasets.count_by_product(platform="landsat-8"))

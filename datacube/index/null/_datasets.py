@@ -11,7 +11,7 @@ from typing_extensions import override
 
 from datacube.index.abstract import DSID, AbstractDatasetResource
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Dataset, Product
+from datacube.model import Dataset, Product, QueryField
 
 
 class DatasetResource(AbstractDatasetResource):
@@ -186,7 +186,9 @@ class DatasetResource(AbstractDatasetResource):
         return []
 
     @override
-    def search_by_product(self, archived: bool | None = False, **query) -> list:
+    def search_by_product(
+        self, archived: bool | None = False, **query: QueryField
+    ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         return []
 
     @override
