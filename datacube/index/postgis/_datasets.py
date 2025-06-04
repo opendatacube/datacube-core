@@ -196,9 +196,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         _LOG.info("Indexing %s", dataset.id)
 
-        if self.has(dataset.id):
-            _LOG.warning("Dataset %s is already in the database", dataset.id)
-            return dataset
         with self._db_connection(transaction=True) as transaction:
             # 1a. insert (if not already exists)
             product_id = dataset.product.id
@@ -220,12 +217,14 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                             "Postgis driver does not support multiple locations for a dataset."
                         )
                     self._ensure_new_locations(dataset, transaction=transaction)
+                if dataset.source_tree is not None:
+                    self._index.lineage.add(dataset.source_tree)
+                if dataset.derived_tree is not None:
+                    self._index.lineage.add(dataset.derived_tree)
+            else:
+                _LOG.warning("Dataset %s is already in the database", dataset.id)
             if archive_less_mature is not None:
                 self.archive_less_mature(dataset, archive_less_mature)
-            if dataset.source_tree is not None:
-                self._index.lineage.add(dataset.source_tree)
-            if dataset.derived_tree is not None:
-                self._index.lineage.add(dataset.derived_tree)
 
         return dataset
 
