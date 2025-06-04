@@ -540,7 +540,7 @@ class DatasetResource(AbstractDatasetResource):
         source_filter: Mapping[str, QueryField] | None = None,
         archived: bool | None = False,
         **query: QueryField,
-    ) -> Iterable[Dataset | tuple[Iterable[Dataset], Product]]:
+    ) -> Iterable[Dataset | tuple[Product, Iterable[Dataset]]]:
         if "geopolygon" in query:
             raise NotImplementedError(
                 "Spatial search index API not supported by this index."
@@ -621,7 +621,7 @@ class DatasetResource(AbstractDatasetResource):
                 elif return_format == self.RET_FORMAT_PRODUCT_GROUPED:
                     product_results.append(ds)
             if return_format == self.RET_FORMAT_PRODUCT_GROUPED and product_results:
-                yield product_results, product
+                yield product, product_results
 
     def _search_flat(
         self,
@@ -647,9 +647,9 @@ class DatasetResource(AbstractDatasetResource):
         source_filter: Mapping[str, QueryField] | None = None,
         archived: bool | None = False,
         **query: QueryField,
-    ) -> Iterable[tuple[Iterable[Dataset], Product]]:
+    ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         return cast(
-            Iterable[tuple[Iterable[Dataset], Product]],
+            Iterable[tuple[Product, Iterable[Dataset]]],
             self._search(
                 return_format=self.RET_FORMAT_PRODUCT_GROUPED,
                 limit=limit,
@@ -695,7 +695,7 @@ class DatasetResource(AbstractDatasetResource):
     @override
     def search_by_product(
         self, archived: bool | None = False, **query: QueryField
-    ) -> Iterable[tuple[Iterable[Dataset], Product]]:
+    ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         return self._search_grouped(archived=archived, **query)  # type: ignore[arg-type]
 
     @override
@@ -751,7 +751,7 @@ class DatasetResource(AbstractDatasetResource):
     def count_by_product(
         self, archived: bool | None = False, **query: QueryField
     ) -> Iterable[tuple[Product, int]]:
-        for datasets, prod in self.search_by_product(archived=archived, **query):
+        for prod, datasets in self.search_by_product(archived=archived, **query):
             yield prod, len(list(datasets))
 
     @override
@@ -826,12 +826,7 @@ class DatasetResource(AbstractDatasetResource):
         single_product_only: bool = False,
         archived: bool | None = False,
         **query: QueryField,
-    ) -> Iterable[
-        tuple[
-            Product,
-            Iterable[tuple[Range, int]],
-        ]
-    ]:
+    ) -> Iterable[tuple[Product, Iterable[tuple[Range, int]]]]:
         YieldType = tuple[Product, Iterable[tuple[Range, int]]]  # noqa: N806
         query = dict(query)
         try:
@@ -842,7 +837,7 @@ class DatasetResource(AbstractDatasetResource):
             ) from None
         periods = self._expand_period(period, start, end)
         last_product: YieldType | None = None
-        for dss, product in self._search_grouped(archived=archived, **query):  # type: ignore[arg-type]
+        for product, dss in self._search_grouped(archived=archived, **query):  # type: ignore[arg-type]
             if last_product and single_product_only:
                 raise ValueError(
                     f"Multiple products match single query search: {query!r}"

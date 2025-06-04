@@ -769,7 +769,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     @override
     def search_by_product(
         self, archived: bool | None = False, **query
-    ) -> Iterable[tuple]:
+    ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         """
         Perform a search, returning datasets grouped by product type.
 
@@ -923,7 +923,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         limit: int | None = None,
         archived: bool | None = False,
         order_by=None,
-    ) -> Iterator:
+    ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         assert not with_source_ids
         assert source_filter is None
         product_queries = list(self._get_product_queries(query))
@@ -1043,7 +1043,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             query, return_fields=True, archived=archived
         ):
             for columns in results:
-                output = columns._asdict()
+                output = columns._asdict()  # type: ignore[attr-defined]
                 _LOG.warning("search results: %s (%s)", output["id"], output["product"])
                 yield output
 

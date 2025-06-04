@@ -283,8 +283,8 @@ class AbstractMetadataTypeResource(ABC):
             This will halt other user's requests until completed.
 
             If false, creation will be slightly slower and cannot be done in a transaction.
-        :param: rebuild_views: whether or not views should be rebuilt
-        :param: rebuild_indexes: whether or not views should be rebuilt
+        :param rebuild_views: whether or not views should be rebuilt
+        :param rebuild_indexes: whether or not views should be rebuilt
         """
 
     @abstractmethod
