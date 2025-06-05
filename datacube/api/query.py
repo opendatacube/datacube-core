@@ -14,7 +14,9 @@ import warnings
 
 import numpy as np
 import pandas
+import xarray
 from odc.geo import Geometry
+from odc.geo.geobox import GeoBox
 from odc.geo.geom import lonlat_bounds, mid_longitude
 from pandas import to_datetime as pandas_to_datetime
 from typing_extensions import override
@@ -69,7 +71,12 @@ OTHER_KEYS = (
 
 class Query:
     def __init__(
-        self, index=None, product=None, geopolygon=None, like=None, **search_terms
+        self,
+        index=None,
+        product=None,
+        geopolygon=None,
+        like: GeoBox | xarray.Dataset | xarray.DataArray | None = None,
+        **search_terms,
     ) -> None:
         """Parses search terms in preparation for querying the Data Cube Index.
 
@@ -146,7 +153,7 @@ class Query:
             self.geopolygon = getattr(like, "extent", self.geopolygon)
 
             if "time" not in self.search:
-                time_coord = like.coords.get("time")
+                time_coord = like.coords.get("time")  # type: ignore[union-attr]
                 if time_coord is not None:
                     self.search["time"] = _time_to_search_dims(
                         # convert from np.datetime64 to datetime.datetime

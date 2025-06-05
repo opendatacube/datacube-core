@@ -129,6 +129,33 @@ null = 'datacube.index.null.index:index_driver_init'
 memory = 'datacube.index.memory.index:index_driver_init'
 postgis = 'datacube.index.postgis.index:index_driver_init'
 
+[tool.coverage.run]
+branch = false
+omit = [
+    "datacube/_version.py",
+    "datacube/drivers/postgis/alembic/versions/*",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    # From coverage manual (https://coverage.readthedocs.io/en/latest/excluding.html).
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+
+    # OUR EXCEPTIONS:
+    "except ImportError:",
+    "pytest.fail\\(", # Parameter checks in pytest.
+    "raise TypeError\\(", # "Impossible" errors.
+]
+
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
 testpaths = ["datacube", "tests", "integration_tests"]
@@ -147,6 +174,7 @@ select = [
     "A",  # Don't shadow built-ins
     "B",  # flake8-bugbear
     "C4", # flake8-comprehensions
+    "D419", # No empty doc strings
     "E",  # pycodestyle errors
     "EXE", # flake8-executable
     "I",  # isort

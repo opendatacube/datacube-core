@@ -305,7 +305,9 @@ _save_blob_to_file_delayed = delayed(
 _save_blob_to_s3_delayed = delayed(_save_blob_to_s3, name="save-to-s3", pure=False)
 
 
-def save_blob_to_file(data, fname, with_deps=None) -> tuple[Path, bool]:
+def save_blob_to_file(
+    data: bytes | str, fname: str, with_deps=None
+) -> tuple[Path, bool]:
     """
     Dump from memory to local filesystem as a dask delayed operation.
 
@@ -333,9 +335,9 @@ def save_blob_to_file(data, fname, with_deps=None) -> tuple[Path, bool]:
 
 
 def save_blob_to_s3(
-    data,
-    url,
-    profile=None,
+    data: bytes | str,
+    url: str,
+    profile: str | None = None,
     creds=None,
     region_name: str | None = None,
     with_deps=None,

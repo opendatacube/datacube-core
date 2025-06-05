@@ -6,6 +6,8 @@
 Functions for working with YAML documents and configurations
 """
 
+from __future__ import annotations
+
 import collections.abc
 import gzip
 import json
@@ -13,11 +15,11 @@ import logging
 import math
 import sys
 from collections import OrderedDict
-from collections.abc import Iterator, Mapping
+from collections.abc import Generator, Iterator, Mapping
 from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from uuid import UUID
@@ -26,6 +28,9 @@ import numpy
 import toolz
 import yaml
 from typing_extensions import override
+
+if TYPE_CHECKING:
+    from datacube.model import Field
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -127,7 +132,7 @@ def load_documents(path):
             yield from parser(fh)
 
 
-def read_documents(*paths, uri: bool = False):
+def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:
     """
     Read and parse documents from the filesystem or remote URLs (yaml or json).
 
@@ -240,7 +245,7 @@ _ALL_SUPPORTED_EXTENSIONS: tuple[str, ...] = tuple(
 )
 
 
-def is_supported_document_type(path) -> bool:
+def is_supported_document_type(path: Path | str) -> bool:
     """
     Does a document path look like a supported type?
 
@@ -462,7 +467,7 @@ class SimpleDocNav:
     def location(self):
         return self._doc.get("location", None)
 
-    def without_location(self) -> "SimpleDocNav":
+    def without_location(self) -> SimpleDocNav:
         if self.location is None:
             return self
         return SimpleDocNav(toolz.dissoc(self._doc, "location"))
@@ -479,7 +484,12 @@ def _set_doc_offset(offset: list[str | int], document: dict, value) -> None:
 
 
 class DocReader:
-    def __init__(self, type_definition, search_fields, doc) -> None:
+    def __init__(
+        self,
+        type_definition: dict[str, list[str]],
+        search_fields,
+        doc: Mapping[str, Field],
+    ) -> None:
         """
         :type type_definition: dict[str,list[str]]
         :type doc: dict

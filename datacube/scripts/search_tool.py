@@ -137,7 +137,7 @@ def printable_dt(val: datetime.datetime) -> str:
 
 
 @printable.register(Range)
-def printable_r(val) -> str:
+def printable_r(val: Range) -> str:
     """
     :type val: sqlalchemy.dialects.postgresql.Range
     """

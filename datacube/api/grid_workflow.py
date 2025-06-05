@@ -95,7 +95,6 @@ class Tile:
 
     @property
     def product(self) -> Product:
-        """ """
         return self.sources.values[0][0].product
 
     def __getitem__(self, chunk):
@@ -306,7 +305,9 @@ class GridWorkflow:
         return datasets, query
 
     @staticmethod
-    def group_into_cells(observations, group_by) -> dict[tuple[int, int], Tile]:
+    def group_into_cells(
+        observations, group_by: GroupBy
+    ) -> dict[tuple[int, int], Tile]:
         """
         Group observations into a stack of source tiles.
 
@@ -327,7 +328,9 @@ class GridWorkflow:
         return cells
 
     @staticmethod
-    def tile_sources(observations, group_by: GroupBy):
+    def tile_sources(
+        observations, group_by: GroupBy
+    ) -> dict[tuple[int, int, np.datetime64], Tile]:
         """
         Split observations into tiles and group into source tiles
 
@@ -405,7 +408,7 @@ class GridWorkflow:
         fuse_func=None,
         resampling=None,
         skip_broken_datasets=False,
-    ):
+    ) -> xr.Dataset:
         """
         Load data for a cell/tile.
 

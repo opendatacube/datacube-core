@@ -37,19 +37,19 @@ beautifulsoup4==4.13.4
     #   pydata-sphinx-theme
 bleach==6.2.0
     # via nbconvert
-boto3==1.38.25
+boto3==1.38.29
     # via
     #   datacube (pyproject.toml)
     #   moto
-boto3-stubs==1.38.25
+boto3-stubs==1.38.29
     # via datacube (pyproject.toml:dev)
-botocore==1.38.25
+botocore==1.38.29
     # via
     #   datacube (pyproject.toml)
     #   boto3
     #   moto
     #   s3transfer
-botocore-stubs==1.38.25
+botocore-stubs==1.38.29
     # via
     #   datacube (pyproject.toml:dev)
     #   boto3-stubs
@@ -133,7 +133,7 @@ geoalchemy2==0.17.1
     # via datacube (pyproject.toml)
 greenlet==3.2.2
     # via sqlalchemy
-hypothesis==6.131.30
+hypothesis==6.135.0
     # via datacube (pyproject.toml:dev)
 idna==3.10
     # via requests
@@ -200,7 +200,7 @@ moto==5.1.5
     # via datacube (pyproject.toml:dev)
 msgpack==1.1.0
     # via distributed
-mypy==1.15.0
+mypy==1.16.0
     # via datacube (pyproject.toml:dev)
 mypy-extensions==1.1.0
     # via mypy
@@ -297,7 +297,7 @@ pyproj==3.7.1
     # via
     #   datacube (pyproject.toml)
     #   odc-geo
-pytest==8.3.5
+pytest==8.4.0
     # via
     #   datacube (pyproject.toml:dev)
     #   pytest-cov
@@ -342,11 +342,11 @@ rpds-py==0.25.1
     # via
     #   jsonschema
     #   referencing
-ruamel-yaml==0.18.11
+ruamel-yaml==0.18.12
     # via datacube (pyproject.toml)
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
-ruff==0.11.11
+ruff==0.11.12
     # via datacube (pyproject.toml:dev)
 s3transfer==0.13.0
     # via boto3
@@ -436,7 +436,7 @@ types-cffi==1.17.0.20250523
     # via types-pyopenssl
 types-jsonschema==4.24.0.20250528
     # via datacube (pyproject.toml:dev)
-types-psutil==7.0.0.20250516
+types-psutil==7.0.0.20250601
     # via datacube (pyproject.toml:dev)
 types-pyopenssl==24.1.0.20240722
     # via types-redis

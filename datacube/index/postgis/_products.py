@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from time import monotonic
 from typing import TYPE_CHECKING, cast
 
@@ -241,7 +241,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         _LOG.info("Updating product %s", product.name)
 
-        existing = cast(Product, self.get_by_name(product.name))
+        existing = self.get_by_name_unsafe(product.name)
         changing_metadata_type = (
             product.metadata_type.name != existing.metadata_type.name
         )
@@ -287,7 +287,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         definition,
         allow_unsafe_updates: bool = False,
         allow_table_lock: bool = False,
-    ):
+    ) -> Product | None:
         """
         Update a Product using its definition
 
@@ -418,7 +418,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 yield type_, remaining_matchable
 
     @override
-    def search_by_metadata(self, metadata):
+    def search_by_metadata(self, metadata) -> Generator[Product]:
         """
         Perform a search using arbitrary metadata, returning results as Product objects.
 

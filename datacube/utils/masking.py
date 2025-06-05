@@ -77,7 +77,7 @@ def _order_bitdefs_by_bits(bitdef):
         return defn["bits"]
 
 
-def make_mask(variable, **flags):
+def make_mask(variable: Dataset | DataArray, **flags):
     """
     Returns a mask array, based on provided flags
 
@@ -191,7 +191,7 @@ def create_mask_value(bits_def, **flags) -> tuple[int, int]:
     return mask, value
 
 
-def mask_to_dict(bits_def, mask_value):
+def mask_to_dict(bits_def: dict, mask_value: int) -> dict:
     """
     Describes which flags are set for a mask value
 
@@ -241,7 +241,7 @@ def get_flags_def(variable):
     raise ValueError("No masking variable found")
 
 
-def set_value_at_index(bitmask, index, value):
+def set_value_at_index(bitmask: int, index: int, value: bool) -> int:
     """
     Set a bit value onto an integer bitmask
 

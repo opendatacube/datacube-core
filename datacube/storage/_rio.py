@@ -52,7 +52,9 @@ class BandDataSource(GeoRasterReader):
     :type source: rasterio.Band
     """
 
-    def __init__(self, source, nodata=None, lock: RLock | None = None) -> None:
+    def __init__(
+        self, source: rasterio.Band, nodata=None, lock: RLock | None = None
+    ) -> None:
         self.source = source
         if nodata is None:
             nodata = self.source.ds.nodatavals[self.source.bidx - 1]

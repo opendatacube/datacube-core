@@ -22,6 +22,7 @@ from typing import cast as type_cast
 
 from sqlalchemy import (
     Label,
+    Select,
     String,
     and_,
     bindparam,
@@ -41,6 +42,7 @@ from sqlalchemy.engine import Row
 from sqlalchemy.exc import IntegrityError
 from typing_extensions import override
 
+from datacube.index.abstract import DSID
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.fields import Expression, Field, OrExpression
 from datacube.model import Range
@@ -266,7 +268,7 @@ class PostgresDbAPI:
         )
         return res.rowcount > 0
 
-    def insert_dataset_location(self, dataset_id, uri) -> bool:
+    def insert_dataset_location(self, dataset_id: DSID, uri: str) -> bool:
         """
         Add a location to a dataset if it is not already recorded.
 
@@ -461,7 +463,9 @@ class PostgresDbAPI:
 
         return self._connection.execute(query).fetchall()
 
-    def search_datasets_by_metadata(self, metadata, archived: bool | None = False):
+    def search_datasets_by_metadata(
+        self, metadata: dict, archived: bool | None = False
+    ) -> dict:
         """
         Find any datasets that have the given metadata.
 
@@ -478,7 +482,7 @@ class PostgresDbAPI:
         query = select(*_DATASET_SELECT_FIELDS).where(where_clause)
         return self._connection.execute(query).fetchall()
 
-    def search_products_by_metadata(self, metadata):
+    def search_products_by_metadata(self, metadata: dict) -> dict:
         """
         Find any products that have the given metadata.
 
@@ -501,14 +505,14 @@ class PostgresDbAPI:
 
     @staticmethod
     def search_datasets_query(
-        expressions,
-        source_exprs=None,
-        select_fields=None,
+        expressions: Iterable[Expression],
+        source_exprs: Iterable[Expression] | None = None,
+        select_fields: Iterable[PgField] | None = None,
         with_source_ids: bool = False,
         limit: int | None = None,
         archived: bool | None = False,
         order_by=None,
-    ):
+    ) -> Select:
         """
         :type expressions: tuple[Expression]
         :type source_exprs: tuple[Expression]
@@ -572,9 +576,7 @@ class PostgresDbAPI:
 
         if not source_exprs:
             return (
-                select(
-                    *select_columns  # type: ignore[arg-type]
-                )
+                select(*select_columns)
                 .select_from(from_expression)
                 .where(where_expr)
                 .order_by(*order_by)
@@ -646,9 +648,9 @@ class PostgresDbAPI:
 
     def search_datasets(
         self,
-        expressions,
-        source_exprs=None,
-        select_fields=None,
+        expressions: Iterable[Expression],
+        source_exprs: Iterable[Expression] | None = None,
+        select_fields: Iterable[PgField] | None = None,
         with_source_ids: bool = False,
         limit: int | None = None,
         archived: bool | None = False,
@@ -849,7 +851,9 @@ class PostgresDbAPI:
 
         return self._connection.execute(final_query)
 
-    def count_datasets(self, expressions, archived: bool | None = False):
+    def count_datasets(
+        self, expressions: Iterable[Expression], archived: bool | None = False
+    ) -> int:
         """
         :type expressions: tuple[datacube.drivers.postgres._fields.PgExpression]
         :rtype: int
@@ -872,8 +876,13 @@ class PostgresDbAPI:
         return self._connection.scalar(select_query)
 
     def count_datasets_through_time(
-        self, start, end, period, time_field, expressions
-    ) -> Iterator:
+        self,
+        start: datetime.datetime,
+        end: datetime.datetime,
+        period: str,
+        time_field,
+        expressions: Iterable[Expression],
+    ) -> Iterator[tuple[tuple[datetime.datetime, datetime.datetime], int]]:
         """
         :type period: str
         :type start: datetime.datetime
