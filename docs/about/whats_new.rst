@@ -14,6 +14,7 @@ Next Release
 - Group all dependabot updates in the 'uv' ecosystem. :pull:`1928`, :pull:`1934`
 - Move deprecated imports :pull:`1938`
 - Fix alembic deprecation warning :pull:`1941`
+- Add boolean field definition :pull:`1949`
 
 v1.9.4 (20 May 2025)
 ====================
