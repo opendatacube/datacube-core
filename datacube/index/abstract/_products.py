@@ -5,7 +5,7 @@
 import datetime
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Generator, Iterable, Sequence
 from time import monotonic
 from typing import TYPE_CHECKING, cast
 
@@ -282,7 +282,7 @@ class AbstractProductResource(ABC):
         """
         Add a Product using its definition
 
-        :param dict definition: product definition document
+        :param definition: product definition document
         :return: Persisted Product model
         """
         type_ = self.from_doc(definition)
@@ -296,7 +296,7 @@ class AbstractProductResource(ABC):
         Delete the specified products.
 
         :param products: Products to be deleted
-        :param bool allow_delete_active:
+        :param allow_delete_active:
             Whether to allow the deletion of a Product with active datasets
             (and thereby said active datasets). Use with caution.
 
@@ -392,7 +392,7 @@ class AbstractProductResource(ABC):
             out.update(prod.metadata_type.dataset_fields)
         return out
 
-    def search(self, **query: QueryField) -> Iterator[Product]:
+    def search(self, **query: QueryField) -> Generator[Product]:
         """
         Return products that match the supplied query
 

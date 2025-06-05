@@ -77,7 +77,6 @@ def check_with_existing_lineage(clirunner, index) -> None:
 
     Add nodes BCE(D) with auto-matching, then add node A with product restricted to A only.
     """
-
     ds = SimpleDocNav(gen_dataset_test_dag(33, force_tree=True))
 
     child_docs = [ds.sources[x].doc for x in ("ab", "ac", "ae")]

@@ -86,7 +86,6 @@ def choose_datasource(band: BandInfo) -> DatasourceFactory:
     - Available IO plugins
 
     NOTE: we assume that all bands can be loaded with the same implementation.
-
     """
     from datacube.storage._rio import RasterDatasetDataSource
 
@@ -108,9 +107,7 @@ def new_datasource(band: BandInfo) -> DataSource | None:
     ``DataSource`` can be found.
 
     :param band: The band to choose data source from.
-
     """
-
     source_type = choose_datasource(band)
 
     if source_type is None:

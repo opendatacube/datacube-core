@@ -58,9 +58,8 @@ class NetcdfWriterDriver:
 
             mk_uri(file_path) should return 'file:///path/to/my_file.nc'
 
-        :param Path file_path: The file path of the file to be converted into a URI.
+        :param file_path: The file path of the file to be converted into a URI.
         :return: file_path as a URI that the Driver understands.
-        :rtype: str
         """
         return normalise_path(file_path).as_uri()
 

@@ -339,7 +339,6 @@ def show_product(dc, product_name: str, output_format: str) -> None:
     """
     Show details about a product in the generic index.
     """
-
     if len(product_name) == 0:
         products = list(dc.index.products.get_all())
     else:

@@ -366,7 +366,6 @@ def to_cog(
     :returns: ``dask.Delayed`` object if input is a Dask array
 
     Also see :py:meth:`~datacube.utils.cog.write_cog`
-
     """
     bb = write_cog(  # Call to deprecated function from deprecated function
         geo_im,

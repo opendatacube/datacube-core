@@ -56,11 +56,7 @@ def assert_file_structure(
     """
     Assert that the contents of a folder (filenames and subfolder names recursively)
     match the given nested dictionary structure.
-
-    :type folder: pathlib.Path
-    :type expected_structure: dict[str,str|dict]
     """
-
     expected_filenames = set(expected_structure.keys())
     actual_filenames = {f.name for f in folder.iterdir()}
 
@@ -98,8 +94,6 @@ def write_files(file_dict: Mapping[str, str | Sequence[str]]) -> pathlib.Path:
 
     writeFiles({'test.txt': 'contents of text file'})
 
-    :type file_dict: dict
-    :rtype: pathlib.Path
     :return: Created temporary directory path
     """
     containing_dir = tempfile.mkdtemp(suffix="neotestrun")
@@ -118,9 +112,6 @@ def _write_files_to_dir(
 ) -> None:
     """
     Convenience method for writing a bunch of files to a given directory.
-
-    :type directory_path: str
-    :type file_dict: dict
     """
     for filename, contents in file_dict.items():
         path = os.path.join(directory_path, filename)
@@ -386,7 +377,6 @@ def mk_test_image(w, h, dtype: str = "int16", nodata=-999, nodata_width: int = 4
 
     Pixels along the diagonal are set to nodata values (to disable set nodata_width=0)
     """
-
     dtype = np.dtype(dtype)
 
     xx, yy = np.meshgrid(np.arange(w), np.arange(h))
@@ -495,7 +485,6 @@ def mk_sample_xr_dataset(
 
     xy (x: float, y: float) -- location of the top-left corner of the top-left pixel in CRS units
     """
-
     if isinstance(crs, str):
         crs = CRS(crs)
 

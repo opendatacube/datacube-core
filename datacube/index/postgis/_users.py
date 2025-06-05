@@ -19,9 +19,6 @@ if TYPE_CHECKING:
 
 class UserResource(AbstractUserResource, IndexResourceAddIn):
     def __init__(self, db: PostGisDb, index: Index) -> None:
-        """
-        :type db: datacube.drivers.postgis.PostGisDb
-        """
         self._db = db
         self._index = index
 
@@ -55,7 +52,6 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
     def list_users(self) -> Iterable[tuple[str, str, str | None]]:
         """
         :return: list of (role, user, description)
-        :rtype: list[(str, str, str)]
         """
         with self._db_connection() as connection:
             yield from connection.list_users()

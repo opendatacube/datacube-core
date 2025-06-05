@@ -144,8 +144,6 @@ def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:
 
     :param uri: When True yield URIs instead of Paths
     :param paths: input Paths or URIs
-    :type uri: Bool
-    :rtype: tuple[(str, dict)]
     """
 
     def process_file(path):
@@ -248,9 +246,6 @@ _ALL_SUPPORTED_EXTENSIONS: tuple[str, ...] = tuple(
 def is_supported_document_type(path: Path | str) -> bool:
     """
     Does a document path look like a supported type?
-
-    :type path: Union[Path, str]
-    :rtype: bool
     """
     return any(
         str(path).lower().endswith(suffix) for suffix in _ALL_SUPPORTED_EXTENSIONS
@@ -294,11 +289,6 @@ class UnknownMetadataType(InvalidDocException):
 
 
 def get_doc_offset(offset: list[str | int], document: dict, default=None):
-    """
-    :type offset: list[str]
-    :type document: dict
-
-    """
     return toolz.get_in(offset, document, default=default)
 
 
@@ -338,7 +328,6 @@ def transform_object_tree(f, o, key_transform=lambda k: k):
     :param f: Function to apply on values.
     :param o: document/object
     :param key_transform: Optional function to apply on any dictionary keys.
-
     """
 
     def recur(o_):
@@ -415,7 +404,6 @@ class SimpleDocNav:
     This has the assumption that a dictionary of source datasets is
     found at the offset ``lineage -> source_datasets`` inside each
     dataset dictionary.
-
     """
 
     def __init__(self, doc: Mapping, sources_path=None) -> None:
@@ -474,10 +462,6 @@ class SimpleDocNav:
 
 
 def _set_doc_offset(offset: list[str | int], document: dict, value) -> None:
-    """
-    :type offset: list[str]
-    :type document: dict
-    """
     read_offset = offset[:-1]
     sub_doc = get_doc_offset(read_offset, document, {})
     sub_doc[offset[-1]] = value
@@ -490,10 +474,6 @@ class DocReader:
         search_fields,
         doc: Mapping[str, Field],
     ) -> None:
-        """
-        :type type_definition: dict[str,list[str]]
-        :type doc: dict
-        """
         self.__dict__["_doc"] = doc
 
         # The user-configurable search fields for this dataset type.
@@ -562,9 +542,9 @@ def without_lineage_sources(
 ) -> dict[str, Any]:
     """Replace lineage.source_datasets with {}
 
-    :param dict doc: parsed yaml/json document describing dataset
+    :param doc: parsed yaml/json document describing dataset
     :param spec: Product or MetadataType according to which `doc` to be interpreted
-    :param bool inplace: If True modify `doc` in place
+    :param inplace: If True modify `doc` in place
     """
     if not inplace:
         doc = deepcopy(doc)
@@ -584,13 +564,13 @@ def without_lineage_sources(
     return doc
 
 
-def schema_validated(schema):
+def schema_validated(schema: Path):
     """
     Decorate a class to enable validating its definition against a JSON Schema file.
 
     Adds a self.validate() method which takes a dict used to populate the instantiated class.
 
-    :param pathlib.Path schema: filename of the json schema, relative to `SCHEMA_PATH`
+    :param schema: filename of the json schema, relative to `SCHEMA_PATH`
     :return: wrapped class
     """
 

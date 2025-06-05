@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import importlib
 import logging
+from collections.abc import Mapping
 from contextlib import contextmanager
 
 import toolz
@@ -63,14 +64,13 @@ class cached_property:  # pylint: disable=invalid-name  # noqa: N801
         return value
 
 
-def sorted_items(d, key=None, reverse: bool = False):
+def sorted_items(d: Mapping | None, key=None, reverse: bool = False) -> list:
     """Given a dictionary `d` return items: (k1, v1), (k2, v2)... sorted in
     ascending order according to key.
 
-    :param dict d: dictionary
+    :param d: dictionary
     :param key: optional function remapping key
-    :param bool reverse: If True return in descending order instead of default ascending
-
+    :param reverse: If True return in descending order instead of default ascending
     """
     if d is None:
         return []

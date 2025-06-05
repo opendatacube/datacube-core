@@ -377,7 +377,6 @@ def rio_slurp(fname, *args, **kw):
 
     rio_slurp_read(fname, out_shape, ..)
     rio_slurp_reproject(fname, geobox, ...)
-
     """
     if len(args) == 0:
         if "geobox" in kw:

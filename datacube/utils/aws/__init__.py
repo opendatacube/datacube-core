@@ -284,7 +284,6 @@ def s3_client(
                   ``"purge"`` - delete from cache and return what was there to begin with
 
     :param cfg: passed on to ``botocore.client.Config(..)``
-
     """
     if aws_unsigned is None:
         if creds is None:
@@ -408,7 +407,6 @@ def s3_dump(data: bytes | str | IO, url: str, s3: MaybeS3 = None, **kwargs):
     ContentType
     ACL
     """
-
     s3 = s3 or s3_client()
     bucket, key = s3_url_parse(url)
 
