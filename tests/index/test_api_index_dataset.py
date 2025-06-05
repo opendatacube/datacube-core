@@ -173,6 +173,9 @@ class MockDb:
     def datasets_intersection(self, ids):
         return [k for k in ids if k in self.dataset]
 
+    def contains_dataset(self, dataset_id):
+        return dataset_id in self.dataset
+
     def insert_dataset_location(self, *args, **kwargs) -> None:
         return
 

@@ -97,6 +97,13 @@ def test_archive_less_mature(index, final_dataset, nrt_dataset, ds_no_region) ->
         # should error as more mature version of dataset already exists
         index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
 
+    # case 3: re-index final; nrt should still get archived
+    assert index.datasets.get(final_dataset.id) is not None
+    index.datasets.add(nrt_dataset, with_lineage=False)
+    assert not index.datasets.get(nrt_dataset.id).is_archived
+    index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=True)
+    assert index.datasets.get(nrt_dataset.id).is_archived
+
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_cannot_search_for_less_mature(index, nrt_dataset, ds_no_region) -> None:

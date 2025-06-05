@@ -236,14 +236,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 if not present[ds.id]
             ]
         else:
-            if self.has(dataset.id):
-                _LOG.warning("Dataset %s is already in the database", dataset.id)
-                return dataset
-
             dss = [dataset]
 
         with self._db_connection(transaction=True) as transaction:
-            process_bunch(dss, dataset, transaction)
+            if self.has(dataset.id):
+                _LOG.warning("Dataset %s is already in the database", dataset.id)
+            else:
+                process_bunch(dss, dataset, transaction)
             if archive_less_mature is not None:
                 self.archive_less_mature(dataset, archive_less_mature)
 
