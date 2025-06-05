@@ -24,18 +24,14 @@ from odc.geo.xr import xr_coords
 from typing_extensions import override
 
 from datacube.cfg import GeneralisedCfg, GeneralisedEnv, GeneralisedRawCfg, ODCConfig
-from datacube.model import (
-    Dataset,
-    ExtraDimensions,
-    ExtraDimensionSlices,
-    Measurement,
-)
+from datacube.model import Dataset, ExtraDimensions, ExtraDimensionSlices, Measurement
 from datacube.model.utils import xr_apply
 from datacube.storage import BandInfo, reproject_and_fuse
 from datacube.utils import ignore_exceptions_if
 from datacube.utils.dates import normalise_dt
 
 if TYPE_CHECKING:
+    from odc.geo.crs import MaybeCRS
     from pandas import DataFrame
 
     from datacube.model import GridSpec
@@ -277,7 +273,7 @@ class Datacube:
         self,
         product: str | None = None,
         measurements: str | list[str] | None = None,
-        output_crs: str | None = None,
+        output_crs: MaybeCRS = None,
         resolution: (
             int | float | tuple[int | float, int | float] | Resolution | None
         ) = None,
