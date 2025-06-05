@@ -369,6 +369,22 @@ class DoubleDocField(NumericDocField):
         return float(value)
 
 
+class BoolDocField(SimpleDocField):
+    type_name = "boolean"
+
+    @override
+    def value_to_alchemy(self, value):
+        return cast(value, postgres.BOOLEAN)
+
+    @override
+    def parse_value(self, value) -> bool:
+        if value.lower() == "false":
+            return False
+        if value.lower() == "true":
+            return True
+        return bool(value)
+
+
 DateFieldLike: TypeAlias = datetime | date | str | ColumnElement
 
 
@@ -745,6 +761,7 @@ def parse_fields(doc, table_column):
     types = {
         SimpleDocField,
         IntDocField,
+        BoolDocField,
         DoubleDocField,
         DateDocField,
         NumericRangeDocField,
