@@ -247,6 +247,22 @@ class IntDocField(SimpleDocField):
         return int(value)
 
 
+class BoolDocField(SimpleDocField):
+    type_name = "boolean"
+
+    @override
+    def value_to_alchemy(self, value):
+        return cast(value, postgres.BOOLEAN)
+
+    @override
+    def parse_value(self, value):
+        if value.lower() == "false":
+            return False
+        if value.lower() == "true":
+            return True
+        return bool(value)
+
+
 class NumericDocField(SimpleDocField):
     type_name = "numeric"
 
@@ -608,6 +624,7 @@ def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
     types = {
         SimpleDocField,
         IntDocField,
+        BoolDocField,
         DoubleDocField,
         DateDocField,
         NumericRangeDocField,

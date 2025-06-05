@@ -9,6 +9,7 @@ from decimal import Decimal
 import pytest
 
 from datacube.drivers.postgis._fields import (
+    BoolDocField,
     DateDocField,
     DoubleDocField,
     IntDocField,
@@ -40,3 +41,9 @@ def test_date_parse() -> None:
     assert fld.parse_value("2020-07-22T14:45:22.452434+0000") == datetime.datetime(
         2020, 7, 22, 14, 45, 22, 452434, tzinfo=datetime.timezone.utc
     )
+
+
+def test_bool_parse() -> None:
+    fld = BoolDocField("test_fld", "field for testing", Dataset.metadata_doc, True)
+    assert fld.parse_value("false") is False
+    assert fld.parse_value("true") is True
