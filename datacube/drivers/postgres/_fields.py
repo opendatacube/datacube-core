@@ -256,7 +256,7 @@ class IntDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> int:
         return int(value)
 
 
@@ -268,7 +268,7 @@ class BoolDocField(SimpleDocField):
         return cast(value, postgres.BOOLEAN)
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> bool:
         if value.lower() == "false":
             return False
         if value.lower() == "true":
@@ -288,7 +288,7 @@ class NumericDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> Decimal:
         return Decimal(value)
 
 
@@ -304,7 +304,7 @@ class DoubleDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> float:
         return float(value)
 
 
@@ -331,7 +331,7 @@ class DateDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> datetime:
         return utils.parse_time(value)
 
     @property

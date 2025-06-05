@@ -349,7 +349,7 @@ class NumericDocField(SimpleDocField):
         return RangeBetweenExpression(self, low, high, _range_class=PgRange)
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> Decimal:
         return Decimal(value)
 
 
@@ -365,7 +365,7 @@ class DoubleDocField(NumericDocField):
     type_name = "double"
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> float:
         return float(value)
 
 
@@ -429,7 +429,7 @@ class DateDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> datetime:
         return utils.parse_time(value)
 
     @property
