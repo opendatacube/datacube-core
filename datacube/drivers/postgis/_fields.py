@@ -349,7 +349,7 @@ class NumericDocField(SimpleDocField):
         return RangeBetweenExpression(self, low, high, _range_class=PgRange)
 
     @override
-    def parse_value(self, value) -> Decimal:
+    def parse_value(self, value):
         return Decimal(value)
 
 
