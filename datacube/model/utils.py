@@ -6,9 +6,9 @@ import os
 import platform
 import sys
 import uuid
-from collections.abc import Mapping, Sequence
+from collections.abc import Generator, Mapping, Sequence
 from datetime import datetime, timezone
-from typing import Literal
+from typing import Any, Literal
 
 import numpy
 import toolz
@@ -17,6 +17,7 @@ import yaml
 from odc.geo import CRS
 from odc.geo.geom import Geometry, point
 from pandas import to_datetime
+from xarray import DataArray
 
 import datacube
 from datacube.model import Dataset
@@ -151,7 +152,7 @@ def source_info(source_datasets):
     }
 
 
-def datasets_to_doc(output_datasets):
+def datasets_to_doc(output_datasets: DataArray) -> DataArray:
     """
     Create a yaml document version of every dataset
 
@@ -167,7 +168,7 @@ def datasets_to_doc(output_datasets):
     return xr_apply(output_datasets, dataset_to_yaml, dtype="O").astype("S")
 
 
-def xr_iter(data_array):
+def xr_iter(data_array: DataArray) -> Generator[tuple[tuple, dict, Any]]:
     """
     Iterate over every element in an xarray, returning::
 
@@ -189,8 +190,8 @@ def xr_iter(data_array):
 
 
 def xr_apply(
-    data_array, func, dtype=None, with_numeric_index: bool = False
-) -> xarray.DataArray:
+    data_array: DataArray, func, dtype=None, with_numeric_index: bool = False
+) -> DataArray:
     """
     Apply a function to every element of a :class:`xarray.DataArray`
 

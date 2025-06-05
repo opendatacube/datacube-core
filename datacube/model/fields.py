@@ -85,7 +85,8 @@ class Field:
             f"Invalid type name {self.type_name!r}"
         )
 
-    def __eq__(self, value) -> Expression:  # type: ignore
+    @override
+    def __eq__(self, value) -> Expression:  # type: ignore[override]
         """
         Is this field equal to a value?
 

@@ -36,6 +36,8 @@ from datacube.utils import ignore_exceptions_if
 from datacube.utils.dates import normalise_dt
 
 if TYPE_CHECKING:
+    from pandas import DataFrame
+
     from datacube.model import GridSpec
     from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox
 
@@ -49,8 +51,6 @@ from .query import GroupBy, Query, query_group_by
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-# Either a Pandas dataframe or a list of flat dictionaries.
-# Pandas is loaded dynamically, so cannot be statically typed: use DataFrameLike | Any
 DataFrameLike = list[dict[str, str | int | float | None]]
 
 
@@ -146,7 +146,7 @@ class Datacube:
 
     def list_products(
         self, with_pandas: bool = True, dataset_count: bool = False
-    ) -> DataFrameLike | Any:
+    ) -> DataFrame | DataFrameLike:
         """
         List all products in the datacube. This will produce a ``pandas.DataFrame``
         or list of dicts containing useful information about each product, including:
@@ -238,7 +238,7 @@ class Datacube:
     )
     def list_measurements(
         self, show_archived: bool = False, with_pandas: bool = True
-    ) -> DataFrameLike | Any:
+    ) -> DataFrame | DataFrameLike:
         """
         List measurements for each product
 
@@ -277,7 +277,7 @@ class Datacube:
         self,
         product: str | None = None,
         measurements: str | list[str] | None = None,
-        output_crs: Any = None,
+        output_crs: str | None = None,
         resolution: (
             int | float | tuple[int | float, int | float] | Resolution | None
         ) = None,
