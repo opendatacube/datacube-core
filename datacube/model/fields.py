@@ -30,6 +30,7 @@ _AVAILABLE_TYPE_NAMES = (
     "numeric",
     "double",
     "integer",
+    "boolean",
     "datetime",
     # For backwards compatibility (alias for numeric-range)
     "float-range",
@@ -176,6 +177,7 @@ def parse_search_field(doc, name: str = "") -> RangeField | SimpleField:
         "string": str,
         "double": float,
         "integer": int,
+        "boolean": bool,
         "numeric": decimal.Decimal,
         "datetime": parse_time,
         "object": lambda x: x,
