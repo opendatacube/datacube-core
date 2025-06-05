@@ -6,6 +6,8 @@
 API for dataset indexing, access and search.
 """
 
+from __future__ import annotations
+
 import datetime
 import json
 import logging
@@ -13,7 +15,7 @@ import warnings
 from collections import namedtuple
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from time import monotonic
-from typing import Any, NamedTuple, cast
+from typing import TYPE_CHECKING, Any, NamedTuple, cast
 from uuid import UUID
 
 from deprecat import deprecat
@@ -50,9 +52,13 @@ from datacube.model import Dataset, LineageTree, Product, Range
 from datacube.model._base import QueryField
 from datacube.model.fields import Field
 from datacube.utils import _readable_offset, changes, jsonify_document
-from datacube.utils.changes import Offset, get_doc_changes
+from datacube.utils.changes import Change, Offset, get_doc_changes
 from datacube.utils.documents import JsonDict
 from datacube.utils.uris import split_uri
+
+if TYPE_CHECKING:
+    from datacube.drivers.postgis import PostGisDb
+    from datacube.index.postgis.index import Index
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -65,7 +71,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     :type products: datacube.index._products.ProductResource
     """
 
-    def __init__(self, db, index) -> None:
+    def __init__(self, db: PostGisDb, index: Index) -> None:
         """
         :type db: datacube.drivers.postgis._connections.PostgresDb
         :type index: datacube.index._products.ProductResource
@@ -335,7 +341,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     @override
     def can_update(
         self, dataset: Dataset, updates_allowed=None
-    ) -> tuple[bool, list, list]:
+    ) -> tuple[bool, list[Change], list[Change]]:
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 
@@ -501,7 +507,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         return purged
 
     @override
-    def get_all_dataset_ids(self, archived: bool | None = False) -> list:
+    def get_all_dataset_ids(self, archived: bool | None = False) -> list[UUID]:
         """
         Get list of all dataset IDs based only on archived status
 
@@ -520,7 +526,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         category=ODC2DeprecationWarning,
     )
     @override
-    def get_locations(self, id_) -> list:
+    def get_locations(self, id_) -> list[str | None]:
         """
         Get the list of storage locations for the given dataset id
 
@@ -551,7 +557,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         category=ODC2DeprecationWarning,
     )
     @override
-    def get_archived_locations(self, id_) -> list:
+    def get_archived_locations(self, id_: DSID) -> list[str]:
         """
         Find locations which have been archived for a dataset
 
@@ -567,7 +573,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         category=ODC2DeprecationWarning,
     )
     @override
-    def get_archived_location_times(self, id_) -> list:
+    def get_archived_location_times(
+        self, id_: DSID
+    ) -> list[tuple[str, datetime.datetime]]:
         """
         Get each archived location along with the time it was archived.
 
@@ -583,7 +591,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         category=ODC2DeprecationWarning,
     )
     @override
-    def add_location(self, id_, uri) -> bool:
+    def add_location(self, id_: DSID, uri: str) -> bool:
         """
         Add a location to the dataset if it doesn't already exist.
 
@@ -714,7 +722,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     @override
     def search_by_metadata(
         self, metadata: JsonDict, archived: bool | None = False
-    ) -> Iterable:
+    ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
@@ -745,7 +753,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         archived: bool | None = False,
         order_by=None,
         **query,
-    ) -> Iterable:
+    ) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
 
@@ -768,7 +776,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     @override
     def search_by_product(
         self, archived: bool | None = False, **query
-    ) -> Iterable[tuple]:
+    ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         """
         Perform a search, returning datasets grouped by product type.
 
@@ -864,7 +872,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     @override
     def count_by_product(
         self, archived: bool | None = False, **query
-    ) -> Iterable[tuple]:
+    ) -> Iterable[tuple[Product, int]]:
         """
         Perform a search, returning a count of for each matching product type.
 
@@ -875,9 +883,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return self._do_count_by_product(query, archived=archived)
 
-    # FIXME: Missing parameters from super method.
     @override
-    def count_by_product_through_time(self, period, **query):
+    def count_by_product_through_time(
+        self, period: str, archived: bool | None = False, **query: QueryField
+    ) -> Iterable[tuple[Product, Iterable[tuple[Range, int]]]]:
         """
         Perform a search, returning counts for each product grouped in time slices
         of the given period.
@@ -889,9 +898,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return self._do_time_count(period, query)
 
-    # FIXME: Missing parameters from super method.
     @override
-    def count_product_through_time(self, period, **query):
+    def count_product_through_time(
+        self, period: str, archived: bool | None = False, **query: QueryField
+    ) -> Iterable[tuple[Range, int]]:
         """
         Perform a search, returning counts for a single product grouped in time slices
         of the given period.
@@ -922,7 +932,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         limit: int | None = None,
         archived: bool | None = False,
         order_by=None,
-    ) -> Iterator:
+    ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         assert not with_source_ids
         assert source_filter is None
         product_queries = list(self._get_product_queries(query))
@@ -1042,7 +1052,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             query, return_fields=True, archived=archived
         ):
             for columns in results:
-                output = columns._asdict()
+                output = columns._asdict()  # type: ignore[attr-defined]
                 _LOG.warning("search results: %s (%s)", output["id"], output["product"])
                 yield output
 
@@ -1103,7 +1113,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     pass
             else:
 
-                class DatasetLight(result_type):  # type: ignore
+                class DatasetLight(result_type):  # type: ignore[no-redef]
                     __slots__ = ()
 
             with self._db_connection() as connection:
@@ -1127,7 +1137,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def make_select_fields(
         self, product, field_names: Sequence[str], custom_offsets
-    ) -> list:
+    ) -> list[PgField]:
         """
         Parse and generate the list of select fields to be passed to the database API.
         """

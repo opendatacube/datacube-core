@@ -682,7 +682,7 @@ class AbstractDatasetResource(ABC):
     @abstractmethod
     def search_by_product(
         self, archived: bool | None = False, **query: QueryField
-    ) -> Iterable[tuple[Iterable[Dataset], Product]]:
+    ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         """
         Perform a search, returning datasets grouped by product type.
 

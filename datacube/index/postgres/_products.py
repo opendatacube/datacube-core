@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, cast
 
 from cachetools.func import lru_cache
@@ -277,7 +277,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         definition,
         allow_unsafe_updates: bool = False,
         allow_table_lock: bool = False,
-    ):
+    ) -> Product | None:
         """
         Update a Product using its definition
 
@@ -409,7 +409,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 yield type_, remaining_matchable
 
     @override
-    def search_by_metadata(self, metadata):
+    def search_by_metadata(self, metadata) -> Generator[Product]:
         """
         Perform a search using arbitrary metadata, returning results as Product objects.
 
