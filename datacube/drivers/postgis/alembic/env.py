@@ -2,10 +2,12 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import MutableMapping
+from collections.abc import Iterable, MutableMapping
 from typing import Literal
 
 from alembic import context
+from alembic.operations import MigrationScript
+from alembic.runtime.migration import MigrationContext
 
 from datacube.cfg import ODCConfig, ODCEnvironment
 from datacube.drivers.postgis._connections import PostGisDb
@@ -149,9 +151,23 @@ def run_migrations_online() -> None:
 
 
 def run_migration_with_connection(connection) -> None:
+    # Do not generate a file with --autogenerate unless there is a difference.
+    def process_revision_directives(
+        context: MigrationContext,
+        revision: str | Iterable[str | None] | Iterable[str],
+        directives: list[MigrationScript],
+    ) -> None:
+        assert config.cmd_opts is not None
+        if getattr(config.cmd_opts, "autogenerate", False):
+            script = directives[0]
+            assert script.upgrade_ops is not None
+            if script.upgrade_ops.is_empty():
+                directives[:] = []
+
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
+        process_revision_directives=process_revision_directives,
         version_table_schema=SCHEMA_NAME,
         include_schemas=True,
         include_name=include_name,
