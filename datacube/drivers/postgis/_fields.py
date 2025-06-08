@@ -623,7 +623,7 @@ class DateRangeDocField(RangeDocField):
         )
 
 
-def _number_implies_year(v: int | datetime) -> datetime:
+def _number_implies_year(v: int | float | datetime) -> datetime:
     """
     >>> _number_implies_year(1994)
     datetime.datetime(1994, 1, 1, 0, 0)

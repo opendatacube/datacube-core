@@ -9,7 +9,7 @@ Common methods for index integration tests.
 import itertools
 import os
 import warnings
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from copy import copy, deepcopy
 from datetime import timedelta
 from pathlib import Path
@@ -31,7 +31,7 @@ from datacube.drivers.postgis import _core as pgis_core
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres import _core as pgres_core
 from datacube.index import index_connect
-from datacube.index.abstract import default_metadata_type_docs
+from datacube.index.abstract import AbstractIndex, default_metadata_type_docs
 from datacube.model import LineageDirection, LineageTree
 from integration_tests.utils import (
     GEOTIFF,
@@ -476,7 +476,7 @@ def odc_config() -> ODCConfig:
 
 
 @pytest.fixture
-def cfg_env(odc_config, datacube_env_name: str) -> ODCEnvironment:
+def cfg_env(odc_config: ODCConfig, datacube_env_name: str) -> ODCEnvironment:
     """Provides a :class:`ODCEnvironment` configured with suitable config file paths."""
     return odc_config[datacube_env_name]
 
@@ -484,7 +484,7 @@ def cfg_env(odc_config, datacube_env_name: str) -> ODCEnvironment:
 @pytest.fixture
 def cfg_env_pair(
     odc_config: ODCConfig, datacube_env_name_pair: tuple[str, str]
-) -> tuple[ODCEnvironment, ODCEnvironment]:
+) -> tuple[ODCEnvironment, ...]:
     """Provides a pair of :class:`ODCEnvironment` configured with suitable config file paths."""
     return tuple(odc_config[env] for env in datacube_env_name_pair)
 
@@ -508,7 +508,7 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
     url_components = urlparse(url)
     db_name = url_components.path[1:]
     if cfg_env._name in ("datacube", "default", "postgres"):
-        db = PostgresDb.from_config(
+        db: PostgresDb | PostGisDb = PostgresDb.from_config(
             cfg_env, application_name="test-run", validate_connection=False
         )
         # Drop tables so our tests have a clean db.
@@ -549,7 +549,7 @@ def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb) -> None:
 @pytest.fixture(params=["America/Los_Angeles", "UTC"])
 def uninitialised_postgres_db(
     cfg_env: ODCEnvironment, request
-) -> PostgresDb | PostGisDb:
+) -> Generator[PostgresDb | PostGisDb]:
     """
     Return a connection to an empty PostgreSQL or PostGIS database
     """
@@ -564,7 +564,9 @@ def uninitialised_postgres_db(
 
 
 @pytest.fixture
-def uninitialised_postgres_db_pair(cfg_env_pair):
+def uninitialised_postgres_db_pair(
+    cfg_env_pair,
+) -> Generator[tuple[PostgresDb | PostGisDb, ...]]:
     """
     Return a pair of connections to empty PostgreSQL or PostGIS databases
     """
@@ -577,7 +579,9 @@ def uninitialised_postgres_db_pair(cfg_env_pair):
 
 
 @pytest.fixture
-def index(cfg_env, uninitialised_postgres_db: PostGisDb | PostgresDb):
+def index(
+    cfg_env: ODCEnvironment, uninitialised_postgres_db: PostGisDb | PostgresDb
+) -> Generator[AbstractIndex]:
     index = index_connect(cfg_env, validate_connection=False)
     index.init_db()
     yield index
@@ -638,7 +642,9 @@ def index_pair_populated_empty(
 
 
 @pytest.fixture
-def index_empty(cfg_env, uninitialised_postgres_db: PostGisDb | PostgresDb):
+def index_empty(
+    cfg_env: ODCEnvironment, uninitialised_postgres_db: PostGisDb | PostgresDb
+) -> Generator[AbstractIndex]:
     index = index_connect(cfg_env, validate_connection=False)
     index.init_db(with_default_types=False)
     yield index
