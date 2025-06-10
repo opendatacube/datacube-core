@@ -284,11 +284,7 @@ class PostgisDbAPI:
     def insert_dataset(self, metadata_doc, dataset_id, product_id) -> bool:
         """
         Insert dataset if not already indexed.
-        :type metadata_doc: dict
-        :type dataset_id: str or uuid.UUID
-        :type product_id: int
         :return: whether it was inserted
-        :rtype: bool
         """
         metadata_subquery = (
             select(Product.metadata_type_ref)
@@ -318,9 +314,6 @@ class PostgisDbAPI:
     def update_dataset(self, metadata_doc, dataset_id, product_id) -> bool:
         """
         Update dataset
-        :type metadata_doc: dict
-        :type dataset_id: str or uuid.UUID
-        :type product_id: int
         """
         res = self._connection.execute(
             update(Dataset.__table__)  # type: ignore[arg-type]
@@ -336,12 +329,7 @@ class PostgisDbAPI:
         Add a location to a dataset if it is not already recorded.
 
         Returns True if success, False if this location already existed
-
-        :type dataset_id: str or uuid.UUID
-        :type uri: str
-        :rtype bool:
         """
-
         scheme, body = split_uri(uri)
 
         r = self._connection.execute(
@@ -358,12 +346,6 @@ class PostgisDbAPI:
         Add/update a search field index entry for a dataset
 
         Returns True on success
-
-        :type search_table: A DatasetSearch ORM table
-        :type dataset_id: str or uuid.UUID
-        :type key: The name of the search field
-        :type value: The value for the search field for this dataset.
-        :rtype bool:
         """
         if isinstance(value, Range):
             value = list(value)
@@ -393,11 +375,6 @@ class PostgisDbAPI:
         Add/update a spatial index entry for a dataset
 
         Returns True on success
-
-        :type dataset_id: str or uuid.UUID
-        :type crs: CRS
-        :type extent: Geometry
-        :rtype bool:
         """
         values = generate_dataset_spatial_values(dataset_id, crs, extent)
         if values is None:
@@ -531,9 +508,6 @@ class PostgisDbAPI:
     ) -> dict:
         """
         Find any datasets that have the given metadata.
-
-        :type metadata: dict
-        :rtype: dict
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         where = Dataset.metadata_doc.contains(metadata)
@@ -547,9 +521,6 @@ class PostgisDbAPI:
     def search_products_by_metadata(self, metadata: dict) -> dict:
         """
         Find any datasets that have the given metadata.
-
-        :type metadata: dict
-        :rtype: dict
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         return self._connection.execute(
@@ -590,16 +561,6 @@ class PostgisDbAPI:
         archived: bool | None = False,
         order_by: Iterable | None = None,
     ) -> Select:
-        """
-        :type expressions: Tuple[Expression]
-        :type source_exprs: Tuple[Expression]
-        :type select_fields: Iterable[PgField]
-        :type with_source_ids: bool
-        :type limit: int
-        :type order_by: Iterable[Any]
-        :type geom: Geometry
-        :rtype: sqlalchemy.Expression
-        """
         # TODO: lineage handling and source search
         assert source_exprs is None
         assert not with_source_ids
@@ -667,10 +628,6 @@ class PostgisDbAPI:
         order_by=None,
     ) -> Iterator:
         """
-        :type with_source_ids: bool
-        :type select_fields: tuple[datacube.drivers.postgis._fields.PgField]
-        :type expressions: tuple[datacube.drivers.postgis._fields.PgExpression]
-
         :return: An iterable of tuples of decoded values
         """
         assert source_exprs is None
@@ -859,11 +816,6 @@ class PostgisDbAPI:
         archived: bool | None = False,
         geom: Geometry | None = None,
     ) -> int:
-        """
-        :type expressions: tuple[datacube.drivers.postgis._fields.PgExpression]
-        :rtype: int
-        """
-
         raw_expressions = self._alchemify_expressions(expressions)
         if archived:
             where_expressions = and_(Dataset.archived.is_not(None), *raw_expressions)
@@ -893,14 +845,6 @@ class PostgisDbAPI:
         time_field,
         expressions: Iterable[Expression],
     ) -> Iterator[tuple[tuple[datetime.datetime, datetime.datetime], int]]:
-        """
-        :type period: str
-        :type start: datetime.datetime
-        :type end: datetime.datetime
-        :type expressions: tuple[datacube.drivers.postgis._fields.PgExpression]
-        :rtype: list[((datetime.datetime, datetime.datetime), int)]
-        """
-
         results = self._connection.execute(
             self.count_datasets_through_time_query(
                 start, end, period, time_field, expressions

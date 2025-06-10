@@ -198,7 +198,6 @@ class SimpleVariableWithFlagsDef:
           values:
             16383: true
         """
-
     flags_definition = yaml.safe_load(bits_def_yaml)
 
 
@@ -271,7 +270,6 @@ class VariableWithMultiBitFlags:
             0: False
             1: True
     """
-
     flags_definition = yaml.safe_load(bits_def_yaml)
 
 

@@ -584,7 +584,6 @@ def test_fiscal_year_multi_time_dimensions() -> None:
     Test the fiscal year is applied to every
     input time dimension
     """
-
     times_mock_1 = [
         "2015-06-30T11:59:59.999999000",
         "2015-12-31T11:59:59.999999000",

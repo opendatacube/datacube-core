@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 """
 Test utility functions from :module:`datacube.utils`
-
-
 """
 
 import os
@@ -353,7 +351,6 @@ def test_simple_doc_nav() -> None:
     |
     +--> E
     """
-
     nu_map = {n: uuid4() for n in ["A", "B", "C", "D", "E"]}
     un_map = {u: n for n, u in nu_map.items()}
 

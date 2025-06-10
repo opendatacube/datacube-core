@@ -16,7 +16,7 @@ from datacube.drivers.postgres import PostgresDb
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
-from datacube.model import MetadataType, Product
+from datacube.model import MetadataType, Product, QueryField
 from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 from datacube.utils.documents import JsonDict
@@ -34,10 +34,6 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
     """
 
     def __init__(self, db: PostgresDb, index: Index) -> None:
-        """
-        :type db: datacube.drivers.postgres._connections.PostgresDb
-        :type index: datacube.index.postgres.index.Index
-        """
         super().__init__(index)
         self._db = db
 
@@ -67,8 +63,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
             If false, creation will be slightly slower
 
-        :param Product product: Product to add
-        :rtype: Product
+        :param product: Product to add
         """
         Product.validate(product.definition)  # type: ignore[attr-defined]
 
@@ -128,14 +123,13 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param Product product: Product to update
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :param product: Product to update
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: bool,list[change],list[change]
         """
         Product.validate(product.definition)  # type: ignore[attr-defined]
 
@@ -197,16 +191,14 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param Product product: Product to update
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :param product: Product to update
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: Product
         """
-
         can_update, safe_changes, unsafe_changes = self.can_update(
             product, allow_unsafe_updates
         )
@@ -274,21 +266,20 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
     @override
     def update_document(
         self,
-        definition,
+        definition: JsonDict,
         allow_unsafe_updates: bool = False,
         allow_table_lock: bool = False,
     ) -> Product | None:
         """
         Update a Product using its definition
 
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
-        :param dict definition: product definition document
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :param definition: product definition document
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: Product
         """
         type_ = self.from_doc(definition)
         return self.update(
@@ -305,7 +296,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         Delete Products, as well as all related datasets
 
         :param products: the Products to delete
-        :param bool allow_delete_active:
+        :param allow_delete_active:
             Whether to delete products with active datasets
         :return: list of deleted products
         """
@@ -357,12 +348,11 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         return self._make(result)
 
     @override
-    def search_robust(self, **query):
+    def search_robust(self, **query: QueryField):
         """
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
 
-        :param dict query:
-        :rtype: __generator[(Product, dict)]
+        :param query:
         """
 
         def _listify(v):
@@ -409,14 +399,13 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 yield type_, remaining_matchable
 
     @override
-    def search_by_metadata(self, metadata) -> Generator[Product]:
+    def search_by_metadata(self, metadata: dict) -> Generator[Product]:
         """
         Perform a search using arbitrary metadata, returning results as Product objects.
 
         Caution - slow! This will usually not use indexes.
 
-        :param dict metadata:
-        :rtype: list[Product]
+        :param metadata:
         """
         with self._db_connection() as connection:
             yield from self._make_many(connection.search_products_by_metadata(metadata))

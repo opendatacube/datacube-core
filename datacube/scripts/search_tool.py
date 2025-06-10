@@ -130,17 +130,11 @@ def printable_none(val) -> str:
 
 @printable.register(datetime.datetime)
 def printable_dt(val: datetime.datetime) -> str:
-    """
-    :type val: datetime.datetime
-    """
     return tz_as_utc(val).isoformat()
 
 
 @printable.register(Range)
 def printable_r(val: Range) -> str:
-    """
-    :type val: sqlalchemy.dialects.postgresql.Range
-    """
     if val.lower_inf:
         return printable(val.upper)
     if val.upper_inf:

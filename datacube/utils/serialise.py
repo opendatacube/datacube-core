@@ -62,7 +62,6 @@ def jsonify_document(doc):
     Make a document ready for serialisation as JSON.
 
     Returns the new document, leaving the original unmodified.
-
     """
 
     def fixup_value(v):

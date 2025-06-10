@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import math
 from collections import OrderedDict
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -338,7 +338,6 @@ class Dataset:
         (an archived dataset is one that is not intended to be used by users anymore: eg. it has been
         replaced by another dataset. It will not show up in search results, but still exists in the
         system via provenance chains or through id lookup.)
-
         """
         return self.archived_time is not None
 
@@ -353,7 +352,6 @@ class Dataset:
         Is this dataset active?
 
         (ie. dataset hasn't been archived)
-
         """
         return not self.is_archived
 
@@ -451,7 +449,6 @@ class Measurement:
 
     Can also include attributes like alternative names 'aliases', and spectral and bit flags
     definitions to aid with interpreting the data.
-
     """
 
     REQUIRED_KEYS = ("name", "dtype", "nodata", "units")
@@ -661,8 +658,8 @@ class Product:
     """
     Product definition
 
-    :param MetadataType metadata_type:
-    :param dict definition:
+    :param metadata_type:
+    :param definition:
     """
 
     def __init__(
@@ -1054,11 +1051,11 @@ class GridSpec:
                0.0, -0.1, -48.05), CRS('EPSG:4326'))), ((1, 1), GeoBox((10, 10), Affine(0.1, 0.0, 140.95,
                0.0, -0.1, -48.05), CRS('EPSG:4326')))]
 
-    :param odc.geo.crs.CRS crs: Coordinate System used to define the grid
-    :param [float,float] tile_size: (Y, X) size of each tile, in CRS units
-    :param [float,float] resolution: (Y, X) size of each data point in the grid, in CRS units. Y will
+    :param crs: Coordinate System used to define the grid
+    :param tile_size: (Y, X) size of each tile, in CRS units
+    :param resolution: (Y, X) size of each data point in the grid, in CRS units. Y will
         usually be negative.
-    :param [float,float] origin: (Y, X) coordinates of a corner of the (0,0) tile in CRS units. default is (0.0, 0.0)
+    :param origin: (Y, X) coordinates of a corner of the (0,0) tile in CRS units. default is (0.0, 0.0)
     """
 
     def __init__(
@@ -1098,7 +1095,6 @@ class GridSpec:
     def dimensions(self) -> tuple[str, str]:
         """
         List of dimension names of the grid spec
-
         """
         return self.crs.dimensions
 
@@ -1140,7 +1136,7 @@ class GridSpec:
         """
         Tile geobox.
 
-        :param (int,int) tile_index:
+        :param tile_index:
         """
         res_y, res_x = self.resolution
         y, x = self.tile_coords(tile_index)
@@ -1152,7 +1148,7 @@ class GridSpec:
 
     def tiles(
         self, bounds: BoundingBox, geobox_cache: dict | None = None
-    ) -> Iterator[tuple[tuple[int, int], GeoBox]]:
+    ) -> Generator[tuple[tuple[int, int], GeoBox]]:
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `bounds` rectangle.
@@ -1162,8 +1158,8 @@ class GridSpec:
            Grid cells are referenced by coordinates `(x, y)`, which is the opposite to the usual CRS
            dimension order.
 
-        :param BoundingBox bounds: Boundary coordinates of the required grid
-        :param dict geobox_cache: Optional cache to reuse geoboxes instead of creating new one each time
+        :param bounds: Boundary coordinates of the required grid
+        :param geobox_cache: Optional cache to reuse geoboxes instead of creating new one each time
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
 
@@ -1193,7 +1189,7 @@ class GridSpec:
         geopolygon: Geometry,
         tile_buffer: tuple[float, float] | None = None,
         geobox_cache: dict | None = None,
-    ) -> Iterator[tuple[tuple[int, int], GeoBox]]:
+    ) -> Generator[tuple[tuple[int, int], GeoBox]]:
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `geopolygon`.
@@ -1203,10 +1199,10 @@ class GridSpec:
            Grid cells are referenced by coordinates `(x, y)`, which is the opposite to the usual CRS
            dimension order.
 
-        :param odc.geo.Geometry geopolygon: Polygon to tile
+        :param geopolygon: Polygon to tile
         :param tile_buffer: Optional <float,float> tuple, (extra padding for the query
                             in native units of this GridSpec)
-        :param dict geobox_cache: Optional cache to reuse geoboxes instead of creating new one each time
+        :param geobox_cache: Optional cache to reuse geoboxes instead of creating new one each time
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
         geopolygon = geopolygon.to_crs(self.crs)
@@ -1264,7 +1260,7 @@ def metadata_from_doc(doc: Mapping[str, Any]) -> MetadataType:
     """
     from .fields import get_dataset_fields
 
-    MetadataType.validate(doc)  # type: ignore
+    MetadataType.validate(doc)  # type: ignore[attr-defined]
     return MetadataType(doc, get_dataset_fields(doc))
 
 

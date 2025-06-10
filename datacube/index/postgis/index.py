@@ -55,11 +55,6 @@ class Index(AbstractIndex):
     :ivar datacube.index._metadata_types.MetadataTypeResource metadata_types: store and retrieve \
     :class:`datacube.model.MetadataType`
     :ivar UserResource users: user management
-
-    :type users: datacube.index._users.UserResource
-    :type datasets: datacube.index._datasets.DatasetResource
-    :type products: datacube.index._products.ProductResource
-    :type metadata_types: datacube.index._metadata_types.MetadataTypeResource
     """
 
     #   Metadata type support flags

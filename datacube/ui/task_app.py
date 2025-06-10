@@ -9,7 +9,7 @@ import os
 import pickle
 import re
 import time
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from pathlib import Path
 
 import click
@@ -51,12 +51,12 @@ def unpickle_stream(filename):
                 break
 
 
-def save_tasks(config, tasks, taskfile: str) -> int:
+def save_tasks(config: dict, tasks, taskfile: str) -> int:
     """Saves the config
 
     :param config: dict of configuration options common to all tasks
     :param tasks:
-    :param str taskfile: Name of output file
+    :param taskfile: Name of output file
     :return: Number of tasks saved to the file
     """
     i = pickle_stream(itertools.chain([config], tasks), taskfile)
@@ -175,7 +175,7 @@ def break_query_into_years(time_query, **kwargs):
     ]
 
 
-def year_splitter(start, end):
+def year_splitter(start: str, end: str) -> Generator[tuple[str, str]]:
     """
     Produces a list of time ranges based that represent each year in the range.
 
@@ -185,8 +185,8 @@ def year_splitter(start, end):
         [('1992-01-01 00:00:00', '1992-12-31 23:59:59.9999999'),
          ('1993-01-01 00:00:00', '1993-12-31 23:59:59.9999999')]
 
-    :param str start: start year
-    :param str end: end year
+    :param start: start year
+    :param end: end year
     :return Generator[tuple(str, str)]: strings representing the ranges
     """
     start_ts = pd.Timestamp(start)

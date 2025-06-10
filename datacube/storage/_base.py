@@ -25,7 +25,6 @@ def _get_band_and_layer(b: dict[str, Any]) -> tuple[int | None, str | None]:
          int    -    (int,  - )
          int   str   (int, str)
           -    str   ( - , str)
-
     """
     band = b.get("band")
     layer = b.get("layer")

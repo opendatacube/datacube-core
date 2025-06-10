@@ -60,7 +60,6 @@ def _write_yaml(index: Iterable) -> None:
 
     (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
     """
-
     return yaml.dump_all(
         index, sys.stdout, SafeDatacubeDumper, default_flow_style=False, indent=4
     )

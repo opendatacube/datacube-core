@@ -51,7 +51,6 @@ def run_migrations_offline() -> None:
 
     Calls to context.execute() here emit the given string to the
     script output.
-
     """
     context.configure(
         dialect_name="postgresql",
@@ -126,7 +125,6 @@ def run_migrations_online() -> None:
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
-
     """
     # An active postgis Connection:
     connection = config.attributes.get("connection")

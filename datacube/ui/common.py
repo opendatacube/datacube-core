@@ -62,8 +62,6 @@ def _find_any_metadata_suffix(path: Path) -> Path | None:
 
     Eg. searching for '/tmp/ga-metadata' will find if any files such as '/tmp/ga-metadata.yaml' or
     '/tmp/ga-metadata.json', or '/tmp/ga-metadata.yaml.gz' etc that exist: any suffix supported by read_documents()
-
-    :type path: pathlib.Path
     """
     existing_paths = list(
         filter(is_supported_document_type, path.parent.glob(path.name + "*"))
@@ -95,7 +93,6 @@ def ui_path_doc_stream(paths, logger=None, uri: bool = True, raw: bool = False):
 
     :param raw: By default docs are wrapped in :class:`SimpleDocNav`, but you can
     instead request them to be raw dictionaries
-
     """
 
     def _resolve_doc_files(paths):

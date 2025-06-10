@@ -84,7 +84,6 @@ def xy_norm(
     - (x, y) == A*(x', y')
     - [x|y]'.min() == 0
     - [x|y]'.max() == 1
-
     """
 
     def norm_v(v):
@@ -154,7 +153,6 @@ def gen_test_image_xy(
     :returns: 2xWxH ndarray encoding X,Y coordinates of pixel centers in some
               normalised space, and a callable that can convert from normalised
               space back to coordinate space.
-
     """
     dtype = np.dtype(dtype)
 

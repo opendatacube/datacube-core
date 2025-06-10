@@ -39,7 +39,6 @@ def get_rio_env(sanitize: bool = True):
 
     :param sanitize: If True replace sensitive Values with 'x'
     """
-
     env = rasterio.env.local._env  # pylint: disable=protected-access
     if env is None:
         return {}

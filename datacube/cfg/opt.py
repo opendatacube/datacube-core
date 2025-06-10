@@ -50,7 +50,6 @@ class ODCOptionHandler:
         legacy_env_aliases=None,
     ) -> None:
         """
-
         :param name: Name of the option
         :param env: The ODCEnvironment the option is being read from
         :param default: The default value if not specified in the config file

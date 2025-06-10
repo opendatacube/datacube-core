@@ -1047,7 +1047,6 @@ def test_csv_search_via_cli(
 
     NB behaviour of CLI search when datasets have zero or multiple locations has changed in 1.9.
     """
-
     # Test dataset is:
     # platform: LANDSAT_8
     # from: 2014-7-26  23:48:00

@@ -3,7 +3,14 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
+
+import netCDF4
+import xarray
+from odc.geo import CRS
+from xarray.core.coordinates import DatasetCoordinates
 
 from datacube.storage._hdf5 import HDF5_LOCK
 from datacube.utils import DatacubeException
@@ -35,24 +42,24 @@ def _get_units(coord) -> str:
 
 def create_netcdf_storage_unit(
     filename: Path,
-    crs,
-    coordinates,
-    variables,
-    variable_params,
-    global_attributes=None,
-    netcdfparams=None,
-):
+    crs: CRS,
+    coordinates: DatasetCoordinates,
+    variables: Mapping[str, Any],
+    variable_params: Mapping[str, Mapping[str, Any]],
+    global_attributes: dict | None = None,
+    netcdfparams: dict | None = None,
+) -> netCDF4.Dataset:
     """
     Create a NetCDF file on disk.
 
-    :param pathlib.Path filename: filename to write to
-    :param odc.geo.crs.CRS crs: Datacube CRS object defining the spatial projection
-    :param dict coordinates: Dict of named `datacube.model.Coordinate`s to create
-    :param dict variables: Dict of named `datacube.model.Variable`s to create
-    :param dict variable_params:
+    :param filename: filename to write to
+    :param crs: Datacube CRS object defining the spatial projection
+    :param coordinates: Dict of named `datacube.model.Coordinate`s to create
+    :param variables: Dict of named `datacube.model.Variable`s to create
+    :param variable_params:
         Dict of dicts, with keys matching variable names, of extra parameters for variables
-    :param dict global_attributes: named global attributes to add to output file
-    :param dict netcdfparams: Extra parameters to use when creating netcdf file
+    :param global_attributes: named global attributes to add to output file
+    :param netcdfparams: Extra parameters to use when creating netcdf file
     :return: open netCDF4.Dataset object, ready for writing to
     """
     filename = Path(filename)
@@ -70,7 +77,9 @@ def create_netcdf_storage_unit(
 
     for name, coord in coordinates.items():
         if coord.values.ndim > 0:  # skip CRS coordinate
-            netcdf_writer.create_coordinate(nco, name, coord.values, _get_units(coord))
+            netcdf_writer.create_coordinate(
+                nco, str(name), coord.values, _get_units(coord)
+            )
 
     grid_mapping = netcdf_writer.DEFAULT_GRID_MAPPING
     netcdf_writer.create_grid_mapping_variable(nco, crs, name=grid_mapping)
@@ -96,10 +105,10 @@ def create_netcdf_storage_unit(
 
 
 def write_dataset_to_netcdf(
-    dataset,
+    dataset: xarray.Dataset,
     filename: Path,
-    global_attributes=None,
-    variable_params=None,
+    global_attributes: dict | None = None,
+    variable_params: dict | None = None,
     netcdfparams=None,
 ) -> None:
     """
@@ -107,7 +116,7 @@ def write_dataset_to_netcdf(
 
     Requires a spatial Dataset, with attached coordinates and global crs attribute.
 
-    :param `xarray.Dataset` dataset:
+    :param dataset:
     :param filename: Output filename
     :param global_attributes: Global file attributes. dict of attr_name: attr_value
     :param variable_params: dict of variable_name: {param_name: param_value, [...]}

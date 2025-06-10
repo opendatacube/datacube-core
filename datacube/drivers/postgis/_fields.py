@@ -110,7 +110,6 @@ class PgField(Field):
     def sql_expression(self):
         """
         Get the raw SQL expression for this field as a string.
-        :rtype: str
         """
         return str(
             self.alchemy_expression.compile(
@@ -120,16 +119,10 @@ class PgField(Field):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
-        """
-        :rtype: Expression
-        """
         return EqualsExpression(self, value)
 
     @override
     def between(self, low, high) -> Expression:
-        """
-        :rtype: Expression
-        """
         raise NotImplementedError("between expression")
 
 
@@ -296,16 +289,10 @@ class SimpleDocField(PgDocField):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
-        """
-        :rtype: Expression
-        """
         return EqualsExpression(self, value)
 
     @override
     def between(self, low, high) -> Expression:
-        """
-        :rtype: Expression
-        """
         raise NotImplementedError("Simple field between expression")
 
     can_extract = True
@@ -477,9 +464,6 @@ class RangeDocField(PgDocField):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
-        """
-        :rtype: Expression
-        """
         # Lower and higher are interchangeable here: they're the same type.
         casted_val = self.lower.value_to_alchemy(value)
         return RangeContainsExpression(self, casted_val)
@@ -521,9 +505,6 @@ class NumericRangeDocField(RangeDocField):
 
     @override
     def between(self, low, high) -> Expression:
-        """
-        :rtype: Expression
-        """
         return RangeBetweenExpression(self, low, high, _range_class=PgRange)
 
 
@@ -587,9 +568,6 @@ class DateRangeDocField(RangeDocField):
 
     @override
     def between(self, low, high) -> Expression:
-        """
-        :rtype: Expression
-        """
         low = _number_implies_year(low)
         high = _number_implies_year(high)
 
@@ -640,9 +618,8 @@ def _number_implies_year(v: int | datetime) -> datetime:
 
 
 class PgExpression(Expression):
-    def __init__(self, field) -> None:
+    def __init__(self, field: PgField) -> None:
         super().__init__()
-        #: :type: PgField
         self.field = field
 
     @property
@@ -737,10 +714,7 @@ def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
         }
 
     :param table_column: SQLAlchemy jsonb column for the document we're reading fields from.
-    :type doc: dict
-    :rtype: dict[str, PgField]
     """
-
     # Implementations of fields for this driver
     types = {
         SimpleDocField,
@@ -761,10 +735,7 @@ def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
 
     def _get_field(name: str, descriptor: dict, column) -> PgField:
         """
-        :type name: str
-        :type descriptor: dict
         :param column: SQLAlchemy table column
-        :rtype: PgField
         """
         ctorargs = descriptor.copy()
         type_name = ctorargs.pop("type", "string")

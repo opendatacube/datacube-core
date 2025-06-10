@@ -1262,7 +1262,6 @@ class GeoBox:
         OrderedDict name:str -> xr.DataArray
 
         where names are either `y,x` for projected or `latitude, longitude` for geographic.
-
         """
         spatial_ref = "spatial_ref"
         if isinstance(with_crs, str):
@@ -1400,7 +1399,6 @@ def scaled_down_geobox(src_geobox: GeoBox, scaler: int) -> GeoBox:
 
     NOTE: here we assume that pixel coordinates are 0,0 at the top-left
           corner of a top-left pixel.
-
     """
     assert scaler > 1
 

@@ -10,7 +10,7 @@ Includes sequence generation functions to be used by statistics apps
 """
 
 from collections.abc import Iterator
-from datetime import datetime, tzinfo
+from datetime import date, datetime, tzinfo
 
 import dateutil
 import dateutil.parser
@@ -24,17 +24,19 @@ FREQS: dict[str, int] = {"y": YEARLY, "m": MONTHLY, "d": DAILY}
 DURATIONS = {"y": "years", "m": "months", "d": "days"}
 
 
-def date_sequence(start, end, stats_duration, step_size: str) -> Iterator:
+def date_sequence(
+    start: date | None, end: date | int | None, stats_duration: str, step_size: str
+) -> Iterator:
     """
     Generate a sequence of time span tuples
 
     :seealso:
         Refer to `dateutil.parser.parse` for details on date parsing.
 
-    :param str start: Start date of first interval
-    :param str end: End date. The end of the last time span may extend past this date.
-    :param str stats_duration: What period of time should be grouped
-    :param str step_size: How far apart should the start dates be
+    :param start: Start date of first interval
+    :param end: End date. The end of the last time span may extend past this date.
+    :param stats_duration: What period of time should be grouped
+    :param step_size: How far apart should the start dates be
     :return: sequence of (start_date, end_date) tuples
     """
     interval, freq = parse_interval(step_size)

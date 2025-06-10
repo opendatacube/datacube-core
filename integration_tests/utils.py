@@ -126,7 +126,6 @@ def _make_geotiffs(tiffs_dir, day_offset, num_bands=NUM_BANDS):
 
 def _make_ls5_scene_datasets(geotiffs, tmpdir) -> dict:
     """
-
     Create directory structures like::
 
         LS5_TM_NBAR_P54_GANBAR01-002_090_084_01

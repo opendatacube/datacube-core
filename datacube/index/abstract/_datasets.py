@@ -64,7 +64,6 @@ class AbstractDatasetResource(ABC):
         :param include_sources: include the full provenance tree for the dataset.
         :param include_deriveds: include the full derivative tree for the dataset.
         :param max_depth: The maximum depth of the source and/or derived tree.  Defaults to 0, meaning no limit.
-        :rtype: Dataset model (None if not found)
         """
 
     def get(
@@ -89,7 +88,6 @@ class AbstractDatasetResource(ABC):
         :param include_sources: include the full provenance tree for the dataset.
         :param include_deriveds: include the full derivative tree for the dataset.
         :param max_depth: The maximum depth of the source and/or derived tree.  Defaults to 0, meaning no limit.
-        :rtype: Dataset model (None if not found)
         """
         try:
             return self.get_unsafe(id_, include_sources, include_deriveds, max_depth)
@@ -134,7 +132,6 @@ class AbstractDatasetResource(ABC):
         Get all datasets derived from a dataset (NOT recursive)
 
         :param id_: dataset id
-        :rtype: list[Dataset]
         """
 
     @abstractmethod
@@ -208,7 +205,7 @@ class AbstractDatasetResource(ABC):
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 
-        :param Dataset dataset: Dataset to update
+        :param dataset: Dataset to update
         :param updates_allowed: Allowed updates
         :return: Tuple of: boolean (can/can't update); safe changes; unsafe changes
         """
@@ -222,7 +219,7 @@ class AbstractDatasetResource(ABC):
     ) -> Dataset:
         """
         Update dataset metadata and location
-        :param Dataset dataset: Dataset model with unpersisted updates
+        :param dataset: Dataset model with unpersisted updates
         :param updates_allowed: Allowed updates
         :param archive_less_mature: Find and archive less mature datasets with ms delta
         :return: Persisted dataset model
@@ -240,7 +237,7 @@ class AbstractDatasetResource(ABC):
         """
         Archive less mature versions of a dataset
 
-        :param Dataset ds: dataset to search
+        :param ds: dataset to search
         :param delta: millisecond delta for time range.
             If True, default to 500ms. If False, do not find or archive less mature datasets.
             Bool value accepted only for improving backwards compatibility, int preferred.
@@ -258,7 +255,7 @@ class AbstractDatasetResource(ABC):
         """
         Find less mature versions of a dataset
 
-        :param Dataset ds: Dataset to search
+        :param ds: Dataset to search
         :param delta: millisecond delta for time range.
             If True, default to 500ms. If None or False, do not find or archive less mature datasets.
             Bool value accepted only for improving backwards compatibility, int preferred.

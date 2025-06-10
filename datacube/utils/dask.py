@@ -100,9 +100,7 @@ def start_local_dask(
     .. note::
 
         if ``memory_limit=`` is supplied, it will be parsed and divided equally between workers.
-
     """
-
     # if dashboard.link set to default value and running behind hub, make dashboard link go via proxy
     if (
         dask.config.get("distributed.dashboard.link")
@@ -198,7 +196,6 @@ def compute_tasks(
           there is no point calling this function if you want one active
           task and supporting exactly 2 active tasks is not worth the complexity,
           for now. We might special-case 2 at some point.
-
     """
     # New thread:
     #    1. Take dask task from iterator
@@ -329,7 +326,6 @@ def save_blob_to_file(
 
        Dask workers must be local or have network filesystem mounted in
        the same path as calling code.
-
     """
     return _save_blob_to_file_delayed(data, fname, with_deps=with_deps)
 
