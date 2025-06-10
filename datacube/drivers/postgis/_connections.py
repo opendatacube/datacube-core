@@ -233,11 +233,11 @@ class PostGisDb:
         :return:
         """
         try:
-            spidx = self.spindexes.get(crs_to_epsg(crs))
+            crs_id = crs_to_epsg(crs)
+            spidx = self.spindexes.get(crs_id)
             if spidx is None:
                 spidx = spindex_for_crs(crs)
-                assert spidx is not None  # for type checker
-                ensure_spindex(self._engine, spidx)
+                ensure_spindex(self._engine, spidx, crs_id)
                 self._refresh_spindexes()
         except ValueError:
             _LOG.warning("Could not dynamically model an index for CRS %s", crs._str)
@@ -251,10 +251,11 @@ class PostGisDb:
         :param crs:
         :return:
         """
-        spidx = self.spindexes.get(crs_to_epsg(crs))
+        crs_id = crs_to_epsg(crs)
+        spidx = self.spindexes.get(crs_id)
         if spidx is None:
             return False
-        result = drop_spindex(self._engine, spidx)
+        result = drop_spindex(self._engine, spidx, crs_id)
         self._refresh_spindexes()
         return result
 
