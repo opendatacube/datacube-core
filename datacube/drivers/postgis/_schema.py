@@ -393,19 +393,5 @@ search_field_index_map: dict[
     str, type[DatasetSearchDateTime | DatasetSearchNumeric | DatasetSearchString]
 ] = {k: search_field_indexes[v] for k, v in search_field_map.items()}
 
-# Used for keeping dynamically created tables (by _mint_new_spindex()) outside
-# alembic's view.
-ALL_STATIC_TABLES = [
-    MetadataType.__table__,
-    Product.__table__,
-    Dataset.__table__,
-    DatasetLineage.__table__,
-    DatasetHome.__table__,
-    SpatialIndexRecord.__table__,
-    DatasetSearchString.__table__,
-    DatasetSearchNumeric.__table__,
-    DatasetSearchDateTime.__table__,
-]
-
 
 MetadataObj = MetadataType.__table__.metadata  # type: ignore[attr-defined]
