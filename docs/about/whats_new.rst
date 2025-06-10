@@ -19,6 +19,8 @@ Next Release
 - Fix alembic deprecation warning :pull:`1941`
 - Convert doc strings to type annotations :pull:`1940`, :pull:`1950`, :pull:`1951`
 - ``archive-less-mature`` runs when re-indexing datasets :pull:`1948`
+- Convert doc strings to type annotations :pull:`1940`
+- Document alembic upgrades :pull:`1955`
 
 v1.9.4 (20 May 2025)
 ====================
