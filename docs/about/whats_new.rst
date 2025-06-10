@@ -21,6 +21,7 @@ Next Release
 - ``archive-less-mature`` runs when re-indexing datasets :pull:`1948`
 - Convert doc strings to type annotations :pull:`1940`
 - Document alembic upgrades :pull:`1955`
+- postgis: fix alembic metadata object :pull:`1960`
 
 v1.9.4 (20 May 2025)
 ====================

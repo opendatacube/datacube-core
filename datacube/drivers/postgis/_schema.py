@@ -392,6 +392,3 @@ search_field_indexes: dict[
 search_field_index_map: dict[
     str, type[DatasetSearchDateTime | DatasetSearchNumeric | DatasetSearchString]
 ] = {k: search_field_indexes[v] for k, v in search_field_map.items()}
-
-
-MetadataObj = MetadataType.__table__.metadata  # type: ignore[attr-defined]
