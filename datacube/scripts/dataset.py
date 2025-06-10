@@ -494,7 +494,6 @@ def _write_yaml(infos):
 
     (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
     """
-
     return yaml.dump_all(
         infos, sys.stdout, SafeDatacubeDumper, default_flow_style=False, indent=4
     )

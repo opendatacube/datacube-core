@@ -33,7 +33,6 @@ def map_with_lookahead(it, if_one=None, if_many=None) -> Iterable:
     :param it: Sequence to iterate over
     :param if_one: Function to apply for single element sequences
     :param if_many: Function to apply for multi-element sequences
-
     """
     if_one = if_one or (lambda x: x)
     if_many = if_many or (lambda x: x)

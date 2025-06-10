@@ -23,9 +23,6 @@ from datacube.model.lineage import LineageRelations
 
 class LineageResource(AbstractLineageResource, IndexResourceAddIn):
     def __init__(self, db: PostGisDb, index: AbstractIndex) -> None:
-        """
-        :type db: datacube.drivers.postgis._connections.PostgresDb
-        """
         self._db = db
         super().__init__(index)
 

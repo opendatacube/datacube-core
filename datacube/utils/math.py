@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Iterator
+from collections.abc import Generator
 from math import ceil
 from typing import Any
 
@@ -136,12 +136,14 @@ def invalid_mask(xx, nodata):
     return xx == nodata
 
 
-def num2numpy(x, dtype, ignore_range=None):
+def num2numpy(
+    x: int | float | None, dtype: str | numpy.dtype, ignore_range: bool | None = None
+):
     """
     Cast python numeric value to numpy.
 
-    :param int|float x: Numerical value to convert to numpy.type
-    :param str|numpy.dtype|numpy.type dtype: Destination dtype
+    :param x: Numerical value to convert to numpy.type
+    :param dtype: Destination dtype
     :param ignore_range: If set to True skip range check and cast anyway (for example: -1 -> 255)
                          (Not supported in numpy 2.0+)
 
@@ -183,7 +185,9 @@ def affine_from_axis(xx, yy, fallback_resolution: SomeResolution | None = None):
     return geomath.affine_from_axis(xx, yy, fallback_resolution)
 
 
-def iter_slices(shape: tuple[int, ...], chunk_size: tuple[int, ...]) -> Iterator[tuple]:
+def iter_slices(
+    shape: tuple[int, ...], chunk_size: tuple[int, ...]
+) -> Generator[tuple]:
     """
     Generate slices for a given shape.
 
@@ -192,8 +196,8 @@ def iter_slices(shape: tuple[int, ...], chunk_size: tuple[int, ...]) -> Iterator
 
     If the shape is not divisible by the chunk_size, the last chunk in each dimension will be smaller.
 
-    :param tuple(int) shape: Shape of an array
-    :param tuple(int) chunk_size: length of each slice for each dimension
+    :param shape: Shape of an array
+    :param chunk_size: length of each slice for each dimension
     :return: Yields slices that can be used on an array of the given shape
 
     >>> list(iter_slices((5,), (2,)))

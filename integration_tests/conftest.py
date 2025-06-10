@@ -44,7 +44,6 @@ from integration_tests.utils import (
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 
 """
-
 INTEGRATION_TESTS_DIR = Path(__file__).parent
 
 _EXAMPLE_LS5_NBAR_DATASET_FILE = INTEGRATION_TESTS_DIR / "example-ls5-nbar.yaml"
@@ -718,7 +717,6 @@ def geotiffs(tmpdir_factory):
             'path':..., # path to the yaml ingestion file
             'tiffs':... # list of paths to the actual geotiffs in that dataset, one per band.
         }
-
     """
     tiffs_dir = tmpdir_factory.mktemp("tiffs")
 
@@ -743,12 +741,12 @@ def geotiffs(tmpdir_factory):
     ]
 
 
-def _make_tiffs_and_yamls(tiffs_dir, config, day_offset):
+def _make_tiffs_and_yamls(tiffs_dir: str, config: dict, day_offset: int):
     """Make a custom yaml and tiff for a day offset.
 
-    :param path-like tiffs_dir: The base path to receive the tiffs.
-    :param dict config: The yaml config to be cloned and altered.
-    :param int day_offset: how many days to offset the original yaml by.
+    :param tiffs_dir: The base path to receive the tiffs.
+    :param config: The yaml config to be cloned and altered.
+    :param day_offset: how many days to offset the original yaml by.
     """
     config = deepcopy(config)
 
@@ -801,7 +799,7 @@ def example_ls5_dataset_path(example_ls5_dataset_paths):
 
 
 @pytest.fixture
-def example_ls5_dataset_paths(tmpdir, geotiffs):
+def example_ls5_dataset_paths(tmpdir, geotiffs: list) -> dict:
     """Create sample raw observations (dataset + geotiff).
 
     This fixture should be used by eah test requiring a set of
@@ -810,9 +808,9 @@ def example_ls5_dataset_paths(tmpdir, geotiffs):
     test session, in order to save disk and time.
 
     :param tmpdir: The temp directory in which to create the datasets.
-    :param list geotiffs: List of session geotiffs and yamls, to be
+    :param geotiffs: List of session geotiffs and yamls, to be
       linked from this unique observation set sample.
-    :return: dict: Dict of directories containing each observation,
+    :return: Dict of directories containing each observation,
       indexed by dataset UUID.
     """
     dataset_dirs = _make_ls5_scene_datasets(geotiffs, tmpdir)

@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 """
 Test utility functions from :module:`datacube.utils`
-
-
 """
 
 import os
@@ -511,7 +509,6 @@ def test_testutils_geobox() -> None:
     PARAMETER["false_northing",500000],
     UNIT["Meter",1]]
     """
-
     crs_ = dc_crs_from_rio(CRS.from_wkt(wkt))
     assert crs_.epsg is None
 

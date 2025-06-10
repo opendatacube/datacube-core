@@ -189,7 +189,6 @@ def schema_is_latest(engine: Engine) -> bool:
 
     See the ``update_schema()`` function below for actually applying the updates.
     """
-
     # No schema changes recently. Everything is perfect.
 
     cfg = config.Config(ALEMBIC_INI_LOCATION)

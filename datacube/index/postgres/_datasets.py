@@ -13,7 +13,7 @@ import json
 import logging
 import warnings
 from collections import namedtuple
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 from time import monotonic
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -51,14 +51,7 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 # It's a public api, so we can't reorganise old methods.
 # pylint: disable=too-many-public-methods, too-many-lines
 class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
-    """
-    :type _db: datacube.drivers.postgres._connections.PostgresDb
-    """
-
     def __init__(self, db: PostgresDb, index: Index) -> None:
-        """
-        :type db: datacube.drivers.postgres._connections.PostgresDb
-        """
         self._db = db
         super().__init__(index)
 
@@ -73,9 +66,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Get dataset by id (raise KeyError if not in index)
 
-        :param UUID id_: id of the dataset to retrieve
-        :param bool include_sources: get the full provenance graph?
-        :rtype: Dataset
+        :param id_: id of the dataset to retrieve
+        :param include_sources: get the full provenance graph?
         """
         # include_derived and max_depth arguments not supported.
         self._check_get_legacy(include_deriveds, max_depth)
@@ -127,8 +119,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Get all derived datasets
 
-        :param Union[str,UUID] id_: dataset id
-        :rtype: list[Dataset]
+        :param id_: dataset id
         """
         if not isinstance(id_, UUID):
             id_ = UUID(id_)
@@ -143,8 +134,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Have we already indexed this dataset?
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :rtype: bool
+        :param id_: dataset id
         """
         with self._db_connection() as connection:
             return connection.contains_dataset(id_)
@@ -156,9 +146,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         For every supplied id check if database contains a dataset with that id.
 
-        :param [typing.Union[UUID, str]] ids_: list of dataset ids
-
-        :rtype: [bool]
+        :param ids_: list of dataset ids
         """
         with self._db_connection() as connection:
             existing = set(connection.datasets_intersection(ids_))
@@ -187,8 +175,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param archive_less_mature: if integer, search for less
                mature versions of the dataset with the int value as a millisecond
                delta in timestamp comparison
-
-        :rtype: Dataset
         """
 
         def process_bunch(dss, main_ds, transaction) -> None:
@@ -320,14 +306,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     @override
     def can_update(
-        self, dataset: Dataset, updates_allowed=None
+        self, dataset: Dataset, updates_allowed: Mapping | None = None
     ) -> tuple[bool, list[changes.Change], list[changes.Change]]:
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 
-        :param Dataset dataset: Dataset to update
-        :param dict updates_allowed: Allowed updates
-        :rtype: bool,list[change],list[change]
+        :param dataset: Dataset to update
+        :param updates_allowed: Allowed updates
         """
         need_sources = dataset.sources is not None
         existing = self.get(dataset.id, include_sources=need_sources)
@@ -366,12 +351,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     ) -> Dataset:
         """
         Update dataset metadata and location
-        :param Dataset dataset: Dataset to update
+        :param dataset: Dataset to update
         :param updates_allowed: Allowed updates
         :param archive_less_mature: if integer, search for less
                mature versions of the dataset with the int value as a millisecond
                delta in timestamp comparison
-        :rtype: Dataset
         """
         existing = self.get(dataset.id)
         can_update, safe_changes, unsafe_changes = self.can_update(
@@ -452,22 +436,22 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 ensure_locations_in_transaction(old_uris, new_uris, tr)
 
     @override
-    def archive(self, ids: Iterable[str | UUID]) -> None:
+    def archive(self, ids: Iterable[DSID]) -> None:
         """
         Mark datasets as archived
 
-        :param Iterable[UUID] ids: list of dataset ids to archive
+        :param ids: list of dataset ids to archive
         """
         with self._db_connection(transaction=True) as transaction:
             for id_ in ids:
                 transaction.archive_dataset(id_)
 
     @override
-    def restore(self, ids: Iterable[str | UUID]) -> None:
+    def restore(self, ids: Iterable[DSID]) -> None:
         """
         Mark datasets as not archived
 
-        :param Iterable[UUID] ids: list of dataset ids to restore
+        :param ids: list of dataset ids to restore
         """
         with self._db_connection(transaction=True) as transaction:
             for id_ in ids:
@@ -507,7 +491,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         only intended for small and/or experimental databases.
 
         :param archived:
-        :rtype: list[UUID]
         """
         with self._db_connection(transaction=True) as transaction:
             return [dsid[0] for dsid in transaction.all_dataset_ids(archived)]
@@ -518,23 +501,21 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         category=ODC2DeprecationWarning,
     )
     @override
-    def get_locations(self, id_) -> Iterable[str]:
+    def get_locations(self, id_: DSID) -> Iterable[str]:
         """
         Get the list of storage locations for the given dataset id
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :rtype: list[str]
+        :param id_: dataset id
         """
         with self._db_connection() as connection:
             return connection.get_locations(id_)
 
     @override
-    def get_location(self, id_: str | UUID) -> str | None:
+    def get_location(self, id_: DSID) -> str | None:
         """
         Get the list of storage locations for the given dataset id
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :rtype: list[str]
+        :param id_: dataset id
         """
         with self._db_connection() as connection:
             locations = connection.get_locations(id_)
@@ -549,12 +530,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         category=ODC2DeprecationWarning,
     )
     @override
-    def get_archived_locations(self, id_: UUID | str) -> list[str]:
+    def get_archived_locations(self, id_: DSID) -> list[str]:
         """
         Find locations which have been archived for a dataset
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :rtype: list[str]
+        :param id_: dataset id
         """
         with self._db_connection() as connection:
             return [uri for uri, archived_dt in connection.get_archived_locations(id_)]
@@ -567,13 +547,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     )
     @override
     def get_archived_location_times(
-        self, id_: UUID | str
+        self, id_: DSID
     ) -> list[tuple[str, datetime.datetime]]:
         """
         Get each archived location along with the time it was archived.
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :rtype: List[Tuple[str, datetime.datetime]]
+        :param id_: dataset id
         """
         with self._db_connection() as connection:
             return list(connection.get_archived_locations(id_))
@@ -589,9 +568,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Add a location to the dataset if it doesn't already exist.
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :param str uri: fully qualified uri
-        :returns bool: Was one added?
+        :param id_: dataset id
+        :param uri: fully qualified uri
+        :return: Was one added?
         """
         if not uri:
             warnings.warn(f"Cannot add empty uri. (dataset {id_})")
@@ -606,7 +585,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         Find datasets that exist at the given URI
 
         :param uri: search uri
-        :param str mode: 'exact', 'prefix' or None (to guess)
+        :param mode: 'exact', 'prefix' or None (to guess)
         :return:
         """
         with self._db_connection() as connection:
@@ -626,9 +605,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Remove a location from the dataset if it exists.
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :param str uri: fully qualified uri
-        :returns bool: Was one removed?
+        :param id_: dataset id
+        :param uri: fully qualified uri
+        :return: True if one was removed
         """
         with self._db_connection() as connection:
             was_removed = connection.remove_location(id_, uri)
@@ -646,9 +625,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Archive a location of the dataset if it exists.
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :param str uri: fully qualified uri
-        :return bool: location was able to be archived
+        :param id_: dataset id
+        :param uri: fully qualified uri
+        :return: True if location was able to be archived
         """
         with self._db_connection() as connection:
             was_archived = connection.archive_location(id_, uri)
@@ -666,9 +645,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Un-archive a location of the dataset if it exists.
 
-        :param typing.Union[UUID, str] id_: dataset id
-        :param str uri: fully qualified uri
-        :return bool: location was able to be restored
+        :param id_: dataset id
+        :param uri: fully qualified uri
+        :return: True if location was able to be restored
         """
         with self._db_connection() as connection:
             was_restored = connection.restore_location(id_, uri)
@@ -676,9 +655,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def _make(self, dataset_res, full_info: bool = False, product=None) -> Dataset:
         """
-        :rtype Dataset
-
-        :param bool full_info: Include all available fields
+        :param full_info: Include all available fields
         """
         if dataset_res.uris:
             if len(dataset_res.uris) > 1:
@@ -701,9 +678,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def _make_many(
         self, query_result, product=None, fetch_all: bool = False
     ) -> Iterable[Dataset]:
-        """
-        :rtype list[Dataset]
-        """
         if fetch_all:
             return [self._make(dataset, product=product) for dataset in query_result]
         else:
@@ -711,16 +685,15 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     @override
     def search_by_metadata(
-        self, metadata, archived: bool | None = False
+        self, metadata: dict, archived: bool | None = False
     ) -> Iterable[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
         Caution - slow! This will usually not use indexes.
 
-        :param dict metadata:
+        :param metadata:
         :param archived: include archived datasets
-        :rtype: list[Dataset]
         """
         with self._db_connection() as connection:
             yield from self._make_many(
@@ -740,19 +713,18 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def search(
         self,
         limit: int | None = None,
-        source_filter=None,
+        source_filter: int | None = None,
         archived: bool | None = False,
         order_by=None,
-        **query,
+        **query: QueryField,
     ) -> Iterable[Dataset]:
         """
         Perform a search, returning results as Dataset objects.
 
-        :param Union[str,float,Range,list] query:
-        :param int source_filter: query terms against source datasets
+        :param query:
+        :param source_filter: query terms against source datasets
         :param archived: include archived datasets
-        :param int limit: Limit number of datasets
-        :rtype: __generator[Dataset]
+        :param limit: Limit number of datasets
         """
         for product, datasets in self._do_search_by_product(
             query,
@@ -765,14 +737,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     @override
     def search_by_product(
-        self, archived: bool | None = False, **query
+        self, archived: bool | None = False, **query: QueryField
     ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         """
         Perform a search, returning datasets grouped by product type.
 
         :param archived: include archived datasets
-        :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: __generator[(Product,  __generator[Dataset])]
+        :param query:
         """
         for product, datasets in self._do_search_by_product(query, archived=archived):
             yield product, self._make_many(datasets, product)
@@ -786,7 +757,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         archived: bool | None = False,
         order_by: Iterable[Any] | None = None,
         **query: QueryField,
-    ) -> Iterable[tuple]:
+    ) -> Generator[tuple]:
         """
         Perform a search, returning only the specified fields.
 
@@ -794,13 +765,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         It also allows for returning rows other than datasets, such as a row per uri when requesting field 'uri'.
 
-        :param tuple[str] field_names: defaults to all known search fields
-        :param Union[str,float,Range,list] query:
-        :param int limit: Limit number of datasets
+        :param field_names: defaults to all known search fields
+        :param query:
+        :param limit: Limit number of datasets
         :param archived: include archived datasets
-        :param Iterable[Any] order_by: sql text, dataset field, sqlalchemy function, or expression
+        :param order_by: sql text, dataset field, sqlalchemy function, or expression
         by which to order results
-        :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
+        :return: sequence of results, each result is a namedtuple of your requested fields
         """
         field_name_d: dict[str, None] = {}
         if field_names is None and custom_offsets is None:
@@ -855,8 +826,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         Perform a search, returning count of results.
 
         :param archived: include archived datasets
-        :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: int
+        :param query:
         """
         # This may be optimised into one query in the future.
         result = 0
@@ -873,9 +843,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         Perform a search, returning a count of for each matching product type.
 
         :param archived: include archived datasets
-        :param dict[str,str|float|datacube.model.Range] query:
+        :param query:
         :returns: Sequence of (product, count)
-        :rtype: __generator[(Product,  int)]
         """
         return self._do_count_by_product(query, archived=archived)
 
@@ -887,10 +856,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         Perform a search, returning counts for each product grouped in time slices
         of the given period.
 
-        :param dict[str,str|float|datacube.model.Range] query:
-        :param str period: Time range for each slice: '1 month', '1 day' etc.
+        :param query:
+        :param period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: __generator[(Product, list[(datetime.datetime, datetime.datetime), int])]
         """
         return self._do_time_count(period, query)
 
@@ -904,10 +872,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         Will raise an error if the search terms match more than one product.
 
-        :param dict[str,str|float|datacube.model.Range] query:
-        :param str period: Time range for each slice: '1 month', '1 day' etc.
+        :param query:
+        :param period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: list[(str, list[(datetime.datetime, datetime.datetime), int])]
         """
         return next(self._do_time_count(period, query, ensure_single=True))[1]
 
@@ -1056,14 +1023,13 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         category=ODC2DeprecationWarning,
     )
     def search_summaries(
-        self, archived: bool | None = False, **query
-    ) -> Iterable[Mapping[str, Any]]:
+        self, archived: bool | None = False, **query: QueryField
+    ) -> Generator[Mapping[str, Any]]:
         """
         Perform a search, returning just the search fields of each dataset.
 
         :param archived: include archived datasets
-        :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: __generator[dict]
+        :param query:
         """
         for _, results in self._do_search_by_product(
             query, return_fields=True, archived=archived
@@ -1101,7 +1067,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         limit: int | None = None,
         archived: bool | None = False,
         **query,
-    ) -> Iterable[tuple]:
+    ) -> Generator[tuple]:
         """
         This is a dataset search function that returns the results as objects of a dynamically
         generated Dataset class that is a subclass of tuple.
@@ -1128,7 +1094,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :return: A Dynamically generated DatasetLight (a subclass of namedtuple and possibly with
         property functions).
         """
-
         assert field_names
 
         for product, query_exprs in self.make_query_expr(query, custom_offsets):
@@ -1172,7 +1137,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Parse and generate the list of select fields to be passed to the database API.
         """
-
         assert product and field_names
 
         dataset_fields = product.metadata_type.dataset_fields
@@ -1215,7 +1179,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         Generate query expressions including queries based on custom fields
         """
-
         product_queries = list(self._get_product_queries(query))
         custom_query = {}
         if not product_queries:
@@ -1249,7 +1212,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         in metadata doc and their offsets are provided. custom_query is a dict of key fields involving
         custom fields.
         """
-
         custom_exprs = []
         for key in custom_query:
             # for now, we assume all custom query fields are SimpleDocFields

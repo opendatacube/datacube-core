@@ -20,7 +20,7 @@ from pandas import to_datetime
 from xarray import DataArray
 
 import datacube
-from datacube.model import Dataset
+from datacube.model import Dataset, Product
 from datacube.utils import InvalidDocException, SimpleDocNav
 from datacube.utils.py import sorted_items
 
@@ -114,8 +114,8 @@ def new_dataset_info() -> dict[str, str]:
 
 def band_info(band_names: Sequence[str], band_uris: dict | None = None) -> dict:
     """
-    :param list band_names: names of the bands
-    :param dict band_uris: mapping from names to dicts with 'path' and 'layer' specs
+    :param band_names: names of the bands
+    :param band_uris: mapping from names to dicts with 'path' and 'layer' specs
     """
     if band_uris is None:
         band_uris = {name: {"path": "", "layer": name} for name in band_names}
@@ -157,9 +157,7 @@ def datasets_to_doc(output_datasets: DataArray) -> DataArray:
     Create a yaml document version of every dataset
 
     :param output_datasets: An array of :class:`datacube.model.Dataset`
-    :type output_datasets: :py:class:`xarray.DataArray`
     :return: An array of yaml document strings
-    :rtype: :py:class:`xarray.DataArray`
     """
 
     def dataset_to_yaml(index, dataset):
@@ -177,9 +175,7 @@ def xr_iter(data_array: DataArray) -> Generator[tuple[tuple, dict, Any]]:
         * the element (same as ``da[10, 1].item()``)
 
     :param data_array: Array to iterate over
-    :type data_array: xarray.DataArray
     :return: i-index, label-index, value of da element
-    :rtype tuple, dict, da.dtype
     """
     values = data_array.values
     coords = {coord_name: v.values for coord_name, v in data_array.coords.items()}
@@ -195,13 +191,11 @@ def xr_apply(
     """
     Apply a function to every element of a :class:`xarray.DataArray`
 
-    :type data_array: xarray.DataArray
     :param func: function that takes a dict of labels and an element of the array,
         and returns a value of the given dtype
     :param dtype: The dtype of the returned array, default to the same as original
-    :param bool with_numeric_index: If true include numeric index: func(index, labels, value)
+    :param with_numeric_index: If true include numeric index: func(index, labels, value)
     :return: The array with output of the function for every element.
-    :rtype: xarray.DataArray
     """
     if dtype is None:
         dtype = data_array.dtype
@@ -217,37 +211,36 @@ def xr_apply(
 
 
 def make_dataset(
-    product,
-    sources,
+    product: Product,
+    sources: Sequence[Dataset],
     extent: Geometry,
     center_time,
     valid_data: Geometry | None = None,
     uri: str | None = None,
-    app_info=None,
-    band_uris=None,
+    app_info: dict | None = None,
+    band_uris: dict | None = None,
     start_time=None,
     end_time=None,
 ) -> Dataset:
     """
     Create :class:`datacube.model.Dataset` for the data
 
-    :param Product product: Product the dataset is part of
-    :param list[:class:`Dataset`] sources: datasets used to produce the dataset
-    :param Geometry extent: extent of the dataset
-    :param Geometry valid_data: extent of the valid data
+    :param product: Product the dataset is part of
+    :param sources: datasets used to produce the dataset
+    :param extent: extent of the dataset
+    :param valid_data: extent of the valid data
     :param center_time: time of the central point of the dataset
-    :param str uri: The uri of the dataset
-    :param dict app_info: Additional metadata to be stored about the generation of the product
-    :param dict band_uris: band name to uri mapping
+    :param uri: The uri of the dataset
+    :param app_info: Additional metadata to be stored about the generation of the product
+    :param band_uris: band name to uri mapping
     :param start_time: start time of the dataset (defaults to `center_time`)
     :param end_time: end time of the dataset (defaults to `center_time`)
-    :rtype: class:`Dataset`
     """
     document: dict = {}
     merge(document, product.metadata_doc)
     merge(document, new_dataset_info())
     merge(document, machine_info())
-    merge(document, band_info(product.measurements.keys(), band_uris=band_uris))
+    merge(document, band_info(list(product.measurements.keys()), band_uris=band_uris))
     merge(document, source_info(sources))
     merge(document, geobox_info(extent, valid_data))
     merge(document, time_info(center_time, start_time, end_time))
@@ -261,15 +254,11 @@ def make_dataset(
     )
 
 
-def merge(a: dict, b: dict, path: list | None = None) -> dict:
+def merge(a: dict, b: Mapping, path: list | None = None) -> dict:
     """
     Merge dictionary `b` into dictionary `a`
 
     See: http://stackoverflow.com/a/7205107/5262498
-
-    :type a: dict
-    :type b: dict
-    :rtype: dict
     """
     if path is None:
         path = []
@@ -314,7 +303,6 @@ def traverse_datasets(
 
     mode=post-order -- Visit all lineage first, only then visit top level
     mode=pre-order --  Visit top level first, only then visit lineage
-
     """
 
     def visit_pre_order(
@@ -415,7 +403,7 @@ def dedup_lineage(root: dict | SimpleDocNav):
     path from root) has either conflicting metadata or conflicting lineage
     data.
 
-    :param dict|SimpleDocNav root:
+    :param root:
 
     Returns a new document that has the same structure as input document, but
     with duplicate entries now being aliases rather than copies.
