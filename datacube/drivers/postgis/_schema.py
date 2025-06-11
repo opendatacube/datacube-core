@@ -377,6 +377,7 @@ search_field_map = {
     "double": "numeric",
     "integer": "numeric",
     "datetime": "datetime",
+    "boolean": "numeric",
     # For backwards compatibility (alias for numeric-range)
     "float-range": "numeric",
 }
