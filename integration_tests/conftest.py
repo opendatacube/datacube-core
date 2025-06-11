@@ -185,6 +185,15 @@ def eo3_africa_dataset2_doc():
 
 
 @pytest.fixture
+def s1_dataset_doc():
+    return (
+        get_eo3_test_data_doc("ga_s1_vertical_dualpol.yaml"),
+        "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/"
+        "experimental_for_inland_water_team/s1_rtc_c1/t045_095837_iw1/2020/1/10/metadata.json",
+    )
+
+
+@pytest.fixture
 def datasets_with_unembedded_lineage_doc():
     return [
         (
@@ -211,6 +220,11 @@ def eo3_sentinel_metadata_type_doc():
 
 
 @pytest.fixture
+def eo3_s1_metadata_type_doc():
+    return get_eo3_test_data_doc("eo3_s1_ard.odc-type.yaml")
+
+
+@pytest.fixture
 def extended_eo3_product_doc():
     return get_eo3_test_data_doc("ard_ls8.odc-product.yaml")
 
@@ -228,6 +242,11 @@ def africa_s2_product_doc():
 @pytest.fixture
 def s2_ard_product_doc():
     return get_eo3_test_data_doc("ga_s2am_ard_3.odc-product.yaml")
+
+
+@pytest.fixture
+def s1_product_doc():
+    return get_eo3_test_data_doc("ga_s1_vertical_dualpol.odc-product.yaml")
 
 
 @pytest.fixture
@@ -306,6 +325,13 @@ def eo3_sentinel_metadata_type(index, eo3_sentinel_metadata_type_doc):
 
 
 @pytest.fixture
+def eo3_s1_metadata_type(index, eo3_s1_metadata_type_doc):
+    return index.metadata_types.add(
+        index.metadata_types.from_doc(eo3_s1_metadata_type_doc)
+    )
+
+
+@pytest.fixture
 def ls8_eo3_product(index, extended_eo3_metadata_type, extended_eo3_product_doc):
     return index.products.add_document(extended_eo3_product_doc)
 
@@ -323,6 +349,11 @@ def africa_s2_eo3_product(index, africa_s2_product_doc):
 @pytest.fixture
 def ga_s2am_ard_3_product(index, eo3_sentinel_metadata_type, s2_ard_product_doc):
     return index.products.add_document(s2_ard_product_doc)
+
+
+@pytest.fixture
+def ga_s1_product(index, eo3_s1_metadata_type, s1_product_doc):
+    return index.products.add_document(s1_product_doc)
 
 
 @pytest.fixture
@@ -422,6 +453,11 @@ def ga_s2am_ard3_interim(
     return doc_to_ds_no_add(
         index, ga_s2am_ard_3_product.name, *ga_s2am_ard_3_interim_doc
     )
+
+
+@pytest.fixture
+def s1_eo3_dataset(index, eo3_s1_metadata_type, ga_s1_product, s1_dataset_doc):
+    return doc_to_ds(index, ga_s1_product.name, *s1_dataset_doc)
 
 
 @pytest.fixture
