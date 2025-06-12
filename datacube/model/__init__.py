@@ -596,7 +596,9 @@ class Measurement:
         return {key: value for key, value in self.items() if key not in self.ATTR_SKIP}
 
     def __getstate__(self):
-        return self._data
+        state = {**self._data}
+        state["canonical_name"] = self.canonical_name
+        return state
 
     def __setstate__(self, state):
         self.__init__(**state)
