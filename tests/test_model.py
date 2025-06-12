@@ -367,7 +367,7 @@ def test_measurement_equality() -> None:
 
 @pytest.mark.parametrize("protocol", range(pickle.HIGHEST_PROTOCOL))
 def test_measurement_pickling(protocol) -> None:
-    m = Measurement(name="t", dtype="uint8", nodata=255, units="1")
+    m = Measurement(canonical_name="s", name="t", dtype="uint8", nodata=255, units="1")
 
     serialised_m = pickle.dumps(m, protocol=protocol)
 
@@ -379,7 +379,7 @@ def test_measurement_pickling(protocol) -> None:
 def test_measurement_cloudpickle() -> None:
     import cloudpickle
 
-    m = Measurement(name="t", dtype="uint8", nodata=255, units="1")
+    m = Measurement(canonical_name="s", name="t", dtype="uint8", nodata=255, units="1")
     serialised = cloudpickle.dumps(m)
 
     deserialised = cloudpickle.loads(serialised)
