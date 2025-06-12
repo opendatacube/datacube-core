@@ -22,6 +22,7 @@ Next Release
 - Convert doc strings to type annotations :pull:`1940`
 - Document alembic upgrades :pull:`1955`
 - postgis: fix alembic metadata object :pull:`1960`
+- Export grid workflow classes from datacube.api :pull:`1958`
 
 v1.9.4 (20 May 2025)
 ====================
