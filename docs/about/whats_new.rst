@@ -21,6 +21,7 @@ Next Release
 - ``archive-less-mature`` runs when re-indexing datasets :pull:`1948`
 - Convert doc strings to type annotations :pull:`1940`
 - Document alembic upgrades :pull:`1955`
+- Export grid workflow classes from datacube.api :pull:`1958`
 
 v1.9.4 (20 May 2025)
 ====================
