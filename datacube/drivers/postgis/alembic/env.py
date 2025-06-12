@@ -11,7 +11,7 @@ from alembic.runtime.migration import MigrationContext
 
 from datacube.cfg import ODCConfig, ODCEnvironment
 from datacube.drivers.postgis._connections import PostGisDb
-from datacube.drivers.postgis._schema import MetadataObj
+from datacube.drivers.postgis._schema import Base
 from datacube.drivers.postgis._spatial import is_spindex_table_name
 from datacube.drivers.postgis.sql import SCHEMA_NAME
 
@@ -34,8 +34,7 @@ except AttributeError:
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = MetadataObj
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
