@@ -143,13 +143,11 @@ def spindex_for_record(rec: SpatialIndexRecord) -> type[SpatialIndex]:
     return spindex_for_epsg(rec.srid)
 
 
-def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> None:
+def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> None:
     """Ensure a Spatial Index exists in a particular database."""
     with Session(engine) as session:
         results = session.execute(
-            select(SpatialIndexRecord.srid).where(
-                SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:])  # type: ignore[arg-type,attr-defined]
-            )
+            select(SpatialIndexRecord.srid).where(SpatialIndexRecord.srid == crs_id)
         )
         for _ in results:
             # SpatialIndexRecord exists - actual index assumed to exist too.
@@ -157,7 +155,7 @@ def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> None:
         # SpatialIndexRecord doesn't exist - create the index table...
         orm_registry.metadata.create_all(engine, [sp_idx.__table__])  # type: ignore[attr-defined]
         # ... and add a SpatialIndexRecord
-        session.add(SpatialIndexRecord.from_spindex(sp_idx))
+        session.add(SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__))  # type: ignore[attr-defined]
         session.commit()
         session.flush()
         # Permissions Management
@@ -174,12 +172,10 @@ def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> None:
         session.commit()
 
 
-def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex]) -> bool:
+def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> bool:
     with Session(engine) as session:
         results = session.execute(
-            select(SpatialIndexRecord).where(
-                SpatialIndexRecord.srid == int(sp_idx.__tablename__[8:])  # type: ignore[arg-type,attr-defined]
-            )
+            select(SpatialIndexRecord).where(SpatialIndexRecord.srid == crs_id)
         )
         spidx_record = None
         for result in results:
