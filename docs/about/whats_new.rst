@@ -24,6 +24,7 @@ Next Release
 - postgis: stop parsing table names :pull:`1961`
 - postgis: fix alembic metadata object :pull:`1960`
 - Export grid workflow classes from datacube.api :pull:`1958`
+- Fix issue :issue:`1936` :pull: `1962`
 
 v1.9.4 (20 May 2025)
 ====================
