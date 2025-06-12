@@ -158,8 +158,7 @@ def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> N
         session.add(SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__))  # type: ignore[attr-defined]
         session.commit()
         session.flush()
-    # Permissions Management
-    with engine.connect() as c:
+        # Permissions Management
         for command in [
             # Read access to odc_user
             f"grant select on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_user;",  # type: ignore[attr-defined]
@@ -168,8 +167,9 @@ def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> N
             # Full access to odc_admin
             f"grant all on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_admin;",  # type: ignore[attr-defined]
         ]:
-            c.execute(text(command))
-    return
+            session.execute(text(command))
+        # Grant statements in PostgreSQL behave like transactions, so commit them.
+        session.commit()
 
 
 def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> bool:
