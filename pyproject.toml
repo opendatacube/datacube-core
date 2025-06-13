@@ -101,12 +101,12 @@ dev = [
 ]
 doc = [
     'autodocsumm',
-    'beautifulsoup4',
     'ipython',
     'nbsphinx',
     'pydata-sphinx-theme',
     'recommonmark',
     'Sphinx',
+    'sphinx-autobuild',
     'sphinx_autodoc_typehints',  # Propagate mypy info into docs
     'sphinx-click',
     'sphinx-design',
