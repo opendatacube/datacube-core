@@ -35,9 +35,14 @@ dataset:
 
     region_code: # Burst ID
       description: Sentinel-1 burst ID
-      offset: [properties, 'sar:odc:region_code']
+      offset: [properties, 'odc:region_code']
       indexed: false
       type: string
+
+    crs_raw:
+      description: The raw CRS string as it appears in metadata
+      offset: ['crs']
+      indexed: false
 
     time:
       description: Acquisition time range
@@ -120,35 +125,35 @@ dataset:
       description: Whether noise removal has been applied
       offset: [properties, 'nrb:noise_removal_applied']
       indexed: false
-      type: string
+      type: boolean
 
     # Static tropospheric correction
     static_tropospheric_correction_applied:
       description: Whether static tropospheric correction has been applied
       offset: [properties, 'nrb:static_tropospheric_correction_applied']
       indexed: false
-      type: string
+      type: boolean
 
     # Wet tropospheric correction
     wet_tropospheric_correction_applied:
       description: Whether wet tropospheric correction has been applied
       offset: [properties, 'nrb:wet_tropospheric_correction_applied']
       indexed: false
-      type: string
+      type: boolean
 
     # Bistatic correction
     bistatic_correction_applied:
       description: Whether bistatic correction has been applied
       offset: [properties, 'nrb:bistatic_correction_applied']
       indexed: false
-      type: string
+      type: boolean
 
     # Ionospheric correction
     ionospheric_correction_applied:
       description: Whether ionospheric correction has been applied
       offset: [properties, 'nrb:ionospheric_correction_applied']
       indexed: false
-      type: string
+      type: boolean
 
     # Speckle filter
     speckle_filter_applied:
@@ -156,3 +161,4 @@ dataset:
       offset: [properties, 'nrb:speckle_filter_applied']
       indexed: true  # for testing purposes
       type: boolean
+...
