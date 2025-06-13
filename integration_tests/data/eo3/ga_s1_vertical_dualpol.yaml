@@ -1,58 +1,16 @@
 ---
 # Dataset
 $schema: https://schemas.opendatacube.org/dataset
-id: f2e12eef-ca4b-43d1-a832-4b6cb62b1070
+id: 6c82e421-754f-5be9-bca5-0d42a1501ae1
 
 label: OPERA_L2_RTC-S1_T045-095837-IW1_20200110T192612Z_20250509T063241Z_S1A_20_v0.1
 product:
   name: ga_s1_vertical_dualpol
-  href: https://github.com/caitlinadams/dea-config/blob/385da0d6e20d668a7df02d2670466860edcf5d54/products/baseline_satellite_data/s1_gamma0/ga_s1_vertical_dualpol.odc-product.yaml
 
+crs: epsg:32755
 geometry:
   type: Polygon
-  coordinates: [[[147.1291478714718, -41.57525947873185],
-          [147.065610178439, -41.56097936296894],
-          [147.0028629749489, -41.54683634135012],
-          [146.9408712026268, -41.53282402570613],
-          [146.8796022489602, -41.51893643264054],
-          [146.8190257107723, -41.50516796495317],
-          [146.7591131786835, -41.49151341185077],
-          [146.6998380736727, -41.47796787908466],
-          [146.6411754741964, -41.46452679699911],
-          [146.583101989814, -41.45118585748241],
-          [146.5255956203784, -41.43794102790729],
-          [146.4686356577565, -41.42478849324736],
-          [146.4122025694701, -41.41172467450892],
-          [146.356277922, -41.39874617481631],
-          [146.3008442833025, -41.38584980131051],
-          [146.2458851629003, -41.37303251432206],
-          [146.1913849291358, -41.36029145197562],
-          [146.1373287605875, -41.347623886423],
-          [146.0837025843397, -41.33502722742716],
-          [146.0304930191025, -41.32249902683417],
-          [145.9783682321067, -41.31019781835818],
-          [145.9118890515839, -41.47265757396882],
-          [145.9641437563818, -41.48498882555864],
-          [146.0174863597703, -41.49754760302582],
-          [146.071247051283, -41.51017498164119],
-          [146.1254392587429, -41.52287343050619],
-          [146.1800771159737, -41.53564553345812],
-          [146.2351755010917, -41.54849403093712],
-          [146.2907501079782, -41.56142179329743],
-          [146.3468174932256, -41.57443186924176],
-          [146.4033951593016, -41.587527461277],
-          [146.4605016147731, -41.60071197658877],
-          [146.5181564722929, -41.61398900521591],
-          [146.5763805257073, -41.62736237402754],
-          [146.6351958670283, -41.64083612838083],
-          [146.6946259852553, -41.65441459008674],
-          [146.7546959079441, -41.66810234358169],
-          [146.8154323282959, -41.68190429908499],
-          [146.8768637789975, -41.69582568469301],
-          [146.9390207966077, -41.7098721163863],
-          [147.0019361383287, -41.72404959800325],
-          [147.0656449981549, -41.73836459577331],
-          [147.1291478714718, -41.57525947873185]]]
+  coordinates: [[[510767.0, 5397372.0], [505471.0, 5398964.0], [500239.0, 5400536.0], [495067.0, 5402090.0], [489954.0, 5403626.0], [484897.0, 5405146.0], [479892.0, 5406650.0], [474939.0, 5408138.0], [470035.0, 5409612.0], [465178.0, 5411071.0], [460367.0, 5412517.0], [455600.0, 5413949.0], [450874.0, 5415369.0], [446189.0, 5416777.0], [441544.0, 5418173.0], [436936.0, 5419557.0], [432366.0, 5420931.0], [427830.0, 5422293.0], [423329.0, 5423646.0], [418861.0, 5424988.0], [414483.0, 5426304.0], [409144.0, 5408200.0], [413524.0, 5406884.0], [417993.0, 5405542.0], [422495.0, 5404190.0], [427032.0, 5402827.0], [431604.0, 5401454.0], [436213.0, 5400070.0], [440860.0, 5398674.0], [445546.0, 5397266.0], [450273.0, 5395847.0], [455042.0, 5394414.0], [459855.0, 5392969.0], [464713.0, 5391509.0], [469618.0, 5390036.0], [474573.0, 5388548.0], [479579.0, 5387044.0], [484639.0, 5385524.0], [489754.0, 5383988.0], [494927.0, 5382434.0], [500161.0, 5380861.0], [505459.0, 5379270.0], [510767.0, 5397372.0]]]
 
 grids:
   default:
@@ -62,8 +20,9 @@ grids:
 properties:
   eo:gsd: 20.0
   eo:constellation: Sentinel-1
-  platform: Sentinel-1A
-  eo:instrument: Sentinel-1A CSAR
+  eo:platform: Sentinel-1A
+  eo:instrument: SENTINEL-1A CSAR
+  created: 2025-05-09T06:32:47.291415Z
   dtr:start_datetime: 2020-01-10T19:26:12.134041Z
   dtr:end_datetime: 2020-01-10T19:26:15.215320Z
   product:type: RTC_S1
@@ -71,7 +30,6 @@ properties:
   ceosard:type: NRB
   ceosard:specification: Synthetic Aperture Radar (CEOS-ARD SAR)
   ceosard:specification_version: 1.1
-  proj:epsg: 32755
   sar:frequency_band: C
   sar:center_frequency: 5405000454.33435
   sar:polarizations: [VV, VH]
@@ -84,29 +42,33 @@ properties:
   sat:absolute_orbit: 30742
   sat:relative_orbit: trackNumber
   sat:orbit_cycle: 12
-  sat:osv: S1A_OPER_AUX_POEORB_OPOD_20210316T211354_V20200109T225942_20200111T005942.EOF
+  sat:osv: [S1A_OPER_AUX_POEORB_OPOD_20210316T211354_V20200109T225942_20200111T005942.EOF]
   s1:orbit_source: POE precise orbit
   processing:level: L2
   processing:facility: Geoscience Australia
   processing:datetime: 2025-05-09T06:32:47.291415Z
-  nrb:source_id: S1A_IW_SLC__1SDV_20200110T192612_20200110T192639_030742_03865D_8C62.SAFE
+  processing:version: 0.1
+  nrb:source_id: [S1A_IW_SLC__1SDV_20200110T192612_20200110T192639_030742_03865D_8C62.SAFE]
   nrb:pixel_spacing_x: 20.0
   nrb:pixel_spacing_y: 20.0
   nrb:resolution_x: 20.0
   nrb:resolution_y: 20.0
-  nrb:speckle_filter_applied: false
+  nrb:speckle_filter_applied: 'false'
+  nrb:speckle_filter_window: []
   nrb:measurement_type: gamma0
   nrb:measurement_convention: linear backscatter intensity
-  nrb:conversion_eq: 10*log10(backscatter_linear)
-  nrb:noise_removal_applied: true
-  nrb:static_tropospheric_correction_applied: true
-  nrb:wet_tropospheric_correction_applied: false
-  nrb:bistatic_correction_applied: true
-  nrb:ionospheric_correction_applied: false
+  nrb:conversion_eq: 10*log10[backscatter_linear]
+  nrb:noise_removal_applied: 'true'
+  nrb:static_tropospheric_correction_applied: 'true'
+  nrb:wet_tropospheric_correction_applied: 'false'
+  nrb:bistatic_correction_applied: 'true'
+  nrb:ionospheric_correction_applied: 'false'
   datetime: 2020-01-10T19:26:12.134041Z
-  sar:odc:region_code: t045_095837_iw1
+  odc:region_code: t045_095837_iw1
   odc:product_family: Sentinel-1
   nrb:scene_id: S1A_IW_SLC__1SDV_20200110T192612_20200110T192639_030742_03865D_8C62
+  odc:processing_datetime: 2025-05-09T06:32:47.291415Z
+  odc:file_format: GeoTIFF
 
 measurements:
   VV:
@@ -120,4 +82,5 @@ accessories:
   thumbnail:
     path: OPERA_L2_RTC-S1_T045-095837-IW1_20200110T192612Z_20250509T063241Z_S1A_20_v0.1.png
 
-collection: s1_rtc_c1
+lineage: {}
+...

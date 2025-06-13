@@ -14,13 +14,13 @@ measurements:
     aliases:
       - vv
     dtype: float32
-    nodata: .nan
+    nodata: NaN
     units: '1'
   - name: VH
     aliases:
       - vh
     dtype: float32
-    nodata: .nan
+    nodata: NaN
     units: '1'
   - name: mask
     dtype: uint8
