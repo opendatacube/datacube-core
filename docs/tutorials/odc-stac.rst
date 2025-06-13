@@ -37,8 +37,10 @@ The tutorial environment may take a few minutes to start.
 
 .. image:: https://mybinder.org/badge_logo.svg
  :target: https://mybinder.org/v2/gh/opendatacube/tutorial-odc-stac/binder?urlpath=%2Fdoc%2Ftree%2FREADME.md
+ :width: 240px
+ :align: center
 
-Once launched, you should see INSERTIMAGE.
+| Once launched, you should see INSERTIMAGE.
 The tutorial notebook has headers that match up with the tutorial instructions below.
 
 .. note::
@@ -57,6 +59,7 @@ The notebook requires three libraries to run:
 * :code:`odc.stac` for loading satellite data
 * :code:`pystac-client` for querying catalogs of satellite data
 
+We will import either the library, or specific functions and classes from the library.
 Type the following into the empty cell below the **Python imports** heading:
 
 .. code-block:: python
@@ -74,11 +77,12 @@ In this section of the tutorial, you will specify:
 
 * The area you want to load data for
 * The date range you want to load data for
-* The catalog you want to load data from
+* The data source you want to load from
 
 Area of interest
 ^^^^^^^^^^^^^^^^
 
+We specify the area of interest using the :code:`aoi.geojson` file, which can be loaded with :code:`geopandas`.
 Type the following into the empty cell below the **Area of interest** heading:
 
 .. code-block:: python
@@ -91,35 +95,46 @@ When you have finished, run the cell by pressing :code:`Shift+Enter` on your key
 Date range
 ^^^^^^^^^^
 
+We must specify a start and end date for our query.
 Type the following into the empty cell below the **Date range** heading:
 
 .. code-block:: python
 
-   start_date = "2021-12-24"
-   end_date = "2021-12-26"
+   start_date = "2017-01-01"
+   end_date = "2023-01-01"
    date_query = (start_date, end_date)
 
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
 
-Catalog and measurements
-^^^^^^^^^^^^^^^^^^^^^^^^
+Catalogs, collections, and items
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can use the Radiant Earth [stac-browser website](https://radiantearth.github.io/stac-browser/#/?.language=en) to preview catalog, collection, and item information.
+Many Earth observation data providers generate STAC metadata, which can be used to find and load data you're interested in.
+STAC metadata has four important components:
 
-Type the following into the empty cell below the **Catalog and measurements** heading:
+* **Catalog**: A structure for organising multiple datasets managed by a given provider. For example, `Planetary Computer's Catalog <pc-stac_>`_
+* **Collection**: A structure for organising all items in a single dataset. For example, `Land Use Land Cover Collection <pc-lulc_>`_
+* **Item** A single spatio-temporal item, such as one observation in a dataset. For example, `Land Use Land Cover Data for Supercell 15M in 2013 <pc-item_>`_
+* **Asset** A single data measurement associated with an item, such as a single band.
+
+We must specify the catalog and collection we wish to search, and which assets we want to load. 
+The precise items that we need to load will be returned by a query that we run later.
+
+Type the following into the empty cell below the **Catalogs, collections, and items** heading:
 
 .. code-block:: python
 
-   catalog = "https://earth-search.aws.element84.com/v1/"
-   collections_query = ["sentinel-2-l2a"]
-   bands_query = ["red", "green", "blue"]
+   catalog_query = "https://planetarycomputer.microsoft.com/api/stac/v1/"
+   collections_query = ["io-lulc-annual-v02"]
+   assets_query = ["data"]
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
 
 Connect to catalog and find items
 ---------------------------------
 
+We use `pystac-client`_'s :code:`Client` class to connect to Planetary Computer's STAC catalog.
 Type the following into the empty cell below the **Connect to catalog and find items** heading:
 
 .. code-block:: python
@@ -145,3 +160,6 @@ Export loaded data
 .. _odc-stac: https://odc-stac.readthedocs.io/en/latest/ 
 .. _GitHub: https://github.com/opendatacube/tutorial-odc-stac/tree/main
 .. _iolulc: https://planetarycomputer.microsoft.com/dataset/io-lulc-annual-v02
+.. _pc-stac: https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/
+.. _pc-lulc: https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/collections/io-lulc-annual-v02
+.. _pc-item: https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/collections/io-lulc-annual-v02/items/15M-2023
