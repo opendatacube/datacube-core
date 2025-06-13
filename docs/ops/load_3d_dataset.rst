@@ -32,7 +32,7 @@ and :ref:`product-doc-extra-dim`.
 
 Returns a 3D (+ time) Dataset with ``z`` coordinates in addition to ``latitude``/``longitude``:
 
-.. code-block::
+.. code-block:: text
 
     <xarray.Dataset>
     Dimensions:      (latitude: 720, longitude: 721, time: 2, z: 30)
@@ -55,7 +55,7 @@ Returns a 3D (+ time) Dataset with ``z`` coordinates in addition to ``latitude``
 
     dc.load(product='gedi_l2b_cover_z', z=(30, 50), **query)
 
-.. code-block::
+.. code-block:: text
 
     <xarray.Dataset>
     Dimensions:      (latitude: 720, longitude: 721, time: 2, z: 5)
@@ -78,7 +78,7 @@ Returns a 3D (+ time) Dataset with ``z`` coordinates in addition to ``latitude``
 
     dc.load(product='gedi_l2b_cover_z', z=30, **query)
 
-.. code-block::
+.. code-block:: text
 
     <xarray.Dataset>
     Dimensions:      (latitude: 720, longitude: 721, time: 2, z: 1)
@@ -101,7 +101,7 @@ Returns a 3D (+ time) Dataset with ``z`` coordinates in addition to ``latitude``
 
     dc.load(product='gedi_l2b_cover_z', dask_chunks={'z': 15}, **query)
 
-.. code-block::
+.. code-block:: text
 
     <xarray.Dataset>
     Dimensions:      (latitude: 720, longitude: 721, time: 2, z: 30)

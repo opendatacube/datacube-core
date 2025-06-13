@@ -28,6 +28,7 @@ for example, to pre-filter the available datasets before loading.
 
 
 .. include:: ./../../ops/load_3d_dataset.rst
+   :parser: rst
 
 
 Group by

@@ -129,7 +129,7 @@ as well as optional tools to write these files more easily.
 A command-line tool also exists for dynamically converting STAC items to EO3 datasets
 at indexing time in the `odc-apps-dc-tools`_ package.
 
-.. code-block::
+.. code-block:: text
 
    # transform [a0, a1, a2, a3, a4, a5, 0, 0, 1]
 

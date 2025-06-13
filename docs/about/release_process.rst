@@ -6,7 +6,7 @@ Release Process
 
 #. Ensure version pins in pyproject.toml and conda-environment.yml are in sync and up to date. Refresh uv.lock::
 
-   uv lock
+    uv lock
 
 #. Update the release notes in the ``develop`` branch via a PR.
 

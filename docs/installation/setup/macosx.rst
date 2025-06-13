@@ -23,6 +23,7 @@ Postgres:
 
 
 .. include:: common_install.rst
+   :parser: rst
 
 
 You can now specify the database user and password for ODC integration testing. To do this::

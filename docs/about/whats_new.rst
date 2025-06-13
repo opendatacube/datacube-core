@@ -1,4 +1,3 @@
-.. _whats_new:
 
 .. default-role:: code
 
@@ -1124,38 +1123,6 @@ New Data Support
 
 
 .. _execution engine branch: https://github.com/opendatacube/datacube-core/compare/csiro/execution-engine
-
-v1.5.4 Dingley Dahu (13th December 2017)
-========================================
- - Minor features backported from 2.0:
-
-    - Support for ``limit`` in searches
-
-    - Alternative lazy search method ``find_lazy``
-
- - Fixes:
-
-    - Improve native field descriptions
-
-    - Connection should not be held open between multi-product searches
-
-    - Disable prefetch for celery workers
-
-    - Support jsonify-ing decimals
-
-v1.5.3 Purpler Unicorn with Starlight (16 October 2017)
-=======================================================
-
- - Use ``cloudpickle`` as the ``celery`` serialiser
-
-v1.5.2 Purpler Unicorn with Stars (28 August 2017)
-==================================================
-
- - Fix bug when reading data in native projection, but outside ``source`` area. Often hit when running ``datacube-stats``
-
- - Fix error loading and fusing data using ``dask``. (Fixes :issue:`276`)
-
- - When reading data, implement ``skip_broken_datasets`` for the ``dask`` case too
 
 
 v1.5.4 Dingley Dahu (13th December 2017)

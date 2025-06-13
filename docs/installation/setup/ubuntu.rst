@@ -34,6 +34,7 @@ Optional packages (useful utilities, docs)::
     sudo apt-get install hdf5-tools netcdf-bin gdal-bin pgadmin3
 
 .. include:: common_install.rst
+   :parser: rst
 
 
 If createdb or psql cannot connect to server, check which postgresql installation is being run::

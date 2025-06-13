@@ -44,13 +44,13 @@ Loading Product Definitions
 
 To load Products into your ODC run:
 
-.. code-block:: bash
+.. code-block:: text
 
     datacube product add <path-to-product-definition-yml>
 
 If you made a mistake, you can update them with:
 
-.. code-block:: bash
+.. code-block:: text
 
     datacube product update <path-to-product-definition-yml>
 
@@ -79,7 +79,7 @@ Step 3. Run the Indexing process
 Everything is now ready, and we can use the **datacube** tool to add one or more
 datasets into our Cube
 
-.. code-block:: bash
+.. code-block:: text
 
     datacube dataset add <path-to-dataset-document-yaml>
 

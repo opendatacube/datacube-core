@@ -8,18 +8,18 @@ There are two major use-cases for loading data from the Datacube: *Ad hoc access
 
 1. Ad hoc access
 
--  A small spatial region and time segment are chosen by the user
--  Data is expected to fit into RAM.
+   -  A small spatial region and time segment are chosen by the user
+   -  Data is expected to fit into RAM.
 
 2. Large scale processing
 
--  Continental scale processing
--  Used to compute new products or to perform statistics on existing data
--  Often unconstrained spatially
--  Often unconstrained along the time dimension
--  Data is accessed using a regular grid in *small enough* chunks
--  The specific access pattern is algorithm/compute/environment dependent
-   and is supplied by the user and requires manual tuning
+   -  Continental scale processing
+   -  Used to compute new products or to perform statistics on existing data
+   -  Often unconstrained spatially
+   -  Often unconstrained along the time dimension
+   -  Data is accessed using a regular grid in *small enough* chunks
+   -  The specific access pattern is algorithm/compute/environment dependent
+      and is supplied by the user and requires manual tuning
 
 Ad hoc data access
 ------------------
@@ -33,6 +33,7 @@ step process:
 
 1. Build a Virtual Storage Resource (VSR) – a description of what data
    needs to be loaded, possibly from many disparate sources
+
 2. Load data from the VSR into a contiguous memory representation
    :class:`xarray.Dataset`
 

@@ -18,7 +18,7 @@ Requires a Unix like system that includes ``make``.
 
 .. code-block:: bash
 
-   git switch -c docs-<feature>
+   git switch -c docs-{feature}
 
 #. Change directory to the docs folder
 

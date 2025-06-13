@@ -4,7 +4,7 @@ Dataset Writing
 
 When connected to an ODC Database, these methods are available for adding, updating and archiving datasets:
 
-.. code-block:: bash
+.. code-block:: text
 
    dc = Datacube()
    dc.index.datasets.{method}

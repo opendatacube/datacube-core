@@ -1,4 +1,3 @@
-.. _glossary:
 
 Glossary
 ########

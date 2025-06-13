@@ -331,7 +331,7 @@ For example, calculating the NDVI from a SR product (say, ``ls8_nbar_albers``) w
         def measurements(self, input_measurements):
             return {'NDVI': Measurement(name='NDVI', dtype='float32', nodata=float('nan'), units='1')}
 
-    ndvi = construct(transform=NDVI, input=dict(product='ls8_nbar_albers', measurements=['red', 'nir'])
+    ndvi = construct(transform=NDVI, input=dict(product='ls8_nbar_albers', measurements=['red', 'nir']))
 
     ndvi_data = ndvi.load(dc, **search_terms)
 
