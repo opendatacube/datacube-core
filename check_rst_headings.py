@@ -48,14 +48,19 @@ def check_heading_order(filepath, standard_chars):
     actual_char_order_in_file = []
 
     try:
+        # --- Read the entire file content first ---
         with open(filepath, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+            full_content = f.read()
+
+        # Now, split the full content into lines for your heuristic scan
+        lines = full_content.splitlines(keepends=True) # Keep newlines for line length accuracy
 
         for i, line in enumerate(lines):
             # Check for overline/underline patterns (e.g., ###\nTitle\n###)
             if i > 0 and i < len(lines) - 1:
-                overline_char = is_potential_underline(lines[i-1], lines[i].strip())
-                underline_char = is_potential_underline(lines[i+1], lines[i].strip())
+                # Use rstrip() for length comparison to exclude trailing newlines
+                overline_char = is_potential_underline(lines[i-1], lines[i].rstrip())
+                underline_char = is_potential_underline(lines[i+1], lines[i].rstrip())
 
                 # If both overline and underline are present and match
                 if overline_char and underline_char and overline_char == underline_char:
@@ -81,8 +86,8 @@ def check_heading_order(filepath, standard_chars):
                         actual_char_order_in_file.append(heading_char)
 
                         # Check if the introduction order matches the global standard
-                        expected_char_at_this_level = standard_chars[len(actual_char_order_in_file) - 1]
-                        if heading_char != expected_char_at_this_level:
+                        expected_char_at_this_level = standard_chars[len(actual_char_order_in_file) - 1] if len(actual_char_order_in_file) - 1 < len(standard_chars) else None
+                        if expected_char_at_this_level and heading_char != expected_char_at_this_level:
                             print(f"  [ERROR] Line {i+1}: New heading character '{heading_char}' introduced, but expected '{expected_char_at_this_level}' according to standard order for this level.")
                             print(f"           Current file's char order: {actual_char_order_in_file}")
                             inconsistencies_found += 1
@@ -93,7 +98,7 @@ def check_heading_order(filepath, standard_chars):
                         # if new characters are only added once they match their expected level).
                         pass # No additional check needed here for reuse within file, as it should be consistent.
 
-                    prev_line_content = line # Treat the title line as the "previous content" for the next check
+                    prev_line_content = lines[i].rstrip() # Treat the title line as the "previous content" for the next check
                     continue # Skip to next line, as we've processed the heading structure
 
             # Check for underline only patterns (e.g., Title\n====)
@@ -129,14 +134,14 @@ def check_heading_order(filepath, standard_chars):
 
             # If line is not a heading, update prev_line_content for next iteration
             if line.strip(): # Only consider non-blank lines as potential title lines
-                prev_line_content = line
+                prev_line_content = line.rstrip() # Use rstrip to remove newline for length comparison
             else:
                 prev_line_content = None # Reset if a blank line breaks the title-underline sequence
 
         # --- Docutils semantic validation ---
-        # Try to parse the file with docutils to catch any deeper RST issues
+        # Now use the 'full_content' string that was read at the beginning
         try:
-            publish_doctree(source=f.read(), settings_overrides={'report_level': 5}) # Report all messages
+            publish_doctree(source=full_content, settings_overrides={'report_level': 5}) # Report all messages
         except SystemMessage as e:
             print(f"  [DOCUTILS ERROR] File could not be parsed correctly by docutils: {e}")
             inconsistencies_found += 1
@@ -157,6 +162,7 @@ def check_heading_order(filepath, standard_chars):
         print(f"  Total inconsistencies found in {filepath}: {inconsistencies_found}")
     return inconsistencies_found
 
+# The main() function remains the same.
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Check reStructuredText heading character order consistency.")

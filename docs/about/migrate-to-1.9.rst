@@ -1,8 +1,9 @@
 
-Migrating from ODC 1.8.x to 1.9.x
-=================================
+=============================
+Migrating from ODC 1.8 to 1.9
+=============================
 
-The last new major release of the Open Data Cube was v1.8.0 in May 2020, nearly 4 years ago.
+The last major release of the Open Data Cube was v1.8.0 in May 2020, nearly 4 years ago.
 
 ODC developers and the Steering Council have been working hard behind the scenes over the last couple of years
 to address some of the accumulated technical debt in datacube-core and prepare for new major releases.
@@ -24,120 +25,145 @@ spare the resources we encourage you to set up a 1.9.x installation to test your
 against the new release, and open issues on github for any problems that you come up against, especially any that are
 not documented here.
 
-Major Changes between 1.8.x and 1.9.x
+Major Changes between 1.8 and 1.9
+=================================
+
+
+New Geospatial Module
+---------------------
+
+The old ``datacube.utils.geometry`` library has been replaced by ``odc-geo``.
+
+If you have already used ``odc-geo`` you will appreciate the additional power and flexibility that this brings to
+core.  If you have not, please take the time to have a read through the
+`odc-geo documentation <https://odc-geo.readthedocs.io/en/latest/>`_  and especially the
+`migration notes <https://odc-geo.readthedocs.io/en/latest/migration.html>`_.  In particular, you should familiarise
+yourself with ``.odc`` accessor which ``odc-geo`` dynamically adds to all xarray ``DataArray`` and ``Dataset``
+objects.
+
+Note that ``dc.load()`` now preferentially accepts ``odc-geo`` data types for passing ``GeoBox`` via the ``like``
+parameter, as well as ``resolution`` and ``align`` values, although backwards compatible behaviour with the old
+types is available with a deprecation warning.
+
+The classes and methods in ``datacube.utils.geometry`` are still available, but raise a deprecation warning when
+used.  Please migrate all code to use the equivalent methods and classes in ``odc-geo``.
+
+New Configuration System
+------------------------
+
+There are some backwards-incompatible changes as noted below, but most existing configuration files should
+continue to work as previously with minimal changes.
+
+The behaviour of the new configuration engine (and the reasoning behind the changes) is documented in
+`ODC Enhancement Proposal 10 <https://github.com/opendatacube/datacube-core/wiki/ODC-EP-010---Replace-Configuration-Layer>`_
+
+a. Previously multiple config files could be read and merged to generate the final effective configuration file.
+   From 1.9.0 only a single config file is ever read at a time.  Managed instances which have previously allowed
+   user customisation by the user creating a minimal config file which was loaded merged on top of a default system
+   configuration will have to migrate to a system whereby users take a copy of the default system configuration file
+   and edit that copy for their needs.
+
+b. The "user" section no longer has a special meaning, as the old special meaning is irrelevant now that config
+   files are not merged.
+
+c. Previously only the INI file format was supported for configuration files. The JSON and YAML formats are now also
+   supported.
+
+d. Previously configuration by Environment Variables was implemented in an inconsistent and ad hoc way that resulted
+   in complex interactions that were impossible to predict without intimate knowledge of the source code that
+   implemented it.  There is now a consistent and systematic approach taken to the interaction between the
+   active configuration file and environment variables.  Partial backwards compatibility is attempted, but
+   full backwards compatibility is not possible due to the ad hoc nature of the previous implementation.
+
+   The new (preferred) environment variable names are of the form ``$ODC_<env_name>_<item_name>``
+
+e. Tighter restrictions are applied to environment names.  This is required to ensure consistent interaction
+   between config files and environment variables.  Environment names can now only contain alphanumeric characters.
+   (Dashes and underscores must be removed).
+
+f. The preferred default environment name is now ``default``.  It is suggested that every config file should
+   start with a "default" section that is an alias to an environment defined in full elsewhere in the file.
+
+
+Improved Index Driver API
+-------------------------
+
+The Index Driver API has been cleaned up and simplified, facilitating easier
+development of new index backends. This should be largely invisible to
+most users, although some more rarely used methods and/or arguments are now
+deprecated.  The deprecation warnings provide specific migration advice for
+each case.
+
+New PostGIS Index Driver
+------------------------
+
+- eo3 Only
+- Migrations support for evolving the database schema
+
+The legacy Postgres index driver will continue to be supported in 1.9, but will be dropped in ODC-2.0.
+
+The PostGIS index driver only supports EO3-compatible metadata types.  Older EO-style metadata types should
+be migrated to EO3 before indexing into a PostGIS driver index.  We will try to provide tools to assist with
+this migration but they are not yet available in 1.9.0 and due to the arbitrary generality of pre-EO3 ODC
+metadata, such tools may not be possible in all cases.  (The legacy postgres driver will continue to support
+non-EO3 metadata types until it is dropped in 2.0)
+
+The PostGIS driver will support the creation of PostGIS spatial indexes for arbitrary CRSes.  This will improve
+efficiency and accuracy of database searches, particularly when working with data covering regions where
+conversions to/from EPSG:4326 lat/long coordinates are highly non-linear (e.g. the Pacific around the
+anti-meridian and the north and south polar regions).
+
+The PostGIS driver uses Alembic for managing schema migrations, so future changes to the PostGIS database
+schema will be much easier to roll out than in the past.
+
+See below for more information about migrating to the PostGIS index driver.
+
+Note that many other libraries in the ODC ecosystem may not work well with the PostGIS driver at first. As noted
+above, Explorer and Datacube-OWS in particular will need extensive changes before they can be used with the new
+index driver.
+
+New Lineage API (PostGIS driver only)
 -------------------------------------
 
-1. Integration with ``odc-geo``.
+The PostGIS driver handles lineage very differently to the postgres driver: Lineage data is only loosely coupled
+to dataset metadata and  a completely new API is introduced for working with lineages.  It is now possible to
+store external lineage information - i.e. it is not necessary for both the source and derived dataset to exist
+in the index for the lineage relationship between them to be recorded in the database and powerful new
+data structures allow working with arbitrarily nested lineage trees in both the "source-wards" and
+"derived-wards" directions.
 
-   The old ``datacube.utils.geometry`` library has been replaced by ``odc-geo``.
+A full description of the new lineage API can be found in
+`ODC Enhancement Proposal 8 <https://github.com/opendatacube/datacube-core/wiki/ODC-EP-008>`_
 
-   If you have already used ``odc-geo`` you will appreciate the additional power and flexibility that this brings to
-   core.  If you have not, please take the time to have a read through the
-   `odc-geo documentation <https://odc-geo.readthedocs.io/en/latest/>`_  and especially the
-   `migration notes <https://odc-geo.readthedocs.io/en/latest/migration.html>`_.  In particular, you should familiarise
-   yourself with ``.odc`` accessor which ``odc-geo`` dynamically adds to all xarray ``DataArray`` and ``Dataset``
-   objects.
+The handling of lineage in the legacy postgres index driver has not changed - the postgres driver does NOT support
+the new lineage API.
 
-   Note that ``dc.load()`` now preferentially accepts ``odc-geo`` data types for passing ``GeoBox`` via the ``like``
-   parameter, as well as ``resolution`` and ``align`` values, although backwards compatible behaviour with the old
-   types is available with a deprecation warning.
+Support for multi-dimensional loading of hyperspectral datasets
+---------------------------------------------------------------
 
-   The classes and methods in ``datacube.utils.geometry`` are still available, but raise a deprecation warning when
-   used.  Please migrate all code to use the equivalent methods and classes in ``odc-geo``.
+This is a work in progress and will not be available in 1.9.0. It will appear in a later 1.9.x release.
 
-2. A new configuration engine has replaced the configuration engine used previously.
+Removed Ingestion and Executor APIs
+-----------------------------------
 
-   There are some backwards-incompatible changes as noted below, but most existing configuration files should
-   continue to work as previously with minimal changes.
+Both the Ingestion and Executor APIs were deprecated many years ago, and have now been removed from ODC.
 
-   The behaviour of the new configuration engine (and the reasoning behind the changes) is fully documented in
-   `ODC Enhancement Proposal 10 <https://github.com/opendatacube/datacube-core/wiki/ODC-EP-010---Replace-Configuration-Layer>`_
+Multiple locations per dataset is deprecated
+--------------------------------------------
 
-   a. Previously multiple config files could be read and merged to generate the final effective configuration file.
-      From 1.9.0 only a single config file is ever read at a time.  Managed instances which have previously allowed
-      user customisation by the user creating a minimal config file which was loaded merged on top of a default system
-      configuration will have to migrate to a system whereby users take a copy of the default system configuration file
-      and edit that copy for their needs.
+It has been possible to record multiple storage locations per dataset. This
+feature was going to allow access to the same data from different providers, or
+the same data via different access methods from the same provider. It was never
+really capitalised upon, and as part of the above mentioned index driver
 
-   b. The "user" section no longer has a special meaning, as the old special meaning is irrelevant now that config
-      files are not merged.
 
-   c. Previously only the INI file format was supported for configuration files. The JSON and YAML formats are now also
-      supported.
-
-   d. Previously configuration by Environment Variables was implemented in an inconsistent and ad hoc way that resulted
-      in complex interactions that were impossible to predict without intimate knowledge of the source code that
-      implemented it.  There is now a consistent and systematic approach taken to the interaction between the
-      active configuration file and environment variables.  Partial backwards compatibility is attempted, but
-      full backwards compatibility is not possible due to the ad hoc nature of the previous implementation.
-
-      The new (preferred) environment variable names are of the form ``$ODC_<env_name>_<item_name>``
-
-   e. Tighter restrictions are applied to environment names.  This is required to ensure consistent interaction
-      between config files and environment variables.  Environment names can now only contain alphanumeric characters.
-      (Dashes and underscores must be removed).
-
-   f. The preferred default environment name is now ``default``.  It is suggested that every config file should
-      start with a "default" section that is an alias to an environment defined in full elsewhere in the file.
-
-3. The index driver API has been cleaned up and simplified, facilitating easier development of new index backends.
-   This should be largely invisible to most users, although some more rarely used methods and/or arguments are now
-   deprecated.  The deprecation warnings provide specific migration advice for each case.
-
-4. A new PostGIS-based index backend is now available.
-
-   The legacy Postgres index driver will continue to be supported in 1.9, but will be dropped in ODC-2.0.
-
-   The Postgis index driver only supports EO3-compatible metadata types.  Older EO-style metadata types should
-   be migrated to EO3 before indexing into a Postgis driver index.  We will try to provide tools to assist with
-   this migration but they are not yet available in 1.9.0 and due to the arbitrary generality of pre-EO3 ODC
-   metadata, such tools may not be possible in all cases.  (The legacy postgres driver will continue to support
-   non-EO3 metadata types until it is dropped in 2.0)
-
-   The postgis driver will support the creation of PostGIS spatial indexes for arbitrary CRSes.  This will improve
-   efficiency and accuracy of database searches, particularly when working with data covering regions where
-   conversions to/from EPSG:4326 lat/long coordinates are highly non-linear (e.g. the Pacific around the
-   anti-meridian and the north and south polar regions).
-
-   The postgis driver uses Alembic for managing schema migrations, so future changes to the postgis database
-   schema will be much easier to roll out than in the past.
-
-   See below for more information about migrating to the Postgis index driver.
-
-   Note that many other libraries in the ODC ecosystem may not work well with the Postgis driver at first. As noted
-   above, Explorer and Datacube-OWS in particular will need extensive changes before they can be used with the new
-   index driver.
-
-5. New Lineage API (Postgis driver only)
-
-   The postgis driver handles lineage very differently to the postgres driver: Lineage data is only loosely coupled
-   to dataset metadata and  a completely new API is introduced for working with lineages.  It is now possible to
-   store external lineage information - i.e. it is not necessary for both the source and derived dataset to exist
-   in the index for the lineage relationship between them to be recorded in the database and powerful new
-   data structures allow working with arbitrarily nested lineage trees in both the "source-wards" and
-   "derived-wards" directions.
-
-   A full description of the new lineage API can be found in
-   `ODC Enhancement Proposal 8 <https://github.com/opendatacube/datacube-core/wiki/ODC-EP-008>`_
-
-   The handling of lineage in the legacy postgres index driver has not changed - the postgres driver does NOT support
-   the new lineage API.
-
-6. Support for multi-dimensional loading of hyperspectral datasets (Coming Soon)
-
-   This is a work in progress and will not be available in 1.9.0. It will appear in a later 1.9.x release.
-
-7. The long-deprecated "ingestion" workflow and "executor" API have both been removed.
-
-8. Multiple locations per dataset is now deprecated.
-
-The New Postgis Index Driver
-----------------------------
+The New PostGIS Index Driver
+============================
 
 Configuration
-+++++++++++++
+-------------
 
-The configuration for a postgis index looks the same as the configuration for a legacy postgres index, you simply
+The configuration for a PostGIS index looks the same as the configuration for a legacy postgres index, you simply
 set the ``index_driver`` setting to ``postgis``::
 
     [default]
@@ -157,22 +183,22 @@ set the ``index_driver`` setting to ``postgis``::
         db_username: odc
 
 Initialisation
-++++++++++++++
+--------------
 
 You then initialise the database as previously, using ``system init`` command (-E new says to use the ``new`` environment
 from the configuration file)::
 
     datacube -E new system init
 
-You should also create Postgis spatial indexes for any CRS you want to be able to search on (note that an EPSG:4326
-spatial index is created by default).   Postgis spatial indexes should be created before indexing any data where
+You should also create PostGIS spatial indexes for any CRS you want to be able to search on (note that an EPSG:4326
+spatial index is created by default).   PostGIS spatial indexes should be created before indexing any data where
 possible.  Adding a new spatial index to a populated index will be very slow.  For example to create a spatial index
 for EPSG:3577::
 
     datacube -E new spindex create 3577
 
 Migrating (Cloning) Data From a Postgres Index
-++++++++++++++++++++++++++++++++++++++++++++++
+----------------------------------------------
 
 To clone data from an old index to a new one (the two indexes may use different index drivers)::
 
@@ -194,7 +220,7 @@ The clone command supports the following options:
   the target database at a time.  Default is 1000.
 
 Geospatial search
-+++++++++++++++++
+-----------------
 
 Geopolygons for spatial search can be passed to ``dc.load()``, as before::
 
@@ -202,7 +228,7 @@ Geopolygons for spatial search can be passed to ``dc.load()``, as before::
 
 In the postgres driver, the search is done against a bounding box around the polygon projected into EPSG:4326,
 then the extents of datasets returned by the bounding box search are checked for overlap with the original
-geopolygon.  In the postgis driver, the polygon is passed directly to Postgis for an indexed spatial search.
+geopolygon.  In the PostGIS driver, the polygon is passed directly to PostGIS for an indexed spatial search.
 
 * Only datasets whose extents overlap the geopolygon will be loaded.
 * Geopolygons whose CRS does NOT have a native spatial index available will be projected to EPSG:4326 for search

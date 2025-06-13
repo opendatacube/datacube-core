@@ -136,7 +136,7 @@ Or to initialise a database schema for an environment other than the default::
 .. click:: datacube.scripts.system:database_init
    :prog: datacube system
 
-Create Spatial Indexes (Postgis Driver Only)
+Create Spatial Indexes (PostGIS Driver Only)
 ============================================
 
 The new ``postgis`` index driver supports spatial indexes.  By default a spatial index is created for the CRS

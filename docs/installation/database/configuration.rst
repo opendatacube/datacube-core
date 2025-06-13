@@ -203,7 +203,7 @@ specified per-environment.
 
      This index driver will not be available in datacube-2.0.
 
-   - ``postgis`` Postgis index driver.  This is the new-style eo3-only index
+   - ``postgis`` PostGIS index driver.  This is the new-style eo3-only index
      driver with support for spatial indexes.
 
    - ``memory`` In-memory index driver.  This index driver is currently
