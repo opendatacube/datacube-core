@@ -54,7 +54,7 @@ jobs:
         export LOCAL_GID=$(id -g $USER)
         docker compose up --quiet-pull --wait -d
         docker compose exec --user ubuntu -T core /bin/bash --login -c \
-          "source /env/bin/activate && pytest -r a \
+          "source /app/bin/activate && pytest -r a \
             --cov datacube \
             --cov-report=xml \
             --doctest-ignore-import-errors \
