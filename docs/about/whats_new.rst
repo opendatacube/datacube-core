@@ -8,6 +8,7 @@ What's New
 Next Release
 ============
 
+- Dockerfile: let rasterio detect data path :pull:`1966`
 - index: add return types :pull:`1939`
 - Update dependencies :pull:`1925`
 - Run Ruff format on all code :pull:`1926`, :pull:`1927`
