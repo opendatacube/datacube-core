@@ -29,7 +29,7 @@ dependencies = [
     'antimeridian',
     'attrs>=18.1',
     'cachetools',
-    'click>=5.0',
+    'click>=8.2',
     'cloudpickle>=0.4',
     'dask[array]',
     'deprecat',

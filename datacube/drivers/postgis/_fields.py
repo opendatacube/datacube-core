@@ -110,6 +110,7 @@ class PgField(Field):
     def sql_expression(self):
         """
         Get the raw SQL expression for this field as a string.
+        :rtype: str
         """
         return str(
             self.alchemy_expression.compile(
@@ -119,10 +120,16 @@ class PgField(Field):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
+        """
+        :rtype: Expression
+        """
         return EqualsExpression(self, value)
 
     @override
     def between(self, low, high) -> Expression:
+        """
+        :rtype: Expression
+        """
         raise NotImplementedError("between expression")
 
 
@@ -289,10 +296,16 @@ class SimpleDocField(PgDocField):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
+        """
+        :rtype: Expression
+        """
         return EqualsExpression(self, value)
 
     @override
     def between(self, low, high) -> Expression:
+        """
+        :rtype: Expression
+        """
         raise NotImplementedError("Simple field between expression")
 
     can_extract = True
@@ -352,8 +365,40 @@ class DoubleDocField(NumericDocField):
     type_name = "double"
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> float:
         return float(value)
+
+
+class BoolDocField(SimpleDocField):
+    type_name = "boolean"
+
+    @override
+    def search_value_to_alchemy(self, value):
+        # Convert boolean to int (range) for indexing purposes
+        return func.numrange(
+            int(value),
+            int(value),
+            # Inclusive on both sides.
+            "[]",
+            type_=NUMRANGE,
+        )
+
+    @override
+    def value_to_alchemy(self, value):
+        return cast(value, postgres.BOOLEAN)
+
+    @override
+    def parse_value(self, value) -> bool:
+        if value.lower() == "false":
+            return False
+        if value.lower() == "true":
+            return True
+        return bool(value)
+
+    @override
+    def __eq__(self, value) -> Expression:  # type: ignore[override]
+        # For search field comparisons???
+        return EqualsExpression(self, self.search_value_to_alchemy(value))
 
 
 DateFieldLike: TypeAlias = datetime | date | str | ColumnElement
@@ -400,7 +445,7 @@ class DateDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> datetime:
         return utils.parse_time(value)
 
     @property
@@ -719,6 +764,7 @@ def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
     types = {
         SimpleDocField,
         IntDocField,
+        BoolDocField,
         DoubleDocField,
         DateDocField,
         NumericRangeDocField,

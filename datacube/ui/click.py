@@ -104,7 +104,7 @@ def _init_logging(ctx, param, value) -> None:
 
     if logging_level <= logging.INFO:
         logging.getLogger("rasterio").setLevel(logging.INFO)
-
+        logging.getLogger("alembic").setLevel(logging.WARNING)
     logging.getLogger("datacube").info(
         "Running datacube command: %s", " ".join(sys.argv)
     )

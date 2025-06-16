@@ -1273,3 +1273,18 @@ def test_query_dataset_multi_product_eo3(
     # Can we query multiple products in a tuple
     datasets = dc.find_datasets(product=("ga_ls8c_ard_3", "ga_ls_wo_3"))
     assert len(datasets) == 2
+
+
+def test_search_boolean_eo3(index: Index, s1_eo3_dataset) -> None:
+    res = list(
+        index.datasets.search(
+            product=s1_eo3_dataset.product.name, speckle_filter_applied=False
+        )
+    )
+    assert len(res) == 1
+    res = list(
+        index.datasets.search(
+            product=s1_eo3_dataset.product.name, speckle_filter_applied=True
+        )
+    )
+    assert len(res) == 0

@@ -1,0 +1,36 @@
+name: ga_s1_vertical_dualpol
+description: > 
+  Radiometric Terrain Corrected (RTC) Backscatter for Sentinel-1 generated from the COMPASS-ISCE3 pipeline. 
+  This product contains scenes with vertical co-polarised (VV) and vertical cross-polarised (VH) measurements.
+  This product uses the gamma_0 linear backscatter measurement convention.
+metadata_type: eo3_s1_ard
+
+metadata:
+  product:
+    name: ga_s1_vertical_dualpol
+
+measurements:
+  - name: VV
+    aliases:
+      - vv
+    dtype: float32
+    nodata: NaN
+    units: '1'
+  - name: VH
+    aliases:
+      - vh
+    dtype: float32
+    nodata: NaN
+    units: '1'
+  - name: mask
+    dtype: uint8
+    nodata: 255
+    units: '1'
+    flags_definition:
+      mask:
+        bits: [0,1,2,3,4,5,6,7]
+        values:
+          1: shadow
+          2: layover
+          3: shadow and layover
+        description: shadow layover data mask
