@@ -110,6 +110,7 @@ class PgField(Field):
     def sql_expression(self):
         """
         Get the raw SQL expression for this field as a string.
+        :rtype: str
         """
         return str(
             self.alchemy_expression.compile(
@@ -119,10 +120,16 @@ class PgField(Field):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
+        """
+        :rtype: Expression
+        """
         return EqualsExpression(self, value)
 
     @override
     def between(self, low, high) -> Expression:
+        """
+        :rtype: Expression
+        """
         raise NotImplementedError("between expression")
 
 
@@ -289,10 +296,16 @@ class SimpleDocField(PgDocField):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
+        """
+        :rtype: Expression
+        """
         return EqualsExpression(self, value)
 
     @override
     def between(self, low, high) -> Expression:
+        """
+        :rtype: Expression
+        """
         raise NotImplementedError("Simple field between expression")
 
     can_extract = True
