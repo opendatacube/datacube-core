@@ -10,8 +10,8 @@ FROM ghcr.io/osgeo/gdal:ubuntu-full-3.10.3 AS base
 
 FROM base AS builder
 
-ARG UV=https://github.com/astral-sh/uv/releases/download/0.7.2/uv-x86_64-unknown-linux-gnu.tar.gz
-ADD --checksum=sha256:cfaab1b5166a6439ff66f020333d3a12bbdf622deee3b510718283e8f06c9de7 --chown=root:root --chmod=644 --link $UV uv.tar.gz
+ARG UV=https://github.com/astral-sh/uv/releases/download/0.7.13/uv-x86_64-unknown-linux-gnu.tar.gz
+ADD --checksum=sha256:909278eb197c5ed0e9b5f16317d1255270d1f9ea4196e7179ce934d48c4c2545 --chown=root:root --chmod=644 --link $UV uv.tar.gz
 
 RUN tar xf uv.tar.gz -C /usr/local/bin --strip-components=1 --no-same-owner
 
