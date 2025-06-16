@@ -93,6 +93,9 @@ def datasets(ctx, index, expressions) -> None:
     """
     Search available Datasets
     """
+    click.echo(
+        "The datacube-search CLI commands are deprecated. Please use `datacube dataset search` instead."
+    )
     ctx.obj["write_results"](
         sorted(index.products.get_field_names()),
         (tup._asdict() for tup in index.datasets.search_returning(**expressions)),
@@ -109,6 +112,9 @@ def product_counts(index, period, expressions) -> None:
 
     PERIOD: eg. 1 month, 6 months, 1 year
     """
+    click.echo(
+        "The datacube-search CLI commands are deprecated. Please use `datacube dataset count` instead."
+    )
     for product, series in index.datasets.count_by_product_through_time(
         period, **expressions
     ):

@@ -25,7 +25,9 @@ from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli, print_help_msg
 from datacube.ui.common import ui_path_doc_stream
+from datacube.ui.expression import parse_expressions
 from datacube.utils import SimpleDocNav, changes
+from datacube.utils.dates import tz_as_utc
 from datacube.utils.serialise import SafeDatacubeDumper
 from datacube.utils.uris import uri_resolve
 
@@ -633,6 +635,82 @@ def uri_search_cmd(index: Index, paths: list[str], search_mode) -> None:
             _LOG.info(f"Not found in index: {path}")
         for dataset in datasets:
             print(dataset)
+
+
+@dataset_cmd.command("count", help="Count datasets")
+@click.option(
+    "--count-only",
+    help="Display total result count without any grouping.",
+    is_flag=True,
+    default=False,
+)
+@click.option(
+    "--period",
+    help="Group product counts in time slices of the given period.",
+    type=str,
+)
+@click.option(
+    "--status",
+    type=click.Choice(["active", "archived", "all"]),
+    default="active",
+    help=dedent("""
+              Whether to count archived datasets
+
+              \b
+              - 'active': count only active datasets [default]
+              - 'archived': count only archived datasets
+              - 'all': count both active and archived datasets"""),
+)
+@click.option(
+    "--query",
+    help="Query expressions.",
+    multiple=True,
+    type=str,
+)
+@click.argument("products", nargs=-1)
+@ui.pass_index()
+def count_cmd(
+    index: Index,
+    count_only: bool,
+    period: str,
+    status: str,
+    query: Iterable[str],
+    products: Iterable[str],
+) -> None:
+    archived = {"active": False, "archived": True, "all": None}[status]
+    if query:
+        expressions = parse_expressions(*query)
+    else:
+        expressions = {}
+    expressions["product"] = products
+
+    if period:
+        if count_only:
+            echo("Error: cannot return total count when requesting time slicing\n")
+            sys.exit(1)
+        if len(products) > 1:
+            for product, series in index.datasets.count_by_product_through_time(
+                period, archived, **expressions
+            ):
+                echo(product.name)
+                for timerange, count in series:
+                    formatted_dt = tz_as_utc(timerange[0]).strftime("%Y-%m-%d")
+                    echo(f"    {formatted_dt}: {count}")
+        else:
+            for timerange, count in index.datasets.count_product_through_time(
+                period, archived, **expressions
+            ):
+                formatted_dt = tz_as_utc(timerange[0]).strftime("%Y-%m-%d")
+                echo(f"{formatted_dt}: {count}")
+
+    else:
+        if count_only or len(products) == 1:
+            echo(index.datasets.count(archived, **expressions))
+        else:
+            for product, count in index.datasets.count_by_product(
+                archived, **expressions
+            ):
+                echo(f"{product.name}: {count}")
 
 
 @dataset_cmd.command("archive", help="Archive datasets")
