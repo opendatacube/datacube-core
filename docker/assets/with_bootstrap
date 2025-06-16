@@ -1,35 +1,5 @@
 #!/bin/bash
 
-# Become `odc` user with UID/GID compatible to datacube-core volume
-#  If Running As root
-#    If outside volume not owned by root
-#       change `odc` to have compatible UID/GID
-#       re-exec this script as odc user
-
-[[ $UID -ne 0 ]] || {
-    target_uid=$(stat -c '%u' .)
-    target_gid=$(stat -c '%g' .)
-
-    [[ $target_uid -eq 0 ]] || {
-
-        # unless gid already matches update gid
-        [[ $(id -g odc) -eq ${target_gid} ]] || {
-            groupmod --gid ${target_gid} odc
-            usermod --gid ${target_gid} odc
-        }
-
-        # unless uid already matches: change it and update HOME and /env
-        [[ $(id -u odc) -eq ${target_uid} ]] || {
-            usermod --uid ${target_uid} odc
-            chown -R odc:odc /home/odc/ /env
-        }
-
-        exec sudo -u odc -E -H bash "$0" "$@"
-    }
-}
-
-[[ $UID -ne 0 ]] || echo "WARNING: Running as root"
-
 env="${PYENV:-/env}"
 
 if [ -e "${env}/bin/activate" ]; then

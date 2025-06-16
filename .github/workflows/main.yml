@@ -50,8 +50,10 @@ jobs:
 
     - name: Verify and Run Tests
       run: |
+        export LOCAL_UID=$(id -u $USER)
+        export LOCAL_GID=$(id -g $USER)
         docker compose up --quiet-pull --wait -d
-        docker compose exec --user odc -T core /bin/bash --login -c \
+        docker compose exec --user ubuntu -T core /bin/bash --login -c \
           "source /env/bin/activate && pytest -r a \
             --cov datacube \
             --cov-report=xml \
