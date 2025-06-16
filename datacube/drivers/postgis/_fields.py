@@ -360,6 +360,17 @@ class BoolDocField(SimpleDocField):
     type_name = "boolean"
 
     @override
+    def search_value_to_alchemy(self, value):
+        # Convert boolean to int (range) for indexing purposes
+        return func.numrange(
+            int(value),
+            int(value),
+            # Inclusive on both sides.
+            "[]",
+            type_=NUMRANGE,
+        )
+
+    @override
     def value_to_alchemy(self, value):
         return cast(value, postgres.BOOLEAN)
 
@@ -370,6 +381,11 @@ class BoolDocField(SimpleDocField):
         if value.lower() == "true":
             return True
         return bool(value)
+
+    @override
+    def __eq__(self, value) -> Expression:  # type: ignore[override]
+        # For search field comparisons???
+        return EqualsExpression(self, self.search_value_to_alchemy(value))
 
 
 DateFieldLike: TypeAlias = datetime | date | str | ColumnElement
