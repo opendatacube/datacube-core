@@ -8,6 +8,8 @@ What's New
 Next Release
 ============
 
+- docs: remove broken link :pull:`1973`
+
 v1.9.5 (17 June 2025)
 =====================
 
