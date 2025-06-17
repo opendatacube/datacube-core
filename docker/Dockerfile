@@ -30,32 +30,31 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         git \
+        gosu \
         libpq-dev libudunits2-dev libproj-dev \
         libhdf5-dev libnetcdf-dev libgeos-dev libudunits2-dev \
         python3-dev virtualenv \
         build-essential \
-        redis-server \
         postgresql-client-${V_PG} \
         sudo make graphviz \
         tini
 
 # Copy bootstrap script into image.
 COPY --chown=root:root docker/assets/with_bootstrap /usr/local/bin/
+# Add login-script for UID/GID-remapping.
+COPY --chown=root:root --link docker/assets/remap-user.sh /usr/local/bin/remap-user.sh
 
 # users and groups.
-RUN groupmod ubuntu -n odc  \
-  && usermod -m -d /home/odc ubuntu -l odc \
-  && adduser odc users \
-  && adduser odc sudo \
+RUN usermod -aG sudo ubuntu \
   && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
   && mkdir /env /code \
-  && chown odc:odc /env /code
+  && chown ubuntu:ubuntu /env /code
 
 # Build constrained python environment
 
-USER odc
+USER ubuntu
 
-COPY --chown=odc:odc docker/assets/datacube_integration.conf /home/odc/.datacube_integration.conf
+COPY --chown=ubuntu:ubuntu docker/assets/datacube_integration.conf /home/ubuntu/.datacube_integration.conf
 
 WORKDIR /env
 
@@ -67,17 +66,17 @@ ENV PYENV=/env \
 
 COPY docker/constraints.txt docker/nobinary.txt /conf/
 
-RUN --mount=type=cache,id=odc-python-312-cache,target=/home/odc/.cache \
-    sudo chown odc:odc /home/odc/.cache \
+RUN --mount=type=cache,id=odc-python-312-cache,target=/home/ubuntu/.cache \
+    sudo chown ubuntu:ubuntu /home/ubuntu/.cache \
     && . /env/bin/activate \
     && python3 -m pip --disable-pip-version-check install --upgrade pip setuptools \
     && python3 -m pip --disable-pip-version-check install -r /conf/constraints.txt \
                            -c /conf/nobinary.txt
 
 # Copy datacube-core source code into container and install from source (with addons for tests).
-COPY --chown=odc:odc . /code
+COPY --chown=ubuntu:ubuntu . /code
 
-RUN  --mount=type=cache,id=odc-python-312-cache,target=/home/odc/.cache \
+RUN  --mount=type=cache,id=odc-python-312-cache,target=/home/ubuntu/.cache \
     . /env/bin/activate && python3 -m pip --disable-pip-version-check install '/code/[all]' \
     && python3 -m pip --disable-pip-version-check install /code/examples/io_plugin \
     && python3 -m pip --disable-pip-version-check install /code/tests/drivers/fail_drivers
@@ -87,4 +86,5 @@ USER root
 VOLUME /code
 WORKDIR /code
 
-ENTRYPOINT ["/bin/tini", "-s", "--", "/usr/local/bin/with_bootstrap"]
+ENTRYPOINT ["/usr/local/bin/remap-user.sh"]
+CMD ["/usr/local/bin/with_bootstrap"]
