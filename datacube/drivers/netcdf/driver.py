@@ -49,7 +49,7 @@ class NetcdfWriterDriver:
 
     def mk_uri(self, file_path: Path | str) -> str:
         """
-        Constructs a URI from the file_path and storage config.
+        Constructs a URI from the file_path.
 
         A typical implementation should return f'{scheme}://{file_path}'
 
