@@ -12,7 +12,7 @@
 
  - [ ] Closes #xxxx
  - [ ] Tests added / passed
- - [ ] Fully documented, including `docs/about/whats_new.rst` for all changes
+ - [ ] Pull Request Title will make sense in ODC Release Notes
 
 <!--
 See https://github.com/blog/2111-issue-and-pull-request-templates for more
