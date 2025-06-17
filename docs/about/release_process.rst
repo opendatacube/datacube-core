@@ -8,7 +8,8 @@ Release Process
 
    uv lock
 
-#. Update the release notes in the ``develop`` branch via a PR.
+#. Update the release notes in about/whats_new.rst and the fallback version number in pyproject.toml in the
+   ``develop`` branch via a PR.
 
 #. Create a new **Tag** and **Release** using the `GitHub Releases Web UI`_
 
