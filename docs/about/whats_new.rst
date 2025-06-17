@@ -8,6 +8,7 @@ What's New
 Next Release
 ============
 
+- model: handle integer resolution :pull:`1967`
 - Remove types-redis dependency :pull:`1965`
 - index: add return types :pull:`1939`
 - Update dependencies :pull:`1925`
