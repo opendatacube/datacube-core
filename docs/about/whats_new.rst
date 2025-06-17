@@ -46,6 +46,7 @@ Miscellaneous code cleanup and CI improvements:
 - Document alembic upgrades :pull:`1955`
 - postgis: stop parsing table names :pull:`1961`
 - postgis: fix alembic metadata object :pull:`1960`
+- increment fallback version and finalise release notes :pull:`1970`
 
 - Autoupdates :pull:`1919`, :pull:`1935`, :pull:`1945`, :pull:`1947`, :pull:`1956`, :pull:`1957`, :pull:`1968`
 
