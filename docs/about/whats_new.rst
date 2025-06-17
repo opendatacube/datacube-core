@@ -11,7 +11,7 @@ Next Release
 v1.9.5 (17 June 2025)
 =====================
 
-This release introduces support for boolean type search fields, as well as a handful of bugfixes.
+This release introduces support for boolean type search fields, as well as a handful of bug-fixes.
 
 New feature:
 
