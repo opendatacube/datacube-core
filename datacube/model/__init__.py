@@ -787,10 +787,10 @@ class Product:
 
         def extract_point(name: str):
             xx = storage.get(name, None)
-            try:
-                return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
-            except TypeError:
-                return xx  # assume xx is following odc-geo conventions
+            # Else-branch has type "int | None".
+            return (
+                tuple(xx[dim] for dim in crs.dimensions) if isinstance(xx, dict) else xx
+            )
 
         # extract both tile_size and tile_shape for backwards compatibility
         gs_params = {
@@ -926,7 +926,10 @@ class Product:
 
         def extract_point(name: str):
             xx = _load.get(name, None)
-            return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
+            # Else-branch has type "int | None".
+            return (
+                tuple(xx[dim] for dim in crs.dimensions) if isinstance(xx, dict) else xx
+            )
 
         params = {name: extract_point(name) for name in ("resolution", "align")}
         params = {name: v for name, v in params.items() if v is not None}
