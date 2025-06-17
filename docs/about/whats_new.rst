@@ -8,6 +8,8 @@ What's New
 Next Release
 ============
 
+- Add `dataset count` cli command and deprecate `datacube-search` :pull:`1963`
+
 v1.9.5 (17 June 2025)
 =====================
 
