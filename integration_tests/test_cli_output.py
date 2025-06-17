@@ -153,7 +153,10 @@ def test_cli_dataset_subcommand(
         verbose_flag=False,
         expect_success=False,
     )
-    assert "Error: specified products ga_ls_wo_3 do not contain all required fields"
+    assert (
+        "Error: specified products ga_ls_wo_3 do not contain all required fields"
+        in runner.output
+    )
     assert runner.exit_code == 1
 
     runner = clirunner(
@@ -175,7 +178,7 @@ def test_cli_dataset_subcommand(
         ["dataset", "count", "--count-only", "ga_ls8c_ard_3", "ga_ls_wo_3"],
         verbose_flag=False,
     )
-    assert "5" in runner.output
+    assert runner.output == "5\n"
     assert runner.exit_code == 0
 
     runner = clirunner(

@@ -682,13 +682,20 @@ def count_cmd(
         expressions = parse_expressions(*query)
     else:
         expressions = {}
-    expressions["product"] = products
+    if products:
+        expressions["product"] = products
 
     if period:
         if count_only:
             echo("Error: cannot return total count when requesting time slicing\n")
             sys.exit(1)
-        if len(products) > 1:
+        if len(list(products)) == 1:
+            for timerange, count in index.datasets.count_product_through_time(
+                period, archived, **expressions
+            ):
+                formatted_dt = tz_as_utc(timerange[0]).strftime("%Y-%m-%d")
+                echo(f"{formatted_dt}: {count}")
+        else:
             for product, series in index.datasets.count_by_product_through_time(
                 period, archived, **expressions
             ):
@@ -696,15 +703,9 @@ def count_cmd(
                 for timerange, count in series:
                     formatted_dt = tz_as_utc(timerange[0]).strftime("%Y-%m-%d")
                     echo(f"    {formatted_dt}: {count}")
-        else:
-            for timerange, count in index.datasets.count_product_through_time(
-                period, archived, **expressions
-            ):
-                formatted_dt = tz_as_utc(timerange[0]).strftime("%Y-%m-%d")
-                echo(f"{formatted_dt}: {count}")
 
     else:
-        if count_only or len(products) == 1:
+        if count_only or len(list(products)) == 1:
             echo(index.datasets.count(archived, **expressions))
         else:
             for product, count in index.datasets.count_by_product(
