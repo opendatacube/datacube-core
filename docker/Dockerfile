@@ -35,7 +35,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libhdf5-dev libnetcdf-dev libgeos-dev libudunits2-dev \
         python3-dev virtualenv \
         build-essential \
-        redis-server \
         postgresql-client-${V_PG} \
         sudo make graphviz \
         tini

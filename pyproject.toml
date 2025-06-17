@@ -96,7 +96,6 @@ dev = [
     "types-psutil",
     "types-python-dateutil",
     "types-PyYAML",
-    "types-redis",
     "types-setuptools",
 ]
 doc = [

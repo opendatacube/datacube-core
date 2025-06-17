@@ -96,10 +96,7 @@ commonmark==0.9.1
 coverage==7.8.2
     # via pytest-cov
 cryptography==45.0.3
-    # via
-    #   moto
-    #   types-pyopenssl
-    #   types-redis
+    # via moto
 dask==2025.5.1
     # via
     #   datacube (pyproject.toml)
@@ -257,6 +254,8 @@ parso==0.8.4
     # via jedi
 partd==1.4.2
     # via dask
+pathspec==0.12.1
+    # via mypy
 pexpect==4.9.0
     # via ipython
 platformdirs==4.3.8
@@ -288,6 +287,7 @@ pygments==2.19.1
     #   ipython-pygments-lexers
     #   nbconvert
     #   pydata-sphinx-theme
+    #   pytest
     #   sphinx
 pylint==3.3.7
     # via datacube (pyproject.toml:dev)
@@ -432,28 +432,20 @@ types-awscrt==0.27.2
     # via botocore-stubs
 types-cachetools==6.0.0.20250525
     # via datacube (pyproject.toml:dev)
-types-cffi==1.17.0.20250523
-    # via types-pyopenssl
 types-jsonschema==4.24.0.20250528
     # via datacube (pyproject.toml:dev)
 types-psutil==7.0.0.20250601
     # via datacube (pyproject.toml:dev)
-types-pyopenssl==24.1.0.20240722
-    # via types-redis
 types-python-dateutil==2.9.0.20250516
     # via datacube (pyproject.toml:dev)
 types-pytz==2025.2.0.20250516
     # via pandas-stubs
 types-pyyaml==6.0.12.20250516
     # via datacube (pyproject.toml:dev)
-types-redis==4.6.0.20241004
-    # via datacube (pyproject.toml:dev)
 types-s3transfer==0.13.0
     # via boto3-stubs
 types-setuptools==80.9.0.20250529
-    # via
-    #   datacube (pyproject.toml:dev)
-    #   types-cffi
+    # via datacube (pyproject.toml:dev)
 typing-extensions==4.13.2
     # via
     #   alembic

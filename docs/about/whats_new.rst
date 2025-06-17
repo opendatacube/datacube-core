@@ -8,6 +8,7 @@ What's New
 Next Release
 ============
 
+- Remove types-redis dependency :pull:`1965`
 - index: add return types :pull:`1939`
 - Update dependencies :pull:`1925`
 - Run Ruff format on all code :pull:`1926`, :pull:`1927`
