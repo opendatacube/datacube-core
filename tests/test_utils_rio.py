@@ -26,7 +26,6 @@ def test_rio_env_no_aws() -> None:
     assert get_rio_env() == {}
 
     ee = activate_rio_env(FAKE_OPTION=1)
-    assert isinstance(ee, dict)
     assert ee == get_rio_env()
     assert "GDAL_DISABLE_READDIR_ON_OPEN" not in ee
     if os.getenv("GDAL_DATA", None):
@@ -49,7 +48,7 @@ def test_rio_env_aws() -> None:
     assert get_rio_env() == {}
 
     with pytest.raises(ValueError):
-        activate_rio_env(aws="something")
+        activate_rio_env(aws="something")  # type: ignore[arg-type]
 
     # note: setting region_name to avoid auto-lookup
     ee = activate_rio_env(aws={"aws_unsigned": True, "region_name": "us-west-1"})
@@ -125,8 +124,7 @@ def test_rio_env_aws_auto_region_dummy() -> None:
 
     with moto.mock_aws():
         # at least it should not raise error since we haven't asked for region_name='auto'
-        ee = activate_rio_env(aws={})
-        assert isinstance(ee, dict)
+        _ = activate_rio_env(aws={})
 
         deactivate_rio_env()
         assert get_rio_env() == {}

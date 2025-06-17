@@ -14,17 +14,6 @@ if [ -e "${env}/bin/activate" ]; then
             python -m pip install -e /code/tests/drivers/fail_drivers --no-deps
             python -m pip install -e /code/examples/io_plugin --no-deps
         }
-
-        [ -n "${GDAL_DATA:-}" ] || {
-            # if binary version of rasterio was used, set GDAL_DATA to that
-            RIO_GDAL_DATA=$(dirname $(python -c 'import rasterio; print(rasterio.__file__)'))"/gdal_data"
-
-            if [ -d "${RIO_GDAL_DATA}" ]; then
-                export GDAL_DATA="${RIO_GDAL_DATA}"
-            else
-                export GDAL_DATA=$(gdal-config --datadir)
-            fi
-        }
     }
 fi
 

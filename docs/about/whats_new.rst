@@ -8,6 +8,7 @@ What's New
 Next Release
 ============
 
+- Dockerfile: let rasterio detect data path :pull:`1966`
 - model: handle integer resolution :pull:`1967`
 - Remove types-redis dependency :pull:`1965`
 - index: add return types :pull:`1939`
