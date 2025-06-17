@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     environment:
+      - LOCAL_UID=${LOCAL_UID:-1000}
+      - LOCAL_GID=${LOCAL_GID:-1000}
       - POSTGRES_HOSTNAME=postgres
       - PGPORT=35432
       - POSTGRES_USER=opendatacube
