@@ -20,7 +20,6 @@ URL_RE: re.Pattern[str] = re.compile(r"\A\s*[\w\d\+]+://")
 def split_uri(uri):
     """
     Split the scheme and the remainder of the URI.
-
     """
     idx = uri.find(":")
     if idx < 0:

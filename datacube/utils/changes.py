@@ -27,7 +27,6 @@ def contains(v1: Changeable, v2: Changeable, case_sensitive: bool = False) -> bo
     For dicts contains(v1[k], v2[k]) for all k in v2
     For other types v1 == v2
     v2 None is interpreted as {}
-
     """
     if not case_sensitive:
         if isinstance(v1, str):
@@ -81,9 +80,6 @@ def get_doc_changes(
     3. What is in `new`
 
     If the documents are identical, an empty list is returned.
-
-    :type original: Union[dict, list, int]
-    :rtype: list[(tuple, object, object)]
 
 
     """
@@ -184,7 +180,7 @@ def classify_changes(
     """
     Classify list of changes into good(allowed) and bad(not allowed) based on allowed changes.
 
-    :param list[(tuple,object,object)] changes: result of get_doc_changes
+    :param changes: result of get_doc_changes
     :param allowed_changes: mapping from key to change policy (subset, superset, any)
     :return: good_changes, bad_chages
     """

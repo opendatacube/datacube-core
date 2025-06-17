@@ -9,7 +9,7 @@ Common methods for index integration tests.
 import itertools
 import os
 import warnings
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from copy import copy, deepcopy
 from datetime import timedelta
 from pathlib import Path
@@ -31,7 +31,7 @@ from datacube.drivers.postgis import _core as pgis_core
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres import _core as pgres_core
 from datacube.index import index_connect
-from datacube.index.abstract import default_metadata_type_docs
+from datacube.index.abstract import AbstractIndex, default_metadata_type_docs
 from datacube.model import LineageDirection, LineageTree
 from integration_tests.utils import (
     GEOTIFF,
@@ -44,7 +44,6 @@ from integration_tests.utils import (
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 
 """
-
 INTEGRATION_TESTS_DIR = Path(__file__).parent
 
 _EXAMPLE_LS5_NBAR_DATASET_FILE = INTEGRATION_TESTS_DIR / "example-ls5-nbar.yaml"
@@ -185,6 +184,15 @@ def eo3_africa_dataset2_doc():
 
 
 @pytest.fixture
+def s1_dataset_doc():
+    return (
+        get_eo3_test_data_doc("ga_s1_vertical_dualpol.yaml"),
+        "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/"
+        "experimental_for_inland_water_team/s1_rtc_c1/t045_095837_iw1/2020/1/10/metadata.json",
+    )
+
+
+@pytest.fixture
 def datasets_with_unembedded_lineage_doc():
     return [
         (
@@ -211,6 +219,11 @@ def eo3_sentinel_metadata_type_doc():
 
 
 @pytest.fixture
+def eo3_s1_metadata_type_doc():
+    return get_eo3_test_data_doc("eo3_s1_ard.odc-type.yaml")
+
+
+@pytest.fixture
 def extended_eo3_product_doc():
     return get_eo3_test_data_doc("ard_ls8.odc-product.yaml")
 
@@ -228,6 +241,11 @@ def africa_s2_product_doc():
 @pytest.fixture
 def s2_ard_product_doc():
     return get_eo3_test_data_doc("ga_s2am_ard_3.odc-product.yaml")
+
+
+@pytest.fixture
+def s1_product_doc():
+    return get_eo3_test_data_doc("ga_s1_vertical_dualpol.odc-product.yaml")
 
 
 @pytest.fixture
@@ -306,6 +324,13 @@ def eo3_sentinel_metadata_type(index, eo3_sentinel_metadata_type_doc):
 
 
 @pytest.fixture
+def eo3_s1_metadata_type(index, eo3_s1_metadata_type_doc):
+    return index.metadata_types.add(
+        index.metadata_types.from_doc(eo3_s1_metadata_type_doc)
+    )
+
+
+@pytest.fixture
 def ls8_eo3_product(index, extended_eo3_metadata_type, extended_eo3_product_doc):
     return index.products.add_document(extended_eo3_product_doc)
 
@@ -323,6 +348,11 @@ def africa_s2_eo3_product(index, africa_s2_product_doc):
 @pytest.fixture
 def ga_s2am_ard_3_product(index, eo3_sentinel_metadata_type, s2_ard_product_doc):
     return index.products.add_document(s2_ard_product_doc)
+
+
+@pytest.fixture
+def ga_s1_product(index, eo3_s1_metadata_type, s1_product_doc):
+    return index.products.add_document(s1_product_doc)
 
 
 @pytest.fixture
@@ -425,6 +455,11 @@ def ga_s2am_ard3_interim(
 
 
 @pytest.fixture
+def s1_eo3_dataset(index, eo3_s1_metadata_type, ga_s1_product, s1_dataset_doc):
+    return doc_to_ds(index, ga_s1_product.name, *s1_dataset_doc)
+
+
+@pytest.fixture
 def mem_index_fresh(in_memory_config):
     from datacube import Datacube
 
@@ -476,7 +511,7 @@ def odc_config() -> ODCConfig:
 
 
 @pytest.fixture
-def cfg_env(odc_config, datacube_env_name: str) -> ODCEnvironment:
+def cfg_env(odc_config: ODCConfig, datacube_env_name: str) -> ODCEnvironment:
     """Provides a :class:`ODCEnvironment` configured with suitable config file paths."""
     return odc_config[datacube_env_name]
 
@@ -484,7 +519,7 @@ def cfg_env(odc_config, datacube_env_name: str) -> ODCEnvironment:
 @pytest.fixture
 def cfg_env_pair(
     odc_config: ODCConfig, datacube_env_name_pair: tuple[str, str]
-) -> tuple[ODCEnvironment, ODCEnvironment]:
+) -> tuple[ODCEnvironment, ...]:
     """Provides a pair of :class:`ODCEnvironment` configured with suitable config file paths."""
     return tuple(odc_config[env] for env in datacube_env_name_pair)
 
@@ -508,7 +543,7 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
     url_components = urlparse(url)
     db_name = url_components.path[1:]
     if cfg_env._name in ("datacube", "default", "postgres"):
-        db = PostgresDb.from_config(
+        db: PostgresDb | PostGisDb = PostgresDb.from_config(
             cfg_env, application_name="test-run", validate_connection=False
         )
         # Drop tables so our tests have a clean db.
@@ -549,7 +584,7 @@ def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb) -> None:
 @pytest.fixture(params=["America/Los_Angeles", "UTC"])
 def uninitialised_postgres_db(
     cfg_env: ODCEnvironment, request
-) -> PostgresDb | PostGisDb:
+) -> Generator[PostgresDb | PostGisDb]:
     """
     Return a connection to an empty PostgreSQL or PostGIS database
     """
@@ -564,7 +599,9 @@ def uninitialised_postgres_db(
 
 
 @pytest.fixture
-def uninitialised_postgres_db_pair(cfg_env_pair):
+def uninitialised_postgres_db_pair(
+    cfg_env_pair,
+) -> Generator[tuple[PostgresDb | PostGisDb, ...]]:
     """
     Return a pair of connections to empty PostgreSQL or PostGIS databases
     """
@@ -577,7 +614,9 @@ def uninitialised_postgres_db_pair(cfg_env_pair):
 
 
 @pytest.fixture
-def index(cfg_env, uninitialised_postgres_db: PostGisDb | PostgresDb):
+def index(
+    cfg_env: ODCEnvironment, uninitialised_postgres_db: PostGisDb | PostgresDb
+) -> Generator[AbstractIndex]:
     index = index_connect(cfg_env, validate_connection=False)
     index.init_db()
     yield index
@@ -638,7 +677,9 @@ def index_pair_populated_empty(
 
 
 @pytest.fixture
-def index_empty(cfg_env, uninitialised_postgres_db: PostGisDb | PostgresDb):
+def index_empty(
+    cfg_env: ODCEnvironment, uninitialised_postgres_db: PostGisDb | PostgresDb
+) -> Generator[AbstractIndex]:
     index = index_connect(cfg_env, validate_connection=False)
     index.init_db(with_default_types=False)
     yield index
@@ -712,7 +753,6 @@ def geotiffs(tmpdir_factory):
             'path':..., # path to the yaml ingestion file
             'tiffs':... # list of paths to the actual geotiffs in that dataset, one per band.
         }
-
     """
     tiffs_dir = tmpdir_factory.mktemp("tiffs")
 
@@ -737,12 +777,12 @@ def geotiffs(tmpdir_factory):
     ]
 
 
-def _make_tiffs_and_yamls(tiffs_dir, config, day_offset):
+def _make_tiffs_and_yamls(tiffs_dir: str, config: dict, day_offset: int):
     """Make a custom yaml and tiff for a day offset.
 
-    :param path-like tiffs_dir: The base path to receive the tiffs.
-    :param dict config: The yaml config to be cloned and altered.
-    :param int day_offset: how many days to offset the original yaml by.
+    :param tiffs_dir: The base path to receive the tiffs.
+    :param config: The yaml config to be cloned and altered.
+    :param day_offset: how many days to offset the original yaml by.
     """
     config = deepcopy(config)
 
@@ -795,7 +835,7 @@ def example_ls5_dataset_path(example_ls5_dataset_paths):
 
 
 @pytest.fixture
-def example_ls5_dataset_paths(tmpdir, geotiffs):
+def example_ls5_dataset_paths(tmpdir, geotiffs: list) -> dict:
     """Create sample raw observations (dataset + geotiff).
 
     This fixture should be used by eah test requiring a set of
@@ -804,9 +844,9 @@ def example_ls5_dataset_paths(tmpdir, geotiffs):
     test session, in order to save disk and time.
 
     :param tmpdir: The temp directory in which to create the datasets.
-    :param list geotiffs: List of session geotiffs and yamls, to be
+    :param geotiffs: List of session geotiffs and yamls, to be
       linked from this unique observation set sample.
-    :return: dict: Dict of directories containing each observation,
+    :return: Dict of directories containing each observation,
       indexed by dataset UUID.
     """
     dataset_dirs = _make_ls5_scene_datasets(geotiffs, tmpdir)

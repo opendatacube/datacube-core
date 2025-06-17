@@ -118,14 +118,14 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             _LOG.info("Creating types.")
             for s in TYPES_INIT_SQL:
                 c.execute(text(s))
-            from ._schema import ALL_STATIC_TABLES, orm_registry
+            from ._schema import orm_registry
 
             _LOG.info("Creating tables.")
             _LOG.info(
                 "Dataset indexes: %s",
                 repr(orm_registry.metadata.tables["odc.dataset"].indexes),
             )
-            orm_registry.metadata.create_all(c, tables=ALL_STATIC_TABLES)  # type: ignore[arg-type]
+            orm_registry.metadata.create_all(c)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
             sqla_txn.commit()
@@ -189,7 +189,6 @@ def schema_is_latest(engine: Engine) -> bool:
 
     See the ``update_schema()`` function below for actually applying the updates.
     """
-
     # No schema changes recently. Everything is perfect.
 
     cfg = config.Config(ALEMBIC_INI_LOCATION)

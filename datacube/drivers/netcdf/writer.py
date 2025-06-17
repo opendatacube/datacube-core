@@ -69,7 +69,7 @@ def create_netcdf(netcdf_path: str | PathLike, **kwargs) -> Dataset:
     return nco
 
 
-def append_netcdf(netcdf_path) -> Dataset:
+def append_netcdf(netcdf_path: PathLike) -> Dataset:
     """
     Open a NetCDF file in append mode
 
@@ -82,13 +82,6 @@ def append_netcdf(netcdf_path) -> Dataset:
 def create_coordinate(
     nco: Dataset, name: str, labels: Sequence[str], units: str
 ) -> netCDF4.Variable:
-    """
-    :type nco: netCDF4.Dataset
-    :type name: str
-    :type labels: numpy.array
-    :type units: str
-    :rtype: netCDF4.Variable
-    """
     labels = netcdfy_coord(labels)
 
     nco.createDimension(name, labels.size)
@@ -102,14 +95,9 @@ def create_coordinate(
     return var
 
 
-def create_variable(nco, name: str, var, grid_mapping=None, attrs=None, **kwargs):
-    """
-    :param nco:
-    :param name:
-    :param datacube.model.Variable var:
-    :param kwargs:
-    :return:
-    """
+def create_variable(
+    nco, name: str, var: Variable, grid_mapping=None, attrs=None, **kwargs
+):
     assert var.dtype.kind != "U"  # Creates Non CF-Compliant NetCDF File
 
     def clamp_chunksizes(chunksizes: Sequence[int] | None, dim_names: Sequence[str]):

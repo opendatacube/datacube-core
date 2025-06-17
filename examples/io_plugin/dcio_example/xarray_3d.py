@@ -32,7 +32,7 @@ def uri_split(uri: str) -> tuple[str, str, str]:
 
     If the URI contains no '#' extension, the root group "" is returned.
 
-    :param str uri: The URI to be parsed
+    :param uri: The URI to be parsed
     :return: (protocol, root, group)
     """
     components = urlparse(uri)
@@ -63,9 +63,9 @@ class XArrayDataSource3D:
 
             The BandDataSource class to read array slices out of the xr.Dataset.
 
-            :param xr.Dataset dataset: The xr.Dataset
-            :param str var_name: The variable name of the xr.DataArray
-            :param float no_data: The no data value if known
+            :param dataset: The xr.Dataset
+            :param var_name: The variable name of the xr.DataArray
+            :param no_data: The no data value if known
             """
             self.ds = dataset
             self._var_name = var_name
@@ -118,8 +118,8 @@ class XArrayDataSource3D:
             """
             Reads a slice into the xr.DataArray.
 
-            :param RasterWindow window: The slice to read
-            :param RasterShape out_shape: The desired output shape
+            :param window: The slice to read
+            :param out_shape: The desired output shape
             :return: Requested data in a :class:`numpy.ndarray`
             """
 
@@ -144,7 +144,7 @@ class XArrayDataSource3D:
         """
         Initialises the XarrayDataSource3D class.
 
-        :param BandInfo band: BandInfo containing the dataset metadata.
+        :param band: BandInfo containing the dataset metadata.
         """
         self._band_info = band
         if band.band == 0:

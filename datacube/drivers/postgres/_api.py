@@ -215,11 +215,7 @@ class PostgresDbAPI:
     def insert_dataset(self, metadata_doc, dataset_id, product_id):
         """
         Insert dataset if not already indexed.
-        :type metadata_doc: dict
-        :type dataset_id: str or uuid.UUID
-        :type product_id: int
         :return: whether it was inserted
-        :rtype: bool
         """
         dataset_type_ref = bindparam("dataset_type_ref")
         ret = self._connection.execute(
@@ -252,9 +248,6 @@ class PostgresDbAPI:
     def update_dataset(self, metadata_doc, dataset_id, product_id) -> bool:
         """
         Update dataset
-        :type metadata_doc: dict
-        :type dataset_id: str or uuid.UUID
-        :type product_id: int
         """
         res = self._connection.execute(
             DATASET.update()
@@ -273,12 +266,7 @@ class PostgresDbAPI:
         Add a location to a dataset if it is not already recorded.
 
         Returns True if success, False if this location already existed
-
-        :type dataset_id: str or uuid.UUID
-        :type uri: str
-        :rtype bool:
         """
-
         scheme, body = split_uri(uri)
 
         r = self._connection.execute(
@@ -468,11 +456,7 @@ class PostgresDbAPI:
     ) -> dict:
         """
         Find any datasets that have the given metadata.
-
-        :type metadata: dict
-        :rtype: dict
         """
-
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         where_clause = DATASET.c.metadata.contains(metadata)
         if archived:
@@ -485,9 +469,6 @@ class PostgresDbAPI:
     def search_products_by_metadata(self, metadata: dict) -> dict:
         """
         Find any products that have the given metadata.
-
-        :type metadata: dict
-        :rtype: dict
         """
         # Find any products types whose metadata document contains the passed in metadata
         return self._connection.execute(
@@ -513,15 +494,6 @@ class PostgresDbAPI:
         archived: bool | None = False,
         order_by=None,
     ) -> Select:
-        """
-        :type expressions: tuple[Expression]
-        :type source_exprs: tuple[Expression]
-        :type select_fields: Iterable[PgField]
-        :type with_source_ids: bool
-        :type limit: int
-        :rtype: sqlalchemy.Expression
-        """
-
         if select_fields:
             # Expand select fields, inserting placeholder columns selections for fields that aren't defined for
             # this product query.
@@ -656,11 +628,6 @@ class PostgresDbAPI:
         archived: bool | None = False,
         order_by=None,
     ):
-        """
-        :type with_source_ids: bool
-        :type select_fields: tuple[datacube.drivers.postgres._fields.PgField]
-        :type expressions: tuple[datacube.drivers.postgres._fields.PgExpression]
-        """
         select_query = self.search_datasets_query(
             expressions,
             source_exprs,
@@ -854,11 +821,6 @@ class PostgresDbAPI:
     def count_datasets(
         self, expressions: Iterable[Expression], archived: bool | None = False
     ) -> int:
-        """
-        :type expressions: tuple[datacube.drivers.postgres._fields.PgExpression]
-        :rtype: int
-        """
-
         raw_expressions = self._alchemify_expressions(expressions)
         if archived:
             where_exprs = and_(DATASET.c.archived.is_not(None), *raw_expressions)
@@ -883,14 +845,6 @@ class PostgresDbAPI:
         time_field,
         expressions: Iterable[Expression],
     ) -> Iterator[tuple[tuple[datetime.datetime, datetime.datetime], int]]:
-        """
-        :type period: str
-        :type start: datetime.datetime
-        :type end: datetime.datetime
-        :type expressions: tuple[datacube.drivers.postgres._fields.PgExpression]
-        :rtype: list[((datetime.datetime, datetime.datetime), int)]
-        """
-
         results = self._connection.execute(
             self.count_datasets_through_time_query(
                 start, end, period, time_field, expressions

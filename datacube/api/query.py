@@ -11,6 +11,7 @@ import datetime
 import logging
 import math
 import warnings
+from collections.abc import Iterable
 
 import numpy as np
 import pandas
@@ -20,6 +21,8 @@ from odc.geo.geobox import GeoBox
 from odc.geo.geom import lonlat_bounds, mid_longitude
 from pandas import to_datetime as pandas_to_datetime
 from typing_extensions import override
+
+from datacube.index import Index
 
 from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
 from ..model import Dataset, QueryField, Range
@@ -72,8 +75,8 @@ OTHER_KEYS = (
 class Query:
     def __init__(
         self,
-        index=None,
-        product=None,
+        index: Index | None = None,
+        product: str | None = None,
         geopolygon=None,
         like: GeoBox | xarray.Dataset | xarray.DataArray | None = None,
         **search_terms,
@@ -95,14 +98,14 @@ class Query:
 
         Used by :meth:`datacube.Datacube.find_datasets` and :meth:`datacube.Datacube.load`.
 
-        :param datacube.index.Index index: An optional `index` object, if checking of field names is desired.
-        :param str product: name of product
+        :param index: An optional `index` object, if checking of field names is desired.
+        :param product: name of product
         :type geopolygon: the spatial boundaries of the search, can be:
                           odc.geo.geom.Geometry: A Geometry object
                           Any string or JsonLike object that can be converted to a Geometry object.
                           An iterable of either of the above; or
                           None: no geopolygon defined (may be derived from like or lat/lon/x/y/crs search terms)
-        :param xarray.Dataset like: spatio-temporal bounds of `like` are used for the search
+        :param like: spatio-temporal bounds of `like` are used for the search
         :param search_terms:
          * `measurements` - list of measurements to retrieve
          * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
@@ -124,11 +127,11 @@ class Query:
 
         search_terms = strip_all_spatial_fields_from_query(search_terms)
         remaining_keys = set(search_terms.keys()) - set(OTHER_KEYS)
-        if self.index:
+        if index:
             # Retrieve known keys for extra dimensions
-            known_dim_keys = set()
+            known_dim_keys: set = set()
             if product is not None:
-                datacube_products = index.products.search(product=product)
+                datacube_products: Iterable = index.products.search(product=product)
             else:
                 datacube_products = index.products.get_all()
 
@@ -167,8 +170,6 @@ class Query:
     def search_terms(self) -> dict:
         """
         Access the search terms as a dictionary.
-
-        :type: dict
         """
         kwargs = {}
         kwargs.update(self.search)

@@ -6,6 +6,7 @@
 
 import threading
 from types import SimpleNamespace
+from typing import Literal
 
 import rasterio
 import rasterio.env
@@ -34,12 +35,11 @@ def _state(purge: bool = False):
     )
 
 
-def get_rio_env(sanitize: bool = True):
+def get_rio_env(sanitize: bool = True) -> dict:
     """Get GDAL params configured by rasterio for the current thread.
 
     :param sanitize: If True replace sensitive Values with 'x'
     """
-
     env = rasterio.env.local._env  # pylint: disable=protected-access
     if env is None:
         return {}
@@ -58,7 +58,9 @@ def deactivate_rio_env() -> None:
         state.env.__exit__(None, None, None)
 
 
-def activate_rio_env(aws=None, cloud_defaults: bool = False, **kwargs):
+def activate_rio_env(
+    aws: Literal["auto"] | dict | None = None, cloud_defaults: bool = False, **kwargs
+) -> dict:
     """Inject activated rasterio.Env into current thread.
 
     This de-activates previously setup environment.

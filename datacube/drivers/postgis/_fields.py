@@ -365,8 +365,40 @@ class DoubleDocField(NumericDocField):
     type_name = "double"
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> float:
         return float(value)
+
+
+class BoolDocField(SimpleDocField):
+    type_name = "boolean"
+
+    @override
+    def search_value_to_alchemy(self, value):
+        # Convert boolean to int (range) for indexing purposes
+        return func.numrange(
+            int(value),
+            int(value),
+            # Inclusive on both sides.
+            "[]",
+            type_=NUMRANGE,
+        )
+
+    @override
+    def value_to_alchemy(self, value):
+        return cast(value, postgres.BOOLEAN)
+
+    @override
+    def parse_value(self, value) -> bool:
+        if value.lower() == "false":
+            return False
+        if value.lower() == "true":
+            return True
+        return bool(value)
+
+    @override
+    def __eq__(self, value) -> Expression:  # type: ignore[override]
+        # For search field comparisons???
+        return EqualsExpression(self, self.search_value_to_alchemy(value))
 
 
 DateFieldLike: TypeAlias = datetime | date | str | ColumnElement
@@ -413,7 +445,7 @@ class DateDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> datetime:
         return utils.parse_time(value)
 
     @property
@@ -477,9 +509,6 @@ class RangeDocField(PgDocField):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
-        """
-        :rtype: Expression
-        """
         # Lower and higher are interchangeable here: they're the same type.
         casted_val = self.lower.value_to_alchemy(value)
         return RangeContainsExpression(self, casted_val)
@@ -521,9 +550,6 @@ class NumericRangeDocField(RangeDocField):
 
     @override
     def between(self, low, high) -> Expression:
-        """
-        :rtype: Expression
-        """
         return RangeBetweenExpression(self, low, high, _range_class=PgRange)
 
 
@@ -587,9 +613,6 @@ class DateRangeDocField(RangeDocField):
 
     @override
     def between(self, low, high) -> Expression:
-        """
-        :rtype: Expression
-        """
         low = _number_implies_year(low)
         high = _number_implies_year(high)
 
@@ -623,7 +646,7 @@ class DateRangeDocField(RangeDocField):
         )
 
 
-def _number_implies_year(v: int | datetime) -> datetime:
+def _number_implies_year(v: int | float | datetime) -> datetime:
     """
     >>> _number_implies_year(1994)
     datetime.datetime(1994, 1, 1, 0, 0)
@@ -640,9 +663,8 @@ def _number_implies_year(v: int | datetime) -> datetime:
 
 
 class PgExpression(Expression):
-    def __init__(self, field) -> None:
+    def __init__(self, field: PgField) -> None:
         super().__init__()
-        #: :type: PgField
         self.field = field
 
     @property
@@ -737,14 +759,12 @@ def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
         }
 
     :param table_column: SQLAlchemy jsonb column for the document we're reading fields from.
-    :type doc: dict
-    :rtype: dict[str, PgField]
     """
-
     # Implementations of fields for this driver
     types = {
         SimpleDocField,
         IntDocField,
+        BoolDocField,
         DoubleDocField,
         DateDocField,
         NumericRangeDocField,
@@ -761,10 +781,7 @@ def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
 
     def _get_field(name: str, descriptor: dict, column) -> PgField:
         """
-        :type name: str
-        :type descriptor: dict
         :param column: SQLAlchemy table column
-        :rtype: PgField
         """
         ctorargs = descriptor.copy()
         type_name = ctorargs.pop("type", "string")

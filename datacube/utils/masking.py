@@ -94,7 +94,6 @@ def make_mask(variable: Dataset | DataArray, **flags):
     where `GOOD_PIXEL_FLAGS` is a dict of flag_name to True/False
 
     :param variable:
-    :type variable: xarray.Dataset or xarray.DataArray
     :param flags: list of boolean flags
     :return: boolean xarray.DataArray or xarray.Dataset
     """
@@ -132,7 +131,7 @@ def mask_invalid_data(data, keep_attrs: bool = True):
     This will convert numeric data to type `float`.
 
     :param Dataset or DataArray data:
-    :param bool keep_attrs: If the attributes of the data should be included in the returned .
+    :param keep_attrs: If the attributes of the data should be included in the returned .
     :return: Dataset or DataArray
     """
     if isinstance(data, Dataset):
@@ -198,7 +197,6 @@ def mask_to_dict(bits_def: dict, mask_value: int) -> dict:
     :param bits_def:
     :param mask_value:
     :return: Mapping of flag_name -> set_value
-    :rtype: dict
     """
     return_dict = {}
     for flag_name, flag_defn in bits_def.items():
@@ -256,9 +254,6 @@ def set_value_at_index(bitmask: int, index: int, value: bool) -> int:
     0b10000
 
     :param bitmask: existing int bitmask to alter
-    :type bitmask: int
-    :type index: int
-    :type value: bool
     """
     bit_val = 2**index
     if value:
@@ -277,7 +272,6 @@ def generate_table(rows):
     :param rows: A sequence of sequences with the 0th element being the table
                  header
     """
-
     # - figure out column widths
     widths = [len(max(columns, key=len)) for columns in zip(*rows)]
 

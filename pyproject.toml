@@ -29,7 +29,7 @@ dependencies = [
     'antimeridian',
     'attrs>=18.1',
     'cachetools',
-    'click>=5.0',
+    'click>=8.2',
     'cloudpickle>=0.4',
     'dask[array]',
     'deprecat',
@@ -96,7 +96,6 @@ dev = [
     "types-psutil",
     "types-python-dateutil",
     "types-PyYAML",
-    "types-redis",
     "types-setuptools",
 ]
 doc = [
@@ -220,7 +219,7 @@ include = ['datacube*']
 
 [tool.setuptools_scm]
 write_to = 'datacube/_version.py'
-fallback_version = "1.9.4.dev0"
+fallback_version = "1.9.5.dev0"
 
 [tool.mypy]
 python_version = '3.10'

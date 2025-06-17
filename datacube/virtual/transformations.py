@@ -400,7 +400,6 @@ class Expressions(Transformation):
        input:
            product: example_surface_reflectance_product
            measurements: [nir, red]
-
     """
 
     def __init__(self, output: Mapping, masked: bool = True) -> None:

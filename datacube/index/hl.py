@@ -70,7 +70,6 @@ ProductMatcher = Callable[[Mapping[str, Any]], Product]
 def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
     """Given product matching rules return a function mapping a document to a
     matching product.
-
     """
     assert len(rules) > 0
 
@@ -116,9 +115,7 @@ def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
 
 def check_dataset_consistent(dataset: Dataset) -> tuple[bool, str | None]:
     """
-    :type dataset: datacube.model.Dataset
     :return: (Is consistent, [error message|None])
-    :rtype: (bool, str or None)
     """
     product_measurements = set(dataset.product.measurements.keys())
 
@@ -389,24 +386,24 @@ class Doc2Dataset:
 
     :param index: an open Database connection
 
-    :param list products: List of product names against which to match datasets
+    :param products: List of product names against which to match datasets
                           (including lineage datasets). If not supplied we will
                           consider all products.
 
-    :param list exclude_products: List of products to exclude from matching
+    :param exclude_products: List of products to exclude from matching
 
     :param fail_on_missing_lineage: If True fail resolve if any lineage
                                     datasets are missing from the DB
 
                                     Only False supported if index.supports_external_lineage is True.
 
-    :param verify_lineage: If True check that lineage datasets in the
+    :param verify_lineage: If True, check that lineage datasets in the
                            supplied document are identical to DB versions
 
                            Ignored for EO3 documents.  Will be dropped in ODCv2 as only eo3 documents
                            will be supported.
 
-    :param skip_lineage: If True ignore lineage sub-tree in the supplied
+    :param skip_lineage: If True, ignore lineage sub-tree in the supplied
                          document and construct dataset without lineage datasets
     :param eo3: 'auto'/True/False by default auto-detect EO3 datasets and pre-process them
 

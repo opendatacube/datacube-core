@@ -29,6 +29,7 @@ ApplyMask
 ARD
 ard
 arg
+Ariana
 aSk
 au
 australia
@@ -166,6 +167,7 @@ EarthData
 earthobservation
 ec
 eg
+emmaai
 emmanuel
 EnterpriseDB
 entrypoint

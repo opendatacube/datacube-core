@@ -39,7 +39,6 @@ begin
 end;
 $$ language plpgsql;
 """
-
 INSTALL_TRIGGER_SQL_TEMPLATE = [
     "drop trigger if exists row_update_time_{table} on {schema}.{table}",
     """
@@ -99,7 +98,6 @@ def visit_name(element, compiler, **kw) -> str:
 def pg_exists(conn, name: str) -> bool:
     """
     Does a postgres object exist?
-    :rtype bool
     """
     return conn.execute(text(f"SELECT to_regclass('{name}')")).scalar() is not None
 
@@ -107,7 +105,6 @@ def pg_exists(conn, name: str) -> bool:
 def pg_column_exists(conn, table, column) -> bool:
     """
     Does a postgres object exist?
-    :rtype bool
     """
     return (
         conn.execute(

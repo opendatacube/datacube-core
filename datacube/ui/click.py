@@ -104,7 +104,7 @@ def _init_logging(ctx, param, value) -> None:
 
     if logging_level <= logging.INFO:
         logging.getLogger("rasterio").setLevel(logging.INFO)
-
+        logging.getLogger("alembic").setLevel(logging.WARNING)
     logging.getLogger("datacube").info(
         "Running datacube command: %s", " ".join(sys.argv)
     )
@@ -271,9 +271,9 @@ def pass_config(f):
 def pass_index(app_name: str | None = None, expect_initialised: bool = True):
     """Get a connection to the index as the first argument.
 
-    :param str app_name:
+    :param app_name:
         A short name of the application for logging purposes.
-    :param bool expect_initialised:
+    :param expect_initialised:
         Whether to connect immediately on startup. Useful to catch connection config issues immediately,
         but if you're planning to fork before any usage (such as in the case of some web servers),
         you may not want this. For more information on thread/process usage, see datacube.index.Index
@@ -309,9 +309,9 @@ def pass_datacube(app_name: str | None = None, expect_initialised: bool = True):
     """
     Get a DataCube from the current or default local settings.
 
-    :param str app_name:
+    :param app_name:
         A short name of the application for logging purposes.
-    :param bool expect_initialised:
+    :param expect_initialised:
         Whether to connect immediately on startup. Useful to catch connection config issues immediately,
         but if you're planning to fork before any usage (such as in the case of some web servers),
         you may not want this. For More information on thread/process usage, see datacube.index.Index

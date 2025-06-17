@@ -8,6 +8,30 @@ What's New
 Next Release
 ============
 
+v1.9.5 (17 June 2025)
+=====================
+
+This release introduces support for boolean type search fields, as well as a handful of bug-fixes.
+
+New feature:
+
+- Add boolean field definition (addressing issue :issue`1937`) :pull:`1949`
+
+Bug fixes:
+
+- Export grid workflow classes from datacube.api fixing issue :issue:`1953` :pull:`1958`
+- ``archive-less-mature`` runs when re-indexing datasets fixing issue :issue:`1917` :pull:`1948`
+- Serialise Measurement with canonical name to fix issue :issue:`1936` :pull:`1962`
+
+Docker image improvements:
+
+- Dockerfile: switch to ubuntu user :pull:`1964`
+- Dockerfile: let rasterio detect data path :pull:`1966`
+
+Miscellaneous code cleanup and CI improvements:
+
+- model: handle integer resolution :pull:`1967`
+- Remove types-redis dependency :pull:`1965`
 - index: add return types :pull:`1939`
 - Update dependencies :pull:`1925`
 - Run Ruff format on all code :pull:`1926`, :pull:`1927`
@@ -17,8 +41,17 @@ Next Release
 - index: fix search_by_product type :pull:`1944`
 - Put coverage config in pyproject :pull:`1942`
 - Fix alembic deprecation warning :pull:`1941`
-- ``archive-less-mature`` runs when re-indexing datasets :pull:`1948`
+- Convert doc strings to type annotations :pull:`1940`, :pull:`1950`, :pull:`1951`
 - Convert doc strings to type annotations :pull:`1940`
+- Document alembic upgrades :pull:`1955`
+- postgis: stop parsing table names :pull:`1961`
+- postgis: fix alembic metadata object :pull:`1960`
+- increment fallback version and finalise release notes :pull:`1970`
+
+- Autoupdates :pull:`1919`, :pull:`1935`, :pull:`1945`, :pull:`1947`, :pull:`1956`, :pull:`1957`, :pull:`1968`
+
+Includes contributions from @pjonsson, @omad, @emmaai, @Ariana-B and @SpacemanPaul, with thanks to
+supporting organisations CSIRO, RISE and Geoscience Australia.
 
 v1.9.4 (20 May 2025)
 ====================

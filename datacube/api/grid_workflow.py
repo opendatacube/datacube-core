@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import typing
 from collections import OrderedDict
-from collections.abc import Generator, Hashable
+from collections.abc import Generator, Hashable, Iterable
 
 import numpy as np
 import pandas as pd
@@ -73,12 +73,12 @@ class Tile:
     the entire `Tile` at once.
     """
 
-    def __init__(self, sources: xr.DataArray, geobox: GeoBox):
+    def __init__(self, sources: xr.DataArray, geobox: GeoBox) -> None:
         """Create a Tile representing a dataset that can be loaded.
 
-        :param xr.DataArray sources: An array of non-spatial dimensions of the request, holding lists of
+        :param sources: An array of non-spatial dimensions of the request, holding lists of
             datacube.storage.DatasetSource objects.
-        :param model.GeoBox geobox: The spatial footprint of the Tile
+        :param geobox: The spatial footprint of the Tile
         """
         self.sources: xr.DataArray = sources
         self.geobox: GeoBox = geobox
@@ -174,11 +174,11 @@ class GridWorkflow:
 
         Either grid_spec or product must be supplied.
 
-        :param datacube.index.Index index: The database index to use.
-        :param GridSpec grid_spec: The grid projection and resolution
-        :param str product: The name of an existing product, if no grid_spec is supplied.
+        :param index: The database index to use.
+        :param grid_spec: The grid projection and resolution
+        :param product: The name of an existing product, if no grid_spec is supplied.
         """
-        self.index: Index = index
+        self.index = index
 
         # If available, use the provided grid_spec
         if grid_spec is not None:
@@ -313,7 +313,6 @@ class GridWorkflow:
 
         :param observations: datasets grouped by cell index, like from :py:meth:`cell_observations`
         :param group_by: grouping method, as returned by :py:meth:`datacube.api.query.query_group_by`
-        :type group_by: :py:class:`datacube.api.query.GroupBy`
         :return: tiles grouped by cell index
 
         .. seealso::
@@ -336,9 +335,7 @@ class GridWorkflow:
 
         :param observations: datasets grouped by cell index, like from :meth:`cell_observations`
         :param group_by: grouping method, as returned by :py:meth:`datacube.api.query.query_group_by`
-        :type group_by: :py:class:`datacube.api.query.GroupBy`
         :return: tiles grouped by cell index and time
-        :rtype: dict[tuple(int, int, numpy.datetime64), :py:class:`.Tile`]
 
         .. seealso::
             :meth:`load`
@@ -402,12 +399,12 @@ class GridWorkflow:
 
     @staticmethod
     def load(
-        tile,
-        measurements=None,
-        dask_chunks=None,
+        tile: Tile,
+        measurements: Iterable[str] | None = None,
+        dask_chunks: dict[str, str | int] | None = None,
         fuse_func=None,
-        resampling=None,
-        skip_broken_datasets=False,
+        resampling: str | dict | None = None,
+        skip_broken_datasets: bool = False,
     ) -> xr.Dataset:
         """
         Load data for a cell/tile.
@@ -420,11 +417,11 @@ class GridWorkflow:
         See the documentation on using `xr with dask <http://xr.pydata.org/en/stable/dask.html>`_
         for more information.
 
-        :param `.Tile` tile: The tile to load.
+        :param tile: The tile to load.
 
-        :param list(str) measurements: The names of measurements to load
+        :param measurements: The names of measurements to load
 
-        :param dict dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
+        :param dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
             specify the chunk size in each output direction.
 
             See the documentation on using `xr with dask <http://xr.pydata.org/en/stable/dask.html>`_
@@ -433,7 +430,7 @@ class GridWorkflow:
         :param fuse_func: Function to fuse together a tile that has been pre-grouped by calling
             :meth:`list_cells` with a ``group_by`` parameter.
 
-        :param str|dict resampling:
+        :param resampling:
 
             The resampling method to use if re-projection is required, could be
             configured per band using a dictionary (:meth: `load_data`)
@@ -442,10 +439,9 @@ class GridWorkflow:
 
             Defaults to ``'nearest'``.
 
-        :param bool skip_broken_datasets: If True, ignore broken datasets and continue processing with the data
+        :param skip_broken_datasets: If True, ignore broken datasets and continue processing with the data
              that can be loaded. If False, an exception will be raised on a broken dataset. Defaults to False.
 
-        :rtype: :py:class:`xr.Dataset`
 
         .. seealso::
             :meth:`list_tiles` :meth:`list_cells`

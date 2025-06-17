@@ -19,7 +19,6 @@ db_hostname: db.opendatacube.test
 [testalt]
 db_hostname: alt-db.opendatacube.test
     """
-
     cfg = ODCConfig(text=raw_config)
     cfg_env = cfg[None]
     assert cfg_env.db_hostname == "db.opendatacube.test"

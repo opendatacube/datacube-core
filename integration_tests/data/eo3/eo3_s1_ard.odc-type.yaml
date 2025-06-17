@@ -1,0 +1,164 @@
+---
+name: eo3_s1_ard
+description: EO3 for DEA Sentinel-1 Analysis Ready Data
+dataset:
+  id: [id]
+  sources: [lineage, source_datasets]
+
+  grid_spatial: [grid_spatial, projection]
+  measurements: [measurements]
+  creation_dt: [properties, 'odc:processing_datetime']
+  label: [label]
+  format: [properties, 'odc:file_format']
+
+  search_fields:
+    platform: # Sentinel-1A/B/C/D
+      description: Platform code
+      offset: [properties, 'eo:platform'] # EO3 name for the field
+      indexed: false
+
+    instrument: # Sentinel-1 CSAR
+      description: Instrument name
+      offset: [properties, 'eo:instrument']
+      indexed: false
+
+    product_family: # Sentinel-1
+      description: Product family code
+      offset: [properties, 'odc:product_family']
+      indexed: false
+
+    scene_id: # Scene name
+      description: ESA scene ID (e.g. 'S2A_MSIL1C_20220303T000731_N0400_R073_T56LNM_20220303T012845')
+      offset: [properties, 'nrb:scene_id']
+      indexed: false
+      type: string
+
+    region_code: # Burst ID
+      description: Sentinel-1 burst ID
+      offset: [properties, 'odc:region_code']
+      indexed: false
+      type: string
+
+    crs_raw:
+      description: The raw CRS string as it appears in metadata
+      offset: ['crs']
+      indexed: false
+
+    time:
+      description: Acquisition time range
+      type: datetime-range
+      min_offset:
+        - [properties, 'dtr:start_datetime']
+        - [properties, datetime]
+      max_offset:
+        - [properties, 'dtr:end_datetime']
+        - [properties, datetime]
+
+    lon:
+      description: Longitude range
+      type: double-range
+      min_offset:
+        - [extent, lon, begin]
+      max_offset:
+        - [extent, lon, end]
+
+    lat:
+      description: Latitude range
+      type: double-range
+      min_offset:
+        - [extent, lat, begin]
+      max_offset:
+        - [extent, lat, end]    
+
+    # Sentinel-1 specific properties
+    # Instrument mode
+    instrument_mode:
+      description: The acquisition mode (one of SM, IW, EW, WV)
+      offset: [properties, 'altm:instrument_mode']
+      indexed: false
+      type: string
+
+    # Orbit state
+    orbit_state:
+      description: The orbit state (one of ascending or descending)
+      offset: [properties, 'sat:orbit_state']
+      indexed: false
+      type: string
+    
+    # Orbit source
+    orbit_source:
+      description: The orbit file type (one of POE or RES)
+      offset: [properties, 's1:orbit_source']
+      indexed: false
+      type: string
+    
+    # Burst ID
+    burst_id:
+      description: Burst ID (e.g. t126_270382_iw3)
+      offset: [properties, 'sar:relative_burst']
+      indexed: true
+      type: string
+    
+    # Measurement type
+    measurement_type:
+      description: The backscatter coefficient (one of gamma_0, sigma_0, beta_0)
+      offset: [properties, 'nrb:measurement_type']
+      indexed: false
+      type: string
+
+    # Measurement convention
+    measurement_convention:
+      description: The convention used to measure backscatter
+      offset: [properties, 'nrb:measurement_convention']
+      indexed: false
+      type: string
+
+    # Conversion equation
+    conversion_eq:
+      description: The equation to convert product to decibels
+      offset: [properties, 'nrb:conversion_eq']
+      indexed: false
+      type: string
+
+    # Noise removal
+    noise_removal_applied:
+      description: Whether noise removal has been applied
+      offset: [properties, 'nrb:noise_removal_applied']
+      indexed: false
+      type: boolean
+
+    # Static tropospheric correction
+    static_tropospheric_correction_applied:
+      description: Whether static tropospheric correction has been applied
+      offset: [properties, 'nrb:static_tropospheric_correction_applied']
+      indexed: false
+      type: boolean
+
+    # Wet tropospheric correction
+    wet_tropospheric_correction_applied:
+      description: Whether wet tropospheric correction has been applied
+      offset: [properties, 'nrb:wet_tropospheric_correction_applied']
+      indexed: false
+      type: boolean
+
+    # Bistatic correction
+    bistatic_correction_applied:
+      description: Whether bistatic correction has been applied
+      offset: [properties, 'nrb:bistatic_correction_applied']
+      indexed: false
+      type: boolean
+
+    # Ionospheric correction
+    ionospheric_correction_applied:
+      description: Whether ionospheric correction has been applied
+      offset: [properties, 'nrb:ionospheric_correction_applied']
+      indexed: false
+      type: boolean
+
+    # Speckle filter
+    speckle_filter_applied:
+      description: Whether a speckle filter has been applied
+      offset: [properties, 'nrb:speckle_filter_applied']
+      indexed: true  # for testing purposes
+      type: boolean
+...

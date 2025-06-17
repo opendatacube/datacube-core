@@ -48,8 +48,6 @@ def maybe_lock(lock):
 class BandDataSource(GeoRasterReader):
     """
     Wrapper for a :class:`rasterio.Band` object
-
-    :type source: rasterio.Band
     """
 
     def __init__(
@@ -100,7 +98,6 @@ class BandDataSource(GeoRasterReader):
 class RasterioDataSource(DataSource):
     """
     Abstract class used by fuse_sources and :func:`read_from_source`
-
     """
 
     def __init__(self, filename, nodata, lock=None) -> None:

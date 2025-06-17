@@ -282,13 +282,6 @@ class SpatialIndexRecord(Base):
         Text, server_default=func.current_user(), comment="added by whom"
     )
 
-    @classmethod
-    def from_spindex(cls, spindex: type[SpatialIndex]) -> "SpatialIndexRecord":
-        return cls(
-            srid=int(spindex.__tablename__[8:]),  # type: ignore [attr-defined]
-            table_name=spindex.__tablename__,  # type: ignore [attr-defined]
-        )
-
 
 # In theory could put dataset_ref and search_key in shared parent class, but having a foreign key
 # in such a class requires weird and esoteric SQLAlchemy features.  Just leave as separate
@@ -377,6 +370,7 @@ search_field_map = {
     "double": "numeric",
     "integer": "numeric",
     "datetime": "datetime",
+    "boolean": "numeric",
     # For backwards compatibility (alias for numeric-range)
     "float-range": "numeric",
 }
@@ -392,20 +386,3 @@ search_field_indexes: dict[
 search_field_index_map: dict[
     str, type[DatasetSearchDateTime | DatasetSearchNumeric | DatasetSearchString]
 ] = {k: search_field_indexes[v] for k, v in search_field_map.items()}
-
-# Used for keeping dynamically created tables (by _mint_new_spindex()) outside
-# alembic's view.
-ALL_STATIC_TABLES = [
-    MetadataType.__table__,
-    Product.__table__,
-    Dataset.__table__,
-    DatasetLineage.__table__,
-    DatasetHome.__table__,
-    SpatialIndexRecord.__table__,
-    DatasetSearchString.__table__,
-    DatasetSearchNumeric.__table__,
-    DatasetSearchDateTime.__table__,
-]
-
-
-MetadataObj = MetadataType.__table__.metadata  # type: ignore[attr-defined]

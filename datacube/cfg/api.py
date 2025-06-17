@@ -40,7 +40,6 @@ class ODCConfig:
     **Attributes**
 
     .. py:attribute:: allow_envvar_overrides
-       :type: bool
        :value: True
 
        If True, environment variables can override the values explicitly specified in the supplied configuration.
@@ -49,7 +48,6 @@ class ODCConfig:
        still be read from environment variables, even if this attribute is False.
 
     .. py:attribute:: raw_text
-       :type: str | None
 
        The raw configuration text being used, as read from the configuration
        file or supplied directly by the user.  May be None if the user
@@ -58,25 +56,21 @@ class ODCConfig:
        environment variables.
 
     .. py:attribute:: raw_config
-       :type: dict[str, dict[str, Any]]
 
        The raw dictionary form of the configuration, as supplied directly
        by the user, or as parsed from raw_text. Does not include dynamic
        environments or values overridden by environment variables.
 
     .. py:attribute:: known_environments
-       :type: dict[str, "ODCEnvironment"]
 
        A dictionary containing all environments defined in raw_config,
        plus any dynamic environments read so far.
        Environment themselves are not validated until read from.
 
     .. py:attribute:: canonical_names
-       :type: dict[str, list[str]]
 
        A dictionary mapping canonical environment names to all aliases for
        that environment.
-
     """
 
     allow_envvar_overrides: bool = True

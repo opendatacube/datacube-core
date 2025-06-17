@@ -33,7 +33,6 @@ lineage:
   src_empty: []
 ...
 """
-
 # Crosses lon=180 line in Pacific, taken from one the Landsat scenes
 # https://landsat-pds.s3.amazonaws.com/c1/L8/074/071/LC08_L1TP_074071_20190622_20190704_01_T1/index.html
 #

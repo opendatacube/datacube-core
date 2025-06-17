@@ -34,9 +34,6 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 
 class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
     def __init__(self, db: PostGisDb, index: Index) -> None:
-        """
-        :type db: datacube.drivers.postgis._connections.PostgresDb
-        """
         self._db = db
         self._index = index
 
@@ -58,8 +55,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
     @override
     def from_doc(self, definition: JsonDict) -> MetadataType:
         """
-        :param dict definition:
-        :rtype: datacube.model.MetadataType
+        :param definition:
         """
         return self._make(definition)
 
@@ -68,13 +64,12 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         self, metadata_type: MetadataType, allow_table_lock: bool = False
     ) -> MetadataType:
         """
-        :param datacube.model.MetadataType metadata_type:
+        :param metadata_type:
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
             If false, creation will be slightly slower and cannot be done in a transaction.
-        :rtype: datacube.model.MetadataType
         """
         # This column duplication is getting out of hand:
         MetadataType.validate_eo3(metadata_type.definition)
@@ -118,9 +113,8 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
         Safe updates currently allow new search fields to be added, description to be changed.
 
-        :param datacube.model.MetadataType metadata_type: updated MetadataType
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
-        :rtype: bool,list[change],list[change]
+        :param metadata_type: updated MetadataType
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         """
         MetadataType.validate(metadata_type.definition)  # type: ignore[attr-defined]
 
@@ -175,14 +169,13 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
         Safe updates currently allow new search fields to be added, description to be changed.
 
-        :param datacube.model.MetadataType metadata_type: updated MetadataType
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :param metadata_type: updated MetadataType
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: datacube.model.MetadataType
         """
         can_update, safe_changes, unsafe_changes = self.can_update(
             metadata_type, allow_unsafe_updates
@@ -223,9 +216,8 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
         Safe updates currently allow new search fields to be added, description to be changed.
 
-        :param dict definition: Updated definition
-        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
-        :rtype: datacube.model.MetadataType
+        :param definition: Updated definition
+        :param allow_unsafe_updates: Allow unsafe changes. Use with caution.
         """
         return self.update(
             self.from_doc(definition), allow_unsafe_updates=allow_unsafe_updates
@@ -272,8 +264,6 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
     def get_all(self) -> Iterable[MetadataType]:
         """
         Retrieve all Metadata Types
-
-        :rtype: iter[datacube.model.MetadataType]
         """
         with self._db_connection() as connection:
             return self._make_many(connection.get_all_metadata_types())
@@ -284,23 +274,12 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
             yield from connection.get_all_metadata_type_defs()
 
     def _make_many(self, query_rows) -> list[MetadataType]:
-        """
-        :rtype: list[datacube.model.MetadataType]
-        """
         return [self._make_from_query_row(c) for c in query_rows]
 
     def _make_from_query_row(self, query_row) -> MetadataType:
-        """
-        :rtype: datacube.model.MetadataType
-        """
         return self._make(query_row.definition, query_row.id)
 
     def _make(self, definition: dict, id_: int | None = None) -> MetadataType:
-        """
-        :param dict definition:
-        :param int id_:
-        :rtype: datacube.model.MetadataType
-        """
         MetadataType.validate_eo3(definition)
         return MetadataType(
             definition,

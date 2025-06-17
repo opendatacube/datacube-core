@@ -50,7 +50,6 @@ def polygon_path(x, y=None):
        array([[0, 1, 1, 0, 0],
               [0, 0, 1, 1, 0]])
     """
-
     if y is None:
         y = x
 
@@ -155,7 +154,6 @@ def roi_normalise(roi, shape):
     Example:
           np.s_[:3, 4:  ], (10, 20) -> np._s[0:3, 4:20]
           np.s_[:3,  :-3], (10, 20) -> np._s[0:3, 0:17]
-
     """
 
     def fill_if_none(x, val_if_none):
@@ -196,7 +194,6 @@ def apply_affine(
     """
     broadcast A*(x_i, y_i) across all elements of x/y arrays in any shape (usually 2d image)
     """
-
     shape = x.shape
 
     A = np.asarray(A).reshape(3, 3)
@@ -303,8 +300,6 @@ def affine_from_pts(X, Y) -> Affine:
     Given points X,Y compute A, such that: Y = A*X.
 
     Needs at least 3 points.
-
-    :rtype: Affine
     """
     from numpy.linalg import lstsq
 
@@ -472,7 +467,6 @@ def box_overlap(
 
 def native_pix_transform(src, dst):
     """
-
     direction: from src to dst
     .back: goes the other way
     .linear: None|Affine linear transform src->dst if transform is linear (i.e. same CRS)
@@ -621,7 +615,6 @@ def compute_reproject_roi(
      .transform  : src coord -> dst coord
 
     For scale direction is: "scale > 1 --> shrink src to fit dst"
-
     """
     pts_per_side = 5
 

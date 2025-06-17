@@ -84,7 +84,5 @@ def _to_expression(get_field, name: str, value) -> Expression:
 def to_expressions(get_field, **query) -> list[Expression]:
     """
     Convert a simple query (dict of param names and values) to expression objects.
-    :type get_field: (str) -> Field
-    :type query: dict[str,str|float|datacube.model.Range]
     """
     return [_to_expression(get_field, name, value) for name, value in query.items()]

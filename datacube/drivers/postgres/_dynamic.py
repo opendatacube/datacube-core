@@ -87,7 +87,6 @@ def check_dynamic_fields(
     """
     Check that we have expected indexes and views for the given fields
     """
-
     # If this type has time/space fields, create composite indexes (as they are often searched together)
     # We will probably move these into product configuration in the future.
     composite_indexes = (

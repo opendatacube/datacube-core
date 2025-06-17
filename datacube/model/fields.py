@@ -30,6 +30,7 @@ _AVAILABLE_TYPE_NAMES = (
     "numeric",
     "double",
     "integer",
+    "boolean",
     "datetime",
     # For backwards compatibility (alias for numeric-range)
     "float-range",
@@ -176,6 +177,7 @@ def parse_search_field(doc, name: str = "") -> RangeField | SimpleField:
         "string": str,
         "double": float,
         "integer": int,
+        "boolean": bool,
         "numeric": decimal.Decimal,
         "datetime": parse_time,
         "object": lambda x: x,
@@ -228,7 +230,6 @@ def parse_search_field(doc, name: str = "") -> RangeField | SimpleField:
 def get_dataset_fields(metadata_definition: Mapping[str, Any]) -> dict[str, Field]:
     """Construct search fields dictionary not tied to any specific db
     implementation.
-
     """
     fields = toolz.get_in(["dataset", "search_fields"], metadata_definition, {})
     return {n: parse_search_field(doc, name=n) for n, doc in fields.items()}

@@ -140,7 +140,6 @@ def show_metadata_type(
     """
     Show information about a metadata type.
     """
-
     if len(metadata_type_name) == 0:
         mm = list(index.metadata_types.get_all())
     else:

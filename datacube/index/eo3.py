@@ -118,7 +118,6 @@ def eo3_grid_spatial(
           geo_ref_points: {ll: {x:<>, y:<>}, ...}
           valid_data: {...}
     ```
-
     """
     gridspecs = doc.get("grids", {})
     crs = doc.get("crs", None)
