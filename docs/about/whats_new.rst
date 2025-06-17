@@ -8,6 +8,8 @@ What's New
 Next Release
 ============
 
+- examples: remove unimplemented zeros :pull:`1974`
+
 v1.9.5 (17 June 2025)
 =====================
 
