@@ -494,7 +494,7 @@ def _write_csv(infos, *, count: bool = False, time: bool = False) -> None:
     writer.writerows(row for row in infos)
 
 
-def _write_yaml(infos, **args):
+def _write_yaml(infos, *, count: bool = False, time: bool = False) -> None:
     """
     Dump yaml data with support for OrderedDicts.
 
@@ -507,7 +507,7 @@ def _write_yaml(infos, **args):
     )
 
 
-def _write_json(infos, **args):
+def _write_json(infos, *, count: bool = False, time: bool = False) -> None:
     json.dump(infos, sys.stdout, indent=4)
 
 
