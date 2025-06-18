@@ -109,6 +109,7 @@ doc = [
     'sphinx_autodoc_typehints',  # Propagate mypy info into docs
     'sphinx-click',
     'sphinx-design',
+    'sphinx-toolbox',
 ]
 
 [project.scripts]
