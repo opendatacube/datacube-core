@@ -6,6 +6,7 @@ authors = [
     {name = "Open Data Cube"},
 ]
 requires-python = ">=3.10"
+dependencies = ["datacube"]
 
 [project.entry-points."datacube.plugins.io.read"]
 pickle = "dcio_example.pickles:rdr_driver_init"
