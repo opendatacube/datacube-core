@@ -92,7 +92,7 @@ class XArrayDataSource3D:
 
         @property
         def nodata(self) -> float | None:
-            return self._nodata  # type: ignore
+            return self._nodata
 
         @property
         def crs(self) -> CRS:
