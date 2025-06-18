@@ -10,6 +10,7 @@ Next Release
 
 - examples: remove unimplemented zeros :pull:`1974`
 - examples: fix function signatures :pull:`1972`
+- docs: fix links in migration document :pull:`1980`
 
 v1.9.5 (17 June 2025)
 =====================
