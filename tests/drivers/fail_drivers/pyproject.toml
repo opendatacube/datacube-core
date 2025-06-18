@@ -14,5 +14,5 @@ failing_end_point_none = "dc_tests_io.dummy:init_to_none"
 failing_end_point_throw = "dc_tests_io.dummy:fail_to_init"
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
