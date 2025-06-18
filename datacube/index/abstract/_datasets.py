@@ -50,17 +50,17 @@ class AbstractDatasetResource(ABC):
         max_depth: int = 0,
     ) -> Dataset:
         """
-        Get dataset by id (Raises KeyError if id_ does not exist)
+        Get dataset by id (Raises KeyError if id\\_ does not exist)
 
         - Index drivers supporting the legacy lineage API:
 
-        :param id_: id of the dataset to retrieve
+        :param id\\_: id of the dataset to retrieve
         :param include_sources: include the full provenance tree of the dataset.
 
 
         - Index drivers supporting the external lineage API:
 
-        :param id_: id of the dataset to retrieve
+        :param id\\_: id of the dataset to retrieve
         :param include_sources: include the full provenance tree for the dataset.
         :param include_deriveds: include the full derivative tree for the dataset.
         :param max_depth: The maximum depth of the source and/or derived tree.  Defaults to 0, meaning no limit.
@@ -78,13 +78,13 @@ class AbstractDatasetResource(ABC):
 
         - Index drivers supporting the legacy lineage API:
 
-        :param id_: id of the dataset to retrieve
+        :param id\\_: id of the dataset to retrieve
         :param include_sources: include the full provenance tree of the dataset.
 
 
         - Index drivers supporting the external lineage API:
 
-        :param id_: id of the dataset to retrieve
+        :param id\\_: id of the dataset to retrieve
         :param include_sources: include the full provenance tree for the dataset.
         :param include_deriveds: include the full derivative tree for the dataset.
         :param max_depth: The maximum depth of the source and/or derived tree.  Defaults to 0, meaning no limit.
@@ -131,7 +131,7 @@ class AbstractDatasetResource(ABC):
         """
         Get all datasets derived from a dataset (NOT recursive)
 
-        :param id_: dataset id
+        :param id\\_: dataset id
         """
 
     @abstractmethod
@@ -139,7 +139,7 @@ class AbstractDatasetResource(ABC):
         """
         Is this dataset in this index?
 
-        :param id_: dataset id
+        :param id\\_: dataset id
         :return: True if the dataset exists in this index
         """
 
@@ -150,7 +150,7 @@ class AbstractDatasetResource(ABC):
 
         For every supplied id check if database contains a dataset with that id.
 
-        :param ids_: iterable of dataset ids to check existence in index
+        :param ids\\_: iterable of dataset ids to check existence in index
 
         :return: Iterable of bools, true for datasets that exist in index
         """
@@ -383,7 +383,7 @@ class AbstractDatasetResource(ABC):
         """
         Get (active) storage locations for the given dataset id
 
-        :param id_: dataset id
+        :param id\\_: dataset id
         :return: Storage locations for the dataset
         """
 
@@ -392,8 +392,9 @@ class AbstractDatasetResource(ABC):
         """
         Get (active) storage location for the given dataset id
 
-        :param id_: dataset id
-        :return: Storage location for the dataset - None if no location for the id_, or if id_ not in db.
+        :param id\\_: dataset id
+        :return: Storage location for the dataset - None if no location for the id\\_,
+                or if id\\_ not in db.
         """
 
     @deprecat(
@@ -407,7 +408,7 @@ class AbstractDatasetResource(ABC):
         """
         Get archived locations for a dataset
 
-        :param id_: dataset id
+        :param id\\_: dataset id
         :return: Archived storage locations for the dataset
         """
 
@@ -424,7 +425,7 @@ class AbstractDatasetResource(ABC):
         """
         Get each archived location along with the time it was archived.
 
-        :param id_: dataset id
+        :param id\\_: dataset id
         :return: Archived storage locations, with archive date.
         """
 
@@ -439,7 +440,7 @@ class AbstractDatasetResource(ABC):
         """
         Add a location to the dataset if it doesn't already exist.
 
-        :param id_: dataset id
+        :param id\\_: dataset id
         :param uri: fully qualified uri
         :return: True if a location was added, false if location already existed
         """
@@ -467,7 +468,7 @@ class AbstractDatasetResource(ABC):
         """
         Remove a location from the dataset if it exists.
 
-        :param id_: dataset id
+        :param id\\_: dataset id
         :param uri: fully qualified uri
         :return: True if location was removed, false if it didn't exist for the database
         """
@@ -484,7 +485,7 @@ class AbstractDatasetResource(ABC):
         """
         Archive a location of the dataset if it exists and is active.
 
-        :param id_: dataset id
+        :param id\\_: dataset id
         :param uri: fully qualified uri
         :return: True if location was archived
         """
@@ -501,7 +502,7 @@ class AbstractDatasetResource(ABC):
         """
         Un-archive a location of the dataset if it exists.
 
-        :param id_: dataset id
+        :param id\\_: dataset id
         :param uri: fully qualified uri
         :return: True if location was restored
         """
