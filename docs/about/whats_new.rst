@@ -9,6 +9,8 @@ Next Release
 ============
 
 - Add `dataset count` cli command and deprecate `datacube-search` :pull:`1963`
+- examples: remove unimplemented zeros :pull:`1974`
+- examples: fix function signatures :pull:`1972`
 
 v1.9.5 (17 June 2025)
 =====================
