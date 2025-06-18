@@ -16,5 +16,5 @@ xarray_3d = "dcio_example.xarray_3d:reader_driver_init"
 pickle = "dcio_example.pickles:writer_driver_init"
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
