@@ -93,10 +93,10 @@ def datasets(ctx, index, expressions) -> None:
     """
     Search available Datasets
     """
-    print(
+    click.echo(
         "WARNING: The `datacube-search datasets` command is deprecated and will be removed in a future release. "
         "Please use `datacube dataset search` instead.",
-        file=sys.stderr,
+        err=True,
     )
     ctx.obj["write_results"](
         sorted(index.products.get_field_names()),
