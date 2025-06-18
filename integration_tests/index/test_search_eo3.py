@@ -977,7 +977,9 @@ def test_count_time_groups_cli(clirunner: Any, ls8_eo3_dataset: Dataset) -> None
         cli_method=datacube.scripts.cli_app.cli,
         verbose_flag="",
     )
-    assert result.output.endswith(expected_out)
+    assert result.output.endswith(
+        f"product: {ls8_eo3_dataset.product.name}\ntime: '2016-05-12'\ncount: 1\n"
+    )
 
 
 def test_search_cli_basic(clirunner: Any, ls8_eo3_dataset: Dataset) -> None:

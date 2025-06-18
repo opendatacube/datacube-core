@@ -184,14 +184,14 @@ def test_cli_dataset_subcommand(
     runner = clirunner(
         ["dataset", "count", "ga_ls8c_ard_3", "ga_ls_wo_3"], verbose_flag=False
     )
-    assert "ga_ls8c_ard_3: 4" in runner.output
+    assert "product: ga_ls8c_ard_3\ncount: 4" in runner.output
     assert runner.exit_code == 0
 
     runner = clirunner(
         ["dataset", "count", "ga_ls8c_ard_3", "--query", 'region_code="090086"'],
         verbose_flag=False,
     )
-    assert "2" in runner.output
+    assert "count: 2" in runner.output
     assert runner.exit_code == 0
 
     runner = clirunner(
@@ -216,7 +216,7 @@ def test_cli_dataset_subcommand(
         ],
         verbose_flag=False,
     )
-    assert "2013-01-01: 2" in runner.output
+    assert "time: '2013-01-01'\ncount: 2" in runner.output
     assert runner.exit_code == 0
 
     clirunner(
@@ -224,16 +224,16 @@ def test_cli_dataset_subcommand(
         verbose_flag=False,
     )
     runner = clirunner(["dataset", "count", "ga_ls8c_ard_3"], verbose_flag=False)
-    assert "3" in runner.output
+    assert "count: 3" in runner.output
     runner = clirunner(
         ["dataset", "count", "--status", "all", "ga_ls8c_ard_3"], verbose_flag=False
     )
-    assert "4" in runner.output
+    assert "count: 4" in runner.output
     runner = clirunner(
         ["dataset", "count", "--status", "archived", "ga_ls8c_ard_3"],
         verbose_flag=False,
     )
-    assert "1" in runner.output
+    assert "count: 1" in runner.output
 
     runner = clirunner(["dataset", "archive"], verbose_flag=False, expect_success=False)
     assert "Completed dataset archival." not in runner.output

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import csv
 import datetime
+import json
 import logging
 import sys
 from collections import OrderedDict
@@ -479,16 +480,21 @@ def build_dataset_info(
     return info
 
 
-def _write_csv(infos) -> None:
-    writer = csv.DictWriter(
-        sys.stdout, ["id", "status", "product", "location"], extrasaction="ignore"
-    )
+def _write_csv(infos, *, count: bool = False, time: bool = False) -> None:
+    if time:
+        writer = csv.DictWriter(sys.stdout, ["product", "time", "count"])
+    elif count:
+        writer = csv.DictWriter(sys.stdout, ["product", "count"])
+    else:
+        writer = csv.DictWriter(
+            sys.stdout, ["id", "status", "product", "location"], extrasaction="ignore"
+        )
     writer.writeheader()
 
     writer.writerows(row for row in infos)
 
 
-def _write_yaml(infos):
+def _write_yaml(infos, **args):
     """
     Dump yaml data with support for OrderedDicts.
 
@@ -501,9 +507,14 @@ def _write_yaml(infos):
     )
 
 
+def _write_json(infos, **args):
+    json.dump(infos, sys.stdout, indent=4)
+
+
 _OUTPUT_WRITERS = {
     "csv": _write_csv,
     "yaml": _write_yaml,
+    "json": _write_json,
 }
 
 
@@ -645,7 +656,7 @@ def uri_search_cmd(index: Index, paths: list[str], search_mode) -> None:
 )
 @click.option(
     "--period",
-    help="Group product counts in time slices of the given period.",
+    help="Group product counts in time slices of the given period, e.g. 1 day, 6 months, 1 year.",
     type=str,
 )
 @click.option(
@@ -662,9 +673,39 @@ def uri_search_cmd(index: Index, paths: list[str], search_mode) -> None:
 )
 @click.option(
     "--query",
-    help="Query expressions.",
+    help=dedent("""
+              Query expressions to filter datasets by searchable fields such
+              as date, spatial extents, maturity, or other properties.
+
+              \b
+              FIELD = VALUE
+              FIELD in DATE-RANGE
+              FIELD in [START, END]
+              TIME < DATE
+              TIME > DATE
+
+              \b
+              START and END can be either numbers or dates
+              Dates follow YYYY, YYYY-MM, or YYYY-MM-DD format
+
+              FIELD: x, y, lat, lon, time, region, ...
+
+              \b
+              eg. 'time in [1996-01-01, 1996-12-31]'
+                  'time in 1996'
+                  'time > 2020-01'
+                  'lon in [130, 140]' 'lat in [-40, -30]'
+                  'region="101010"'
+              """),
     multiple=True,
     type=str,
+)
+@click.option(
+    "-f",
+    help="Output format",
+    type=click.Choice(list(_OUTPUT_WRITERS)),
+    default="yaml",
+    show_default=True,
 )
 @click.argument("products", nargs=-1)
 @ui.pass_index()
@@ -674,6 +715,7 @@ def count_cmd(
     period: str,
     status: str,
     query: Iterable[str],
+    f: str,
     products: Iterable[str],
 ) -> None:
     archived = {"active": False, "archived": True, "all": None}[status]
@@ -686,31 +728,42 @@ def count_cmd(
 
     if period:
         if count_only:
-            echo("Error: cannot return total count when requesting time slicing\n")
+            echo(
+                "Error: cannot return total count when requesting time slicing\n",
+                err=True,
+            )
             sys.exit(1)
-        if len(list(products)) == 1:
-            for timerange, count in index.datasets.count_product_through_time(
-                period, archived, **expressions
-            ):
-                formatted_dt = tz_as_utc(timerange[0]).strftime("%Y-%m-%d")
-                echo(f"{formatted_dt}: {count}")
-        else:
-            for product, series in index.datasets.count_by_product_through_time(
-                period, archived, **expressions
-            ):
-                echo(product.name)
-                for timerange, count in series:
-                    formatted_dt = tz_as_utc(timerange[0]).strftime("%Y-%m-%d")
-                    echo(f"    {formatted_dt}: {count}")
+
+        results = []
+        for product, series in index.datasets.count_by_product_through_time(
+            period, archived, **expressions
+        ):
+            for timerange, count in series:
+                results.append(
+                    OrderedDict(
+                        (
+                            ("product", product.name),
+                            ("time", tz_as_utc(timerange[0]).strftime("%Y-%m-%d")),
+                            ("count", count),
+                        )
+                    )
+                )
+
+        _OUTPUT_WRITERS[f](results, time=True)
 
     else:
-        if count_only or len(list(products)) == 1:
+        if count_only:
             echo(index.datasets.count(archived, **expressions))
         else:
-            for product, count in index.datasets.count_by_product(
-                archived, **expressions
-            ):
-                echo(f"{product.name}: {count}")
+            _OUTPUT_WRITERS[f](
+                (
+                    OrderedDict((("product", product.name), ("count", count)))
+                    for product, count in index.datasets.count_by_product(
+                        archived, **expressions
+                    )
+                ),
+                count=True,
+            )
 
 
 @dataset_cmd.command("archive", help="Archive datasets")

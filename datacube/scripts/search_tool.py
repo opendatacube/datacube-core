@@ -114,10 +114,10 @@ def product_counts(index, period, expressions) -> None:
 
     PERIOD: eg. 1 month, 6 months, 1 year
     """
-    print(
+    click.echo(
         "WARNING: The `datacube-search product-counts` command is deprecated and will be removed in a future release. "
         "Please use `datacube dataset count` instead.",
-        file=sys.stderr,
+        err=True,
     )
     for product, series in index.datasets.count_by_product_through_time(
         period, **expressions
