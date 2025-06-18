@@ -75,65 +75,57 @@ class PickleDataSource:
 
 
 class PickleReaderDriver:
-    def __init__(self):
+    def __init__(self) -> None:
         self.name = "PickleReader"
         self.protocols = [PROTOCOL, "pickle"]
         self.formats = [FORMAT]
 
-    def supports(self, protocol, fmt):
+    def supports(self, protocol, fmt) -> bool:
         return protocol in self.protocols and fmt in self.formats
 
-    def new_datasource(self, band):
+    def new_datasource(self, band) -> PickleDataSource:
         return PickleDataSource(band)
 
 
-def rdr_driver_init():
+def rdr_driver_init() -> PickleReaderDriver:
     return PickleReaderDriver()
 
 
 class PickleWriterDriver:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @property
-    def aliases(self):
+    def aliases(self) -> list[str]:
         return ["pickles"]
 
     @property
-    def format(self):
+    def format(self) -> str:
         return FORMAT
 
     @property
-    def uri_scheme(self):
+    def uri_scheme(self) -> str:
         return PROTOCOL
 
-    def mk_uri(self, file_path: Path, storage_config: dict) -> str:
+    def mk_uri(self, file_path: Path | str) -> str:
         """
-        Constructs a URI from the file_path and storage config.
+        Constructs a URI from the file_path.
 
         A typical implementation should return f'{scheme}://{file_path}'
 
         Example:
             file_path = '/path/to/my_file.pickled'
-            storage_config = {'driver': 'pickles'}
 
-            mk_uri(file_path, storage_config) should return 'file:///path/to/my_file.pickled'
+            mk_uri(file_path) should return 'file:///path/to/my_file.pickled'
 
         :param file_path: The file path of the file to be converted into a URI.
-        :param storage_config: The dict holding the storage config found in the ingest definition.
         :return: file_path as a URI that the Driver understands.
         """
         return normalise_path(file_path).as_uri()
 
     def write_dataset_to_storage(
-        self,
-        dataset,
-        file_uri,
-        global_attributes=None,
-        variable_params=None,
-        storage_config=None,
-        **kwargs,
-    ):
+        self, dataset, file_uri, global_attributes=None, variable_params=None, **kwargs
+    ) -> dict:
         filepath = Path(urlsplit(file_uri).path)
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with filepath.open("wb") as f:

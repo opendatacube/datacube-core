@@ -8,6 +8,8 @@ What's New
 Next Release
 ============
 
+- examples: fix function signatures :pull:`1972`
+
 v1.9.5 (17 June 2025)
 =====================
 
