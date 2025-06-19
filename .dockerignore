@@ -89,7 +89,7 @@ target/
 docs/html/
 
 # Generated Documentation
-generate/
+**/generate/
 docs/notebooks/
 
 #Local Visual Studio Code configurations

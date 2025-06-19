@@ -12,7 +12,6 @@ Geometry Classes
    utils.geometry.CRS
    utils.geometry.Geometry
    utils.geometry.GeoBox
-   utils.geometry.BoundingBox
    utils.geometry.gbox.GeoboxTiles
    model.GridSpec
    utils.geometry.CRSError

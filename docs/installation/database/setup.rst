@@ -136,6 +136,8 @@ Or to initialise a database schema for an environment other than the default::
 .. click:: datacube.scripts.system:database_init
    :prog: datacube system
 
+.. _create-spatial-indexes-postgis-driver-only:
+
 Create Spatial Indexes (Postgis Driver Only)
 ============================================
 
