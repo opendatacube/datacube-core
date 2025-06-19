@@ -8,6 +8,7 @@ What's New
 Next Release
 ============
 
+- docs: remove broken link :pull:`1973`
 - examples: remove unimplemented zeros :pull:`1974`
 - examples: fix function signatures :pull:`1972`
 
