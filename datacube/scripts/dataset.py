@@ -647,7 +647,15 @@ def uri_search_cmd(index: Index, paths: list[str], search_mode) -> None:
             print(dataset)
 
 
-@dataset_cmd.command("count", help="Count datasets")
+@dataset_cmd.command(
+    "count",
+    help=dedent("""Count datasets
+
+        \b
+        Sample usage syntax:
+        datacube dataset count --period "1 year" --query "time in [2020, 2023]" --query "region=\"101010\"" product_name
+        """),
+)
 @click.option(
     "--count-only",
     help="Display total result count without any grouping.",
