@@ -8,10 +8,13 @@ Release Process
 
    uv lock
 
-#. Update the release notes in about/whats_new.rst and the fallback version number in pyproject.toml in the
+#. Create a new **Tag** and **Draft Release** using the `GitHub Releases Web UI`_
+
+#. Based on the generated release notes from GitHub, update the release notes in
+   about/whats_new.rst and the fallback version number in pyproject.toml in the
    ``develop`` branch via a PR.
 
-#. Create a new **Tag** and **Release** using the `GitHub Releases Web UI`_
+#. Change the Draft Release to Published using the `GitHub Releases Web UI`_
 
 #. Wait for the `GitHub Action`_ to run and publish the new release to PyPI_
 
