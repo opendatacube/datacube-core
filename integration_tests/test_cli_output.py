@@ -153,7 +153,10 @@ def test_cli_dataset_subcommand(
         verbose_flag=False,
         expect_success=False,
     )
-    assert "Error: specified products ga_ls_wo_3 do not contain all required fields"
+    assert (
+        "Error: specified products ga_ls_wo_3 do not contain all required fields"
+        in runner.output
+    )
     assert runner.exit_code == 1
 
     runner = clirunner(
@@ -170,6 +173,67 @@ def test_cli_dataset_subcommand(
     assert "(region_code='090086', dataset_maturity='final')" in runner.output
     assert "(region_code='101077', dataset_maturity='final')" in runner.output
     assert runner.exit_code == 0
+
+    runner = clirunner(
+        ["dataset", "count", "--count-only", "ga_ls8c_ard_3", "ga_ls_wo_3"],
+        verbose_flag=False,
+    )
+    assert runner.output == "5\n"
+    assert runner.exit_code == 0
+
+    runner = clirunner(
+        ["dataset", "count", "ga_ls8c_ard_3", "ga_ls_wo_3"], verbose_flag=False
+    )
+    assert "product: ga_ls8c_ard_3\ncount: 4" in runner.output
+    assert runner.exit_code == 0
+
+    runner = clirunner(
+        ["dataset", "count", "ga_ls8c_ard_3", "--query", 'region_code="090086"'],
+        verbose_flag=False,
+    )
+    assert "count: 2" in runner.output
+    assert runner.exit_code == 0
+
+    runner = clirunner(
+        ["dataset", "count", "--count-only", "--period", "1 month", "ga_ls8c_ard_3"],
+        verbose_flag=False,
+        expect_success=False,
+    )
+    assert (
+        "Error: cannot return total count when requesting time slicing" in runner.output
+    )
+    assert runner.exit_code == 1
+
+    runner = clirunner(
+        [
+            "dataset",
+            "count",
+            "--period",
+            "1 year",
+            "--query",
+            "time in [2013-01-01, 2017-01-01]",
+            "ga_ls8c_ard_3",
+        ],
+        verbose_flag=False,
+    )
+    assert "time: '2013-01-01'\ncount: 2" in runner.output
+    assert runner.exit_code == 0
+
+    clirunner(
+        ["dataset", "archive", "c21648b1-a6fa-4de0-9dc3-9c445d8b295a"],
+        verbose_flag=False,
+    )
+    runner = clirunner(["dataset", "count", "ga_ls8c_ard_3"], verbose_flag=False)
+    assert "count: 3" in runner.output
+    runner = clirunner(
+        ["dataset", "count", "--status", "all", "ga_ls8c_ard_3"], verbose_flag=False
+    )
+    assert "count: 4" in runner.output
+    runner = clirunner(
+        ["dataset", "count", "--status", "archived", "ga_ls8c_ard_3"],
+        verbose_flag=False,
+    )
+    assert "count: 1" in runner.output
 
     runner = clirunner(["dataset", "archive"], verbose_flag=False, expect_success=False)
     assert "Completed dataset archival." not in runner.output

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import csv
 import datetime
+import json
 import logging
 import sys
 from collections import OrderedDict
@@ -25,7 +26,9 @@ from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli, print_help_msg
 from datacube.ui.common import ui_path_doc_stream
+from datacube.ui.expression import parse_expressions
 from datacube.utils import SimpleDocNav, changes
+from datacube.utils.dates import tz_as_utc
 from datacube.utils.serialise import SafeDatacubeDumper
 from datacube.utils.uris import uri_resolve
 
@@ -477,16 +480,21 @@ def build_dataset_info(
     return info
 
 
-def _write_csv(infos) -> None:
-    writer = csv.DictWriter(
-        sys.stdout, ["id", "status", "product", "location"], extrasaction="ignore"
-    )
+def _write_csv(infos, *, count: bool = False, time: bool = False) -> None:
+    if time:
+        writer = csv.DictWriter(sys.stdout, ["product", "time", "count"])
+    elif count:
+        writer = csv.DictWriter(sys.stdout, ["product", "count"])
+    else:
+        writer = csv.DictWriter(
+            sys.stdout, ["id", "status", "product", "location"], extrasaction="ignore"
+        )
     writer.writeheader()
 
     writer.writerows(row for row in infos)
 
 
-def _write_yaml(infos):
+def _write_yaml(infos, *, count: bool = False, time: bool = False) -> None:
     """
     Dump yaml data with support for OrderedDicts.
 
@@ -499,9 +507,14 @@ def _write_yaml(infos):
     )
 
 
+def _write_json(infos, *, count: bool = False, time: bool = False) -> None:
+    json.dump(infos, sys.stdout, indent=4)
+
+
 _OUTPUT_WRITERS = {
     "csv": _write_csv,
     "yaml": _write_yaml,
+    "json": _write_json,
 }
 
 
@@ -632,6 +645,133 @@ def uri_search_cmd(index: Index, paths: list[str], search_mode) -> None:
             _LOG.info(f"Not found in index: {path}")
         for dataset in datasets:
             print(dataset)
+
+
+@dataset_cmd.command(
+    "count",
+    help=dedent("""Count datasets
+
+        \b
+        Sample usage syntax:
+        datacube dataset count --period "1 year" --query "time in [2020, 2023]" --query "region=\"101010\"" product_name
+        """),
+)
+@click.option(
+    "--count-only",
+    help="Display total result count without any grouping.",
+    is_flag=True,
+    default=False,
+)
+@click.option(
+    "--period",
+    help="Group product counts in time slices of the given period, e.g. 1 day, 6 months, 1 year.",
+    type=str,
+)
+@click.option(
+    "--status",
+    type=click.Choice(["active", "archived", "all"]),
+    default="active",
+    help=dedent("""
+              Whether to count archived datasets
+
+              \b
+              - 'active': count only active datasets [default]
+              - 'archived': count only archived datasets
+              - 'all': count both active and archived datasets"""),
+)
+@click.option(
+    "--query",
+    help=dedent("""
+              Query expressions to filter datasets by searchable fields such
+              as date, spatial extents, maturity, or other properties.
+
+              \b
+              FIELD = VALUE
+              FIELD in DATE-RANGE
+              FIELD in [START, END]
+              TIME < DATE
+              TIME > DATE
+
+              \b
+              START and END can be either numbers or dates
+              Dates follow YYYY, YYYY-MM, or YYYY-MM-DD format
+
+              FIELD: x, y, lat, lon, time, region, ...
+
+              \b
+              eg. 'time in [1996-01-01, 1996-12-31]'
+                  'time in 1996'
+                  'time > 2020-01'
+                  'lon in [130, 140]' 'lat in [-40, -30]'
+                  'region="101010"'
+              """),
+    multiple=True,
+    type=str,
+)
+@click.option(
+    "-f",
+    help="Output format",
+    type=click.Choice(list(_OUTPUT_WRITERS)),
+    default="yaml",
+    show_default=True,
+)
+@click.argument("products", nargs=-1)
+@ui.pass_index()
+def count_cmd(
+    index: Index,
+    count_only: bool,
+    period: str,
+    status: str,
+    query: Iterable[str],
+    f: str,
+    products: Iterable[str],
+) -> None:
+    archived = {"active": False, "archived": True, "all": None}[status]
+    if query:
+        expressions = parse_expressions(*query)
+    else:
+        expressions = {}
+    if products:
+        expressions["product"] = products
+
+    if period:
+        if count_only:
+            echo(
+                "Error: cannot return total count when requesting time slicing\n",
+                err=True,
+            )
+            sys.exit(1)
+
+        results = []
+        for product, series in index.datasets.count_by_product_through_time(
+            period, archived, **expressions
+        ):
+            for timerange, count in series:
+                results.append(
+                    OrderedDict(
+                        (
+                            ("product", product.name),
+                            ("time", tz_as_utc(timerange[0]).strftime("%Y-%m-%d")),
+                            ("count", count),
+                        )
+                    )
+                )
+
+        _OUTPUT_WRITERS[f](results, time=True)
+
+    else:
+        if count_only:
+            echo(index.datasets.count(archived, **expressions))
+        else:
+            _OUTPUT_WRITERS[f](
+                (
+                    OrderedDict((("product", product.name), ("count", count)))
+                    for product, count in index.datasets.count_by_product(
+                        archived, **expressions
+                    )
+                ),
+                count=True,
+            )
 
 
 @dataset_cmd.command("archive", help="Archive datasets")

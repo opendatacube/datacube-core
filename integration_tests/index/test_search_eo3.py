@@ -962,7 +962,24 @@ def test_count_time_groups_cli(clirunner: Any, ls8_eo3_dataset: Dataset) -> None
     expected_out = (
         f"{ls8_eo3_dataset.product.name}\n    2016-05-11: 0\n    2016-05-12: 1\n"
     )
-    assert result.output.endswith(expected_out)
+    assert result.stdout.endswith(expected_out)
+
+    # updated version of the test
+    result = clirunner(
+        [
+            "dataset",
+            "count",
+            "--period",
+            "1 day",
+            "--query",
+            "time in [2016-05-11, 2016-05-13]",
+        ],
+        cli_method=datacube.scripts.cli_app.cli,
+        verbose_flag="",
+    )
+    assert result.output.endswith(
+        f"product: {ls8_eo3_dataset.product.name}\ntime: '2016-05-12'\ncount: 1\n"
+    )
 
 
 def test_search_cli_basic(clirunner: Any, ls8_eo3_dataset: Dataset) -> None:
@@ -978,6 +995,14 @@ def test_search_cli_basic(clirunner: Any, ls8_eo3_dataset: Dataset) -> None:
     )
     assert str(ls8_eo3_dataset.id) in result.output
     assert str(ls8_eo3_dataset.metadata_type.name) in result.output
+    assert result.exit_code == 0
+
+    result = clirunner(
+        ["dataset", "search"],
+        cli_method=datacube.scripts.cli_app.cli,
+    )
+    assert str(ls8_eo3_dataset.id) in result.output
+    assert str(ls8_eo3_dataset.product.name) in result.output
     assert result.exit_code == 0
 
 
