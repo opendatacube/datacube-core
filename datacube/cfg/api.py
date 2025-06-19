@@ -92,7 +92,7 @@ class ODCConfig:
 
         1) Environment variable $ODC_CONFIG_PATH (as a UNIX path style colon-separated path list)
         2) Environment variable $DATACUBE_CONFIG_PATH (as a UNIX path style colon-separated path list)
-           This is a deprecated legacy environment variable, and please note that it's behaviour has changed
+           This is a deprecated legacy environment variable, and please note that its behaviour has changed
            slightly from datacube 1.8.x.
         3) The default config search path (i.e. .cfg._DEFAULT_CONFIG_SEARCH_PATH)
 

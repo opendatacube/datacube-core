@@ -8,9 +8,13 @@ What's New
 Next Release
 ============
 
+- docs: remove broken link :pull:`1973`
 - examples: remove unimplemented zeros :pull:`1974`
 - examples: fix function signatures :pull:`1972`
 - docs: fix links in migration document :pull:`1980`
+- docs: miscellaneous small fixes :pull:`1981`
+- docs: escape trailing underscores :pull:`1976`
+- examples/tests: fix dependencies :pull:`1975`
 
 v1.9.5 (17 June 2025)
 =====================
