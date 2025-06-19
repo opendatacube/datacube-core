@@ -137,6 +137,8 @@ at indexing time in the `odc-apps-dc-tools`_ package.
    [Y] = [a3, a4, a5] [ Line ]
    [1]   [ 0,  0,  1] [  1   ]
 
+.. _`formal specification`: https://github.com/opendatacube/eo3/blob/develop/SPECIFICATION.md
+
 .. _odc-apps-dc-tools: https://github.com/opendatacube/odc-tools/tree/develop/apps/dc_tools
 
 .. _dataset-metadata-doc-3d:

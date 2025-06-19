@@ -17,6 +17,7 @@ Next Release
 - docs: miscellaneous small fixes :pull:`1981`
 - docs: escape trailing underscores :pull:`1976`
 - examples/tests: fix dependencies :pull:`1975`
+- docs: add missing links :pull:`1978`
 
 v1.9.5 (17 June 2025)
 =====================
