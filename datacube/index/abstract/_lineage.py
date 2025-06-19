@@ -49,7 +49,7 @@ class AbstractLineageResource(ABC):
 
         Tree may be empty (i.e. just the root node) if no lineage for id is stored.
 
-        :param id_: the id of the dataset at the root of the returned tree
+        :param id\\_: the id of the dataset at the root of the returned tree
         :param max_depth: Maximum recursion depth.  Default/Zero = unlimited depth
         :return: A derived-direction Lineage tree with id at the root.
         """
@@ -64,7 +64,7 @@ class AbstractLineageResource(ABC):
 
         Tree may be empty (i.e. just the root node) if no lineage for id is stored.
 
-        :param id_: the id of the dataset at the root of the returned tree
+        :param id\\_: the id of the dataset at the root of the returned tree
         :param max_depth: Maximum recursion depth.  Default/Zero = unlimited depth
         :return: A source-direction Lineage tree with id at the root.
         """
@@ -113,8 +113,8 @@ class AbstractLineageResource(ABC):
 
         Removes lineage relation data only. Home values not affected.
 
-        :param id_: The Dataset ID to start removing lineage from.
-        :param direction: The direction in which to remove lineage (from id_)
+        :param id\\_: The Dataset ID to start removing lineage from.
+        :param direction: The direction in which to remove lineage (from id\\_)
         :param max_depth: The maximum depth to which to remove lineage (0/default = no limit)
         """
 
