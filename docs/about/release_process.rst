@@ -4,7 +4,10 @@ Release Process
 #. Decide to do a release, and check with regular contributors on `Discord <https://discord.com/invite/4hhBQVas5U>`_
    that they don't have anything pending.
 
-#. Ensure version pins in pyproject.toml and conda-environment.yml are in sync and up to date. Refresh uv.lock::
+#. Ensure version pins in pyproject.toml and conda-environment.yml are in sync and up to date,
+   and refresh uv.lock.
+
+.. code-block:: bash
 
    uv lock
 
