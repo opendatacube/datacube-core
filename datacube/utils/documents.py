@@ -13,7 +13,6 @@ import gzip
 import json
 import logging
 import math
-import sys
 from collections import OrderedDict
 from collections.abc import Generator, Iterator, Mapping
 from contextlib import contextmanager
@@ -44,7 +43,6 @@ JsonAtom = None | bool | str | float | int
 JsonLike = JsonAtom | list["JsonLike"] | dict[str, "JsonLike"]
 JsonDict = dict[str, JsonLike]
 
-PY35: bool = sys.version_info <= (3, 6)
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
