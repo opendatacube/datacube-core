@@ -29,6 +29,9 @@ import toolz
 import yaml
 from typing_extensions import override
 
+# Compatibility-imports to preserve the API.
+from datacube.utils.json_types import JsonAtom, JsonDict, JsonLike  # noqa: F401
+
 if TYPE_CHECKING:
     from datacube.model import Field
 
@@ -39,10 +42,6 @@ except ImportError:
 
 from datacube.utils.generic import map_with_lookahead
 from datacube.utils.uris import as_url, mk_part_uri, uri_to_local_path
-
-JsonAtom = None | bool | str | float | int
-JsonLike = JsonAtom | list["JsonLike"] | dict[str, "JsonLike"]
-JsonDict = dict[str, JsonLike]
 
 PY35: bool = sys.version_info <= (3, 6)
 _LOG: logging.Logger = logging.getLogger(__name__)

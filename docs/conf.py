@@ -39,6 +39,9 @@ extensions = [
     "IPython.sphinxext.ipython_console_highlighting",  # Highlights notebook cells
 ]
 
+# Sphinx 8.1.3 does not manage to resolve the cyclic JsonLike type alias, so mock it.
+autodoc_mock_imports = ["datacube.utils.json_types"]
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
