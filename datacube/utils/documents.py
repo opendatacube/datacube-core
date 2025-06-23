@@ -13,7 +13,6 @@ import gzip
 import json
 import logging
 import math
-import sys
 from collections import OrderedDict
 from collections.abc import Generator, Iterator, Mapping
 from contextlib import contextmanager
@@ -43,7 +42,6 @@ except ImportError:
 from datacube.utils.generic import map_with_lookahead
 from datacube.utils.uris import as_url, mk_part_uri, uri_to_local_path
 
-PY35: bool = sys.version_info <= (3, 6)
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
