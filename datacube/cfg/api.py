@@ -7,11 +7,13 @@
 Datacube configuration
 """
 
+from __future__ import annotations
+
 import os
 import warnings
 from os import PathLike
 from threading import Lock
-from typing import Any, TypeAlias, Union, cast
+from typing import Any, TypeAlias, cast
 
 from ..migration import ODC2DeprecationWarning
 from .cfg import find_config, parse_text
@@ -24,13 +26,6 @@ from .opt import (
     ODCOptionHandler,
 )
 from .utils import ConfigDict, check_valid_env_name
-
-# TypeAliases for more concise type hints
-# (Unions required as typehint | operator doesn't work with string forward-references).
-GeneralisedPath: TypeAlias = str | PathLike | list[str | PathLike]
-GeneralisedCfg: TypeAlias = Union["ODCConfig", GeneralisedPath]
-GeneralisedEnv: TypeAlias = Union["ODCEnvironment", str]
-GeneralisedRawCfg: TypeAlias = str | ConfigDict
 
 
 class ODCConfig:
@@ -76,7 +71,7 @@ class ODCConfig:
     allow_envvar_overrides: bool = True
     raw_text: str | None = None
     raw_config: ConfigDict = {}
-    known_environments: dict[str, "ODCEnvironment"] = {}
+    known_environments: dict[str, ODCEnvironment] = {}
     canonical_names: dict[str, list[str]] = {}
     is_default = False
 
@@ -158,7 +153,7 @@ class ODCConfig:
         env: GeneralisedEnv | None = None,
         config: GeneralisedCfg | None = None,
         raw_config: GeneralisedRawCfg | None = None,
-    ) -> "ODCEnvironment":
+    ) -> ODCEnvironment:
         """
         Obtain an ODCConfig object from the most general possible arguments.
 
@@ -210,7 +205,7 @@ class ODCConfig:
     def _set_default(self) -> None:
         self.is_default = True
 
-    def __getitem__(self, item: str | None) -> "ODCEnvironment":
+    def __getitem__(self, item: str | None) -> ODCEnvironment:
         """
         Environments can be accessed by name (canonical or aliases) with the getitem dunder method.
 
@@ -354,3 +349,11 @@ class ODCEnvironment:
         val = handler.validate_and_normalise(val)
         self._normalised[handler.name] = val
         handler.handle_dependent_options(val)
+
+
+# TypeAliases for more concise type hints.
+# Located after class definitions so Sphinx can resolve them.
+GeneralisedPath: TypeAlias = str | PathLike | list[str | PathLike]
+GeneralisedCfg: TypeAlias = ODCConfig | GeneralisedPath
+GeneralisedEnv: TypeAlias = str | ODCEnvironment
+GeneralisedRawCfg: TypeAlias = str | ConfigDict
