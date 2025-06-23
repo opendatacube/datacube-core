@@ -36,10 +36,10 @@ def system() -> None:
 @ui.pass_index()
 def create(index: Index, update: bool, srids: Sequence[str]) -> None:
     if not index.supports_spatial_indexes:
-        echo("The active index driver does not support spatial indexes")
+        echo("The active index driver does not support spatial indexes", err=True)
         exit(1)
     if not srids:
-        echo("Must supply at least one CRS to create/update")
+        echo("Must supply at least one CRS to create/update", err=True)
         exit(1)
 
     confirmed = []
@@ -89,7 +89,7 @@ def create(index: Index, update: bool, srids: Sequence[str]) -> None:
 @ui.pass_index()
 def list_spindex(index) -> None:
     if not index.supports_spatial_indexes:
-        echo("The active index driver does not support spatial indexes")
+        echo("The active index driver does not support spatial indexes", err=True)
         exit(1)
     for crs in index.spatial_indexes():
         echo(f"EPSG:{crs.epsg}")
@@ -115,10 +115,10 @@ def update(
     index: Index, product: Sequence[str], dataset: Sequence[str], srids: Sequence[str]
 ) -> None:
     if not index.supports_spatial_indexes:
-        echo("The active index driver does not support spatial indexes")
+        echo("The active index driver does not support spatial indexes", err=True)
         exit(1)
     if not srids:
-        echo("Must supply at least one CRS to update")
+        echo("Must supply at least one CRS to update", err=True)
         exit(1)
 
     for_update = []
@@ -162,10 +162,10 @@ def update(
 @ui.pass_index()
 def drop(index: Index, force: bool, srids: Sequence[str]) -> None:
     if not index.supports_spatial_indexes:
-        echo("The active index driver does not support spatial indexes")
+        echo("The active index driver does not support spatial indexes", err=True)
         exit(1)
     if not srids:
-        echo("Must supply at least one CRS to drop")
+        echo("Must supply at least one CRS to drop", err=True)
         exit(1)
     for_deletion = []
     errors = False

@@ -172,7 +172,7 @@ def delete_products(
     try:
         products = [index.products.get_by_name_unsafe(name) for name in product_names]
     except KeyError as e:
-        click.echo(str(e))
+        click.echo(str(e), err=True)
         sys.exit(1)
 
     if sys.stdin.isatty() and force:

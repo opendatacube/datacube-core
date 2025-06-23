@@ -153,7 +153,7 @@ def show_metadata_type(
                 mm.append(m)
 
     if len(mm) == 0:
-        echo("No metadata")
+        echo("No metadata", err=True)
         sys.exit(1)
 
     if output_format == "yaml":
