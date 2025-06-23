@@ -42,7 +42,6 @@ except ImportError:
 from datacube.utils.generic import map_with_lookahead
 from datacube.utils.uris import as_url, mk_part_uri, uri_to_local_path
 
-
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
