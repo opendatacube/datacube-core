@@ -36,6 +36,7 @@ extensions = [
     # 'sphinx.ext.napoleon',
     "sphinx_design",
     # 'sphinx.ext.autosectionlabel',
+    "sphinx_toolbox.more_autodoc.autonamedtuple",
     "IPython.sphinxext.ipython_console_highlighting",  # Highlights notebook cells
 ]
 
