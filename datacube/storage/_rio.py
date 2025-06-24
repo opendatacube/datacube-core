@@ -61,26 +61,27 @@ class BandDataSource(GeoRasterReader):
         self._lock = lock
 
     @property
+    @override
     def nodata(self):
         return self._nodata
 
-    @override
     @property
+    @override
     def crs(self) -> CRS:
         return _rasterio_crs(self.source.ds)
 
-    @override
     @property
+    @override
     def transform(self) -> Affine:
         return self.source.ds.transform
 
-    @override
     @property
+    @override
     def dtype(self) -> np.dtype:
         return np.dtype(self.source.dtype)
 
-    @override
     @property
+    @override
     def shape(self) -> RasterShape:
         return self.source.shape
 
@@ -105,15 +106,12 @@ class RasterioDataSource(DataSource):
         self.nodata = nodata
         self._lock = lock
 
-    @override
     def get_bandnumber(self, src):
         raise NotImplementedError()
 
-    @override
     def get_transform(self, shape):
         raise NotImplementedError()
 
-    @override
     def get_crs(self):
         raise NotImplementedError()
 

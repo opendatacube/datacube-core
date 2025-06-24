@@ -185,7 +185,7 @@ def create_mask_value(bits_def, **flags) -> tuple[int, int]:
         else:
             bit = defn["bits"]
             mask = set_value_at_index(mask, bit, True)
-            value = set_value_at_index(value, bit, flag_value)
+            value = set_value_at_index(value, bit, bool(flag_value))
 
     return mask, value
 

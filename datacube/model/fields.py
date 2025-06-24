@@ -48,7 +48,6 @@ class Expression:
             return False
         return self.__dict__ == other.__dict__
 
-    @override
     def evaluate(self, ctx):
         raise NotImplementedError()
 
