@@ -480,21 +480,16 @@ def build_dataset_info(
     return info
 
 
-def _write_csv(infos, *, count: bool = False, time: bool = False) -> None:
-    if time:
-        writer = csv.DictWriter(sys.stdout, ["product", "time", "count"])
-    elif count:
-        writer = csv.DictWriter(sys.stdout, ["product", "count"])
-    else:
-        writer = csv.DictWriter(
-            sys.stdout, ["id", "status", "product", "location"], extrasaction="ignore"
-        )
+def _write_csv(infos, fields: list[str] | None = None) -> None:
+    if fields is None:
+        fields = ["id", "status", "product", "location"]
+    writer = csv.DictWriter(sys.stdout, fields, extrasaction="ignore")
     writer.writeheader()
 
     writer.writerows(row for row in infos)
 
 
-def _write_yaml(infos, *, count: bool = False, time: bool = False) -> None:
+def _write_yaml(infos, fields: list[str] | None = None) -> None:
     """
     Dump yaml data with support for OrderedDicts.
 
@@ -507,7 +502,7 @@ def _write_yaml(infos, *, count: bool = False, time: bool = False) -> None:
     )
 
 
-def _write_json(infos, *, count: bool = False, time: bool = False) -> None:
+def _write_json(infos, fields: list[str] | None = None) -> None:
     json.dump(infos, sys.stdout, indent=4)
 
 
@@ -757,7 +752,7 @@ def count_cmd(
                     )
                 )
 
-        _OUTPUT_WRITERS[f](results, time=True)
+        _OUTPUT_WRITERS[f](results, fields=["product", "time", "count"])
 
     else:
         if count_only:
@@ -770,7 +765,7 @@ def count_cmd(
                         archived, **expressions
                     )
                 ),
-                count=True,
+                fields=["product", "count"],
             )
 
 
@@ -1004,10 +999,17 @@ def purge_cmd(
     ),
     multiple=True,
 )
+@click.option(
+    "-f",
+    help="Output format",
+    type=click.Choice(list(_OUTPUT_WRITERS)),
+    default="yaml",
+    show_default=True,
+)
 @click.argument("fields", nargs=-1)
 @ui.pass_index()
 def find_duplicates(
-    index: Index, product_names: Sequence[str], fields: Iterable[str]
+    index: Index, product_names: Sequence[str], f: str, fields: Iterable[str]
 ) -> None:
     """
     Find dataset ids of two or more active datasets that have duplicate values in the specified fields.
@@ -1041,10 +1043,22 @@ def find_duplicates(
             )
             sys.exit(1)
 
-    dupes = []
+    results = []
     for product in products:
-        dupes.extend(list(index.datasets.search_product_duplicates(product, *fields)))
-    if len(dupes):
-        print(dupes)
+        for dupevals, dsids in index.datasets.search_product_duplicates(
+            product, *fields
+        ):
+            results.append(
+                OrderedDict(
+                    {
+                        "product": product.name,
+                        **dupevals._asdict(),
+                        "ids": [str(dsid) for dsid in dsids],
+                    }
+                )
+            )
+    if results:
+        fieldnames = ["product", *fields, "ids"]
+        _OUTPUT_WRITERS[f](results, fields=fieldnames)
     else:
         echo("No potential duplicates found.")

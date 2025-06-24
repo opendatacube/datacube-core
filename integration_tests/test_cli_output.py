@@ -170,8 +170,8 @@ def test_cli_dataset_subcommand(
         verbose_flag=False,
     )
     assert "No potential duplicates found." not in runner.output
-    assert "(region_code='090086', dataset_maturity='final')" in runner.output
-    assert "(region_code='101077', dataset_maturity='final')" in runner.output
+    assert "region_code: 090086\ndataset_maturity: final" in runner.output
+    assert "region_code: '101077'\ndataset_maturity: final" in runner.output
     assert runner.exit_code == 0
 
     runner = clirunner(
