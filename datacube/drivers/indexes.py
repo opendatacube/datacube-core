@@ -35,7 +35,7 @@ class IndexDriverCache:
                 for alias in driver.aliases:
                     self._drivers[alias] = driver
 
-    def __call__(self, name: str) -> AbstractIndexDriver:
+    def __call__(self, name: str) -> AbstractIndexDriver | None:
         """
         :returns: None if driver with a given name is not found
 

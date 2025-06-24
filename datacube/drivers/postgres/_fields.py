@@ -95,6 +95,7 @@ class NativeField(PgField):
         self.affects_row_selection = affects_row_selection
 
     @property
+    @override
     def alchemy_expression(self):
         expression = (
             self._expression if self._expression is not None else self.alchemy_column
@@ -102,6 +103,7 @@ class NativeField(PgField):
         return expression.label(self.name)
 
     @property
+    @override
     def postgres_index_type(self):
         # Don't add extra indexes for native fields.
         return None
@@ -208,6 +210,7 @@ class SimpleDocField(PgDocField):
         self.aggregation = SELECTION_TYPES[selection]
 
     @property
+    @override
     def alchemy_expression(self):
         return self._alchemy_offset_value(self.offset, self.aggregation.pg_calc).label(
             self.name
@@ -373,12 +376,13 @@ class RangeDocField(PgDocField):
     def value_to_alchemy(self, value):
         raise NotImplementedError("range type")
 
-    @override
     @property
+    @override
     def postgres_index_type(self) -> str:
         return "gist"
 
     @property
+    @override
     def alchemy_expression(self):
         return self.value_to_alchemy(
             (self.lower.alchemy_expression, self.greater.alchemy_expression)
@@ -529,7 +533,6 @@ class PgExpression(Expression):
     def alchemy_expression(self):
         """
         Get an SQLAlchemy expression for accessing this field.
-        :return:
         """
         raise NotImplementedError("alchemy expression")
 
@@ -541,6 +544,7 @@ class ValueBetweenExpression(PgExpression):
         self.high_value = high_value
 
     @property
+    @override
     def alchemy_expression(self):
         if self.low_value is not None and self.high_value is not None:
             return and_(
@@ -563,6 +567,7 @@ class RangeBetweenExpression(PgExpression):
         self._range_class = _range_class
 
     @property
+    @override
     def alchemy_expression(self):
         return self.field.alchemy_expression.overlaps(
             self._range_class(self.low_value, self.high_value, bounds="[]")
@@ -575,6 +580,7 @@ class RangeContainsExpression(PgExpression):
         self.value = value
 
     @property
+    @override
     def alchemy_expression(self):
         return self.field.alchemy_expression.contains(self.value)
 
@@ -585,6 +591,7 @@ class EqualsExpression(PgExpression):
         self.value = value
 
     @property
+    @override
     def alchemy_expression(self):
         return self.field.alchemy_expression == self.value
 
