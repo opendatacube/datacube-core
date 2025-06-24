@@ -235,6 +235,19 @@ def test_cli_dataset_subcommand(
     )
     assert "count: 1" in runner.output
 
+    runner = clirunner(
+        ["dataset", "search", "foo"], verbose_flag=False, expect_success=False
+    )
+    assert "Invalid expression" in runner.output
+    assert runner.exit_code == 1
+
+    runner = clirunner(
+        ["dataset", "search", "product=ga_ls8c_ard_3", 'region_code="090086"'],
+        verbose_flag=False,
+    )
+    assert "id: 4a30d008-4e82-4d67-99af-28bc1629f766" in runner.output
+    assert runner.exit_code == 0
+
     runner = clirunner(["dataset", "archive"], verbose_flag=False, expect_success=False)
     assert "Completed dataset archival." not in runner.output
     assert "Usage:  [OPTIONS] [IDS]" in runner.output
