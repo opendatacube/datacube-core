@@ -3,7 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from collections.abc import Iterable
+from collections.abc import Generator
 from typing import Any
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ def load_drivers(group: str) -> dict[str, Any]:
 
         return driver
 
-    def resolve_all(group: str) -> Iterable[tuple[str, Any]]:
+    def resolve_all(group: str) -> Generator[tuple[str, Any]]:
         from importlib.metadata import entry_points
 
         for ep in entry_points(group=group):
