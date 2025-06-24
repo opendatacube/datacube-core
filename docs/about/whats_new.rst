@@ -18,6 +18,7 @@ Next Release
 - docs: escape trailing underscores :pull:`1976`
 - examples/tests: fix dependencies :pull:`1975`
 - docs: add missing links :pull:`1978`
+- misc improvements to CLI outputs :pull:`1993`
 
 v1.9.5 (17 June 2025)
 =====================
