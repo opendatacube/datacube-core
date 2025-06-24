@@ -1053,7 +1053,7 @@ def find_duplicates_cmd(
                 OrderedDict(
                     {
                         "product": product.name,
-                        **dupevals._asdict(),
+                        **dupevals._asdict(),  # type: ignore[attr-defined]
                         "ids": [str(dsid) for dsid in dsids],
                     }
                 )
