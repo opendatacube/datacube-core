@@ -7,7 +7,7 @@
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from concurrent.futures import Future
-from typing import TYPE_CHECKING, Any
+from typing import Any, TypeAlias
 
 import numpy as np
 from affine import Affine
@@ -17,16 +17,11 @@ from datacube.storage import BandInfo
 
 # pylint: disable=invalid-name,unsubscriptable-object,pointless-statement
 
-if TYPE_CHECKING:
-    FutureGeoRasterReader = Future["GeoRasterReader"]  # pragma: no cover
-    FutureNdarray = Future[np.ndarray]  # pragma: no cover
-else:
-    FutureGeoRasterReader = Future
-    FutureNdarray = Future
+FutureGeoRasterReader: TypeAlias = Future["GeoRasterReader"]
+FutureNdarray: TypeAlias = Future[np.ndarray]
 
-
-RasterShape = tuple[int, int]
-RasterWindow = tuple[slice, slice]
+RasterShape: TypeAlias = tuple[int, int]
+RasterWindow: TypeAlias = tuple[slice, slice]
 
 
 class GeoRasterReader(metaclass=ABCMeta):
