@@ -1008,7 +1008,7 @@ def purge_cmd(
 )
 @click.argument("fields", nargs=-1)
 @ui.pass_index()
-def find_duplicates(
+def find_duplicates_cmd(
     index: Index, product_names: Sequence[str], f: str, fields: Iterable[str]
 ) -> None:
     """
@@ -1018,6 +1018,7 @@ def find_duplicates(
     """
     if not fields:
         echo("Error: must provide field names to match on\n", err=True)
+        print_help_msg(find_duplicates_cmd)
         sys.exit(1)
 
     # if no products were specified, use whichever ones have the specified search fields

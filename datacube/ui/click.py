@@ -351,9 +351,9 @@ def handle_exception(msg, e) -> None:
         raise e
     else:
         if "%s" in msg:
-            click.echo(msg % e)
+            click.echo(msg % e, err=True)
         else:
-            click.echo(msg)
+            click.echo(msg, err=True)
         ctx.exit(1)
 
 
