@@ -24,7 +24,7 @@ def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs) -> 
     assert "Add or update products in" in runner.output
     assert runner.exit_code == 1
 
-    runner = clirunner(["product", "list"], verbose_flag=False, expect_success=False)
+    runner = clirunner(["product", "list"], verbose_flag=False)
     assert "Usage:  [OPTIONS] [FILES]" not in runner.output
     assert runner.exit_code == 0
 

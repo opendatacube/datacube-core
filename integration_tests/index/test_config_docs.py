@@ -334,7 +334,9 @@ def test_product_update_cli(
     Test updating products via cli
     """
 
-    def run_update_product(file_path, allow_unsafe=False):
+    def run_update_product(
+        file_path, expect_success: bool = True, allow_unsafe: bool = False
+    ):
         if allow_unsafe:
             allow_unsafe = ["--allow-unsafe"]
         else:
@@ -343,7 +345,7 @@ def test_product_update_cli(
         return clirunner(
             ["product", "update", str(file_path)] + allow_unsafe,
             catch_exceptions=False,
-            expect_success=False,
+            expect_success=expect_success,
         )
 
     def get_current(index, product_doc):
@@ -367,7 +369,7 @@ def test_product_update_cli(
     modified_doc["newly_added_property"] = {}
     file_path = tmpdir.join("invalid-product.yaml")
     file_path.write(_to_yaml(modified_doc))
-    result = run_update_product(file_path)
+    result = run_update_product(file_path, expect_success=False)
 
     # The error message differs between jsonschema versions, but should always mention the invalid property name.
     assert "newly_added_property" in result.output
@@ -383,7 +385,7 @@ def test_product_update_cli(
     modified_doc["metadata"][42] = "hello"
     file_path = tmpdir.join("unsafe-change-to-product.yaml")
     file_path.write(_to_yaml(modified_doc))
-    result = run_update_product(file_path)
+    result = run_update_product(file_path, expect_success=False)
     assert "Unsafe change in metadata.42 from missing to 'hello'" in result.output
     # Return error code for failure!
     assert result.exit_code == 1
@@ -432,9 +434,7 @@ def test_product_delete_cli(
     clirunner(["dataset", "archive", "c21648b1-a6fa-4de0-9dc3-9c445d8b295a"])
 
     runner = clirunner(
-        ["product", "delete", "ga_ls8c_ard_3", "ga_ls_wo_3"],
-        verbose_flag=False,
-        expect_success=False,
+        ["product", "delete", "ga_ls8c_ard_3", "ga_ls_wo_3"], verbose_flag=False
     )
     assert "1 out of 2 products successfully deleted" in runner.output
     assert "ga_ls_wo_3 could not be deleted" not in runner.output
