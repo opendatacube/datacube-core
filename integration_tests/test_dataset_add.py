@@ -146,7 +146,7 @@ def check_inconsistent_lineage(clirunner, index) -> None:
     assert index.datasets.has(ds.sources["ac"].sources["cd"].id) is False
 
     # now again but skipping verification check
-    r = clirunner(["dataset", "add", "--no-verify-lineage", str(prefix / "main.yml")])
+    _ = clirunner(["dataset", "add", "--no-verify-lineage", str(prefix / "main.yml")])
 
     assert index.datasets.has(ds.id)
     assert index.datasets.has(ds.sources["ab"].id)
@@ -183,7 +183,7 @@ def check_missing_lineage(clirunner, index) -> None:
     # now add lineage and try again
     clirunner(["dataset", "add", str(prefix / "lineage.yml")])
     assert index.datasets.has(ds.sources["ae"].id)
-    r = clirunner(["dataset", "add", "--no-auto-add-lineage", str(prefix / "main.yml")])
+    _ = clirunner(["dataset", "add", "--no-auto-add-lineage", str(prefix / "main.yml")])
 
     assert index.datasets.has(ds.id)
 
@@ -380,13 +380,13 @@ metadata:
 
     # check that forcing product works
     ds, fname = dss[0], "dataset1.yml"
-    r = clirunner(["dataset", "add", "--product", "A", str(prefix / fname)])
+    _ = clirunner(["dataset", "add", "--product", "A", str(prefix / fname)])
 
     assert index.datasets.has(ds.id) is True
 
     # check that forcing via exclude works
     ds, fname = dss[1], "dataset2.yml"
-    r = clirunner(["dataset", "add", "--exclude-product", "B", str(prefix / fname)])
+    _ = clirunner(["dataset", "add", "--exclude-product", "B", str(prefix / fname)])
 
     assert index.datasets.has(ds.id) is True
 
@@ -510,7 +510,7 @@ measurements:
     )
 
     clirunner(["metadata", "add", p.metadata])
-    r = clirunner(["product", "add", str(prefix / "products.yml")])
+    _ = clirunner(["product", "add", str(prefix / "products.yml")])
 
     pp = list(index.products.get_all())
     assert len(pp) == 1
@@ -627,7 +627,7 @@ def test_dataset_archive_restore_invalid(
     non_existent_uuid = "00000000-1036-5607-a62f-fde5e3fec985"
 
     # With non-existent uuid, operations should halt.
-    r = clirunner(
+    _ = clirunner(
         ["dataset", "archive", str(ds.id), non_existent_uuid], expect_success=False
     )
     r = clirunner(["dataset", "info", str(ds.id)])
@@ -636,7 +636,7 @@ def test_dataset_archive_restore_invalid(
 
     # With non-existent uuid, operations should halt.
     d_id = ds.sources["ac"].sources["cd"].id
-    r = clirunner(
+    _ = clirunner(
         ["dataset", "archive", "--archive-derived", str(d_id), non_existent_uuid],
         expect_success=False,
     )
@@ -660,23 +660,23 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner) ->
     p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
     # Run for real
-    r = clirunner(["dataset", "archive", str(ds.id)])
+    _ = clirunner(["dataset", "archive", str(ds.id)])
     r = clirunner(["dataset", "info", str(ds.id)])
     assert "status: archived" in r.output
 
     # restore dry run
-    r = clirunner(["dataset", "restore", "--dry-run", str(ds.id)])
+    _ = clirunner(["dataset", "restore", "--dry-run", str(ds.id)])
     r = clirunner(["dataset", "info", str(ds.id)])
     assert "status: archived" in r.output
 
     # restore for real
-    r = clirunner(["dataset", "restore", str(ds.id)])
+    _ = clirunner(["dataset", "restore", str(ds.id)])
     r = clirunner(["dataset", "info", str(ds.id)])
     assert "status: active" in r.output
 
     # archive derived
     d_id = ds.sources["ac"].sources["cd"].id
-    r = clirunner(["dataset", "archive", "--archive-derived", str(d_id)])
+    _ = clirunner(["dataset", "archive", "--archive-derived", str(d_id)])
     r = clirunner(
         [
             "dataset",
@@ -690,7 +690,7 @@ def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner) ->
     assert "status: archived" in r.output
 
     # restore derived
-    r = clirunner(["dataset", "restore", "--restore-derived", str(d_id)])
+    _ = clirunner(["dataset", "restore", "--restore-derived", str(d_id)])
     r = clirunner(
         [
             "dataset",
