@@ -981,10 +981,6 @@ class PostgisDbAPI:
             query = query.where(Product.name.in_(product_names))
         elif dsids:
             query = query.where(Dataset.id.in_(dsids))
-
-        def xytuple(o):
-            return o["x"], o["y"]
-
         for result in self._connection.execute(query):
             dsid = result[0]
             geom = extract_geometry_from_eo3_projection(result[1])
