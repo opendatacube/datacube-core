@@ -97,16 +97,10 @@ def test_add_example_dataset_types(
         )
         assert result.exit_code == 1
 
-        result = clirunner(
-            ["-v", "product", "show", "-f", "json", "ga_ls8c_ard_3"],
-            expect_success=False,
-        )
+        result = clirunner(["-v", "product", "show", "-f", "json", "ga_ls8c_ard_3"])
         assert result.exit_code == 0
 
-        result = clirunner(
-            ["-v", "product", "show", "-f", "yaml", "ga_ls8c_ard_3"],
-            expect_success=False,
-        )
+        result = clirunner(["-v", "product", "show", "-f", "yaml", "ga_ls8c_ard_3"])
         assert result.exit_code == 0
 
 
