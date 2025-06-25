@@ -228,7 +228,7 @@ def index_cmd(
     dataset_paths: list[str],
 ) -> None:
     if not dataset_paths:
-        click.echo("Error: no datasets provided\n")
+        echo("Error: no datasets provided\n", err=True)
         print_help_msg(index_cmd)
         sys.exit(1)
 
@@ -327,7 +327,7 @@ def update_cmd(
     archive_less_mature,
 ) -> None:
     if not dataset_paths:
-        click.echo("Error: no datasets provided\n")
+        echo("Error: no datasets provided\n", err=True)
         print_help_msg(update_cmd)
         sys.exit(1)
 
@@ -480,21 +480,16 @@ def build_dataset_info(
     return info
 
 
-def _write_csv(infos, *, count: bool = False, time: bool = False) -> None:
-    if time:
-        writer = csv.DictWriter(sys.stdout, ["product", "time", "count"])
-    elif count:
-        writer = csv.DictWriter(sys.stdout, ["product", "count"])
-    else:
-        writer = csv.DictWriter(
-            sys.stdout, ["id", "status", "product", "location"], extrasaction="ignore"
-        )
+def _write_csv(infos, fields: list[str] | None = None) -> None:
+    if fields is None:
+        fields = ["id", "status", "product", "location"]
+    writer = csv.DictWriter(sys.stdout, fields, extrasaction="ignore")
     writer.writeheader()
 
     writer.writerows(row for row in infos)
 
 
-def _write_yaml(infos, *, count: bool = False, time: bool = False) -> None:
+def _write_yaml(infos, fields: list[str] | None = None) -> None:
     """
     Dump yaml data with support for OrderedDicts.
 
@@ -507,7 +502,7 @@ def _write_yaml(infos, *, count: bool = False, time: bool = False) -> None:
     )
 
 
-def _write_json(infos, *, count: bool = False, time: bool = False) -> None:
+def _write_json(infos, fields: list[str] | None = None) -> None:
     json.dump(infos, sys.stdout, indent=4)
 
 
@@ -550,7 +545,7 @@ def info_cmd(
     ids: Iterable[str],
 ) -> None:
     if not ids:
-        click.echo("Error: no datasets provided\n")
+        echo("Error: no datasets provided\n", err=True)
         print_help_msg(info_cmd)
         sys.exit(1)
 
@@ -563,7 +558,7 @@ def info_cmd(
             if dataset:
                 yield dataset
             else:
-                click.echo(f"{id_} missing", err=True)
+                echo(f"{id_} missing", err=True)
                 missing_datasets[0] += 1
 
     _OUTPUT_WRITERS[f](
@@ -628,7 +623,7 @@ def uri_search_cmd(index: Index, paths: list[str], search_mode) -> None:
     PATHS may be either file paths or URIs
     """
     if not paths:
-        click.echo("Error: no locations provided\n")
+        echo("Error: no locations provided\n", err=True)
         print_help_msg(uri_search_cmd)
         sys.exit(1)
 
@@ -757,7 +752,7 @@ def count_cmd(
                     )
                 )
 
-        _OUTPUT_WRITERS[f](results, time=True)
+        _OUTPUT_WRITERS[f](results, fields=["product", "time", "count"])
 
     else:
         if count_only:
@@ -770,7 +765,7 @@ def count_cmd(
                         archived, **expressions
                     )
                 ),
-                count=True,
+                fields=["product", "count"],
             )
 
 
@@ -801,7 +796,7 @@ def archive_cmd(
     index: Index, archive_derived: bool, dry_run: bool, all_ds: bool, ids: list[str]
 ) -> None:
     if not ids and not all_ds:
-        click.echo("Error: no datasets provided\n")
+        echo("Error: no datasets provided\n", err=True)
         print_help_msg(archive_cmd)
         sys.exit(1)
 
@@ -819,7 +814,7 @@ def archive_cmd(
         if False in datasets_for_archive.values():
             for dataset_id, exists in datasets_for_archive.items():
                 if not exists:
-                    click.echo(f"No dataset found with id: {dataset_id}")
+                    echo(f"No dataset found with id: {dataset_id}", err=True)
             sys.exit(-1)
 
         if archive_derived:
@@ -836,12 +831,12 @@ def archive_cmd(
     all_datasets = derived_dataset_ids + list(datasets_for_archive.keys())
 
     for dataset in all_datasets:
-        click.echo(f"Archiving dataset: {dataset}")
+        echo(f"Archiving dataset: {dataset}")
 
     if not dry_run:
         index.datasets.archive(all_datasets)
 
-    click.echo("Completed dataset archival.")
+    echo("Completed dataset archival.")
 
 
 @dataset_cmd.command("restore", help="Restore datasets")
@@ -882,7 +877,7 @@ def restore_cmd(
     ids: list[str],
 ) -> None:
     if not ids and not all_ds:
-        click.echo("Error: no datasets provided\n")
+        echo("Error: no datasets provided\n", err=True)
         print_help_msg(restore_cmd)
         sys.exit(1)
 
@@ -893,7 +888,7 @@ def restore_cmd(
     for id_ in ids:
         target_dataset = index.datasets.get(id_)
         if target_dataset is None:
-            echo(f"No dataset found with id {id_}")
+            echo(f"No dataset found with id {id_}", err=True)
             sys.exit(-1)
 
         to_process = (
@@ -919,7 +914,7 @@ def restore_cmd(
             )
 
         for d in to_process:
-            click.echo(f"restoring {d.product.name} {d.id} {d.local_uri}")
+            echo(f"restoring {d.product.name} {d.id} {d.local_uri}")
         if not dry_run:
             index.datasets.restore(d.id for d in to_process)
 
@@ -950,7 +945,7 @@ def purge_cmd(
     index: Index, dry_run: bool, all_ds: bool, force: bool, ids: list[str]
 ) -> None:
     if not ids and not all_ds:
-        click.echo("Error: no datasets provided\n")
+        echo("Error: no datasets provided\n", err=True)
         print_help_msg(purge_cmd)
         sys.exit(1)
 
@@ -968,7 +963,7 @@ def purge_cmd(
         if False in datasets_for_purge.values():
             for dataset_id, exists in datasets_for_purge.items():
                 if not exists:
-                    click.echo(f"No dataset found with id: {dataset_id}")
+                    echo(f"No dataset found with id: {dataset_id}", err=True)
             sys.exit(-1)
 
     if sys.stdin.isatty() and force:
@@ -981,16 +976,16 @@ def purge_cmd(
         purged = index.datasets.purge(datasets_for_purge.keys(), force)
         not_purged = set(datasets_for_purge.keys()).difference(set(purged))
         if not force and not_purged:
-            click.echo(
+            echo(
                 "The following datasets are still active and could not be purged: "
                 f"{', '.join([str(id_) for id_ in not_purged])}\n"
                 "Use the --force option to delete anyway."
             )
-        click.echo(f"{len(purged)} of {len(datasets_for_purge)} datasets purged")
+        echo(f"{len(purged)} of {len(datasets_for_purge)} datasets purged")
     else:
-        click.echo(f"{len(datasets_for_purge)} datasets not purged (dry run)")
+        echo(f"{len(datasets_for_purge)} datasets not purged (dry run)")
 
-    click.echo("Completed dataset purge.")
+    echo("Completed dataset purge.")
 
 
 @dataset_cmd.command("find-duplicates", help="Search for duplicate indexed datasets")
@@ -1004,10 +999,17 @@ def purge_cmd(
     ),
     multiple=True,
 )
+@click.option(
+    "-f",
+    help="Output format",
+    type=click.Choice(list(_OUTPUT_WRITERS)),
+    default="yaml",
+    show_default=True,
+)
 @click.argument("fields", nargs=-1)
 @ui.pass_index()
-def find_duplicates(
-    index: Index, product_names: Sequence[str], fields: Iterable[str]
+def find_duplicates_cmd(
+    index: Index, product_names: Sequence[str], f: str, fields: Iterable[str]
 ) -> None:
     """
     Find dataset ids of two or more active datasets that have duplicate values in the specified fields.
@@ -1015,14 +1017,15 @@ def find_duplicates(
     have the fields.
     """
     if not fields:
-        click.echo("Error: must provide field names to match on\n")
+        echo("Error: must provide field names to match on\n", err=True)
+        print_help_msg(find_duplicates_cmd)
         sys.exit(1)
 
     # if no products were specified, use whichever ones have the specified search fields
     # if products were specified, check they all have the required fields
     products_with_fields = list(index.products.get_with_fields(fields))
     if not products_with_fields:
-        click.echo(f"Error: no products found with fields {', '.join(fields)}\n")
+        echo(f"Error: no products found with fields {', '.join(fields)}\n", err=True)
         sys.exit(1)
     if not list(product_names):
         products = products_with_fields
@@ -1034,16 +1037,29 @@ def find_duplicates(
         ]
         products_without_fields = set(products).difference(set(products_with_fields))
         if len(products_without_fields):
-            click.echo(
+            echo(
                 f"Error: specified products {', '.join(p.name for p in products_without_fields)} "
-                "do not contain all required fields\n"
+                "do not contain all required fields\n",
+                err=True,
             )
             sys.exit(1)
 
-    dupes = []
+    results = []
     for product in products:
-        dupes.extend(list(index.datasets.search_product_duplicates(product, *fields)))
-    if len(dupes):
-        print(dupes)
+        for dupevals, dsids in index.datasets.search_product_duplicates(
+            product, *fields
+        ):
+            results.append(
+                OrderedDict(
+                    {
+                        "product": product.name,
+                        **dupevals._asdict(),  # type: ignore[attr-defined]
+                        "ids": [str(dsid) for dsid in dsids],
+                    }
+                )
+            )
+    if results:
+        fieldnames = ["product", *fields, "ids"]
+        _OUTPUT_WRITERS[f](results, fields=fieldnames)
     else:
-        click.echo("No potential duplicates found.")
+        echo("No potential duplicates found.")

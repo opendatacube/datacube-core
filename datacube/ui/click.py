@@ -14,6 +14,7 @@ import sys
 from textwrap import dedent
 
 import click
+from lark.exceptions import UnexpectedEOF
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from typing_extensions import override
 
@@ -350,9 +351,9 @@ def handle_exception(msg, e) -> None:
         raise e
     else:
         if "%s" in msg:
-            click.echo(msg % e)
+            click.echo(msg % e, err=True)
         else:
-            click.echo(msg)
+            click.echo(msg, err=True)
         ctx.exit(1)
 
 
@@ -400,7 +401,12 @@ def parsed_search_expressions(f):
     """)
 
     def my_parse(ctx, param, value):
-        return parse_expressions(*list(value))
+        try:
+            return parse_expressions(*list(value))
+        except UnexpectedEOF as e:
+            handle_exception(
+                "Invalid expression. Please refer to command documentation.", e
+            )
 
     f = click.argument("expressions", callback=my_parse, nargs=-1)(f)
     return f

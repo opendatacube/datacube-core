@@ -13,7 +13,7 @@ from pyproj.exceptions import CRSError
 
 from datacube.index import Index
 from datacube.ui import click as ui
-from datacube.ui.click import cli
+from datacube.ui.click import cli, print_help_msg
 
 _LOG: logging.Logger = logging.getLogger("datacube-system")
 
@@ -36,10 +36,15 @@ def system() -> None:
 @ui.pass_index()
 def create(index: Index, update: bool, srids: Sequence[str]) -> None:
     if not index.supports_spatial_indexes:
-        echo("The active index driver does not support spatial indexes")
+        echo(
+            "The active index driver does not support spatial indexes. "
+            "You may want to specify a different environment or config (see --help for options)",
+            err=True,
+        )
         exit(1)
     if not srids:
-        echo("Must supply at least one CRS to create/update")
+        echo("Must supply at least one CRS to create/update", err=True)
+        print_help_msg(create)
         exit(1)
 
     confirmed = []
@@ -78,7 +83,7 @@ def create(index: Index, update: bool, srids: Sequence[str]) -> None:
         echo(f"{result} extents checked and updated in spatial indexes")
     else:
         echo(
-            "Newly created spatial indexes are unpopulated - run 'datacube spindex update' before use."
+            "Newly created spatial indexes are unpopulated - run the 'spindex update' command before use."
         )
     exit(len(failed))
 
@@ -89,7 +94,11 @@ def create(index: Index, update: bool, srids: Sequence[str]) -> None:
 @ui.pass_index()
 def list_spindex(index) -> None:
     if not index.supports_spatial_indexes:
-        echo("The active index driver does not support spatial indexes")
+        echo(
+            "The active index driver does not support spatial indexes. "
+            "You may want to specify a different environment or config (see --help for options)",
+            err=True,
+        )
         exit(1)
     for crs in index.spatial_indexes():
         echo(f"EPSG:{crs.epsg}")
@@ -115,10 +124,15 @@ def update(
     index: Index, product: Sequence[str], dataset: Sequence[str], srids: Sequence[str]
 ) -> None:
     if not index.supports_spatial_indexes:
-        echo("The active index driver does not support spatial indexes")
+        echo(
+            "The active index driver does not support spatial indexes. "
+            "You may want to specify a different environment or config (see --help for options)",
+            err=True,
+        )
         exit(1)
     if not srids:
-        echo("Must supply at least one CRS to update")
+        echo("Must supply at least one CRS to update", err=True)
+        print_help_msg(update)
         exit(1)
 
     for_update = []
@@ -162,10 +176,15 @@ def update(
 @ui.pass_index()
 def drop(index: Index, force: bool, srids: Sequence[str]) -> None:
     if not index.supports_spatial_indexes:
-        echo("The active index driver does not support spatial indexes")
+        echo(
+            "The active index driver does not support spatial indexes. "
+            "You may want to specify a different environment or config (see --help for options)",
+            err=True,
+        )
         exit(1)
     if not srids:
-        echo("Must supply at least one CRS to drop")
+        echo("Must supply at least one CRS to drop", err=True)
+        print_help_msg(drop)
         exit(1)
     for_deletion = []
     errors = False

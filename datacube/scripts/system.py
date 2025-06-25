@@ -139,7 +139,7 @@ def clone(
     source_env: str,
 ) -> None:
     if skip_lineage and lineage_only:
-        echo("Cannot set both lineage-only and skip-lineage")
+        echo("Cannot set both lineage-only and skip-lineage", err=True)
         exit(1)
     try:
         destination_index = index_connect(env, validate_connection=True)
