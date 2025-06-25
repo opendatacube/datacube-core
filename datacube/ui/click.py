@@ -417,7 +417,7 @@ def print_help_msg(command) -> None:
         click.echo(command.get_help(ctx))
 
 
-def exit_on_empty_file(read_files_list) -> None:
+def exit_on_empty_file(read_files_list: list) -> None:
     if len(read_files_list) == 0:
         click.echo("All files are empty, exit", err=True)
         sys.exit(1)
