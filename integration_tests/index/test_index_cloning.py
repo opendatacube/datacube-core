@@ -44,9 +44,7 @@ def test_index_clone_cli(cfg_env_pair, index_pair_populated_empty, clirunner) ->
         expect_success=False,
     )
     clirunner(
-        ["-E", target_cfg._name, "system", "clone", source_cfg._name],
-        skip_env=True,
-        expect_success=True,
+        ["-E", target_cfg._name, "system", "clone", source_cfg._name], skip_env=True
     )
 
 
@@ -66,5 +64,4 @@ def test_index_clone_cli_small_batch(
             source_cfg._name,
         ],
         skip_env=True,
-        expect_success=True,
     )

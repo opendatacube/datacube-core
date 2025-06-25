@@ -273,7 +273,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
     assert _ds.metadata_doc == ds.doc
 
     # Check dataset search
-    r = clirunner(["dataset", "search"], expect_success=True)
+    r = clirunner(["dataset", "search"])
     assert str(ds.id) in r.output
     assert str(ds_bad1.id) not in r.output
     assert str(ds.sources["ab"].id) in r.output
