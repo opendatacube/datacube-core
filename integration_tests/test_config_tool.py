@@ -54,9 +54,7 @@ def test_add_example_dataset_types(
             )
             existing_mappings = mappings_count
 
-        result = clirunner(
-            ["-v", "metadata", "show", "-f", "json", "eo"], expect_success=True
-        )
+        result = clirunner(["-v", "metadata", "show", "-f", "json", "eo"])
         assert result.exit_code == 0
 
     # EO3 test examples
@@ -73,15 +71,13 @@ def test_add_example_dataset_types(
         )
         existing_mappings = mappings_count
 
-    result = clirunner(
-        ["-v", "metadata", "show", "-f", "json", "eo3"], expect_success=True
-    )
+    result = clirunner(["-v", "metadata", "show", "-f", "json", "eo3"])
     assert result.exit_code == 0
 
     result = clirunner(["-v", "metadata", "list"])
     assert result.exit_code == 0
 
-    result = clirunner(["-v", "metadata", "show"], expect_success=True)
+    result = clirunner(["-v", "metadata", "show"])
     assert result.exit_code == 0
 
     result = clirunner(["-v", "product", "list"])
