@@ -53,9 +53,9 @@ bigger your database the longer it will take. Just wait a bit.""")
 
     signal.signal(signal.SIGINT, on_ctrlc)
 
-    exit_on_empty_file(list(read_documents(*files)))
-
-    for descriptor_path, parsed_doc in read_documents(*files):
+    docs = list(read_documents(*files))
+    exit_on_empty_file(docs)
+    for descriptor_path, parsed_doc in docs:
         try:
             type_ = index.products.from_doc(parsed_doc)
             echo(f'Adding "{type_.name}" (this might take a while)', nl=False)
@@ -104,10 +104,10 @@ def update_products(
         print_help_msg(update_products)
         sys.exit(1)
 
-    exit_on_empty_file(list(read_documents(*files)))
-
+    docs = list(read_documents(*files))
+    exit_on_empty_file(docs)
     failures = 0
-    for descriptor_path, parsed_doc in read_documents(*files):
+    for descriptor_path, parsed_doc in docs:
         try:
             type_ = index.products.from_doc(parsed_doc)
         except InvalidDocException as e:

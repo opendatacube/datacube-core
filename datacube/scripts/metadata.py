@@ -41,9 +41,10 @@ def add_metadata_types(index: Index, allow_exclusive_lock: bool, files: list) ->
         print_help_msg(add_metadata_types)
         sys.exit(1)
 
-    exit_on_empty_file(list(read_documents(*files)))
+    docs = list(read_documents(*files))
+    exit_on_empty_file(docs)
 
-    for descriptor_path, parsed_doc in read_documents(*files):
+    for descriptor_path, parsed_doc in docs:
         try:
             type_ = index.metadata_types.from_doc(parsed_doc)
             index.metadata_types.add(type_, allow_table_lock=allow_exclusive_lock)
@@ -90,9 +91,9 @@ def update_metadata_types(
         print_help_msg(update_metadata_types)
         sys.exit(1)
 
-    exit_on_empty_file(list(read_documents(*files)))
-
-    for descriptor_path, parsed_doc in read_documents(*files):
+    docs = list(read_documents(*files))
+    exit_on_empty_file(docs)
+    for descriptor_path, parsed_doc in docs:
         try:
             type_ = index.metadata_types.from_doc(parsed_doc)
         except InvalidDocException as e:
