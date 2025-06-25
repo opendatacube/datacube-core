@@ -14,6 +14,7 @@ from copy import copy, deepcopy
 from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Literal
 from uuid import uuid4
 
 import pytest
@@ -942,7 +943,7 @@ def clirunner(datacube_env_name: str):
         cli_method=datacube.scripts.cli_app.cli,
         skip_env: bool = False,
         skip_config_paths: bool = False,
-        verbose_flag: str = "-v",
+        verbose_flag: Literal[False] | str = "-v",
     ) -> Result:
         # If raw config passed in, skip default test config
         exe_opts = (
