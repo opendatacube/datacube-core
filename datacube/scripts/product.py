@@ -45,6 +45,9 @@ def add_products(index: Index, allow_exclusive_lock: bool, files: list) -> None:
         print_help_msg(add_products)
         sys.exit(1)
 
+    docs = list(read_documents(*files))
+    exit_on_empty_file(docs)
+
     def on_ctrlc(sig, frame) -> None:
         echo("""Can not abort `product add` without leaving database in bad state.
 
@@ -53,8 +56,6 @@ bigger your database the longer it will take. Just wait a bit.""")
 
     signal.signal(signal.SIGINT, on_ctrlc)
 
-    docs = list(read_documents(*files))
-    exit_on_empty_file(docs)
     for descriptor_path, parsed_doc in docs:
         try:
             type_ = index.products.from_doc(parsed_doc)
