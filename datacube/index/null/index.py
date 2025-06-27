@@ -49,48 +49,48 @@ class Index(AbstractIndex):
         self._lineage = NoLineageResource(self)
         self._datasets = DatasetResource(self)
 
-    @override
     @property
+    @override
     def name(self) -> str:
         return "null_index"
 
-    @override
     @property
+    @override
     def environment(self) -> ODCEnvironment:
         return self._env
 
-    @override
     @property
+    @override
     def users(self) -> UserResource:
         return self._users
 
-    @override
     @property
+    @override
     def metadata_types(self) -> MetadataTypeResource:
         return self._metadata_types
 
-    @override
     @property
+    @override
     def products(self) -> ProductResource:
         return self._products
 
-    @override
     @property
+    @override
     def lineage(self) -> NoLineageResource:
         return self._lineage
 
-    @override
     @property
+    @override
     def datasets(self) -> DatasetResource:
         return self._datasets
 
-    @override
     @property
+    @override
     def url(self) -> str:
         return "null"
 
-    @override
     @property
+    @override
     def index_id(self) -> str:
         return "null"
 

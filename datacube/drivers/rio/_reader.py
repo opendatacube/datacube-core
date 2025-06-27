@@ -148,28 +148,28 @@ class RIOReader(GeoRasterReader):
         self._dtype = src.dtypes[band_idx - 1]
         self._pool = pool
 
-    @override
     @property
+    @override
     def crs(self) -> CRS | None:
         return self._crs
 
-    @override
     @property
+    @override
     def transform(self) -> Affine | None:
         return self._transform
 
-    @override
     @property
+    @override
     def dtype(self) -> np.dtype:
         return np.dtype(self._dtype)
 
-    @override
     @property
+    @override
     def shape(self) -> RasterShape:
         return self._src.shape
 
-    @override
     @property
+    @override
     def nodata(self) -> int | float | None:
         return self._nodata
 
@@ -228,13 +228,13 @@ class RDEntry(ReaderDriverEntry):
     PROTOCOLS = ["file", "http", "https", "s3", "ftp", "zip"]
     FORMATS = ["GeoTIFF", "NetCDF", "JPEG2000"]
 
-    @override
     @property
+    @override
     def protocols(self) -> list[str]:
         return RDEntry.PROTOCOLS
 
-    @override
     @property
+    @override
     def formats(self) -> list[str]:
         return RDEntry.FORMATS
 
