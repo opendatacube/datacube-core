@@ -154,8 +154,8 @@ class NativeField(PgField):
         self.affects_row_selection = affects_row_selection
         self.join_clause = join_clause
 
-    @override
     @property
+    @override
     def alchemy_expression(self) -> ColumnExpressionArgument:
         expression = (
             self._expression if self._expression is not None else self.alchemy_column
