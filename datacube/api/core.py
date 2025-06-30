@@ -1043,7 +1043,7 @@ class Datacube:
         :param extra_dims:
             A ExtraDimensions describing any additional dimensions on top of (t, y, x)
 
-        :param Callable[[str], str], patch_url:
+        :param patch_url:
             if supplied, will be used to patch/sign the url(s), as required to access some commercial archives.
 
         :param driver:
