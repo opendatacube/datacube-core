@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import Callable
+from typing import TypeAlias
 
 from datacube.storage._base import BandInfo
 
@@ -10,7 +11,7 @@ from ._tools import singleton_setup
 from .datasource import DataSource
 from .driver_cache import load_drivers
 
-DatasourceFactory = Callable[[BandInfo], DataSource]  # pylint: disable=invalid-name
+DatasourceFactory: TypeAlias = Callable[[BandInfo], DataSource]  # pylint: disable=invalid-name
 
 
 class ReaderDriverCache:

@@ -141,7 +141,7 @@ def check_doc_unchanged(original: Changeable, new: Changeable, doc_name: str) ->
         )
 
 
-AllowPolicy = Callable[[Offset, Offset, ChangedValue, ChangedValue], bool]
+AllowPolicy: TypeAlias = Callable[[Offset, Offset, ChangedValue, ChangedValue], bool]
 
 
 def allow_truncation(

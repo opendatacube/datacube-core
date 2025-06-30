@@ -13,4 +13,4 @@ from typing import TypeAlias
 
 JsonAtom: TypeAlias = None | bool | str | float | int
 JsonLike: TypeAlias = JsonAtom | list["JsonLike"] | dict[str, "JsonLike"]
-JsonDict = dict[str, JsonLike]
+JsonDict: TypeAlias = dict[str, JsonLike]

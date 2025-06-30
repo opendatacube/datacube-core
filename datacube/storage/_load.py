@@ -13,7 +13,7 @@ import logging
 import numbers
 from collections import OrderedDict
 from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping
-from typing import Any, cast
+from typing import Any, TypeAlias, cast
 
 import numpy as np
 from odc.geo.geobox import GeoBox
@@ -34,8 +34,8 @@ from ._base import BandInfo
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
-FuserFunction = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
-ProgressFunction = Callable[[int, int], Any]  # pylint: disable=invalid-name
+FuserFunction: TypeAlias = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
+ProgressFunction: TypeAlias = Callable[[int, int], Any]  # pylint: disable=invalid-name
 
 
 def _default_fuser(dst: np.ndarray, src: np.ndarray, dst_nodata) -> None:
