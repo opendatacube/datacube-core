@@ -86,8 +86,8 @@ class PgField(Field):
                 self.search_index_table,
                 and_(
                     Dataset.id == self.search_index_table.dataset_ref,  # type: ignore[attr-defined]
-                    self.search_index_table.search_key == self.name  # type: ignore[attr-defined]
-                )
+                    self.search_index_table.search_key == self.name,  # type: ignore[attr-defined]
+                ),
             )
         else:
             return (self.search_index_table,)
