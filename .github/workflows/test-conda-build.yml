@@ -27,10 +27,10 @@ jobs:
           python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Cache conda
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         env:
           # Increase this value to reset cache if setup.py has not changed
           CACHE_NUMBER: 0
@@ -40,14 +40,14 @@ jobs:
             ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
             hashFiles('conda-environment.yml') }}
 
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
         continue-on-error: true
         id: conda1
         with:
           environment-file: conda-environment.yml
           auto-update-conda: true
           python-version: ${{ matrix.python-version}}
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
         if: steps.conda1.outcome == 'failure'
         with:
           environment-file: conda-environment.yml
