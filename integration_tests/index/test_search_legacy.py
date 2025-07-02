@@ -15,7 +15,7 @@ from uuid import UUID
 
 import pytest
 import yaml
-from dateutil import tz
+from dateutil.tz import UTC
 from odc.geo import CRS
 from sqlalchemy.dialects.postgresql.ranges import Range as SQLARange
 
@@ -571,7 +571,7 @@ def test_search_returning(
     assert format_ == "PSEUDOMD"
 
     # It's always UTC in the document
-    expected_time = creation_time.astimezone(tz.tzutc()).replace(tzinfo=None)
+    expected_time = creation_time.astimezone(UTC).replace(tzinfo=None)
     assert expected_time.isoformat() == pseudo_ls8_dataset.metadata_doc["creation_dt"]
     assert label == pseudo_ls8_dataset.metadata_doc["ga_label"]
 
