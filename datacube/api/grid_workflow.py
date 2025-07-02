@@ -22,7 +22,7 @@ from datacube.utils import DatacubeException
 from .core import Datacube
 from .query import GroupBy, Query, query_group_by
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from odc.geo.geobox import GeoBox

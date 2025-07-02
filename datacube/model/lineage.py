@@ -5,7 +5,7 @@
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, cast
+from typing import Any, Optional, TypeAlias, cast
 from uuid import UUID
 
 from typing_extensions import override
@@ -36,7 +36,7 @@ class LineageDirection(Enum):
             return "derivations"
 
 
-SerialisedTree = dict[str, str | dict[str, list["SerialisedTree"]]]
+SerialisedTree: TypeAlias = dict[str, str | dict[str, list["SerialisedTree"]]]
 
 
 @dataclass

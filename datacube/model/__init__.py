@@ -14,7 +14,7 @@ from collections import OrderedDict
 from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -1269,7 +1269,7 @@ def metadata_from_doc(doc: Mapping[str, Any]) -> MetadataType:
     return MetadataType(doc, get_dataset_fields(doc))
 
 
-ExtraDimensionSlices = dict[str, float | tuple[float, float]]
+ExtraDimensionSlices: TypeAlias = dict[str, float | tuple[float, float]]
 
 
 class ExtraDimensions:

@@ -10,7 +10,7 @@ import logging
 import uuid
 from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 from itertools import groupby
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 import deprecat
 import numpy
@@ -47,7 +47,7 @@ from .query import GroupBy, Query, query_group_by
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-DataFrameLike = list[dict[str, str | int | float | None]]
+DataFrameLike: TypeAlias = list[dict[str, str | int | float | None]]
 
 
 class TerminateCurrentLoad(Exception):  # noqa: N818
@@ -1043,7 +1043,7 @@ class Datacube:
         :param extra_dims:
             A ExtraDimensions describing any additional dimensions on top of (t, y, x)
 
-        :param Callable[[str], str], patch_url:
+        :param patch_url:
             if supplied, will be used to patch/sign the url(s), as required to access some commercial archives.
 
         :param driver:

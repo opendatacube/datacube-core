@@ -11,7 +11,7 @@ from .exceptions import ConfigException
 
 # A raw configuration dictionary. A dictionary of dictionaries
 ConfigDict: TypeAlias = dict[str, dict[str, Any]]
-SemaphoreCallback = Callable[[], None]
+SemaphoreCallback: TypeAlias = Callable[[], None]
 
 
 def check_valid_env_name(name: str) -> None:

@@ -64,7 +64,7 @@ def load_rules_from_types(
     return [ProductRule(p, p.metadata_doc) for p in products], None
 
 
-ProductMatcher = Callable[[Mapping[str, Any]], Product]
+ProductMatcher: TypeAlias = Callable[[Mapping[str, Any]], Product]
 
 
 def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:

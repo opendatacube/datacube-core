@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 from collections import namedtuple
+from typing import TypeAlias
 
 Range = namedtuple("Range", ("begin", "end"))
 
@@ -22,5 +23,5 @@ def ranges_overlap(ra: Range, rb: Range) -> bool:
 
 
 Not = namedtuple("Not", "value")
-QueryField = str | float | int | Range | datetime.datetime | Not
-QueryDict = dict[str, QueryField]
+QueryField: TypeAlias = str | float | int | Range | datetime.datetime | Not
+QueryDict: TypeAlias = dict[str, QueryField]

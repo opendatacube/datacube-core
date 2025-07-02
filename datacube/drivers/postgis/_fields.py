@@ -29,7 +29,9 @@ from datacube.model.fields import Expression, Field
 from datacube.utils import cached_property, get_doc_offset
 from datacube.utils.dates import tz_as_utc
 
-DatasetJoinArgs = tuple[FromClause] | tuple[FromClause, ColumnExpressionArgument]
+DatasetJoinArgs: TypeAlias = (
+    tuple[FromClause] | tuple[FromClause, ColumnExpressionArgument]
+)
 
 
 class PgField(Field):
