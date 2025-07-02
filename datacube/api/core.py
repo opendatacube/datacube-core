@@ -1321,7 +1321,7 @@ def _fuse_measurement(
 
 
 def get_bounds(datasets: Iterable[Dataset], crs: CRS) -> Geometry:
-    bbox = bbox_union(ds.extent.to_crs(crs).boundingbox for ds in datasets)
+    bbox = bbox_union(ds.extent.to_crs(crs).boundingbox for ds in datasets if ds.extent)
     return box(*bbox, crs=crs)  # type: ignore[misc]
 
 
