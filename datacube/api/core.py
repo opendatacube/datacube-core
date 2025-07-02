@@ -1248,7 +1248,6 @@ def select_datasets_inside_polygon(
 ) -> Iterable[Dataset]:
     # Check against the bounding box of the original scene, can throw away some portions
     # (Only needed for index drivers without spatial index support)
-    assert polygon is not None
     query_crs = polygon.crs
     for dataset in datasets:
         if dataset.extent and intersects(polygon, dataset.extent.to_crs(query_crs)):
