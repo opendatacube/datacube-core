@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: igsekor/pyspelling-any@v1.0.4
+      - uses: igsekor/pyspelling-any@v1.0.5
         name: Spellcheck
 
   doctor-rst:
