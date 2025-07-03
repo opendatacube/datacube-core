@@ -289,7 +289,7 @@ def get_doc_offset(offset: list[str | int], document: dict, default=None):
     return toolz.get_in(offset, document, default=default)
 
 
-def documents_equal(d1, d2):
+def documents_equal(d1: str | float | list | dict, d2) -> bool:
     if d1.__class__ != d2.__class__:
         return False
     if isinstance(d1, str):
@@ -403,7 +403,7 @@ class SimpleDocNav:
     dataset dictionary.
     """
 
-    def __init__(self, doc: Mapping, sources_path=None) -> None:
+    def __init__(self, doc: dict[str, Any], sources_path=None) -> None:
         if not isinstance(doc, collections.abc.Mapping):
             raise ValueError("")
 
@@ -413,10 +413,10 @@ class SimpleDocNav:
             sources_path if sources_path else ("lineage", "source_datasets")
         )
         self._sources = None
-        self._doc_uuid = None
+        self._doc_uuid: UUID | None = None
 
     @property
-    def doc(self):
+    def doc(self) -> dict[str, Any]:
         return self._doc
 
     @property

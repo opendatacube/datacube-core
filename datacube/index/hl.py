@@ -77,7 +77,7 @@ def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
         return changes.contains(doc, rule.signature)
 
     def single_product_matcher(rule):
-        def match(doc: Mapping[str, Any]) -> bool:
+        def matcher(doc: Mapping[str, Any]) -> Product:
             if matches(doc, rule):
                 return rule.product
 
@@ -87,7 +87,7 @@ def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
                 f"\nProduct signature:\n {json.dumps(rule.signature, indent=4)}\n"
             )
 
-        return match
+        return matcher
 
     if len(rules) == 1:
         return single_product_matcher(rules[0])
@@ -301,7 +301,7 @@ def resolve_legacy_lineage(
 
     def resolve_ds(
         ds: SimpleDocNav,
-        sources: Mapping[UUID, Dataset] | None,
+        sources: Mapping[str, Dataset] | None,
         cache: MutableMapping[UUID, Dataset],
     ) -> Dataset:
         cached = cache.get(ds.id)
@@ -466,7 +466,7 @@ class Doc2Dataset:
 
     def __call__(
         self,
-        doc_in: SimpleDocNav | Mapping[str, Any],
+        doc_in: SimpleDocNav | dict[str, Any],
         uri: str,
         source_tree: LineageTree | None = None,
     ) -> DatasetOrError:

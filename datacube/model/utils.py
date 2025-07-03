@@ -380,7 +380,7 @@ def flatten_datasets(
     return id_map
 
 
-def remap_lineage_doc(root: Mapping | SimpleDocNav, mk_node, **kwargs):
+def remap_lineage_doc(root: dict[str, Any] | SimpleDocNav, mk_node, **kwargs):
     def visit(ds):
         return mk_node(ds, {k: visit(v) for k, v in sorted_items(ds.sources)}, **kwargs)
 

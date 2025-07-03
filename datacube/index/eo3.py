@@ -5,7 +5,7 @@
 # TODO: typehints need attention
 """Tools for working with EO3 metadata"""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from functools import reduce
 from typing import Any, cast
 from uuid import UUID
@@ -165,7 +165,7 @@ def add_eo3_parts(
     return out
 
 
-def is_doc_eo3(doc: dict[str, Any]) -> bool:
+def is_doc_eo3(doc: Mapping[str, Any]) -> bool:
     """Is this document eo3?
 
     :param doc: Parsed ODC Dataset metadata document
@@ -192,7 +192,7 @@ def is_doc_eo3(doc: dict[str, Any]) -> bool:
     raise ValueError(f"Unsupported dataset schema: {schema!r}")
 
 
-def is_doc_geo(doc: dict[str, Any], check_eo3: bool = True) -> bool:
+def is_doc_geo(doc: Mapping[str, Any], check_eo3: bool = True) -> bool:
     """Is this document geospatial?
 
     :param doc: Parsed ODC Dataset metadata document
