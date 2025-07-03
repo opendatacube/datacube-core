@@ -661,7 +661,8 @@ class Datacube:
 
         .. seealso:: :meth:`group_datasets` :meth:`load_data` :meth:`find_datasets`
         """
-        _normalise_geobox(like)
+        if like is not None:
+            like = _normalise_geobox(like)
 
         query = Query(self.index, like=like, **kwargs)  # type: ignore[arg-type]
         if not query.product:
@@ -777,7 +778,7 @@ class Datacube:
         def empty_func(m: Measurement, shape: tuple[int, ...]) -> numpy.ndarray:
             return numpy.full(shape, m.nodata, dtype=m.dtype)
 
-        _normalise_geobox(geobox)
+        geobox = _normalise_geobox(geobox)
 
         crs_attrs = {}
         if geobox.crs is not None:
@@ -1060,7 +1061,7 @@ class Datacube:
             measurements, resampling=resampling, fuse_func=fuse_func
         )
 
-        _normalise_geobox(geobox)
+        geobox = _normalise_geobox(geobox)
 
         if driver is not None:
             from ..storage._loader import driver_based_load
