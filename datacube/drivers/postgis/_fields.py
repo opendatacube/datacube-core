@@ -302,8 +302,8 @@ class SimpleDocField(PgDocField):
     can_extract = True
 
     @override
-    def extract(self, document):
-        return self._extract_offset_value(document, self.offset, self.aggregation.calc)
+    def extract(self, doc):
+        return self._extract_offset_value(doc, self.offset, self.aggregation.calc)
 
     def evaluate(self, ctx):
         return self.extract(ctx)
@@ -508,9 +508,9 @@ class RangeDocField(PgDocField):
     can_extract = True
 
     @override
-    def extract(self, document) -> Range | None:
-        min_val = self.lower.extract(document)
-        max_val = self.greater.extract(document)
+    def extract(self, doc) -> Range | None:
+        min_val = self.lower.extract(doc)
+        max_val = self.greater.extract(doc)
         if not min_val and not max_val:
             return None
         return Range(min_val, max_val)

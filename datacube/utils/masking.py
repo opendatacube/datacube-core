@@ -8,7 +8,7 @@ Tools for masking data based on a bit-mask variable with attached definition.
 The main functions are `make_mask(variable)` `describe_flags(variable)`
 """
 
-import collections
+from collections.abc import Iterable
 
 import pandas
 import xarray
@@ -172,7 +172,7 @@ def create_mask_value(bits_def, **flags) -> tuple[int, int]:
                 f"Unknown value {flag_ref} specified for flag {flag_name}"
             ) from None
 
-        if isinstance(defn["bits"], collections.abc.Iterable):  # Multi-bit flag
+        if isinstance(defn["bits"], Iterable):  # Multi-bit flag
             # Set mask
             for bit in defn["bits"]:
                 mask = set_value_at_index(mask, bit, True)

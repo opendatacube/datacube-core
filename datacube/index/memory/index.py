@@ -116,11 +116,11 @@ class Index(AbstractIndex):
     @override
     def from_config(
         cls,
-        config_env: ODCEnvironment,
+        cfg_env: ODCEnvironment,
         application_name: str | None = None,
         validate_connection: bool = True,
     ) -> "Index":
-        return cls(config_env)
+        return cls(cfg_env)
 
     @classmethod
     @override

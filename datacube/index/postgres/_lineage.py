@@ -28,13 +28,13 @@ class LineageResource(NoLineageResource, IndexResourceAddIn):
                 )
 
     @override
-    def _add_batch(self, batch: Iterable[LineageRelation]) -> BatchStatus:
+    def _add_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
         b_started = monotonic()
         with self._db_connection(transaction=True) as connection:
             b_added, b_skipped = connection.insert_lineage_bulk(
                 [
                     (str(rel.derived_id), rel.classifier, str(rel.source_id))
-                    for rel in batch
+                    for rel in batch_rels
                 ]
             )
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)

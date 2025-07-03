@@ -5,13 +5,14 @@
 
 import datetime
 from collections.abc import Iterable, Sequence
+from typing import Any
 
 from deprecat import deprecat
 from typing_extensions import override
 
 from datacube.index.abstract import DSID, AbstractDatasetResource
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Dataset, Product, QueryField
+from datacube.model import Dataset, Product, QueryDict, QueryField
 
 
 class DatasetResource(AbstractDatasetResource):
@@ -179,10 +180,11 @@ class DatasetResource(AbstractDatasetResource):
     def search(
         self,
         limit: int | None = None,
+        source_filter: QueryDict | None = None,
         archived: bool | None = False,
-        order_by=None,
-        **query,
-    ) -> list:
+        order_by: Iterable[Any] | None = None,
+        **query: QueryField,
+    ) -> Iterable[Dataset]:
         return []
 
     @override
