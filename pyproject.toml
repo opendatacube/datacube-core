@@ -71,9 +71,12 @@ distributed = ['distributed', 'dask[distributed]']
 s3 = ['boto3', 'botocore']
 netcdf = ['netcdf4']
 postgres = ['psycopg2']
+loader = ['odc-loader']
 
 [dependency-groups]
 dev = [
+    # Extra packages
+    'odc-loader',
     # Test requirements
     'hypothesis',
     'moto>=5.0',

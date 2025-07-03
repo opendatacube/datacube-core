@@ -758,6 +758,9 @@ distributed = [
     { name = "dask", extra = ["distributed"] },
     { name = "distributed" },
 ]
+loader = [
+    { name = "odc-loader" },
+]
 netcdf = [
     { name = "netcdf4" },
 ]
@@ -781,6 +784,7 @@ dev = [
     { name = "moto" },
     { name = "mypy" },
     { name = "netcdf4" },
+    { name = "odc-loader" },
     { name = "pandas-stubs" },
     { name = "psycopg2" },
     { name = "pylint" },
@@ -835,6 +839,7 @@ requires-dist = [
     { name = "netcdf4", marker = "extra == 'netcdf'" },
     { name = "numpy", specifier = ">=1.26.0" },
     { name = "odc-geo", specifier = ">=0.4.8" },
+    { name = "odc-loader", marker = "extra == 'loader'" },
     { name = "packaging" },
     { name = "pandas" },
     { name = "psycopg2", marker = "extra == 'postgres'" },
@@ -848,7 +853,7 @@ requires-dist = [
     { name = "toolz" },
     { name = "xarray", specifier = ">=0.9" },
 ]
-provides-extras = ["performance", "distributed", "s3", "netcdf", "postgres"]
+provides-extras = ["performance", "distributed", "s3", "netcdf", "postgres", "loader"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -858,6 +863,7 @@ dev = [
     { name = "moto", specifier = ">=5.0" },
     { name = "mypy" },
     { name = "netcdf4" },
+    { name = "odc-loader" },
     { name = "pandas-stubs" },
     { name = "psycopg2" },
     { name = "pylint" },
@@ -1841,6 +1847,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/53/f6/f22d9728ed1652f092bdb8e0f04cf68f7212d273ad118225a252fc8cbfb4/odc_geo-0.4.10.tar.gz", hash = "sha256:5670a797c4243e9379b20905ea37ff23ad287e7fa37c672dc53546923daf6d52", size = 192809, upload-time = "2025-03-03T04:12:24.077Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/99/e2/311fb383d9534eef7bfbe858fad931b6e3dbe85843c50592f50063c3bc83/odc_geo-0.4.10-py3-none-any.whl", hash = "sha256:ab5f26f56883a11286a9583c04d30190e35a2702e8aa72fa3b4b438bea851b19", size = 155067, upload-time = "2025-03-03T04:12:22.114Z" },
+]
+
+[[package]]
+name = "odc-loader"
+version = "0.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dask", extra = ["array"] },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "odc-geo" },
+    { name = "rasterio" },
+    { name = "xarray" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/99/c6/fd9dbf40aaf94bf3c9712a9ffdd0a791599764c3e4b80b5917aaf6280ec8/odc_loader-0.5.1.tar.gz", hash = "sha256:bf3adf53b10248bbab3bb1fcb043995c12e204dbde4f9a751cd3331b1c6a1212", size = 41616, upload-time = "2025-04-03T00:14:03.126Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/04/48/d45d414b8228325051b0a09f68322ef26717eb9b6517579ae395adf2fbfc/odc_loader-0.5.1-py3-none-any.whl", hash = "sha256:fbe505e2f0e8ac4db2542935bdf5f706e6147817d818073a8a98d3226bd6470f", size = 50717, upload-time = "2025-04-03T00:14:01.687Z" },
 ]
 
 [[package]]

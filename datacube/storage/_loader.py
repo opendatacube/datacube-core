@@ -51,7 +51,7 @@ def _extract_coords(extra_dims: ExtraDimensions) -> list[FixedCoord]:
             values=d["values"],
             dtype=str(d.get("dtype", "float32")),
             dim=k,
-            units=d.get("units", None),
+            units=d.get("units", "1"),
         )
         for k, d in coords.items()
     ]
