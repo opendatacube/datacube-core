@@ -1240,7 +1240,9 @@ def output_geobox(
     return GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
 
 
-def _normalise_geobox(gbox):
+def _normalise_geobox(
+    gbox: GeoBox | LegacyGeoGeoBox | xarray.Dataset | xarray.DataArray,
+) -> GeoBox:
     """Retain support for legacy geoboxes by converting them to odc.geo GeoBoxes."""
     if isinstance(gbox, GeoBox):
         # Is already a GeoBox
