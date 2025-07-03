@@ -153,7 +153,19 @@ class Query:
             assert self.geopolygon is None, (
                 "'like' with other spatial bounding parameters is not supported"
             )
-            self.geopolygon = getattr(like, "extent", self.geopolygon)
+            if not isinstance(like, GeoBox):
+                if isinstance(like, xarray.Dataset | xarray.DataArray):
+                    like = like.odc.geobox
+                else:
+                    # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
+                    _LOG.warning(
+                        "The use of datacube.utils.geometry.GeoBox objects is deprecated, "
+                        "and support will be removed in a future release.\n"
+                        "Now converting to an odc.geo GeoBox."
+                    )
+                    crs = None if like.crs is None else like.crs._str
+                    like = GeoBox(shape=like.shape, affine=like.affine, crs=crs)
+            self.geopolygon = like.extent
 
             if "time" not in self.search:
                 time_coord = like.coords.get("time")  # type: ignore[union-attr]

@@ -661,6 +661,8 @@ class Datacube:
 
         .. seealso:: :meth:`group_datasets` :meth:`load_data` :meth:`find_datasets`
         """
+        _normalise_geobox(like)
+
         query = Query(self.index, like=like, **kwargs)  # type: ignore[arg-type]
         if not query.product:
             raise ValueError("must specify a product")
@@ -735,7 +737,7 @@ class Datacube:
     @staticmethod
     def create_storage(
         coords: Mapping[str, xarray.DataArray],
-        geobox: GeoBox,
+        geobox: GeoBox | xarray.Dataset | xarray.DataArray,
         measurements: list[Measurement],
         data_func: (
             Callable[[Measurement, tuple[int, ...]], numpy.ndarray] | None
@@ -774,6 +776,8 @@ class Datacube:
 
         def empty_func(m: Measurement, shape: tuple[int, ...]) -> numpy.ndarray:
             return numpy.full(shape, m.nodata, dtype=m.dtype)
+
+        _normalise_geobox(geobox)
 
         crs_attrs = {}
         if geobox.crs is not None:
@@ -987,7 +991,7 @@ class Datacube:
     @staticmethod
     def load_data(
         sources: xarray.DataArray,
-        geobox: GeoBox,
+        geobox: GeoBox | xarray.Dataset | xarray.DataArray,
         measurements: Mapping[str, Measurement] | list[Measurement],
         resampling: Resampling | dict[str, Resampling] | None = None,
         fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None,
@@ -1055,6 +1059,9 @@ class Datacube:
         measurements = per_band_load_data_settings(
             measurements, resampling=resampling, fuse_func=fuse_func
         )
+
+        _normalise_geobox(geobox)
+
         if driver is not None:
             from ..storage._loader import driver_based_load
 
@@ -1168,17 +1175,7 @@ def output_geobox(
         assert output_crs is None, "'like' and 'output_crs' are not supported together"
         assert resolution is None, "'like' and 'resolution' are not supported together"
         assert align is None, "'like' and 'align' are not supported together"
-        if isinstance(like, GeoBox):
-            # Is already a GeoBox
-            return like
-        from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox
-
-        if isinstance(like, LegacyGeoGeoBox):
-            # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
-            crs = None if like.crs is None else CRS(like.crs._str)
-            return GeoBox(shape=(like.height, like.width), affine=like.affine, crs=crs)
-        # Is an Xarray object
-        return like.odc.geobox
+        return _normalise_geobox(like)
 
     if load_hints:
         if output_crs is None:
@@ -1241,6 +1238,26 @@ def output_geobox(
         align = yx_(align)
 
     return GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
+
+
+def _normalise_geobox(gbox):
+    """Retain support for legacy geoboxes by converting them to odc.geo GeoBoxes."""
+    if isinstance(gbox, GeoBox):
+        # Is already a GeoBox
+        return gbox
+
+    if isinstance(gbox, xarray.Dataset | xarray.DataArray):
+        # Is an Xarray object
+        return gbox.odc.geobox
+
+    # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
+    _LOG.warning(
+        "The use of datacube.utils.geometry.GeoBox objects is deprecated, "
+        "and support will be removed in a future release.\n"
+        "Now converting to an odc.geo GeoBox."
+    )
+    crs = None if gbox.crs is None else gbox.crs._str
+    return GeoBox(shape=gbox.shape, affine=gbox.affine, crs=crs)
 
 
 def select_datasets_inside_polygon(
