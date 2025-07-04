@@ -26,6 +26,7 @@ from typing_extensions import override
 from datacube.index import Index
 
 from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
+from ..migration import ODC2DeprecationWarning
 from ..model import Dataset, QueryField, Range
 from ..utils.dates import normalise_dt, tz_aware
 
@@ -410,10 +411,11 @@ def _normalise_geobox(
         return gbox.odc.geobox
 
     # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
-    _LOG.warning(
+    warnings.warn(
         "The use of datacube.utils.geometry.GeoBox objects is deprecated, "
         "and support will be removed in a future release.\n"
-        "Now converting to an odc.geo GeoBox."
+        "Now converting to an odc.geo GeoBox.",
+        ODC2DeprecationWarning,
     )
     crs = None if gbox.crs is None else gbox.crs._str
     return GeoBox(shape=gbox.shape, affine=gbox.affine, crs=crs)
