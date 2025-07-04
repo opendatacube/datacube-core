@@ -1,6 +1,6 @@
-============================
+****************************
 Accessing data with odc-stac
-============================
+****************************
 
 .. note::
    This tutorial is under development
@@ -41,6 +41,7 @@ The tutorial environment may take a few minutes to start.
  :align: center
 
 | Once launched, you should see INSERTIMAGE.
+
 The tutorial notebook has headers that match up with the tutorial instructions below.
 
 .. note::
@@ -83,7 +84,15 @@ Area of interest
 ^^^^^^^^^^^^^^^^
 
 We specify the area of interest using the :code:`aoi.geojson` file, which can be loaded with :code:`geopandas`.
-Type the following into the empty cell below the **Area of interest** heading:
+
+The area of interest is the southern part of Isla Isabela, one of the islands in the Galapagos.
+
+.. image:: ../_static/tutorial-images/odc-stac/aoi.png
+ :width: 600
+ :alt: A satellite image of Isla Isabela, with the area of interest shown as a yellow bounding box.
+ :align: center
+
+| Type the following into the empty cell below the **Area of interest** heading:
 
 .. code-block:: python
 
@@ -116,7 +125,7 @@ STAC metadata has four important components:
 * **Catalog**: A structure for organising multiple datasets managed by a given provider. For example, `Planetary Computer's Catalog <pc-stac_>`_
 * **Collection**: A structure for organising all items in a single dataset. For example, `Land Use Land Cover Collection <pc-lulc_>`_
 * **Item** A single spatio-temporal item, such as one observation in a dataset. For example, `Land Use Land Cover Data for Supercell 15M in 2013 <pc-item_>`_
-* **Asset** A single data measurement associated with an item, such as a single band.
+* **Asset** A single data measurement associated with an item, such as a single band. The Land Use Land Cover Dataset has only one asset, called "data".
 
 We must specify the catalog and collection we wish to search, and which assets we want to load. 
 The precise items that we need to load will be returned by a query that we run later.
@@ -139,15 +148,44 @@ Type the following into the empty cell below the **Connect to catalog and find i
 
 .. code-block:: python
 
-   stac_client = Client.open(catalog)
+   stac_client = Client.open(catalog_query)
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
 
 Search for items
 ^^^^^^^^^^^^^^^^
 
+After setting up the :code:`Client`, we use the :code:`search` method to find items that match our chosen collection, area of interest, and date range.
+Type the following into the empty cell below the **Search for items** heading:
+
+.. code-block:: python
+
+   items = stac_client.search(
+       collections=collections_query,
+       intersects=aoi_geometry,
+       datetime=date_query,
+   ).item_collection()
+
+   print(f"Found {len(items)} items")
+
+After running the cell, you should see a printed sentence reporting "Found 17 items"
+
+Troubleshooting
+"""""""""""""""
+
+If the sentence shows a different number of items, try checking whether your :code:`date_query` parameter is correct by printing it:
+
+.. code-block:: python
+
+   print(date_query)
+
+should return :code:`('2017-01-01', '2023-01-01')`.
+If you see a different date range, return to the **Set up query parameters - Date range** section and ensure your :code:`start_date` and :code:`end_date` values match those given in the instructions.
+
 Load items with odc-stac
 ------------------------
+
+After producing a list of items to load, we can use the :code:`load` function from :code:`odc-stac` to read the requested assets from the items and return them as xarrays.
 
 Visualise loaded data
 ---------------------
