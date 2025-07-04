@@ -42,7 +42,7 @@ from ..index import Index, extract_geom_from_query, index_connect
 from ..migration import ODC2DeprecationWarning
 from ..model import QueryField
 from ..storage._load import FuserFunction, ProgressFunction
-from .query import GroupBy, Query, query_group_by
+from .query import GroupBy, Query, _normalise_geobox, query_group_by
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -1239,28 +1239,6 @@ def output_geobox(
         align = yx_(align)
 
     return GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
-
-
-def _normalise_geobox(
-    gbox: GeoBox | LegacyGeoGeoBox | xarray.Dataset | xarray.DataArray,
-) -> GeoBox:
-    """Retain support for legacy geoboxes by converting them to odc.geo GeoBoxes."""
-    if isinstance(gbox, GeoBox):
-        # Is already a GeoBox
-        return gbox
-
-    if isinstance(gbox, xarray.Dataset | xarray.DataArray):
-        # Is an Xarray object
-        return gbox.odc.geobox
-
-    # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
-    _LOG.warning(
-        "The use of datacube.utils.geometry.GeoBox objects is deprecated, "
-        "and support will be removed in a future release.\n"
-        "Now converting to an odc.geo GeoBox."
-    )
-    crs = None if gbox.crs is None else gbox.crs._str
-    return GeoBox(shape=gbox.shape, affine=gbox.affine, crs=crs)
 
 
 def select_datasets_inside_polygon(

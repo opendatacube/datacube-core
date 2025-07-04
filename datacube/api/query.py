@@ -12,6 +12,7 @@ import logging
 import math
 import warnings
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas
@@ -27,6 +28,9 @@ from datacube.index import Index
 from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
 from ..model import Dataset, QueryField, Range
 from ..utils.dates import normalise_dt, tz_aware
+
+if TYPE_CHECKING:
+    from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -153,18 +157,7 @@ class Query:
             assert self.geopolygon is None, (
                 "'like' with other spatial bounding parameters is not supported"
             )
-            if not isinstance(like, GeoBox):
-                if isinstance(like, xarray.Dataset | xarray.DataArray):
-                    like = like.odc.geobox
-                else:
-                    # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
-                    _LOG.warning(
-                        "The use of datacube.utils.geometry.GeoBox objects is deprecated, "
-                        "and support will be removed in a future release.\n"
-                        "Now converting to an odc.geo GeoBox."
-                    )
-                    crs = None if like.crs is None else like.crs._str
-                    like = GeoBox(shape=like.shape, affine=like.affine, crs=crs)
+            like = _normalise_geobox(like)
             self.geopolygon = like.extent
 
             if "time" not in self.search:
@@ -402,3 +395,25 @@ def solar_offset(geom: Geometry | Dataset, precision: str = "h") -> datetime.tim
 
     # 240 == (24*60*60)/360 (seconds of a day per degree of longitude)
     return datetime.timedelta(seconds=int(lon * 240))
+
+
+def _normalise_geobox(
+    gbox: GeoBox | LegacyGeoGeoBox | xarray.Dataset | xarray.DataArray,
+) -> GeoBox:
+    """Retain support for legacy geoboxes by converting them to odc.geo GeoBoxes."""
+    if isinstance(gbox, GeoBox):
+        # Is already a GeoBox
+        return gbox
+
+    if isinstance(gbox, xarray.Dataset | xarray.DataArray):
+        # Is an Xarray object
+        return gbox.odc.geobox
+
+    # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
+    _LOG.warning(
+        "The use of datacube.utils.geometry.GeoBox objects is deprecated, "
+        "and support will be removed in a future release.\n"
+        "Now converting to an odc.geo GeoBox."
+    )
+    crs = None if gbox.crs is None else gbox.crs._str
+    return GeoBox(shape=gbox.shape, affine=gbox.affine, crs=crs)
