@@ -36,7 +36,7 @@ dependencies:
   - ruamel.yaml
   - sqlalchemy >=2.0
   - alembic
-  - GeoAlchemy2
+  - GeoAlchemy2 >= 0.17.0
   - xarray >=0.9
   - toolz
   - odc-geo

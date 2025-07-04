@@ -833,7 +833,7 @@ requires-dist = [
     { name = "deprecat" },
     { name = "distributed" },
     { name = "distributed", marker = "extra == 'distributed'" },
-    { name = "geoalchemy2" },
+    { name = "geoalchemy2", specifier = ">=0.17.0" },
     { name = "jsonschema", specifier = ">=4.18" },
     { name = "lark" },
     { name = "netcdf4", marker = "extra == 'netcdf'" },
