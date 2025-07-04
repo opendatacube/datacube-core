@@ -12,7 +12,7 @@ import logging
 import math
 import warnings
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 import pandas
@@ -31,7 +31,7 @@ from ..model import Dataset, QueryField, Range
 from ..utils.dates import normalise_dt, tz_aware
 
 if TYPE_CHECKING:
-    from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox
+    from datacube.utils.geometry import GeoBox as LegacyGeoBox
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -399,7 +399,7 @@ def solar_offset(geom: Geometry | Dataset, precision: str = "h") -> datetime.tim
 
 
 def _normalise_geobox(
-    gbox: GeoBox | LegacyGeoGeoBox | xarray.Dataset | xarray.DataArray,
+    gbox: Union[GeoBox, "LegacyGeoBox", xarray.Dataset, xarray.DataArray],
 ) -> GeoBox:
     """Retain support for legacy geoboxes by converting them to odc.geo GeoBoxes."""
     if isinstance(gbox, GeoBox):

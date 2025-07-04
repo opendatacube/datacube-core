@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from pandas import DataFrame
 
     from datacube.model import GridSpec
-    from datacube.utils.geometry import GeoBox as LegacyGeoGeoBox
+    from datacube.utils.geometry import GeoBox as LegacyGeoBox
 
 from ..drivers import new_datasource
 from ..index import Index, extract_geom_from_query, index_connect
@@ -1158,7 +1158,7 @@ def per_band_load_data_settings(
 
 
 def output_geobox(
-    like: GeoBox | LegacyGeoGeoBox | xarray.Dataset | xarray.DataArray | None = None,
+    like: GeoBox | LegacyGeoBox | xarray.Dataset | xarray.DataArray | None = None,
     output_crs: Any = None,
     resolution: (
         int | float | tuple[int | float, int | float] | Resolution | None
