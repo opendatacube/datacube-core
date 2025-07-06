@@ -137,6 +137,7 @@ class PostGisDb:
                 # getting errors.
                 pool_recycle=pool_timeout,
                 connect_args={"application_name": application_name},
+                plugins=["geoalchemy2"],
             )
         except ModuleNotFoundError:
             raise IndexSetupError(
