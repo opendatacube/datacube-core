@@ -12,6 +12,7 @@ import logging
 import math
 import warnings
 from collections.abc import Iterable
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 import pandas
@@ -25,8 +26,12 @@ from typing_extensions import override
 from datacube.index import Index
 
 from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
+from ..migration import ODC2DeprecationWarning
 from ..model import Dataset, QueryField, Range
 from ..utils.dates import normalise_dt, tz_aware
+
+if TYPE_CHECKING:
+    from datacube.utils.geometry import GeoBox as LegacyGeoBox
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -153,10 +158,11 @@ class Query:
             assert self.geopolygon is None, (
                 "'like' with other spatial bounding parameters is not supported"
             )
-            self.geopolygon = getattr(like, "extent", self.geopolygon)
+            like = _normalise_geobox(like)
+            self.geopolygon = like.extent
 
             if "time" not in self.search:
-                time_coord = like.coords.get("time")  # type: ignore[union-attr]
+                time_coord = like.coords.get("time")  # type: ignore[attr-defined]
                 if time_coord is not None:
                     self.search["time"] = _time_to_search_dims(
                         # convert from np.datetime64 to datetime.datetime
@@ -390,3 +396,26 @@ def solar_offset(geom: Geometry | Dataset, precision: str = "h") -> datetime.tim
 
     # 240 == (24*60*60)/360 (seconds of a day per degree of longitude)
     return datetime.timedelta(seconds=int(lon * 240))
+
+
+def _normalise_geobox(
+    gbox: Union[GeoBox, "LegacyGeoBox", xarray.Dataset, xarray.DataArray],
+) -> GeoBox:
+    """Retain support for legacy geoboxes by converting them to odc.geo GeoBoxes."""
+    if isinstance(gbox, GeoBox):
+        # Is already a GeoBox
+        return gbox
+
+    if isinstance(gbox, xarray.Dataset | xarray.DataArray):
+        # Is an Xarray object
+        return gbox.odc.geobox
+
+    # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
+    warnings.warn(
+        "The use of datacube.utils.geometry.GeoBox objects is deprecated, "
+        "and support will be removed in a future release.\n"
+        "Now converting to an odc.geo GeoBox.",
+        ODC2DeprecationWarning,
+    )
+    crs = None if gbox.crs is None else gbox.crs._str
+    return GeoBox(shape=gbox.shape, affine=gbox.affine, crs=crs)
