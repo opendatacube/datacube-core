@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 """
 Datacube metadata generation from STAC.
-
-This only imports if datacube is installed.
 """
 
 from ._eo3converter import infer_dc_product, stac2ds

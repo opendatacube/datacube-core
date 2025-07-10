@@ -18,10 +18,7 @@ import pystac.item
 
 from datacube.index.eo3 import prep_eo3
 
-try:
-    from datacube.index.index import default_metadata_type_docs
-except ImportError:
-    from datacube.index.abstract import default_metadata_type_docs
+from datacube.index.abstract import default_metadata_type_docs
 
 from odc.geo import CRS
 from odc.geo.geobox import GeoBox
