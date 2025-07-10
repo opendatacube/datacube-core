@@ -6,11 +6,10 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import odc.loader
 
 from datacube import Datacube
 from datacube.testutils import gen_tiff_dataset, mk_test_image
-
-odc_loader = pytest.importorskip("odc.loader")
 
 
 def test_with_driver(tmpdir) -> None:
