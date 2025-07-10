@@ -38,5 +38,7 @@ dependencies:
   - GeoAlchemy2 >= 0.17.0
   - xarray >=0.9
   - toolz
+  - odc-geo >=0.4.8
+  - odc-loader <=0.5.1
   - odc-stac >= 0.4.0
   - minizip ==4.0.6

@@ -38,6 +38,9 @@ dependencies = [
     'jsonschema>=4.18',  # New reference resolution API
     'lark',
     'numpy>=1.26.0',
+    'odc-geo>=0.4.8',
+    'odc-loader<=0.5.1',  # Raster metadata API changes in 0.6.0
+    'odc-stac>=0.4.0',
     'packaging',
     'pandas',
     'pyproj>=2.5',
@@ -49,9 +52,6 @@ dependencies = [
     'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.
     'toolz',
     'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
-    'odc-geo>=0.4.8',
-    'odc-loader',
-    'odc-stac>=0.4.0',
 ]
 
 [build-system]

@@ -837,7 +837,7 @@ requires-dist = [
     { name = "netcdf4", marker = "extra == 'netcdf'" },
     { name = "numpy", specifier = ">=1.26.0" },
     { name = "odc-geo", specifier = ">=0.4.8" },
-    { name = "odc-loader" },
+    { name = "odc-loader", specifier = "<=0.5.1" },
     { name = "odc-stac", specifier = ">=0.4.0" },
     { name = "packaging" },
     { name = "pandas" },
