@@ -6,6 +6,7 @@ affine==2.4.0
     # via
     #   datacube (pyproject.toml)
     #   odc-geo
+    #   odc-stac
     #   rasterio
 alabaster==1.0.0
     # via sphinx
@@ -88,6 +89,8 @@ dask==2025.5.1
     # via
     #   datacube (pyproject.toml)
     #   distributed
+    #   odc-loader
+    #   odc-stac
 decorator==5.2.1
     # via ipython
 defusedxml==0.7.1
@@ -213,11 +216,20 @@ numpy==2.3.1
     #   antimeridian
     #   dask
     #   odc-geo
+    #   odc-loader
+    #   odc-stac
     #   pandas
     #   rasterio
     #   shapely
     #   xarray
 odc-geo==0.4.10
+    # via
+    #   datacube (pyproject.toml)
+    #   odc-loader
+    #   odc-stac
+odc-loader==0.5.1
+    # via odc-stac
+odc-stac==0.4.0
     # via datacube (pyproject.toml)
 packaging==25.0
     # via
@@ -231,6 +243,7 @@ packaging==25.0
 pandas==2.3.0
     # via
     #   datacube (pyproject.toml)
+    #   odc-stac
     #   xarray
 pandocfilters==1.5.1
     # via nbconvert
@@ -270,12 +283,15 @@ pyproj==3.7.1
     # via
     #   datacube (pyproject.toml)
     #   odc-geo
+pystac==1.13.0
+    # via odc-stac
 python-dateutil==2.9.0.post0
     # via
     #   datacube (pyproject.toml)
     #   botocore
     #   jupyter-client
     #   pandas
+    #   pystac
 pytz==2025.2
     # via pandas
 pyyaml==6.0.2
@@ -286,7 +302,10 @@ pyyaml==6.0.2
 pyzmq==27.0.0
     # via jupyter-client
 rasterio==1.4.3
-    # via datacube (pyproject.toml)
+    # via
+    #   datacube (pyproject.toml)
+    #   odc-loader
+    #   odc-stac
 recommonmark==0.7.1
     # via datacube (pyproject.toml:doc)
 referencing==0.36.2
@@ -384,6 +403,7 @@ toolz==1.0.0
     #   datacube (pyproject.toml)
     #   dask
     #   distributed
+    #   odc-stac
     #   partd
 tornado==6.5.1
     # via
@@ -404,6 +424,7 @@ typing-extensions==4.14.0
     #   alembic
     #   beautifulsoup4
     #   domdf-python-tools
+    #   odc-stac
     #   pydata-sphinx-theme
     #   referencing
     #   sphinx-toolbox
@@ -426,6 +447,9 @@ webencodings==0.5.1
 wrapt==1.17.2
     # via deprecat
 xarray==2025.6.1
-    # via datacube (pyproject.toml)
+    # via
+    #   datacube (pyproject.toml)
+    #   odc-loader
+    #   odc-stac
 zict==3.0.0
     # via distributed

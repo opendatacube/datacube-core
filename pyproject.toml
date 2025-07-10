@@ -50,7 +50,7 @@ dependencies = [
     'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.
     'toolz',
     'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
-    'odc-stac'
+    'odc-stac>=0.4.0'      # brings in odc-geo and odc-loader
 ]
 
 [build-system]

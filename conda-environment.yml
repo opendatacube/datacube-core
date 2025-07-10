@@ -27,7 +27,6 @@ dependencies:
   - lark
   - netcdf4
   - numpy
-  - odc-geo
   - pandas
   - psycopg2
   - python-dateutil
@@ -39,5 +38,5 @@ dependencies:
   - GeoAlchemy2 >= 0.17.0
   - xarray >=0.9
   - toolz
-  - odc-stac
+  - odc-stac >= 0.4.0
   - minizip ==4.0.6
