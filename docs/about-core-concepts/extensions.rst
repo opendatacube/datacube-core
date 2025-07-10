@@ -35,8 +35,7 @@ Datacube
 database, and loading of data into xarray objects.  Also supports administrative collection-management
 activities.
 
-(Depends on `odc-geo`_.  Supports extended loading
-features using `odc-loader`_, but also has its own legacy loading engine)
+(Depends on `odc-geo`_  and `odc-loader`_, but also has its own legacy loading engine)
 
 Publication Services
 --------------------
