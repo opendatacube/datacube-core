@@ -15,13 +15,13 @@ import pystac.item
 import pytest
 from odc.geo.geom import Geometry
 from odc.stac._mdtools import RasterCollectionMetadata, has_proj_ext, has_raster_ext
-from odc.stac.eo3 import infer_dc_product, stac2ds
-from odc.stac.eo3._eo3converter import _compute_uuid, _item_to_ds
 from pystac.extensions.eo import EOExtension
 from pystac.extensions.item_assets import ItemAssetsExtension
 from pystac.extensions.projection import ProjectionExtension
 from toolz import dicttoolz
 
+from datacube.metadata import infer_dc_product, stac2ds
+from datacube.metadata._eo3converter import _compute_uuid, _item_to_ds
 from datacube.testutils.io import native_geobox
 
 from .common import NO_WARN_CFG, STAC_CFG, mk_stac_item
@@ -33,6 +33,7 @@ def test_infer_product_collection(
 ) -> None:
     assert has_raster_ext(sentinel_stac_collection) is True
     product = infer_dc_product(sentinel_stac_collection)
+    assert product.stac is not None
     assert product.measurements["SCL"].dtype == "uint8"
     assert product.measurements["SCL"].get("band") is None
     # check aliases from eo extension
@@ -41,7 +42,7 @@ def test_infer_product_collection(
     assert product.canonical_measurement("blue") == "B02"
 
     # check band2grid
-    md: RasterCollectionMetadata = product._md  # type: ignore
+    md: RasterCollectionMetadata = product.stac
     b2g = md.band2grid
     assert b2g["B02"] == "default"
     assert b2g["B01"] == "g60"
@@ -91,7 +92,9 @@ def test_infer_product_item(sentinel_stac_ms: pystac.item.Item) -> None:
     assert product.canonical_measurement("rededge2") == "B06"
     assert product.canonical_measurement("rededge3") == "B07"
 
-    assert set(product._md.band2grid) == set(product.measurements)  # type: ignore
+    assert product.stac is not None and set(product.stac.band2grid) == set(
+        product.measurements
+    )
 
     _stac = dicttoolz.dissoc(sentinel_stac_ms.to_dict(), "collection")
     item_no_collection = pystac.item.Item.from_dict(_stac)
@@ -117,9 +120,10 @@ def test_infer_product_raster_ext(
     assert product.canonical_measurement("red") == "B04"
     assert product.canonical_measurement("green") == "B03"
     assert product.canonical_measurement("blue") == "B02"
-    assert set(product._md.band2grid) | {"visual_2", "visual_3"} == set(
-        product.measurements
-    )
+    assert product.stac is not None and set(product.stac.band2grid) | {
+        "visual_2",
+        "visual_3",
+    } == set(product.measurements)
 
 
 def test_item_to_ds(sentinel_stac_ms: pystac.item.Item) -> None:
@@ -238,9 +242,9 @@ def test_noassets_case(no_bands_stac: Any) -> None:
 def test_product_cache(sentinel_stac_ms: pystac.item.Item) -> None:
     item = sentinel_stac_ms
     # simulate a product that was not created via infer_dc_product
-    # (and therefore did not have the _md attr set)
+    # (and therefore did not have the stac attr set)
     product = infer_dc_product(item, STAC_CFG)
-    delattr(product, "_md")
+    product._stac = None
     # make sure it doesn't error when product_cache is provided
     (ds,) = stac2ds([item], STAC_CFG, {product.name: product})
     assert ds.id
