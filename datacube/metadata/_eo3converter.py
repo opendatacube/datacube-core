@@ -99,7 +99,7 @@ def _to_product(md: RasterCollectionMetadata) -> Product:
             for band_key, band in md.meta.bands.items()   # TODO: use .raster_bands() after loader 0.6.0
         ],
     }
-    return Product(_eo3, doc)
+    return Product(_eo3, doc, stac=md)
 
 
 @singledispatch
@@ -122,7 +122,6 @@ def infer_dc_product_from_item(
     """
     md = extract_collection_metadata(item, cfg)
     product = _to_product(md)
-    product._md = md  # type: ignore[attr-defined]  # pylint: disable=protected-access
     return product
 
 
@@ -247,7 +246,7 @@ def _item_to_ds(
     if cfg is None:
         cfg = {}
 
-    md: RasterCollectionMetadata | None = getattr(product, "_md", None)
+    md = product.stac
     uuid_cfg = cfg.get("uuid", {})
     ds_uuid = _compute_uuid(
         item, mode=uuid_cfg.get("mode", "auto"), extras=uuid_cfg.get("extras", [])

@@ -65,6 +65,7 @@ from odc.geo import CRS, BoundingBox, Geometry, res_, resyx_, wh_, yx_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
 from odc.geo.gridspec import GridSpec as GeoGridSpec
+from odc.stac.model import RasterCollectionMetadata
 
 from datacube.migration import ODC2DeprecationWarning
 
@@ -669,6 +670,7 @@ class Product:
         metadata_type: MetadataType,
         definition: Mapping[str, Any],
         id_: int | None = None,
+        stac: RasterCollectionMetadata | None = None
     ) -> None:
         self.id = id_
         self.metadata_type = metadata_type
@@ -678,6 +680,9 @@ class Product:
         self._canonical_measurements: Mapping[str, Measurement] | None = None
         self._all_measurements: dict[str, Measurement] | None = None
         self._load_hints: dict[str, Any] | None = None
+
+        # Used for mapping between STAC Collections and Products.
+        self._stac = stac
 
     def _resolve_aliases(self) -> dict[str, Measurement]:
         if self._all_measurements is not None:
@@ -696,6 +701,10 @@ class Product:
 
         self._all_measurements = oo
         return self._all_measurements
+
+    @property
+    def stac(self) -> RasterCollectionMetadata | None:
+        return self._stac
 
     @property
     def name(self) -> str:
