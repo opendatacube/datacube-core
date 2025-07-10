@@ -1,0 +1,210 @@
+{
+  "stac_version": "1.0.0",
+  "type": "Feature",
+  "id": "3af1acae-0255-4762-b2b2-f26034cf3ce8",
+  "properties": {
+    "title": "LS_FC_PC_3577_-14_-26_20190101",
+    "platform": "landsat-5,landsat-7,landsat-8",
+    "instruments": [
+      "tm,etm+,oli"
+    ],
+    "created": "2020-03-10T05:35:24.063151Z",
+    "proj:epsg": 4326,
+    "datetime": "2019-01-01T00:00:00Z",
+    "cubedash:region_code": "-14_-26"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          118.22240593999766,
+          -22.699975944231888
+        ],
+        [
+          118.24427397418242,
+          -22.515645780963876
+        ],
+        [
+          119.22003537123638,
+          -22.60842512232027
+        ],
+        [
+          119.12126684085257,
+          -23.49827058643962
+        ],
+        [
+          118.13807838381156,
+          -23.404891555616906
+        ],
+        [
+          118.22240593999766,
+          -22.699975944231888
+        ]
+      ]
+    ]
+  },
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://explorer-aws.dea.ga.gov.au/stac/collections/fc_percentile_albers_annual/items/3af1acae-0255-4762-b2b2-f26034cf3ce8",
+      "type": "application/json"
+    },
+    {
+      "rel": "odc_yaml",
+      "href": "https://explorer-aws.dea.ga.gov.au/dataset/3af1acae-0255-4762-b2b2-f26034cf3ce8.odc-metadata.yaml",
+      "type": "text/yaml",
+      "title": "ODC Dataset YAML"
+    },
+    {
+      "rel": "collection",
+      "href": "https://explorer-aws.dea.ga.gov.au/stac/collections/fc_percentile_albers_annual"
+    },
+    {
+      "rel": "product_overview",
+      "href": "https://explorer-aws.dea.ga.gov.au/product/fc_percentile_albers_annual",
+      "type": "text/html",
+      "title": "ODC Product Overview"
+    },
+    {
+      "rel": "alternative",
+      "href": "https://explorer-aws.dea.ga.gov.au/dataset/3af1acae-0255-4762-b2b2-f26034cf3ce8",
+      "type": "text/html",
+      "title": "ODC Dataset Overview"
+    },
+    {
+      "rel": "root",
+      "href": "https://explorer-aws.dea.ga.gov.au/stac"
+    }
+  ],
+  "assets": {
+    "BS_PC_10": {
+      "href": "s3://dea-public-data/fractional-cover/fc-percentile/annual/v2.2.0/combined/x_-14/y_-26/2019/LS_FC_PC_3577_-14_-26_20190101_BS_PC_10.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "BS_PC_10",
+      "eo:bands": [
+        {
+          "name": "BS_PC_10"
+        }
+      ],
+      "roles": [
+        "data"
+      ]
+    },
+    "BS_PC_50": {
+      "href": "s3://dea-public-data/fractional-cover/fc-percentile/annual/v2.2.0/combined/x_-14/y_-26/2019/LS_FC_PC_3577_-14_-26_20190101_BS_PC_50.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "BS_PC_50",
+      "eo:bands": [
+        {
+          "name": "BS_PC_50"
+        }
+      ],
+      "roles": [
+        "data"
+      ]
+    },
+    "BS_PC_90": {
+      "href": "s3://dea-public-data/fractional-cover/fc-percentile/annual/v2.2.0/combined/x_-14/y_-26/2019/LS_FC_PC_3577_-14_-26_20190101_BS_PC_90.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "BS_PC_90",
+      "eo:bands": [
+        {
+          "name": "BS_PC_90"
+        }
+      ],
+      "roles": [
+        "data"
+      ]
+    },
+    "PV_PC_10": {
+      "href": "s3://dea-public-data/fractional-cover/fc-percentile/annual/v2.2.0/combined/x_-14/y_-26/2019/LS_FC_PC_3577_-14_-26_20190101_PV_PC_10.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "PV_PC_10",
+      "eo:bands": [
+        {
+          "name": "PV_PC_10"
+        }
+      ],
+      "roles": [
+        "data"
+      ]
+    },
+    "PV_PC_50": {
+      "href": "s3://dea-public-data/fractional-cover/fc-percentile/annual/v2.2.0/combined/x_-14/y_-26/2019/LS_FC_PC_3577_-14_-26_20190101_PV_PC_50.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "PV_PC_50",
+      "eo:bands": [
+        {
+          "name": "PV_PC_50"
+        }
+      ],
+      "roles": [
+        "data"
+      ]
+    },
+    "PV_PC_90": {
+      "href": "s3://dea-public-data/fractional-cover/fc-percentile/annual/v2.2.0/combined/x_-14/y_-26/2019/LS_FC_PC_3577_-14_-26_20190101_PV_PC_90.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "PV_PC_90",
+      "eo:bands": [
+        {
+          "name": "PV_PC_90"
+        }
+      ],
+      "roles": [
+        "data"
+      ]
+    },
+    "NPV_PC_10": {
+      "href": "s3://dea-public-data/fractional-cover/fc-percentile/annual/v2.2.0/combined/x_-14/y_-26/2019/LS_FC_PC_3577_-14_-26_20190101_NPV_PC_10.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "NPV_PC_10",
+      "eo:bands": [
+        {
+          "name": "NPV_PC_10"
+        }
+      ],
+      "roles": [
+        "data"
+      ]
+    },
+    "NPV_PC_50": {
+      "href": "s3://dea-public-data/fractional-cover/fc-percentile/annual/v2.2.0/combined/x_-14/y_-26/2019/LS_FC_PC_3577_-14_-26_20190101_NPV_PC_50.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "NPV_PC_50",
+      "eo:bands": [
+        {
+          "name": "NPV_PC_50"
+        }
+      ],
+      "roles": [
+        "data"
+      ]
+    },
+    "NPV_PC_90": {
+      "href": "s3://dea-public-data/fractional-cover/fc-percentile/annual/v2.2.0/combined/x_-14/y_-26/2019/LS_FC_PC_3577_-14_-26_20190101_NPV_PC_90.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "NPV_PC_90",
+      "eo:bands": [
+        {
+          "name": "NPV_PC_90"
+        }
+      ],
+      "roles": [
+        "data"
+      ]
+    }
+  },
+  "bbox": [
+    118.13807838381156,
+    -23.49827058643962,
+    119.22003537123638,
+    -22.515645780963876
+  ],
+  "stac_extensions": [
+    "https://stac-extensions.github.io/eo/v1.0.0/schema.json",
+    "https://stac-extensions.github.io/projection/v1.0.0/schema.json"
+  ],
+  "collection": "fc_percentile_albers_annual"
+}

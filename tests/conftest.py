@@ -10,7 +10,11 @@ tests in this and sub packages.
 """
 
 import os
+from pathlib import Path
 
+import pystac
+import pystac.collection
+import pystac.item
 import pytest
 from affine import Affine
 from odc.geo import CRS, wh_
@@ -344,3 +348,52 @@ def dask_client():
     yield client
     client.close()
     del client
+
+
+# Test fixtures brought in from odc-stac
+
+TEST_DATA_FOLDER: Path = Path(__file__).parent.joinpath("data")
+PARTIAL_PROJ_STAC: str = "only_crs_proj.json"
+SENTINEL_STAC_COLLECTION: str = "sentinel-2-l2a.collection.json"
+SENTINEL_STAC_MS: str = "S2B_MSIL2A_20190629T212529_R043_T06VVN_20201006T080531.json"
+SENTINEL_STAC_MS_RASTER_EXT: str = (
+    "S2B_MSIL2A_20190629T212529_R043_T06VVN_20201006T080531_raster_ext.json"
+)
+USGS_LANDSAT_STAC_v1: str = "LC08_L2SP_028030_20200114_20200824_02_T1_SR.json"
+
+
+@pytest.fixture
+def partial_proj_stac():
+    return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(PARTIAL_PROJ_STAC)))
+
+
+@pytest.fixture
+def no_bands_stac(partial_proj_stac):
+    partial_proj_stac.assets.clear()
+    return partial_proj_stac
+
+
+@pytest.fixture
+def usgs_landsat_stac_v1():
+    return pystac.item.Item.from_file(
+        str(TEST_DATA_FOLDER.joinpath(USGS_LANDSAT_STAC_v1))
+    )
+
+
+@pytest.fixture
+def sentinel_stac_ms():
+    return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_MS)))
+
+
+@pytest.fixture
+def sentinel_stac_ms_with_raster_ext():
+    return pystac.item.Item.from_file(
+        str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_MS_RASTER_EXT))
+    )
+
+
+@pytest.fixture
+def sentinel_stac_collection():
+    return pystac.collection.Collection.from_file(
+        str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_COLLECTION))
+    )
