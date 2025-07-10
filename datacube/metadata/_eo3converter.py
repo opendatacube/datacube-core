@@ -15,14 +15,12 @@ from functools import singledispatch
 from typing import Any
 
 import pystac.item
-
-from datacube.index.eo3 import prep_eo3
-
-from datacube.index.abstract import default_metadata_type_docs
-
 from odc.geo import CRS
 from odc.geo.geobox import GeoBox
-from odc.loader.types import BandKey, RasterBandMetadata  # TODO: after loader 0.6.0 - add RasterSource
+from odc.loader.types import (  # TODO: after loader 0.6.0 - add RasterSource
+    BandKey,
+    RasterBandMetadata,
+)
 from odc.stac._mdtools import (
     EPSG4326,
     ConversionConfig,
@@ -38,6 +36,8 @@ from odc.stac.model import (
 )
 from toolz import dicttoolz
 
+from datacube.index.abstract import default_metadata_type_docs
+from datacube.index.eo3 import prep_eo3
 from datacube.model import Dataset, Product, metadata_from_doc
 
 # uuid.uuid5(uuid.NAMESPACE_URL, "https://stacspec.org")
@@ -96,7 +96,7 @@ def _to_product(md: RasterCollectionMetadata) -> Product:
         "metadata": {"product": {"name": md.name}},
         "measurements": [
             make_band(band_key, band, band_aliases)
-            for band_key, band in md.meta.bands.items()   # TODO: use .raster_bands() after loader 0.6.0
+            for band_key, band in md.meta.bands.items()  # TODO: use .raster_bands() after loader 0.6.0
         ],
     }
     return Product(_eo3, doc, stac=md)
@@ -351,5 +351,5 @@ def infer_dc_product_from_collection(
     # unless configured to ignore projection info assume that it will be present
     ignore_proj = cfg.get(product.name, {}).get("ignore_proj", False)
     if not ignore_proj:
-        product._md = dataclasses.replace(product._md, has_proj=True)  # type: ignore
+        product._stac = dataclasses.replace(product._stac, has_proj=True)  # type: ignore[type-var]
     return product

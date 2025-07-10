@@ -670,7 +670,7 @@ class Product:
         metadata_type: MetadataType,
         definition: Mapping[str, Any],
         id_: int | None = None,
-        stac: RasterCollectionMetadata | None = None
+        stac: RasterCollectionMetadata | None = None,
     ) -> None:
         self.id = id_
         self.metadata_type = metadata_type
