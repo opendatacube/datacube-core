@@ -39,6 +39,8 @@ dependencies = [
     'lark',
     'numpy>=1.26.0',
     'odc-geo>=0.4.8',
+    'odc-loader<=0.5.1',  # Raster metadata API changes in 0.6.0
+    'odc-stac>=0.4.0',
     'packaging',
     'pandas',
     'pyproj>=2.5',
@@ -71,12 +73,9 @@ distributed = ['distributed', 'dask[distributed]']
 s3 = ['boto3', 'botocore']
 netcdf = ['netcdf4']
 postgres = ['psycopg2']
-loader = ['odc-loader']
 
 [dependency-groups]
 dev = [
-    # Extra packages
-    'odc-loader',
     # Test requirements
     'hypothesis',
     'moto>=5.0',

@@ -146,9 +146,8 @@ at indexing time in the `odc-apps-dc-tools`_ package.
 3D dataset metadata
 -------------------
 
-3D loading can be achieved through ``odc-loader`` package.
+3D loading can be achieved through ``odc-loader`` package:
 
-#. Install odc-loader, e.g. ``pip install odc-loader``
 #. Add a ``driver="rio",`` argument to ``dc.load()``
 
 Time-stacked NetCDF files

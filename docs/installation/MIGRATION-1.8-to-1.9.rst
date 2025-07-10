@@ -139,9 +139,7 @@ Major Changes between 1.8.x and 1.9.x
 
 6. Support for multi-dimensional loading of hyperspectral datasets
 
-   Use of this feature currently requires installing `odc-loader`_.
-
-   If `odc-loader`_ is installed, you may specify `driver='rio'` or `driver='zarr'` when loading to access the new hyperspectral loading and
+   You may specify `driver='rio'` or `driver='zarr'` when loading to access the new hyperspectral loading and
    dask-chunking features.
 
 7. The long-deprecated "ingestion" workflow and "executor" API have both been removed.
@@ -149,7 +147,6 @@ Major Changes between 1.8.x and 1.9.x
 8. Multiple locations per dataset is now deprecated, and is not supported by the ``postgis`` index driver.
 
 .. _`odc-geo`: https://github.com/opendatacube/odc-geo
-.. _`odc-loader`: https://github.com/opendatacube/odc-loader
 
 .. _new-postgis-index-driver:
 

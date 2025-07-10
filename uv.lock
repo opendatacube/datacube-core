@@ -740,6 +740,8 @@ dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "odc-geo" },
+    { name = "odc-loader" },
+    { name = "odc-stac" },
     { name = "packaging" },
     { name = "pandas" },
     { name = "pyproj" },
@@ -757,9 +759,6 @@ dependencies = [
 distributed = [
     { name = "dask", extra = ["distributed"] },
     { name = "distributed" },
-]
-loader = [
-    { name = "odc-loader" },
 ]
 netcdf = [
     { name = "netcdf4" },
@@ -784,7 +783,6 @@ dev = [
     { name = "moto" },
     { name = "mypy" },
     { name = "netcdf4" },
-    { name = "odc-loader" },
     { name = "pandas-stubs" },
     { name = "psycopg2" },
     { name = "pylint" },
@@ -839,7 +837,8 @@ requires-dist = [
     { name = "netcdf4", marker = "extra == 'netcdf'" },
     { name = "numpy", specifier = ">=1.26.0" },
     { name = "odc-geo", specifier = ">=0.4.8" },
-    { name = "odc-loader", marker = "extra == 'loader'" },
+    { name = "odc-loader", specifier = "<=0.5.1" },
+    { name = "odc-stac", specifier = ">=0.4.0" },
     { name = "packaging" },
     { name = "pandas" },
     { name = "psycopg2", marker = "extra == 'postgres'" },
@@ -853,7 +852,7 @@ requires-dist = [
     { name = "toolz" },
     { name = "xarray", specifier = ">=0.9" },
 ]
-provides-extras = ["performance", "distributed", "s3", "netcdf", "postgres", "loader"]
+provides-extras = ["performance", "distributed", "s3", "netcdf", "postgres"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -863,7 +862,6 @@ dev = [
     { name = "moto", specifier = ">=5.0" },
     { name = "mypy" },
     { name = "netcdf4" },
-    { name = "odc-loader" },
     { name = "pandas-stubs" },
     { name = "psycopg2" },
     { name = "pylint" },
@@ -1867,6 +1865,29 @@ wheels = [
 ]
 
 [[package]]
+name = "odc-stac"
+version = "0.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "affine" },
+    { name = "dask", extra = ["array"] },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "odc-geo" },
+    { name = "odc-loader" },
+    { name = "pandas" },
+    { name = "pystac" },
+    { name = "rasterio" },
+    { name = "toolz" },
+    { name = "typing-extensions" },
+    { name = "xarray" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7f/2e/b5f29cd12f8a5b23f499d7da716cb6d0c55f9542d805111a1e6d92347a31/odc_stac-0.4.0.tar.gz", hash = "sha256:3535767940840e8c3ec2e3dda15ac36e30de0e51624dcc82e1052e19a7dab091", size = 114343, upload-time = "2025-05-01T05:20:51.33Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ef/21/05c243c9b563519ae5b7442a73424ad0537c7d312cf8969bdf9d0fa31c00/odc_stac-0.4.0-py3-none-any.whl", hash = "sha256:a76b9d96d7aea53cabcd7ba99b0cf467a6eab6d2ad6a52802af36b5c407c5952", size = 44259, upload-time = "2025-05-01T05:20:49.632Z" },
+]
+
+[[package]]
 name = "packaging"
 version = "25.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2173,6 +2194,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1d/0d/07ac7712994454a254c383c0d08aff9916a2851e6512d59da8dc369b1b02/pyproj-3.7.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:87229e42b75e89f4dad6459200f92988c5998dfb093c7c631fb48524c86cd5dc", size = 10729260, upload-time = "2025-02-16T04:28:40.639Z" },
     { url = "https://files.pythonhosted.org/packages/b0/d0/9c604bc72c37ba69b867b6df724d6a5af6789e8c375022c952f65b2af558/pyproj-3.7.1-cp313-cp313-win32.whl", hash = "sha256:d666c3a3faaf3b1d7fc4a544059c4eab9d06f84a604b070b7aa2f318e227798e", size = 5855462, upload-time = "2025-02-16T04:28:42.827Z" },
     { url = "https://files.pythonhosted.org/packages/98/df/68a2b7f5fb6400c64aad82d72bcc4bc531775e62eedff993a77c780defd0/pyproj-3.7.1-cp313-cp313-win_amd64.whl", hash = "sha256:d3caac7473be22b6d6e102dde6c46de73b96bc98334e577dfaee9886f102ea2e", size = 6266573, upload-time = "2025-02-16T04:28:44.727Z" },
+]
+
+[[package]]
+name = "pystac"
+version = "1.13.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/59/52/a2f882be13f3947f4e3330d59926d844f3a9c2eb07e1391c3f90ab4653eb/pystac-1.13.0.tar.gz", hash = "sha256:9e5d908a390eed800228a956d7f3577c8f0cbac49806aaa0b14b7c4e06520b8c", size = 162558, upload-time = "2025-04-15T18:14:09.713Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0f/7c/1b361a24d3087cd922ec1f6dfe02f230507d800ada3f922532f1f906a09e/pystac-1.13.0-py3-none-any.whl", hash = "sha256:fa22cc04e58bbbc22c8d049e715a37ab803802d8d1334afc48e6eab64c5946e4", size = 206821, upload-time = "2025-04-15T18:14:07.855Z" },
 ]
 
 [[package]]

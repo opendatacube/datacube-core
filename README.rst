@@ -70,7 +70,7 @@ Developer setup
 ::
 
    cd datacube-core
-   pip install --upgrade -e .
+   pip install --upgrade -e .  --group dev
 
 4. Install the `pre-commit <https://pre-commit.com>`__ hooks to help follow ODC coding
    conventions when committing with git.
