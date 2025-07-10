@@ -114,6 +114,12 @@ doc = [
     'sphinx-design',
     'sphinx-toolbox',
 ]
+test = [
+    "pylint",
+    "pytest",
+    "pytest-cov",
+    "hypothesis"
+]
 
 [project.scripts]
 datacube = 'datacube.scripts.cli_app:cli'
