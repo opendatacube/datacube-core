@@ -51,7 +51,7 @@ def _get_band_and_layer(b: dict[str, Any]) -> tuple[int | None, str | None]:
 
 def _extract_driver_data(ds: Dataset, mm: dict[str, Any]) -> Any | None:
     ds_data = ds.metadata_doc.get("driver_data", None)
-    mm_data = mm.get("driver_data", None)
+    mm_data = mm.get("driver_data")
     if isinstance(ds_data, dict) and isinstance(mm_data, str):
         return ds_data.get(mm_data, {})
     if mm_data is not None:

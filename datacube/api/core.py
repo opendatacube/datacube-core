@@ -539,7 +539,7 @@ class Datacube:
                 {
                     k: query.pop(k, None)
                     for k in list(query.keys())
-                    if k in extra_dims.dims and query.get(k, None) is not None
+                    if k in extra_dims.dims and query.get(k) is not None
                 },
             )
             extra_dims = extra_dims[extra_dims_slice]
@@ -1408,7 +1408,7 @@ def _make_dask_array(
     empties: dict[tuple[int, int], str] = {}
 
     def _mk_empty(shape: tuple[int, int]) -> str:
-        name = empties.get(shape, None)
+        name = empties.get(shape)
         if name is not None:
             return name
 

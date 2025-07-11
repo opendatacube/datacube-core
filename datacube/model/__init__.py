@@ -743,7 +743,7 @@ class Product:
         if self._canonical_measurements is None:
 
             def fix_nodata(m: dict[str, Any]) -> dict[str, Any]:
-                nodata = m.get("nodata", None)
+                nodata = m.get("nodata")
                 if isinstance(nodata, str):
                     m = dict(**m)
                     m["nodata"] = float(nodata)

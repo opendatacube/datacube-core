@@ -296,7 +296,7 @@ def rio_geobox(meta):
 
 
 def _fix_resampling(kw: dict) -> None:
-    r = kw.get("resampling", None)
+    r = kw.get("resampling")
     if isinstance(r, str):
         kw["resampling"] = resampling_s2rio(r)
 

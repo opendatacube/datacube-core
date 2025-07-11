@@ -120,7 +120,7 @@ def eo3_grid_spatial(
     ```
     """
     gridspecs = doc.get("grids", {})
-    crs = doc.get("crs", None)
+    crs = doc.get("crs")
     if crs is None or not gridspecs:
         raise ValueError("Input must have crs and grids.")
     grids = {name: EO3Grid(grid_spec) for name, grid_spec in gridspecs.items()}
@@ -239,7 +239,7 @@ def prep_eo3(
     def stringify(u: str | UUID | None) -> str | None:
         return u if isinstance(u, str) else str(u) if u else None
 
-    doc["id"] = stringify(doc.get("id", None))
+    doc["id"] = stringify(doc.get("id"))
 
     doc = add_eo3_parts(doc, resolution=resolution)
     if remap_lineage:
