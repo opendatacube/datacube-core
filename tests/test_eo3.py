@@ -85,14 +85,11 @@ def test_grid_points() -> None:
     pts = grid.points()
     assert pts == [(100, 0), (122, 0), (122, 11), (100, 11)]
 
-    for bad in [{}, {"shape": (1, 1)}, {"transform": identity}]:
-        with pytest.raises(ValueError):
-            grid = EO3Grid(bad)
-
 
 def test_bad_grids() -> None:
     identity = Affine.identity()
     bad_grids: list[dict[str, Any]] = [
+        {},
         # No Shape
         {
             "transform": identity,
