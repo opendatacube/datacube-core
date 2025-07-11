@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from typing import Any
+
 import pytest
 from affine import Affine
 
@@ -247,8 +249,7 @@ def test_prep_eo3(sample_doc, sample_doc_180, eo3_metadata) -> None:
     assert rdr.lon.end > rdr.lon.begin
     assert rdr.lon.begin < 180 < rdr.lon.end
 
-    non_eo3_doc = {}
-    assert prep_eo3(None) is None
+    non_eo3_doc: dict[str, Any] = {}
     assert prep_eo3(non_eo3_doc, auto_skip=True) is non_eo3_doc
 
     with pytest.raises(ValueError):

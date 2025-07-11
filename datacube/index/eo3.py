@@ -229,9 +229,6 @@ def prep_eo3(
                           support external_lineage).
                           If False, leave lineage in the same format.
     """
-    if doc is None:
-        return None
-
     if auto_skip:
         if not is_doc_eo3(doc):
             return doc
