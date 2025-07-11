@@ -60,6 +60,8 @@ __all__ = [
     "ranges_overlap",
 ]
 
+import contextlib
+
 from deprecat import deprecat
 from odc.geo import CRS, BoundingBox, Geometry, res_, resyx_, wh_, yx_
 from odc.geo.geobox import GeoBox
@@ -974,10 +976,8 @@ class Product:
             return self._load_hints
 
         hints = None
-        try:
+        with contextlib.suppress(Exception):
             hints = self._extract_load_hints()
-        except Exception:
-            pass
 
         if hints is None:
             self._load_hints = {}

@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import contextlib
 import logging
 from collections.abc import Mapping
 from pathlib import Path
@@ -66,10 +67,8 @@ def create_netcdf_storage_unit(
     if filename.exists():
         raise RuntimeError(f"Storage Unit already exists: {filename}")
 
-    try:
+    with contextlib.suppress(OSError):
         filename.parent.mkdir(parents=True)
-    except OSError:
-        pass
 
     _LOG.info("Creating storage unit: %s", filename)
 
