@@ -70,7 +70,7 @@ def eo3_product(eo3_metadata):
 
 
 def test_grid_points() -> None:
-    identity = list(Affine.translation(0, 0))
+    identity = Affine.identity()
     grid = EO3Grid({"shape": (11, 22), "transform": identity})
 
     pts = grid.points()
@@ -81,7 +81,7 @@ def test_grid_points() -> None:
     assert pts == pts_[:4]
     assert pts_[0] == pts_[-1]
 
-    grid = EO3Grid({"shape": (11, 22), "transform": tuple(Affine.translation(100, 0))})
+    grid = EO3Grid({"shape": (11, 22), "transform": Affine.translation(100, 0)})
     pts = grid.points()
     assert pts == [(100, 0), (122, 0), (122, 11), (100, 11)]
 
@@ -91,8 +91,8 @@ def test_grid_points() -> None:
 
 
 def test_bad_grids() -> None:
-    identity = list(Affine.translation(0, 0))
-    bad_grids = [
+    identity = Affine.identity()
+    bad_grids: list[dict[str, Any]] = [
         # No Shape
         {
             "transform": identity,
