@@ -46,7 +46,7 @@ def test_infer_product_collection(
     b2g = md.band2grid
     assert b2g["B02"] == "default"
     assert b2g["B01"] == "g60"
-    assert set(b2g.values()) == set("default g20 g60".split(" "))
+    assert set(b2g.values()) == {"default", "g20", "g60"}
 
     # Check that we can use product derived this way on an Item
     item = sentinel_stac_ms_with_raster_ext.clone()

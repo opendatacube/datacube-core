@@ -126,7 +126,7 @@ def test_dataset_measurement_paths() -> None:
     format_ = "GeoTiff"
 
     ds = mk_sample_dataset(
-        [{"name": n, "path": n + ".tiff"} for n in "a b c".split(" ")],
+        [{"name": n, "path": n + ".tiff"} for n in ["a", "b", "c"]],
         uri="file:///tmp/datataset.yml",
         format=format_,
     )
