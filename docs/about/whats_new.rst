@@ -64,7 +64,7 @@ What's Changed
 * build(deps): bump aquasecurity/trivy-action from 0.31.0 to 0.32.0 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2025
 * build(deps): bump conda-incubator/setup-miniconda from 3.1.1 to 3.2.0 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2026
 * Depend on odc-stac, and move odc.stac.eo3 from odc-stac to datacube.metadata by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2027
-* Update fallback version number and whats_new.rst for 1.9.6 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2031
+* Update fallback version number and whats_new.rst for 1.9.6 release by @SpacemanPaul
 
 
 **Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.5...1.9.6
