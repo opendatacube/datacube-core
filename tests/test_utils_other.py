@@ -128,14 +128,15 @@ def test_stats_dates() -> None:
 
 def test_uri_to_local_path() -> None:
     if os.name == "nt":
-        assert "C:\\tmp\\test.tmp" == str(uri_to_local_path("file:///C:/tmp/test.tmp"))
-        assert "\\\\remote\\path\\file.txt" == str(
-            uri_to_local_path("file://remote/path/file.txt")
+        assert str(uri_to_local_path("file:///C:/tmp/test.tmp")) == "C:\\tmp\\test.tmp"
+        assert (
+            str(uri_to_local_path("file://remote/path/file.txt"))
+            == "\\\\remote\\path\\file.txt"
         )
 
     else:
-        assert "/tmp/something.txt" == str(
-            uri_to_local_path("file:///tmp/something.txt")
+        assert (
+            str(uri_to_local_path("file:///tmp/something.txt")) == "/tmp/something.txt"
         )
 
         with pytest.raises(ValueError):

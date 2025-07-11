@@ -961,7 +961,7 @@ def clirunner(datacube_env_name: str):
             cli_method, exe_opts, catch_exceptions=catch_exceptions
         )
         if expect_success:
-            assert 0 == result.exit_code, (
+            assert result.exit_code == 0, (
                 f"Error for {opts!r}. output: {result.output!r}"
             )
         return result
@@ -986,7 +986,7 @@ def clirunner_raw():
         runner = CliRunner()
         result = runner.invoke(cli_method, exe_opts, catch_exceptions=catch_exceptions)
         if expect_success:
-            assert 0 == result.exit_code, (
+            assert result.exit_code == 0, (
                 f"Error for {opts!r}. output: {result.output!r}"
             )
         return result
