@@ -8,17 +8,72 @@ What's New
 Next Release
 ============
 
-- Add `dataset count` cli command and deprecate `datacube-search` :pull:`1963`
-- Dockerfile: use uv for installation :pull:`1971`
-- docs: remove broken link :pull:`1973`
-- examples: remove unimplemented zeros :pull:`1974`
-- examples: fix function signatures :pull:`1972`
-- docs: fix links in migration document :pull:`1980`
-- docs: miscellaneous small fixes :pull:`1981`
-- docs: escape trailing underscores :pull:`1976`
-- examples/tests: fix dependencies :pull:`1975`
-- docs: add missing links :pull:`1978`
-- misc improvements to CLI outputs :pull:`1993`
+v1.9.6 (11 July 2025)
+=====================
+
+This release brings ``odc-stac`` in as a direct dependency of ``datacube-core`` and moves some STAC to EO3
+conversion code out of odc-stac into core as the first step in an organisation-wide cross-repo consolidation and
+refactor of STAC handling code and in preparation for more native suppport of STAC metadata within core.
+
+It also contains some enhancements to CLI commands, bugfixes and cleanup.
+
+What's Changed
+--------------
+
+* build(deps): bump the python-deps group with 15 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/1969
+* examples: fix function signatures by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1972
+* examples: remove unimplemented zeros by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1974
+* docs: remove broken link by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1973
+* examples/tests: fix dependencies by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1975
+* docs: escape trailing underscores by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1976
+* docs: miscellaneous small fixes by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1981
+* docs: fix links in migration document by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1980
+* Add dataset count CLI command by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/1963
+* Dockerfile: use uv for installation by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1971
+* docs: add missing links by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1978
+* PR and release process updates by @omad in https://github.com/opendatacube/datacube-core/pull/1983
+* docs: stop redefining label by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1984
+* docs: make Sphinx resolve ODCEnvironment by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1985
+* Put JSON type aliases in separate file by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1986
+* docs: add explicit code-block by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1988
+* Remove unused PY35 constant by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1987
+* docs: document named tuple parameters by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1977
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/1990
+* CI: run with fewer permissions by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1997
+* drivers: make types more specific by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1996
+* Update dependencies by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1994
+* Various CLI improvements by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/1993
+* cli: only read files once by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2000
+* Update to mypy 1.16.1 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/1995
+* tests: fix return value checks by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2001
+* Switch decorator order to appease lint/typing by @omad in https://github.com/opendatacube/datacube-core/pull/2004
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2007
+* Type-annotate type aliases by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2006
+* build(deps): bump igsekor/pyspelling-any from 1.0.4 to 1.0.5 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2008
+* Use datetime.UTC instead of datetime.pytz() by @omad in https://github.com/opendatacube/datacube-core/pull/2010
+* Avoid Null Reference in Core by @omad in https://github.com/opendatacube/datacube-core/pull/2011
+* core: remove old assert by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2013
+* CI: test with Python 3.13 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2015
+* CI: pin actions by hash by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2014
+* Record rasterio/gdal/etc versions from CI runs by @omad in https://github.com/opendatacube/datacube-core/pull/2017
+* Depend on odc-loader by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2019
+* Fix some type signatures by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2021
+* postgis: pass plugins parameter by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2022
+* Normalise geobox inputs to Datacube api by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2018
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2023
+* build(deps): bump aquasecurity/trivy-action from 0.31.0 to 0.32.0 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2025
+* build(deps): bump conda-incubator/setup-miniconda from 3.1.1 to 3.2.0 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2026
+* Depend on odc-stac, and move odc.stac.eo3 from odc-stac to datacube.metadata by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2027
+* Update fallback version number and whats_new.rst for 1.9.6 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2031
+
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.5...1.9.6
+
+Includes contributions from @pjonsson, @Ariana-B, @omad, and @SpacemanPaul.
+
+The Open Data Cube Steering Council thanks and acknowledges the ongoing support of
+Geoscience Australia, CSIRO and RISE.
+
 
 v1.9.5 (17 June 2025)
 =====================
