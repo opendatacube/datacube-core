@@ -808,7 +808,7 @@ def _make_tiffs_and_yamls(tiffs_dir: str, config: dict, day_offset: int):
 
     # Alter band data
     bands = config["image"]["bands"]
-    for band in bands.keys():
+    for band in bands:
         # Copy dict to avoid aliases in yaml output (for better legibility)
         bands[band]["shape"] = copy(GEOTIFF["shape"])
         bands[band]["cell_size"] = {

@@ -30,7 +30,7 @@ def simple_var():
 
 def test_list_flag_names(simple_var) -> None:
     flags = list_flag_names(simple_var)
-    for flag_name in simple_var.flags_definition.keys():
+    for flag_name in simple_var.flags_definition:
         assert flag_name in flags
 
     with pytest.raises(ValueError):

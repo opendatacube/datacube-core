@@ -298,7 +298,7 @@ class ODCEnvironment:
             alias = self._raw["alias"]
             check_valid_env_name(alias)
             self._cfg._add_alias(self._name, alias)
-            for opt in self._raw.keys():
+            for opt in self._raw:
                 if opt != "alias":
                     raise ConfigException(
                         f"Alias environments should only contain an alias option. Extra option {opt} found."

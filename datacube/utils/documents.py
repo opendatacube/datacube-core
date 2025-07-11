@@ -356,7 +356,7 @@ def metadata_subset(element, document, full_recursion: bool = False) -> bool:
     """
     if isinstance(element, dict) and isinstance(document, dict):
         matches = True
-        for k in element.keys():
+        for k in element:
             if k not in document or not metadata_subset(
                 element[k], document[k], full_recursion=full_recursion
             ):
@@ -365,11 +365,11 @@ def metadata_subset(element, document, full_recursion: bool = False) -> bool:
         if matches:
             return True
         if full_recursion:
-            for k in document.keys():
+            for k in document:
                 if metadata_subset(element, document[k], full_recursion=full_recursion):
                     return True
     elif isinstance(document, dict) and full_recursion:
-        for k in document.keys():
+        for k in document:
             if metadata_subset(element, document[k], full_recursion=full_recursion):
                 return True
     elif isinstance(element, list) or isinstance(element, tuple):
@@ -490,7 +490,7 @@ class DocReader:
         }
 
     def __getattr__(self, name: str):
-        if name in self.fields.keys():
+        if name in self.fields:
             return self.fields[name]
         else:
             raise AttributeError(
