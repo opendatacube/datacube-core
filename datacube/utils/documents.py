@@ -302,10 +302,7 @@ def documents_equal(d1: str | float | list | dict, d2) -> bool:
     elif isinstance(d1, list):
         if len(d1) != len(d2):
             return False
-        for i in range(len(d1)):
-            if not documents_equal(d1[i], d2[i]):
-                return False
-        return True
+        return all(documents_equal(d1[i], d2[i]) for i in range(len(d1)))
     elif isinstance(d1, float):
         if math.isnan(d1) and math.isnan(d2):
             return True

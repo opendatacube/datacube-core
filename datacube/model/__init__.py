@@ -1319,10 +1319,7 @@ class ExtraDimensions:
 
         :return: A boolean if ExtraDimensions has an empty dimension, otherwise False.
         """
-        for value in self._coords.values():
-            if value.shape[0] == 0:
-                return True
-        return False
+        return any(value.shape[0] == 0 for value in self._coords.values())
 
     def __getitem__(self, dim_slices: ExtraDimensionSlices) -> ExtraDimensions:
         """Return a ExtraDimensions subsetted by dim_slices
