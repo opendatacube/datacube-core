@@ -113,7 +113,7 @@ def test_field_expression_unchanged(
 
     # The time field on the default 'eo' metadata type.
     field = default_metadata_type.dataset_fields["time"]
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
+    assert isinstance(field, PgrPgField | PgsPgField)
     assert field.sql_expression == (
         "tstzrange("
         "least("
@@ -126,7 +126,7 @@ def test_field_expression_unchanged(
     )
 
     field = default_metadata_type.dataset_fields["lat"]
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
+    assert isinstance(field, PgrPgField | PgsPgField)
     assert field.sql_expression == (
         "agdc.float8range("
         "least("
@@ -144,12 +144,12 @@ def test_field_expression_unchanged(
 
     # A single string value
     field = default_metadata_type.dataset_fields["platform"]
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
+    assert isinstance(field, PgrPgField | PgsPgField)
     assert field.sql_expression == ("agdc.dataset.metadata #>> '{platform, code}'")
 
     # A single integer value
     field = telemetry_metadata_type.dataset_fields["orbit"]
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
+    assert isinstance(field, PgrPgField | PgsPgField)
     assert field.sql_expression == (
         "CAST(agdc.dataset.metadata #>> '{acquisition, platform_orbit}' AS INTEGER)"
     )
@@ -506,8 +506,9 @@ def test_update_metadata_type(index: Index, default_metadata_type: list[dict]) -
     index.metadata_types.update_document(different_mt_doc, allow_unsafe_updates=True)
     updated_type = index.metadata_types.get_by_name(mt_doc["name"])
     assert isinstance(
-        updated_type.dataset_fields["time"], PgrNumericRangeDocField
-    ) or isinstance(updated_type.dataset_fields["time"], PgsNumericRangeDocField)
+        updated_type.dataset_fields["time"],
+        PgrNumericRangeDocField | PgsNumericRangeDocField,
+    )
 
 
 def test_filter_types_by_fields(index: Index, wo_eo3_product) -> None:

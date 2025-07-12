@@ -1434,7 +1434,7 @@ class ExtraDimensions:
         :return: A tuple containing the integer indexes of `coord_range`.
         """
         # Convert to Tuple if it's an int or float
-        if isinstance(coord_range, int) or isinstance(coord_range, float):
+        if isinstance(coord_range, int | float):
             coord_range = (coord_range, coord_range)
 
         start_index = self.index_of(dim, coord_range[0])

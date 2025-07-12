@@ -373,7 +373,7 @@ def metadata_subset(element, document, full_recursion: bool = False) -> bool:
         for k in document:
             if metadata_subset(element, document[k], full_recursion=full_recursion):
                 return True
-    elif isinstance(element, list) or isinstance(element, tuple):
+    elif isinstance(element, list | tuple):
         matches = True
         for i in element:
             if not metadata_subset(i, document, full_recursion=full_recursion):
@@ -381,7 +381,7 @@ def metadata_subset(element, document, full_recursion: bool = False) -> bool:
                 break
         if matches:
             return True
-    elif isinstance(document, list) or isinstance(document, tuple):
+    elif isinstance(document, list | tuple):
         for i in document:
             if full_recursion:
                 if metadata_subset(element, i, full_recursion=full_recursion):
