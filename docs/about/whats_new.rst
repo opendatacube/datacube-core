@@ -13,9 +13,9 @@ v1.9.6 (11 July 2025)
 
 This release brings ``odc-stac`` in as a direct dependency of ``datacube-core`` and moves some STAC to EO3
 conversion code out of odc-stac into core as the first step in an organisation-wide cross-repo consolidation and
-refactor of STAC handling code and in preparation for more native suppport of STAC metadata within core.
+refactor of STAC handling code and in preparation for more native support of STAC metadata within core.
 
-It also contains some enhancements to CLI commands, bugfixes and cleanup.
+It also contains some enhancements to CLI commands, bug fixes and cleanup.
 
 What's Changed
 --------------
