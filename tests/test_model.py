@@ -154,8 +154,8 @@ def test_product_basics() -> None:
     assert "test_product" in repr(product)
     assert product == product
     assert product == mk_sample_product("test_product")
-    assert not (product == mk_sample_product("other"))
-    assert not (product == [()])
+    assert product != mk_sample_product("other")
+    assert product != [()]
     assert hash(product) == hash(mk_sample_product("test_product"))
     assert "time" in dir(product.metadata)
 
