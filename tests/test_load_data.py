@@ -301,7 +301,7 @@ def test_hdf5_lock_release_on_failure() -> None:
 
     with pytest.raises(OSError):  # noqa: SIM117
         with src.open():
-            assert False and "Did not expect to get here"
+            raise Exception("Did not expect to get here")
 
     assert not HDF5_LOCK._is_owned()
 

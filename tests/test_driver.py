@@ -71,7 +71,7 @@ def test_netcdf_driver_import() -> None:
     try:
         import datacube.drivers.netcdf.driver
     except ImportError:
-        assert False and "Failed to load netcdf writer driver"
+        raise Exception("Failed to load netcdf writer driver") from None
 
     assert datacube.drivers.netcdf.driver.reader_driver_init is not None
 
