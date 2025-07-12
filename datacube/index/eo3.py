@@ -232,9 +232,8 @@ def prep_eo3(
     if doc is None:
         return None
 
-    if auto_skip:
-        if not is_doc_eo3(doc):
-            return doc
+    if auto_skip and not is_doc_eo3(doc):
+        return doc
 
     def stringify(u: str | UUID | None) -> str | None:
         return u if isinstance(u, str) else str(u) if u else None

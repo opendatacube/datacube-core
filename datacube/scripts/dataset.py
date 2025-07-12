@@ -56,9 +56,8 @@ def _resolve_uri(uri, doc):
     if isinstance(loc, str):
         return loc
 
-    if isinstance(loc, list | tuple):
-        if len(loc) > 0:
-            return loc[0]
+    if isinstance(loc, list | tuple) and len(loc) > 0:
+        return loc[0]
 
     return uri
 
@@ -380,10 +379,9 @@ def update_cmd(
     for dataset, existing_ds in load_datasets_for_update(doc_stream, index):
         _LOG.info("Matched %s", dataset)
 
-        if location_policy != "keep":
-            if existing_ds.has_multiple_uris():
-                # TODO:
-                pass
+        if location_policy != "keep" and existing_ds.has_multiple_uris():
+            # TODO:
+            pass
 
         if not dry_run:
             try:

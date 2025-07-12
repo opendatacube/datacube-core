@@ -885,14 +885,13 @@ class Product:
                     if (
                         "wavelength" in spectral_definition
                         and "response" in spectral_definition
+                    ) and len(spectral_definition.get("wavelength")) != len(
+                        spectral_definition.get("response")
                     ):
-                        if len(spectral_definition.get("wavelength")) != len(
-                            spectral_definition.get("response")
-                        ):
-                            raise ValueError(
-                                f"spectral_definition_map: wavelength should be the same length as response "
-                                f"in the product definition for spectral definition at index {idx}."
-                            )
+                        raise ValueError(
+                            f"spectral_definition_map: wavelength should be the same length as response "
+                            f"in the product definition for spectral definition at index {idx}."
+                        )
 
     def canonical_measurement(self, measurement: str) -> str:
         """resolve measurement alias into canonical name"""
