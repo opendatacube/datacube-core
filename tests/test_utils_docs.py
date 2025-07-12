@@ -221,7 +221,7 @@ def test_read_docs_from_s3(sample_document_files, monkeypatch) -> None:
 
         _test_read_docs_impl(mocked_s3_objs)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError):  # noqa: SIM117
         with _open_from_s3("https://not-s3.ga/file.txt"):
             pass
 

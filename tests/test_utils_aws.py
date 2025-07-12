@@ -56,7 +56,7 @@ def test_ec2_current_region() -> None:
 
 @mock.patch("datacube.utils.aws.botocore_default_region", return_value=None)
 def test_auto_find_region(*mocks) -> None:
-    with mock.patch("datacube.utils.aws._fetch_text", return_value=None):
+    with mock.patch("datacube.utils.aws._fetch_text", return_value=None):  # noqa: SIM117
         with pytest.raises(ValueError):
             auto_find_region()
 
