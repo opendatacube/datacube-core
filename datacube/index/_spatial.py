@@ -45,10 +45,7 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
         except ValueError:
             # Can't convert to single Geometry. If it is an iterable of Geometries, return the union
             for term in geom_term:
-                if geom is None:
-                    geom = Geometry(term)
-                else:
-                    geom = geom.union(Geometry(term))
+                geom = Geometry(term) if geom is None else geom.union(Geometry(term))
         for spatial_key in NON_GEOPOLYGON_SPATIAL_KEYS:
             if spatial_key in q:
                 raise ValueError(
@@ -81,10 +78,7 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
                 if crs_in is not None:
                     raise ValueError("CRS is supplied twice")
                 crs_in = q.get(coord)
-        if crs_in is None:
-            crs = CRS("epsg:4326")
-        else:
-            crs = CRS(crs_in)
+        crs = CRS("epsg:4326") if crs_in is None else CRS(crs_in)
         if lat is None and lon is None:
             # No spatial query
             return None

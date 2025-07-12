@@ -473,10 +473,7 @@ class Expressions(Transformation):
                 result.attrs["nodata"] = nodata
             result.attrs["units"] = output_desc.get("units", "1")
 
-            if "masked" in output_desc:
-                masked = output_desc["masked"]
-            else:
-                masked = self.masked
+            masked = output_desc["masked"] if "masked" in output_desc else self.masked
 
             if not masked:
                 if dtype is None:

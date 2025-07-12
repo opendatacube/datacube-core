@@ -406,24 +406,22 @@ def compute_axis_overlap(Ns: int, Nd: int, s: float, t: float) -> tuple[slice, s
     s_ = 1.0 / s
     t_ = -t * s_
 
-    if t < 0:
-        #  |<------- ... D
-        #      |<--- ... S
-        _in = (0, min(floor(t_), Nd))
-    else:
-        #        |<--... D
-        # |<---------... S
-        _in = (min(floor(t), Ns), 0)
+    # if t < 0:
+    #  |<------- ... D
+    #      |<--- ... S
+    # else:
+    #        |<--... D
+    # |<---------... S
+    _in = (0, min(floor(t_), Nd)) if t < 0 else (min(floor(t), Ns), 0)
 
     a = ceil(Nd * s + t)
-    if a <= Ns:
-        # ...----->|    D
-        # ...-------->| S
-        _out = (max(a, 0), Nd)
-    else:
-        # ...-------->|  D
-        # ...----->|     S
-        _out = (Ns, max(0, ceil(Ns * s_ + t_)))
+    # if a <= Ns:
+    # ...----->|    D
+    # ...-------->| S
+    # else:
+    # ...-------->|  D
+    # ...----->|     S
+    _out = (max(a, 0), Nd) if a <= Ns else (Ns, max(0, ceil(Ns * s_ + t_)))
 
     src, dst = (slice(_in[i], _out[i]) for i in range(2))
 

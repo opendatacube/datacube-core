@@ -220,10 +220,11 @@ def validate_document(document, schema, schema_folder=None):
             referenced_schema = next(iter(read_documents(path)))[1]
             return referencing.Resource(referenced_schema, DRAFT4)
 
-        if schema_folder:
-            registry = referencing.Registry(retrieve=doc_reference)
-        else:
-            registry = referencing.Registry()
+        registry = (
+            referencing.Registry(retrieve=doc_reference)
+            if schema_folder
+            else referencing.Registry()
+        )
         jsonschema.Draft4Validator.check_schema(schema)
         validator = jsonschema.Draft4Validator(schema, registry=registry)
         validator.validate(document)

@@ -250,10 +250,9 @@ def _test_read_docs_impl(sample_documents: Iterable[tuple[str, int]]) -> None:
             assert isinstance(uri, str)
 
         url = as_url(doc_url)
-        if num_docs > 1:
-            expect_uris = [as_url(url) + f"#part={i}" for i in range(num_docs)]
-        else:
-            expect_uris = [as_url(url)]
+        expect_uris = (
+            [url + f"#part={i}" for i in range(num_docs)] if num_docs > 1 else [url]
+        )
 
         assert [f for f, _ in all_docs] == expect_uris
 

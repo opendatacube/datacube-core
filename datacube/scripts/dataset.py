@@ -722,10 +722,7 @@ def count_cmd(
     products: Iterable[str],
 ) -> None:
     archived = {"active": False, "archived": True, "all": None}[status]
-    if query:
-        expressions = parse_expressions(*query)
-    else:
-        expressions = {}
+    expressions = parse_expressions(*query) if query else {}
     if products:
         expressions["product"] = products
 

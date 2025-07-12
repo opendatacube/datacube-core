@@ -128,10 +128,11 @@ class LineageResource(AbstractLineageResource, IndexResourceAddIn):
             # Convert tree to desired depth to lineage relations collection
             relations = connection.load_lineage_relations([id_], direction, max_depth)
             rels = LineageRelations(relations=relations)
-            if direction == LineageDirection.SOURCES:
-                ids = list(rels.by_derived.keys())
-            else:
-                ids = list(rels.by_source.keys())
+            ids = list(
+                rels.by_derived.keys()
+                if direction == LineageDirection.SOURCES
+                else rels.by_source.keys()
+            )
             # Delete individual relations.
             connection.remove_lineage_relations(ids, direction)
 

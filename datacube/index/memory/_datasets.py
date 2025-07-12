@@ -929,10 +929,7 @@ class DatasetResource(AbstractDatasetResource):
         archived: bool | None = False,
         **query: QueryField,
     ) -> Iterable[tuple]:
-        if custom_offsets:
-            custom_fields = build_custom_fields(custom_offsets)
-        else:
-            custom_fields = {}
+        custom_fields = build_custom_fields(custom_offsets) if custom_offsets else {}
 
         def make_ds_light(ds: Dataset) -> tuple:
             fields = {

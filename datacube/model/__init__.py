@@ -763,10 +763,11 @@ class Product:
         """
         List of dimension labels for data in this product
         """
-        if self.grid_spec is not None:
-            spatial_dims = self.grid_spec.dimensions
-        else:
-            spatial_dims = DEFAULT_SPATIAL_DIMS
+        spatial_dims = (
+            DEFAULT_SPATIAL_DIMS
+            if self.grid_spec is None
+            else self.grid_spec.dimensions
+        )
 
         return ("time",) + spatial_dims
 

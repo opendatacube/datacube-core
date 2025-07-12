@@ -202,10 +202,7 @@ def xr_apply(
 
     data = numpy.empty(shape=data_array.shape, dtype=dtype)
     for i, index, entry in xr_iter(data_array):
-        if with_numeric_index:
-            v = func(i, index, entry)
-        else:
-            v = func(index, entry)
+        v = func(i, index, entry) if with_numeric_index else func(index, entry)
         data[i] = v
     return xarray.DataArray(data, coords=data_array.coords, dims=data_array.dims)
 

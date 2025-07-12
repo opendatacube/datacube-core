@@ -156,10 +156,7 @@ def test_field_expression_unchanged(
 
 
 def _object_exists(index, index_name) -> bool:
-    if index._db.driver_name == "postgis":
-        schema_name = "odc"
-    else:
-        schema_name = "agdc"
+    schema_name = "odc" if index._db.driver_name == "postgis" else "agdc"
     with index._active_connection() as connection:
         val = connection._connection.execute(
             text(f"SELECT to_regclass('{schema_name}.{index_name}')")
@@ -337,13 +334,9 @@ def test_product_update_cli(
     def run_update_product(
         file_path, expect_success: bool = True, allow_unsafe: bool = False
     ):
-        if allow_unsafe:
-            allow_unsafe = ["--allow-unsafe"]
-        else:
-            allow_unsafe = []
-
         return clirunner(
-            ["product", "update", str(file_path)] + allow_unsafe,
+            ["product", "update", str(file_path)]
+            + (["--allow-unsafe"] if allow_unsafe else []),
             catch_exceptions=False,
             expect_success=expect_success,
         )

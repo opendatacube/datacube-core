@@ -70,10 +70,7 @@ def warp_affine_rio(
     if src.dtype.name == "int8":
         src = src.astype("int16")
 
-    if dst.dtype.name == "int8":
-        _dst = dst.astype("int16")
-    else:
-        _dst = dst
+    _dst = dst.astype("int16") if dst.dtype.name == "int8" else dst
 
     rasterio.warp.reproject(
         src,
@@ -155,10 +152,7 @@ def rio_reproject(
     if src.dtype.name == "int8":
         src = src.astype("int16")
 
-    if dst.dtype.name == "int8":
-        _dst = dst.astype("int16")
-    else:
-        _dst = dst
+    _dst = dst.astype("int16") if dst.dtype.name == "int8" else dst
 
     rasterio.warp.reproject(
         src,

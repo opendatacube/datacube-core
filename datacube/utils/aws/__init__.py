@@ -286,10 +286,7 @@ def s3_client(
     :param cfg: passed on to ``botocore.client.Config(..)``
     """
     if aws_unsigned is None:
-        if creds is None:
-            aws_unsigned = _aws_unsigned_check_env()
-        else:
-            aws_unsigned = False
+        aws_unsigned = _aws_unsigned_check_env() if creds is None else False
 
     if aws_unsigned:
         cfg.update(signature_version=botocore.UNSIGNED)

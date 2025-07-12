@@ -383,10 +383,7 @@ class AbstractProductResource(ABC):
         else:
             if isinstance(product, str):
                 product = self.get_by_name(product)
-            if product is None:
-                prods = []
-            else:
-                prods = [product]
+            prods = [] if product is None else [product]
         out: set[str] = set()
         for prod in prods:
             out.update(prod.metadata_type.dataset_fields)

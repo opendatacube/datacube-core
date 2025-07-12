@@ -68,10 +68,7 @@ def measurement_paths(ds: Dataset) -> dict[str, str]:
     """
     if not ds.uri:
         raise ValueError("No locations on this dataset")
-    if not ds.has_multiple_uris():
-        base = ds.uri
-    else:
-        base = pick_uri(ds.uris)
+    base = pick_uri(ds.uris) if ds.has_multiple_uris() else ds.uri
 
     return {k: uri_resolve(base, m.get("path")) for k, m in ds.measurements.items()}
 
@@ -112,10 +109,7 @@ class BandInfo:
 
         if not ds.uri:
             raise ValueError("No uris defined on a dataset")
-        if not ds.has_multiple_uris():
-            base_uri = ds.uri
-        else:
-            base_uri = ds.legacy_uri(uri_scheme)
+        base_uri = ds.legacy_uri(uri_scheme) if ds.has_multiple_uris() else ds.uri
         uri = uri_resolve(base_uri, mm.get("path"))
         if patch_url is not None:
             uri = patch_url(uri)
