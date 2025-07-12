@@ -166,6 +166,7 @@ exclude_also = [
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
+console_output_style = "times"
 testpaths = ["datacube", "tests", "integration_tests"]
 norecursedirs = [".*", "build", "dist", ".git", "tmp*", "docs", ".jj"]
 filterwarnings = [
