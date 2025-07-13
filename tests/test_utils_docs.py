@@ -604,11 +604,11 @@ def test_doc_reader() -> None:
     d = DocReader({"lat": ["extent", "lat"]}, {}, doc={"extent": {"lat": 4}})
     assert hasattr(d, "lat")
     assert d.lat == 4
-    assert d._doc == {"extent": {"lat": 4}}
+    assert d.doc == {"extent": {"lat": 4}}
 
     d.lat = 5
     assert d.lat == 5
-    assert d._doc == {"extent": {"lat": 5}}
+    assert d.doc == {"extent": {"lat": 5}}
 
     assert d.search_fields == {}
 
