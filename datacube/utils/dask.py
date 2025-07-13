@@ -9,13 +9,12 @@ import os
 import queue
 import threading
 from collections.abc import Iterable
-from pathlib import Path
 from random import randint
 from typing import Any
 
 import dask
 import toolz
-from dask.delayed import delayed
+from dask.delayed import Delayed, DelayedLeaf, delayed
 from dask.distributed import Client
 
 __all__ = [
@@ -304,7 +303,7 @@ _save_blob_to_s3_delayed = delayed(_save_blob_to_s3, name="save-to-s3", pure=Fal
 
 def save_blob_to_file(
     data: bytes | str, fname: str, with_deps=None
-) -> tuple[Path, bool]:
+) -> Delayed | DelayedLeaf:
     """
     Dump from memory to local filesystem as a dask delayed operation.
 
@@ -338,7 +337,7 @@ def save_blob_to_s3(
     region_name: str | None = None,
     with_deps=None,
     **kw,
-) -> tuple[str, bool]:
+) -> Delayed | DelayedLeaf:
     """
     Dump from memory to S3 as a dask delayed operation.
 

@@ -269,6 +269,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
     doc2ds = Doc2Dataset(index)
     _ds, _err = doc2ds(ds.doc, "file:///something")
     assert _err is None
+    assert _ds is not None
     assert _ds.id == ds.id
     assert _ds.metadata_doc == ds.doc
 

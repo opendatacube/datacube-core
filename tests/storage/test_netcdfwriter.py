@@ -282,8 +282,8 @@ EXAMPLE_FLAGS_DEF = {
 
 def test_measurements_model_netcdfflags() -> None:
     masks, valid_range, meanings = flag_mask_meanings(EXAMPLE_FLAGS_DEF)
-    assert ([0, 1023] == valid_range).all()
-    assert ([1, 2, 4, 512] == masks).all()
+    assert (numpy.array([0, 1023]) == valid_range).all()
+    assert (numpy.array([1, 2, 4, 512]) == masks).all()
     assert (
         "no_band_1_saturated no_band_2_saturated no_band_3_saturated land" == meanings
     )

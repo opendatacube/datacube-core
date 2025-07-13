@@ -84,7 +84,9 @@ def assert_file_structure(
             )
 
 
-def write_files(file_dict: Mapping[str, str | Sequence[str]]) -> pathlib.Path:
+def write_files(
+    file_dict: Mapping[str, str | Sequence[str] | Mapping[str, str | Sequence[str]]],
+) -> pathlib.Path:
     """
     Convenience method for writing a bunch of files to a temporary directory.
 
@@ -108,7 +110,8 @@ def write_files(file_dict: Mapping[str, str | Sequence[str]]) -> pathlib.Path:
 
 
 def _write_files_to_dir(
-    directory_path: str, file_dict: Mapping[str, str | Sequence[str]]
+    directory_path: str,
+    file_dict: Mapping[str, str | Sequence[str] | Mapping[str, str | Sequence[str]]],
 ) -> None:
     """
     Convenience method for writing a bunch of files to a given directory.
@@ -186,7 +189,7 @@ def mk_sample_product(
     with_grid_spec: bool = False,
     metadata_type=None,
     storage=None,
-    load: bool | None = None,
+    load: dict | bool | None = None,
 ) -> Product:
     if storage is None and with_grid_spec is True:
         storage = {
@@ -238,11 +241,11 @@ def mk_sample_dataset(
     bands: list[dict],
     uri: str | list[str] | None = "file:///tmp",
     product_name: str = "sample",
-    format: str = "GeoTiff",  # noqa: A002
+    format: str | None = "GeoTiff",  # noqa: A002
     timestamp=None,
     id: str = "3a1df9e0-8484-44fc-8102-79184eab85dd",  # noqa: A002
     geobox: GeoBox | None = None,
-    product_opts=None,
+    product_opts: dict | None = None,
 ) -> Dataset:
     # pylint: disable=redefined-builtin
     image_bands_keys = "path layer band".split(" ")
@@ -410,7 +413,7 @@ def split_test_image(aa):
 
 
 def gen_tiff_dataset(
-    bands: list[BandObject],
+    bands: Sequence[BandObject],
     base_folder,
     prefix: str = "",
     timestamp: str = "2018-07-19",
@@ -468,7 +471,7 @@ def gen_tiff_dataset(
 
 
 def mk_sample_xr_dataset(
-    crs: str | CRS = "EPSG:3578",
+    crs: str | CRS | None = "EPSG:3578",
     shape=(33, 74),
     resolution: tuple[float, float] | None = None,
     xy=(0, 0),

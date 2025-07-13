@@ -234,7 +234,7 @@ def test_testutils_mk_sample() -> None:
     assert set(pp.measurements) == {"aa", "bb"}
 
     with pytest.raises(ValueError):
-        mk_sample_product("tt", measurements=[None])
+        mk_sample_product("tt", measurements=[None])  # type: ignore[list-item]
 
 
 def test_testutils_write_files() -> None:
@@ -253,10 +253,10 @@ def test_testutils_write_files() -> None:
         assert_file_structure(pp, files)
 
     with pytest.raises(AssertionError):
-        assert_file_structure(pp, {"aa.txt": 3})
+        assert_file_structure(pp, {"aa.txt": 3})  # type: ignore[dict-item]
 
     with pytest.raises(ValueError):
-        write_files({"tt": 3})
+        write_files({"tt": 3})  # type: ignore[dict-item]
 
 
 def test_part_uri() -> None:
@@ -425,7 +425,7 @@ def test_testutils_gtif(tmpdir) -> None:
     )
 
     aa5_meta = write_gtiff(
-        str(fname5),
+        fname5,
         aa5,
         nodata=nodata,
         resolution=(100, -100),
@@ -588,8 +588,10 @@ def test_valid_mask() -> None:
 
 def test_num2numpy() -> None:
     assert num2numpy(None, "int8") is None
-    assert num2numpy(-1, "int8").dtype == np.dtype("int8")
-    assert num2numpy(-1, "int8").dtype == np.int8(-1)
+    numpy_int8 = num2numpy(-1, "int8")
+    assert isinstance(numpy_int8, np.int8)
+    assert numpy_int8.dtype == np.dtype("int8")
+    assert numpy_int8.dtype == np.int8(-1)
 
     assert num2numpy(-1, "uint8") is None
     assert num2numpy(256, "uint8") is None
@@ -608,9 +610,15 @@ def test_num2numpy() -> None:
     assert num2numpy(127, "int8") == 127
     assert num2numpy(128, "int8") is None
 
-    assert num2numpy(3.3, np.dtype("float32")).dtype == np.dtype("float32")
-    assert num2numpy(3.3, np.float32).dtype == np.dtype("float32")
-    assert num2numpy(3.3, np.float64).dtype == np.dtype("float64")
+    numpy_dtype = num2numpy(3.3, np.dtype("float32"))
+    assert isinstance(numpy_dtype, np.float32)
+    assert numpy_dtype.dtype == np.dtype("float32")
+    numpy_f32 = num2numpy(3.3, np.float32)
+    assert isinstance(numpy_f32, np.float32)
+    assert numpy_f32.dtype == np.dtype("float32")
+    numpy_f64 = num2numpy(3.3, np.float64)
+    assert isinstance(numpy_f64, np.float64)
+    assert numpy_f64.dtype == np.dtype("float64")
 
 
 def test_utils_math() -> None:

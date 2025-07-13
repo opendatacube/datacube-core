@@ -61,7 +61,7 @@ __all__ = [
 ]
 
 from deprecat import deprecat
-from odc.geo import CRS, BoundingBox, Geometry, res_, resyx_, wh_, yx_
+from odc.geo import CRS, BoundingBox, Geometry, Resolution, res_, resyx_, wh_, yx_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
 from odc.geo.gridspec import GridSpec as GeoGridSpec
@@ -953,7 +953,7 @@ class Product:
         return self.load_hints().get("output_crs", None)
 
     @property
-    def default_resolution(self) -> tuple[float, float] | None:
+    def default_resolution(self) -> Resolution | None:
         return self.load_hints().get("resolution", None)
 
     @property

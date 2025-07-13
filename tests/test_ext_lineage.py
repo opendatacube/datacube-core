@@ -35,6 +35,7 @@ def test_ltree_clsmethods(data_folder) -> None:
     doc = next(iter(read_documents(str(os.path.join(data_folder, "ds_eo3.yml")))))[1]
     tree = LineageTree.from_eo3_doc(doc, home="src_home", home_derived="der_home")
     assert tree.home == "der_home"
+    assert tree.children is not None
     for child in tree.children["bc"]:
         assert child.home == "src_home"
 

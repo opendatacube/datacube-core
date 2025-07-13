@@ -19,7 +19,7 @@ def test_band_layer() -> None:
     assert t(1, "foo") == (1, "foo")
     assert t(None, "foo") == (None, "foo")
 
-    bad_inputs = [
+    bad_inputs: list[tuple] = [
         ("string", None),  # band has to be int|None
         (None, {}),  # layer has to be int|str|None
         (1, 3),

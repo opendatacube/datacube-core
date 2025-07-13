@@ -303,7 +303,7 @@ def test_hdf5_lock_release_on_failure() -> None:
         with src.open():
             assert False and "Did not expect to get here"
 
-    assert not HDF5_LOCK._is_owned()
+    assert not HDF5_LOCK._is_owned()  # type: ignore[attr-defined]
 
 
 def test_rio_slurp(tmpdir) -> None:

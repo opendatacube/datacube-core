@@ -38,13 +38,13 @@ def test_accepts_valid_docs(valid_product_update) -> None:
     doc = deepcopy(only_mandatory_fields)
     doc.update(valid_product_update)
     # Should have no errors.
-    Product.validate(doc)
+    Product.validate(doc)  # type: ignore[attr-defined]
 
 
 def test_incomplete_product_is_invalid() -> None:
     # Invalid: An empty doc.
     with pytest.raises(InvalidDocException):
-        Product.validate({})
+        Product.validate({})  # type: ignore[attr-defined]
 
 
 # Changes to the above dict that should render it invalid.
@@ -71,7 +71,7 @@ def test_rejects_invalid_docs(invalid_product_update) -> None:
     mapping = deepcopy(only_mandatory_fields)
     mapping.update(invalid_product_update)
     with pytest.raises(InvalidDocException):
-        Product.validate(mapping)
+        Product.validate(mapping)  # type: ignore[attr-defined]
 
 
 @pytest.mark.parametrize(
@@ -92,7 +92,7 @@ def test_accepts_valid_measurements(valid_product_measurement) -> None:
     mapping = deepcopy(only_mandatory_fields)
     mapping["measurements"] = [valid_product_measurement]
     # Should have no errors.
-    Product.validate(mapping)
+    Product.validate(mapping)  # type: ignore[attr-defined]
 
 
 # Changes to the above dict that should render it invalid.
@@ -115,4 +115,4 @@ def test_rejects_invalid_measurements(invalid_product_measurement) -> None:
     mapping = deepcopy(only_mandatory_fields)
     mapping["measurements"] = {"10": invalid_product_measurement}
     with pytest.raises(InvalidDocException):
-        Product.validate(mapping)
+        Product.validate(mapping)  # type: ignore[attr-defined]

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import warnings
+from collections.abc import Sequence
 from os import PathLike
 from threading import Lock
 from typing import Any, TypeAlias, cast
@@ -353,7 +354,7 @@ class ODCEnvironment:
 
 # TypeAliases for more concise type hints.
 # Located after class definitions so Sphinx can resolve them.
-GeneralisedPath: TypeAlias = str | PathLike | list[str | PathLike]
+GeneralisedPath: TypeAlias = str | PathLike | Sequence[str | PathLike]
 GeneralisedCfg: TypeAlias = ODCConfig | GeneralisedPath
 GeneralisedEnv: TypeAlias = str | ODCEnvironment
 GeneralisedRawCfg: TypeAlias = str | ConfigDict

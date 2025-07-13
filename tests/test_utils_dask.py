@@ -137,19 +137,17 @@ def test_save_blob_s3_direct(blob, monkeypatch) -> None:
 
     with moto.mock_aws():
         s3 = s3_client(region_name=region_name)
-        s3.create_bucket(
+        s3.create_bucket(  # type: ignore[attr-defined]
             Bucket=bucket, CreateBucketConfiguration={"LocationConstraint": region_name}
         )
 
         assert _save_blob_to_s3(blob, url, region_name=region_name) == (url, True)
         assert _save_blob_to_s3(blob2, url2, region_name=region_name) == (url2, True)
 
-        bb1 = s3_fetch(url, s3=s3)
-        bb2 = s3_fetch(url2, s3=s3)
-        if isinstance(blob, str):
-            bb1 = bb1.decode("utf8")
-            bb2 = bb2.decode("utf8")
-
+        bb1_fetched = s3_fetch(url, s3=s3)
+        bb2_fetched = s3_fetch(url2, s3=s3)
+        bb1 = bb1_fetched.decode("utf8") if isinstance(blob, str) else bb1_fetched
+        bb2 = bb2_fetched.decode("utf8") if isinstance(blob, str) else bb2_fetched
         assert bb1 == blob
         assert bb2 == blob2
 
@@ -183,7 +181,7 @@ def test_save_blob_s3(blob, monkeypatch, dask_client) -> None:
 
     with moto.mock_aws():
         s3 = s3_client(region_name=region_name)
-        s3.create_bucket(
+        s3.create_bucket(  # type: ignore[attr-defined]
             Bucket=bucket, CreateBucketConfiguration={"LocationConstraint": region_name}
         )
 
@@ -193,11 +191,10 @@ def test_save_blob_s3(blob, monkeypatch, dask_client) -> None:
         rr = save_blob_to_s3(dask_blob2, url2, region_name=region_name)
         assert dask_client.compute(rr).result() == (url2, True)
 
-        bb1 = s3_fetch(url, s3=s3)
-        bb2 = s3_fetch(url2, s3=s3)
-        if isinstance(blob, str):
-            bb1 = bb1.decode("utf8")
-            bb2 = bb2.decode("utf8")
+        bb1_fetched = s3_fetch(url, s3=s3)
+        bb2_fetched = s3_fetch(url2, s3=s3)
+        bb1 = bb1_fetched.decode("utf8") if isinstance(blob, str) else bb1_fetched
+        bb2 = bb2_fetched.decode("utf8") if isinstance(blob, str) else bb2_fetched
 
         assert bb1 == blob
         assert bb2 == blob2

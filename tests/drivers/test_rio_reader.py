@@ -56,7 +56,7 @@ def test_rio_rd_entry() -> None:
     # check pool reuse
     pool = ThreadPoolExecutor(max_workers=1)
     rdr = rde.new_instance({"pool": pool})
-    assert rdr._pool is pool
+    assert rdr._pool is pool  # type: ignore[attr-defined]
 
 
 def test_rd_internals_crs() -> None:
@@ -64,8 +64,12 @@ def test_rd_internals_crs() -> None:
 
     assert _dc_crs(None) is None
     assert _dc_crs(RioCRS()) is None
-    assert _dc_crs(RioCRS.from_epsg(3857)).epsg == 3857
-    assert _dc_crs(RioCRS.from_wkt(SAMPLE_WKT_WITHOUT_AUTHORITY)).epsg is None
+    dc_3857 = _dc_crs(RioCRS.from_epsg(3857))
+    assert dc_3857 is not None
+    assert dc_3857.epsg == 3857
+    dc_sample = _dc_crs(RioCRS.from_wkt(SAMPLE_WKT_WITHOUT_AUTHORITY))
+    assert dc_sample is not None
+    assert dc_sample.epsg is None
 
 
 def test_rd_internals_roi() -> None:

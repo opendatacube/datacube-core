@@ -694,7 +694,11 @@ def remove_postgres_dynamic_indexes() -> None:
     # Our normal indexes start with "ix_", dynamic indexes with "dix_"
     for table in pgres_core.METADATA.tables.values():
         table.indexes.intersection_update(
-            [i for i in table.indexes if not i.name.startswith("dix_")]
+            [
+                i
+                for i in table.indexes
+                if i.name is not None and not i.name.startswith("dix_")
+            ]
         )
 
 
@@ -946,7 +950,7 @@ def clirunner(datacube_env_name: str):
         verbose_flag: Literal[False] | str = "-v",
     ) -> Result:
         # If raw config passed in, skip default test config
-        exe_opts = (
+        exe_opts: list[str] = (
             []
             if skip_config_paths
             else list(itertools.chain(*(("--config", f) for f in CONFIG_FILE_PATHS)))

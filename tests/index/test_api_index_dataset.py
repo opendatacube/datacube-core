@@ -148,8 +148,8 @@ DatasetRecord = namedtuple(
 
 class MockDb:
     def __init__(self) -> None:
-        self.dataset = {}
-        self.dataset_source = set()
+        self.dataset: dict = {}
+        self.dataset_source: set = set()
 
     @contextmanager
     def _connect(self):

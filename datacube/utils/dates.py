@@ -94,8 +94,10 @@ def tz_as_utc(dt: datetime) -> datetime:
     return dt.astimezone(UTC)
 
 
-def mk_time_coord(dts: list[datetime], name: str = "time", units=None) -> xr.DataArray:
-    """List[datetime] -> time coordinate for xarray"""
+def mk_time_coord(
+    dts: list[str | datetime], name: str = "time", units=None
+) -> xr.DataArray:
+    """List[str | datetime] -> time coordinate for xarray"""
     attrs = {"units": units} if units is not None else {}
 
     dts = [normalise_dt(dt) for dt in dts]

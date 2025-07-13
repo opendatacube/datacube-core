@@ -11,8 +11,8 @@ import datetime
 import logging
 import math
 import warnings
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, Union
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING, Any, Union
 
 import numpy as np
 import pandas
@@ -38,7 +38,12 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 
 class GroupBy:
     def __init__(
-        self, group_by_func, dimension, units, sort_key=None, group_key=None
+        self,
+        group_by_func: Callable,
+        dimension,
+        units,
+        sort_key=None,
+        group_key: Callable[[list[Dataset] | tuple[Dataset, ...]], Any] | None = None,
     ) -> None:
         """
         GroupBy Object
@@ -173,7 +178,7 @@ class Query:
                     )
 
     @property
-    def search_terms(self) -> dict:
+    def search_terms(self) -> dict[str, Any]:
         """
         Access the search terms as a dictionary.
         """
