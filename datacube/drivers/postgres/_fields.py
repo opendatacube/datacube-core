@@ -600,7 +600,7 @@ class EqualsExpression(PgExpression):
         return self.field.evaluate(ctx) == self.value
 
 
-def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
+def parse_fields(doc: dict[str, Any], table_column) -> dict[str, PgField]:
     """
     Parse a field spec document into objects.
 

@@ -78,7 +78,7 @@ def test_mk_time_coord() -> None:
     assert list(t.coords) == ["time"]
     assert t.dtype == np.dtype("datetime64[ns]")
 
-    some_dates = ["2020-01-20", datetime(2020, 2, 23)]
+    some_dates: list[str | datetime] = ["2020-01-20", datetime(2020, 2, 23)]
     t = mk_time_coord(some_dates)
     assert t.shape == (2,)
     assert t.dtype == np.dtype("datetime64[ns]")

@@ -4,7 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 from collections import namedtuple
+from collections.abc import Iterable
 from typing import TypeAlias
+
+from odc.geo import Geometry
 
 Range = namedtuple("Range", ("begin", "end"))
 
@@ -23,5 +26,7 @@ def ranges_overlap(ra: Range, rb: Range) -> bool:
 
 
 Not = namedtuple("Not", "value")
-QueryField: TypeAlias = str | float | int | Range | datetime.datetime | Not
+QueryField: TypeAlias = (
+    str | float | int | Range | datetime.datetime | Iterable[Geometry] | Not
+)
 QueryDict: TypeAlias = dict[str, QueryField]

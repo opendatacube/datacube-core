@@ -8,6 +8,7 @@ import shutil
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import rasterio
@@ -28,7 +29,7 @@ TEST_STORAGE_NUM_MEASUREMENTS = 2
 GEOGRAPHIC_VARS = ("latitude", "longitude")
 PROJECTED_VARS = ("x", "y")
 
-GEOTIFF = {
+GEOTIFF: dict[str, Any] = {
     "date": datetime(1990, 3, 2),
     "shape": {"x": 432, "y": 321},
     "pixel_size": {"x": 25.0, "y": -25.0},

@@ -30,7 +30,9 @@ def import_function(func_ref):
 
 
 @contextmanager
-def ignore_exceptions_if(ignore_errors, errors: tuple[type[Exception]] | None = None):
+def ignore_exceptions_if(
+    ignore_errors, errors: tuple[type[Exception], ...] | None = None
+):
     """Ignore Exceptions raised within this block if ignore_errors is True"""
     if errors is None:
         errors = (Exception,)

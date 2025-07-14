@@ -37,9 +37,10 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
     :return: A polygon or multipolygon type Geometry.  None if no spatial query clauses.
     """
     geom: Geometry | None = None
-    if q.get("geopolygon") is not None:
+    polygon_candidate = q.get("geopolygon")
+    if polygon_candidate is not None:
         # New geometry-style spatial query
-        geom_term = cast(JsonDict | Geometry, q.get("geopolygon"))
+        geom_term = cast(JsonDict | Geometry, polygon_candidate)
         try:
             geom = Geometry(geom_term)
         except ValueError:

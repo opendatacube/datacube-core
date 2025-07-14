@@ -2,16 +2,19 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from collections.abc import Generator
 from contextlib import contextmanager
+from typing import Any
 from unittest import mock
 
 import numpy as np
 import pytest
 import rasterio.warp
-from affine import Affine, identity
+from affine import Affine
 from odc.geo import wh_
 from odc.geo.geobox import GeoBox
 from rasterio.warp import Resampling
+from typing_extensions import override
 
 from datacube.drivers.datasource import DataSource
 from datacube.drivers.netcdf import Variable, create_netcdf_storage_unit
@@ -22,8 +25,10 @@ from datacube.storage._rio import RasterDatasetDataSource, _url2rasterio
 from datacube.testutils.geom import epsg3577, epsg4326
 from datacube.testutils.io import RasterFileDataSource
 
+identity = Affine.identity()
 
-def mk_gbox(shape=(2, 2), transform=identity, crs=epsg4326):
+
+def mk_gbox(shape=(2, 2), transform=identity, crs=epsg4326) -> GeoBox:
     H, W = shape
     return GeoBox(wh_(W, H), transform, crs)
 
@@ -73,7 +78,7 @@ def test_progress_cbk() -> None:
     def _cbk(n_so_far, n_total, out) -> None:
         out.append((n_so_far, n_total))
 
-    cbk_args = []
+    cbk_args: list = []
     reproject_and_fuse(
         [src],
         output_data,
@@ -84,7 +89,7 @@ def test_progress_cbk() -> None:
 
     assert cbk_args == [(1, 1)]
 
-    cbk_args = []
+    cbk_args: list = []
     reproject_and_fuse(
         [src, src],
         output_data,
@@ -185,8 +190,9 @@ class FakeDatasetSource(DataSource):
             raise RuntimeError("No CRS in the data and no fallback")
         return self.crs
 
+    @override
     @contextmanager
-    def open(self):
+    def open(self) -> Generator:
         """Context manager which returns a :class:`BandDataSource`"""
         yield self.band_source_class(
             value=self.value, nodata=self.nodata, shape=self.shape
@@ -194,6 +200,7 @@ class FakeDatasetSource(DataSource):
 
 
 class BrokenBandDataSource(FakeBandDataSource):
+    @override
     def read(self, window=None, out_shape=None):
         raise OSError("Read or write failed")
 
@@ -678,7 +685,7 @@ _EXAMPLE_PRODUCT = Product(
 
 
 def test_multiband_support_in_datasetsource(example_gdal_path) -> None:
-    defn = {
+    defn: dict[str, Any] = {
         "id": "12345678123456781234567812345678",
         "format": {"name": "GeoTiff"},
         "image": {

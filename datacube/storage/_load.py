@@ -12,7 +12,7 @@ Important functions are:
 import logging
 import numbers
 from collections import OrderedDict
-from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Sequence
 from typing import Any, TypeAlias, cast
 
 import numpy as np
@@ -48,7 +48,7 @@ def _default_fuser(dst: np.ndarray, src: np.ndarray, dst_nodata) -> None:
 
 
 def reproject_and_fuse(
-    datasources: list[DataSource],
+    datasources: Sequence[DataSource],
     destination: np.ndarray,
     dst_geobox: GeoBox,
     dst_nodata: int | float | None,

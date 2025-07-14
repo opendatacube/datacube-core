@@ -35,6 +35,7 @@ def test_support_validation(non_geo_dataset_doc, eo_dataset_doc) -> None:
     idx.supports_external_lineage = False
     resolver = Doc2Dataset(idx, products=["product_a"], eo3=False)
     _, err = resolver(non_geo_dataset_doc, "//location/")
+    assert isinstance(err, str)
     assert "Non-geospatial metadata formats" in err
 
     idx.supports_legacy = False
@@ -42,4 +43,5 @@ def test_support_validation(non_geo_dataset_doc, eo_dataset_doc) -> None:
     idx.supports_external_lineage = False
     resolver = Doc2Dataset(idx, products=["product_a"], eo3=False)
     _, err = resolver(eo_dataset_doc, "//location/")
+    assert isinstance(err, str)
     assert "Legacy metadata formats" in err

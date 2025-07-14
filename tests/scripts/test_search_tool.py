@@ -7,6 +7,7 @@ Module
 """
 
 import datetime
+from os import terminal_size
 
 from dateutil.tz import UTC
 from sqlalchemy.dialects.postgresql import Range as PgRange
@@ -17,7 +18,7 @@ from datacube.scripts.search_tool import write_csv, write_pretty
 
 class MockFile:
     def __init__(self) -> None:
-        self.vals = []
+        self.vals: list = []
 
     def write(self, s) -> None:
         self.vals.append(s)
@@ -68,7 +69,7 @@ def test_pretty_serialise() -> None:
             },
             {"f1": datetime.datetime(2014, 7, 26, 23, 48, 0), "field 2": "landsat"},
         ],
-        terminal_size=(12, 12),
+        terminal_size=terminal_size((12, 12)),
     )
 
     assert m.getvalue() == "\n".join(

@@ -174,7 +174,7 @@ def allow_any(
 
 
 def classify_changes(
-    changes: list[Change], allowed_changes: Mapping[Offset, AllowPolicy]
+    changes: Sequence[Change], allowed_changes: Mapping[Offset, AllowPolicy]
 ) -> tuple[list[Change], list[Change]]:
     """
     Classify list of changes into good(allowed) and bad(not allowed) based on allowed changes.

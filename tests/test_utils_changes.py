@@ -6,6 +6,7 @@ import pytest
 
 from datacube.utils.changes import (
     MISSING,
+    Change,
     allow_addition,
     allow_any,
     allow_extension,
@@ -50,9 +51,11 @@ def test_classify_changes() -> None:
         [],
     )
 
-    changes = [(("a2",), {"b1": 1}, MISSING)]  # {'a1': 1, 'a2': {'b1': 1}} → {'a1': 1}
-    good_change = (changes, [])
-    bad_change = ([], changes)
+    changes: list[Change] = [
+        (("a2",), {"b1": 1}, MISSING)
+    ]  # {'a1': 1, 'a2': {'b1': 1}} → {'a1': 1}
+    good_change: tuple[list[Change], list[Change]] = (changes, [])
+    bad_change: tuple[list[Change], list[Change]] = ([], changes)
     assert classify_changes(changes, {}) == bad_change
     assert classify_changes(changes, {(): allow_any}) == good_change
     assert classify_changes(changes, {(): allow_removal}) == bad_change
@@ -70,7 +73,8 @@ def test_classify_changes() -> None:
     assert classify_changes(changes, {("a2",): allow_truncation}) == bad_change
     assert classify_changes(changes, {("a2",): allow_extension}) == bad_change
 
+    # Test that type errors result in RuntimeError.
     with pytest.raises(RuntimeError):
-        classify_changes(changes, {("a2",): object()})
+        classify_changes(changes, {("a2",): object()})  # type: ignore[dict-item]
 
     assert str(MISSING) == repr(MISSING)

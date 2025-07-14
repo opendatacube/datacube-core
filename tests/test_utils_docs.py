@@ -298,8 +298,9 @@ def test_traverse_datasets() -> None:
         s = "{}:{}:{:d}".format(node.id, name if name else "..", depth)
         out.append(s)
 
+    # Test that type errors raise exceptions.
     with pytest.raises(ValueError):
-        traverse_datasets(A, visitor, mode="not-a-real-mode")
+        traverse_datasets(A, visitor, mode="not-a-real-mode")  # type: ignore[arg-type]
 
     expect_preorder = """
 A:..:0
@@ -324,12 +325,12 @@ A:..:0
     for mode, expect in zip(
         ["pre-order", "post-order"], [expect_preorder, expect_postorder]
     ):
-        out = []
-        traverse_datasets(A, visitor, mode=mode, out=out)
+        out: list[str] = []
+        traverse_datasets(A, visitor, mode=mode, out=out)  # type: ignore[arg-type]
         assert "\n".join(out) == expect
 
     fv = flatten_datasets(A)
-
+    assert isinstance(fv, dict)
     assert len(fv["A"]) == 1
     assert len(fv["C"]) == 2
     assert len(fv["E"]) == 1
@@ -394,19 +395,19 @@ A:..:0
     for mode, expect in zip(
         ["pre-order", "post-order"], [expect_preorder, expect_postorder]
     ):
-        out = []
-        traverse_datasets(rdr, visitor, mode=mode, out=out)
+        out: list = []
+        traverse_datasets(rdr, visitor, mode=mode, out=out)  #  type: ignore[arg-type]
         assert "\n".join(out) == expect
 
     fv = flatten_datasets(rdr)
-
+    assert isinstance(fv, dict)
     assert len(fv[nu_map["A"]]) == 1
     assert len(fv[nu_map["C"]]) == 2
     assert len(fv[nu_map["E"]]) == 1
     assert set(fv.keys()) == set(un_map.keys())
 
     fv, dg = flatten_datasets(rdr, with_depth_grouping=True)
-
+    assert isinstance(fv, dict)
     assert len(fv[nu_map["A"]]) == 1
     assert len(fv[nu_map["C"]]) == 2
     assert len(fv[nu_map["E"]]) == 1
@@ -422,8 +423,9 @@ A:..:0
         to_set(xx) for xx in dg
     ]
 
+    # Test that type errors result in exceptions.
     with pytest.raises(ValueError):
-        SimpleDocNav([])
+        SimpleDocNav([])  # type: ignore[arg-type]
 
 
 def test_dedup() -> None:
@@ -603,11 +605,11 @@ def test_doc_reader() -> None:
     d = DocReader({"lat": ["extent", "lat"]}, {}, doc={"extent": {"lat": 4}})
     assert hasattr(d, "lat")
     assert d.lat == 4
-    assert d._doc == {"extent": {"lat": 4}}
+    assert d.doc == {"extent": {"lat": 4}}
 
     d.lat = 5
     assert d.lat == 5
-    assert d._doc == {"extent": {"lat": 5}}
+    assert d.doc == {"extent": {"lat": 5}}
 
     assert d.search_fields == {}
 

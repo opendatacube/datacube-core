@@ -13,6 +13,7 @@ import pytest
 import xarray as xr
 from odc.geo import CRS
 from odc.geo.gridspec import GridSpec
+from typing_extensions import override
 
 from datacube.model import Dataset, MetadataType, Product
 from datacube.virtual import (
@@ -500,6 +501,7 @@ def test_aggregate(dc, query, catalog) -> None:
 
 def test_register(dc, query) -> None:
     class BlueGreen(Transformation):
+        @override
         def compute(self, data):
             return (
                 (data.blue + data.green)
@@ -507,6 +509,7 @@ def test_register(dc, query) -> None:
                 .assign_attrs(data.blue.attrs)
             )
 
+        @override
         def measurements(self, input_measurements):
             bluegreen = deepcopy(input_measurements["blue"])
             bluegreen.name = "bluegreen"

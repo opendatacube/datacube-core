@@ -97,7 +97,7 @@ def create_coordinate(
 
 def create_variable(
     nco, name: str, var: Variable, grid_mapping=None, attrs=None, **kwargs
-):
+) -> netCDF4.Variable:
     assert var.dtype.kind != "U"  # Creates Non CF-Compliant NetCDF File
 
     def clamp_chunksizes(chunksizes: Sequence[int] | None, dim_names: Sequence[str]):

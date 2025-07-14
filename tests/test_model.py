@@ -53,7 +53,7 @@ def test_gridspec() -> None:
     ).all()
 
     # check geobox_cache
-    cache = {}
+    cache: dict = {}
     poly = gs.tile_geobox((3, 4)).extent
     ((c1, gbox1),) = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
     ((c2, gbox2),) = list(gs.tiles_from_geopolygon(poly, geobox_cache=cache))
@@ -221,7 +221,7 @@ def test_product_scale_factor() -> None:
     product = mk_sample_product(
         "test", measurements=[{"name": "red", "scale_factor": 33, "add_offset": -5}]
     )
-    assert product.validate(product.definition) is None
+    assert product.validate(product.definition) is None  # type: ignore[attr-defined]
     assert product.measurements["red"].scale_factor == 33
     assert product.measurements["red"].add_offset == -5
     attrs = product.measurements["red"].dataarray_attrs()
@@ -235,9 +235,10 @@ def test_product_load_hints() -> None:
     )
 
     assert "load" in product.definition
-    assert Product.validate(product.definition) is None
+    assert Product.validate(product.definition) is None  # type: ignore[attr-defined]
 
     hints = product._extract_load_hints()
+    assert hints is not None
     assert hints["crs"] == CRS("epsg:3857")
     assert hints["resolution"].yx == (-10, 10)
     assert "align" not in hints
@@ -256,7 +257,9 @@ def test_product_load_hints() -> None:
     assert hints["resolution"].yx == (-10, 10)
     assert hints["align"] == (6, 5)
     assert product.default_crs == CRS("epsg:3857")
-    assert product.default_resolution.yx == (-10, 10)
+    default_resolution = product.default_resolution
+    assert default_resolution is not None
+    assert default_resolution.yx == (-10, 10)
     assert product.default_align == (6, 5)
 
     product = mk_sample_product(
@@ -279,13 +282,13 @@ def test_product_load_hints() -> None:
     # check schema: crs and resolution are compulsory
     for k in ("resolution", "crs"):
         doc = deepcopy(product.definition)
-        assert Product.validate(doc) is None
+        assert Product.validate(doc) is None  # type: ignore[attr-defined]
 
         doc["load"].pop(k)
         assert k not in doc["load"]
 
         with pytest.raises(InvalidDocException):
-            Product.validate(doc)
+            Product.validate(doc)  # type: ignore[attr-defined]
 
     # check GridSpec leakage doesn't happen for fully defined gridspec
     product = mk_sample_product("test", with_grid_spec=True)
@@ -299,7 +302,9 @@ def test_product_load_hints() -> None:
     )
     with suppress_deprecations():
         assert product.grid_spec is None
-    assert product.default_resolution.yx == (-10, 10)
+    default_resolution = product.default_resolution
+    assert default_resolution is not None
+    assert default_resolution.yx == (-10, 10)
     assert product.default_crs == CRS("EPSG:3857")
 
     # check for fallback into partially defined `storage:`

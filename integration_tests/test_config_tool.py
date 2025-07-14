@@ -149,12 +149,11 @@ def test_db_init_rebuild(clirunner, cfg_env, ls5_telem_type) -> None:
     if cfg_env._name == "datacube":
         from datacube.drivers.postgres import _dynamic
         from datacube.drivers.postgres.sql import SCHEMA_NAME
-    else:
-        from datacube.drivers.postgis import _dynamic
-        from datacube.drivers.postgis.sql import SCHEMA_NAME
-    # We set the field creation logging to debug, as we assert its logging output below.
-    _dynamic._LOG.setLevel(logging.DEBUG)
 
+        # Set field creation logging to debug since we assert on debug output.
+        _dynamic._LOG.setLevel(logging.DEBUG)
+    else:
+        from datacube.drivers.postgis.sql import SCHEMA_NAME
     # Run on an existing database.
     result = clirunner(["-v", "-E", cfg_env._name, "system", "init", "--rebuild"])
     assert "Updated." in result.output

@@ -13,10 +13,10 @@ from datacube.utils.generic import (
 
 
 def test_map_with_lookahead() -> None:
-    def if_one(x):
+    def if_one(x) -> str:
         return "one" + str(x)
 
-    def if_many(x):
+    def if_many(x) -> str:
         return "many" + str(x)
 
     assert list(map_with_lookahead(iter([]), if_one, if_many)) == []
@@ -29,8 +29,8 @@ def test_map_with_lookahead() -> None:
 
 
 def test_qmap() -> None:
-    q = Queue(maxsize=100)
-    it2q(range(10), q)
+    q: Queue = Queue(maxsize=100)
+    it2q((i for i in range(10)), q)
     rr = list(qmap(str, q))
     assert rr == [str(x) for x in range(10)]
     q.join()  # should not block
@@ -38,7 +38,7 @@ def test_qmap() -> None:
 
 def test_thread_local_cache() -> None:
     name = "test_0123394"
-    v = {}
+    v: dict = {}
 
     assert thread_local_cache(name, v) is v
     assert thread_local_cache(name) is v

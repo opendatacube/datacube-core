@@ -6,6 +6,7 @@
 Module
 """
 
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import pytest
@@ -19,7 +20,9 @@ from datacube.ui.common import (
 
 
 def test_get_metadata_path() -> None:
-    test_file_structure = {
+    test_file_structure: Mapping[
+        str, str | Sequence[str] | Mapping[str, str | Sequence[str]]
+    ] = {
         "directory_dataset": {
             "file1.txt": "",
             "file2.txt": "",
@@ -84,17 +87,20 @@ def test_find_any_metatadata_suffix() -> None:
     )
 
     path = _find_any_metadata_suffix(files.joinpath("dataset_metadata"))
+    assert path is not None
     assert Path(path).absolute() == files.joinpath("dataset_metadata.YAML").absolute()
 
     path = _find_any_metadata_suffix(
         files.joinpath("directory_dataset", "agdc-metadata")
     )
+    assert path is not None
     assert (
         Path(path).absolute()
         == files.joinpath("directory_dataset", "agdc-metadata.json.gz").absolute()
     )
 
     path = _find_any_metadata_suffix(files.joinpath("file_dataset.tif.agdc-md"))
+    assert path is not None
     assert (
         Path(path).absolute()
         == files.joinpath("file_dataset.tif.agdc-md.yaml").absolute()

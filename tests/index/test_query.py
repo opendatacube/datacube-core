@@ -19,9 +19,9 @@ from datacube.model import Range
 
 
 def test_build_query_expressions() -> None:
-    _sat_field = SimpleDocField("platform", None, None, None)
-    _sens_field = SimpleDocField("instrument", None, None, None)
-    _lat_field = NumericRangeDocField("lat", None, None, None)
+    _sat_field = SimpleDocField("platform", "platform description", None, None)
+    _sens_field = SimpleDocField("instrument", "instrument description", None, None)
+    _lat_field = NumericRangeDocField("lat", "latitude range", None, None)
     _fields = {"platform": _sat_field, "instrument": _sens_field, "lat": _lat_field}
 
     assert [EqualsExpression(_sat_field, "LANDSAT_8")] == to_expressions(

@@ -109,6 +109,7 @@ def test_get_range_field() -> None:
         {
             "lat": {
                 "type": "float-range",
+                "description": "latitude range",
                 "max_offset": [["extents", "geospatial_lat_max"]],
                 "min_offset": [
                     ["extents", "geospatial_lat_other"],
@@ -123,7 +124,7 @@ def test_get_range_field() -> None:
         field,
         NumericRangeDocField(
             "lat",
-            None,
+            "latitude range",
             DATASET.c.metadata,
             True,
             max_offset=[["extents", "geospatial_lat_max"]],

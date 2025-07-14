@@ -122,6 +122,7 @@ def test_get_dataset_simple_fields() -> None:
         assert isinstance(f.description, str)
 
         expected_type = type_map.get(f.type_name)
+        assert expected_type is not None
         vv = f.extract(SAMPLE_DOC)
         assert isinstance(vv, expected_type)
 

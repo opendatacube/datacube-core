@@ -137,8 +137,10 @@ def invalid_mask(xx, nodata):
 
 
 def num2numpy(
-    x: int | float | None, dtype: str | numpy.dtype, ignore_range: bool | None = None
-):
+    x: int | float | None,
+    dtype: str | type[numpy.float32 | numpy.float64] | numpy.dtype,
+    ignore_range: bool | None = None,
+) -> numpy.float32 | numpy.float64 | numpy.dtype | None:
     """
     Cast python numeric value to numpy.
 

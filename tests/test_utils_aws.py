@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import json
+from typing import Any
 from unittest import mock
 
 import botocore
@@ -116,6 +117,7 @@ aws_secret_access_key = fake-fake-fake
     monkeypatch.setenv("AWS_SHARED_CREDENTIALS_FILE", str(pp / "credentials"))
 
     aws, creds = get_aws_settings()
+    assert creds is not None
     assert aws["region_name"] == "us-west-2"
     assert aws["aws_access_key_id"] == "AKIAWYXYXYXYXYXYXYXY"
     assert aws["aws_secret_access_key"] == "fake-fake-fake"
@@ -202,11 +204,11 @@ def test_s3_client(without_aws_env) -> None:
     # From ~5 seconds to ~ 0.3s
     with moto.mock_aws():
         assert (
-            str(s3_client(region_name="kk")._endpoint)
+            str(s3_client(region_name="kk")._endpoint)  # type: ignore[attr-defined]
             == "s3(https://s3.kk.amazonaws.com)"
         )
         assert (
-            str(s3_client(region_name="kk", use_ssl=False)._endpoint)
+            str(s3_client(region_name="kk", use_ssl=False)._endpoint)  # type: ignore[attr-defined]
             == "s3(http://s3.kk.amazonaws.com)"
         )
 
@@ -224,7 +226,7 @@ def test_s3_io(monkeypatch, without_aws_env) -> None:
 
     with moto.mock_aws():
         s3 = s3_client(region_name="kk")
-        s3.create_bucket(
+        s3.create_bucket(  # type: ignore[attr-defined]
             Bucket=bucket, CreateBucketConfiguration={"LocationConstraint": "kk"}
         )
         assert s3_dump(b"33", url, s3=s3) is True
@@ -250,11 +252,11 @@ def test_s3_io(monkeypatch, without_aws_env) -> None:
 def test_s3_unsigned(monkeypatch, without_aws_env) -> None:
     with moto.mock_aws():
         s3 = s3_client(aws_unsigned=True)
-        assert s3._request_signer.signature_version == botocore.UNSIGNED
+        assert s3._request_signer.signature_version == botocore.UNSIGNED  # type: ignore[attr-defined]
 
         monkeypatch.setenv("AWS_UNSIGNED", "yes")
         s3 = s3_client()
-        assert s3._request_signer.signature_version == botocore.UNSIGNED
+        assert s3._request_signer.signature_version == botocore.UNSIGNED  # type: ignore[attr-defined]
 
 
 @mock.patch("datacube.utils.aws.ec2_current_region", return_value="us-west-2")
@@ -271,7 +273,7 @@ def test_s3_client_cache(monkeypatch, without_aws_env) -> None:
         assert s3_client(cache="purge") is None
         assert s3 is not s3_client(cache=True)
 
-    opts = (
+    opts: tuple[dict[str, Any], ...] = (
         {},
         {"region_name": "foo"},
         {"region_name": "bar"},

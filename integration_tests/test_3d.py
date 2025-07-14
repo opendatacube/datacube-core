@@ -12,8 +12,8 @@ import pytest
 import yaml
 
 try:
-    from yaml import CSafeDumper as SafeDumper  # type: ignore
-    from yaml import CSafeLoader as SafeLoader  # type: ignore
+    from yaml import CSafeDumper as SafeDumper
+    from yaml import CSafeLoader as SafeLoader
 except ImportError:
     from yaml import SafeDumper, SafeLoader  # type: ignore
 
@@ -424,7 +424,7 @@ def check_open_with_dc_simple(dc, product_def, product_ids, measurement) -> None
         wlen = (
             1
             if isinstance(product_def.wavelengths, int)
-            else len(range(*product_def.wavelengths, 5)) + 1
+            else len(range(*product_def.wavelengths, 5)) + 1  # type: ignore[call-overload]
         )
         expected.insert(1, wlen)
     assert list(data[measurement].shape) == expected
@@ -510,7 +510,7 @@ def check_load_via_dss(
         wlen = (
             1
             if isinstance(product_def.wavelengths, int)
-            else len(range(*product_def.wavelengths, 5)) + 1
+            else len(range(*product_def.wavelengths, 5)) + 1  # type: ignore[call-overload]
         )
         expected.insert(1, wlen)
     assert list(data[measurement].shape) == expected

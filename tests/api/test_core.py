@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import datetime
+from collections.abc import Iterable
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import UUID
@@ -14,6 +15,7 @@ import xarray as xr
 from datacube import Datacube
 from datacube.api.core import _calculate_chunk_sizes, output_geobox
 from datacube.api.query import GroupBy
+from datacube.model import Dataset
 from datacube.testutils import mk_sample_dataset, suppress_deprecations
 from datacube.testutils.geom import AlbersGS
 
@@ -86,7 +88,7 @@ def test_grouped_datasets_should_be_in_consistent_order() -> None:
     assert all(grouped.values == grouped_2.values)
 
 
-def _group_datasets_by_date(datasets):
+def _group_datasets_by_date(datasets: Iterable[Dataset]) -> xr.DataArray:
     def group_func(d):
         return d["time"].date()
 
