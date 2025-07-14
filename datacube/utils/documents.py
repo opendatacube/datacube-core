@@ -578,7 +578,7 @@ def schema_validated(schema: Path):
     :return: wrapped class
     """
 
-    def validate(cls, document):
+    def validate(cls, document) -> None:
         return validate_document(document, cls.schema, schema.parent)
 
     def decorate(cls):
