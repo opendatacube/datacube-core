@@ -209,6 +209,7 @@ def read_strings_from_netcdf(path, variable):
 def validate_document(document, schema, schema_folder=None):
     import jsonschema
     import referencing
+    from referencing.exceptions import NoSuchResource
     from referencing.jsonschema import DRAFT4
 
     try:
@@ -216,7 +217,7 @@ def validate_document(document, schema, schema_folder=None):
         def doc_reference(path):
             path = Path(schema_folder).joinpath(path)
             if not path.exists():
-                raise ValueError(f"Reference not found: {path}")
+                raise NoSuchResource(f"Reference not found: {path}")
             referenced_schema = next(iter(read_documents(path)))[1]
             return referencing.Resource(referenced_schema, DRAFT4)
 
