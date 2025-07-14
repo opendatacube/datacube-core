@@ -6,6 +6,8 @@ from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlparse
 
+from deprecat import deprecat
+
 from datacube.model import Dataset
 from datacube.utils.uris import pick_uri, uri_resolve
 
@@ -89,6 +91,14 @@ class BandInfo:
         "uri",
     )
 
+    @deprecat(
+        deprecated_args={
+            "extra_dim_index": {
+                "version": "1.9",
+                "reason": "3D code is deprecated",
+            }
+        }
+    )
     def __init__(
         self,
         ds: Dataset,
