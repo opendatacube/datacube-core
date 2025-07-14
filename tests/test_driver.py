@@ -105,6 +105,7 @@ dataset:
 
     for name in index_drivers():
         driver = index_driver_by_name(name)
+        assert driver is not None
         with suppress_deprecations():
             metadata = driver.metadata_type_from_doc(metadata_doc)  # deprecated method
             assert isinstance(metadata, MetadataType)

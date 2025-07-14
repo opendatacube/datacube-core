@@ -111,9 +111,9 @@ def _base_known_fields() -> dict:
     return fields
 
 
-def get_native_fields() -> dict[str, NativeField]:
+def get_native_fields() -> dict[str, PgField]:
     # Native fields (hard-coded into the schema)
-    fields = {
+    fields: dict[str, PgField] = {
         "id": NativeField("id", "Dataset UUID", DATASET.c.id),
         "indexed_time": NativeField(
             "indexed_time", "When dataset was indexed", DATASET.c.added
@@ -148,7 +148,7 @@ def get_native_fields() -> dict[str, NativeField]:
     return fields
 
 
-def get_dataset_fields(metadata_type_definition):
+def get_dataset_fields(metadata_type_definition: dict[str, Any]) -> dict[str, Any]:
     dataset_section = metadata_type_definition["dataset"]
 
     fields = get_native_fields()
@@ -160,21 +160,21 @@ def get_dataset_fields(metadata_type_definition):
                 "Time when dataset was created (processed)",
                 DATASET.c.metadata,
                 False,
-                offset=dataset_section.get("creation_dt") or ["creation_dt"],
+                offset=dataset_section.get("creation_dt") or ("creation_dt",),
             ),
             "format": SimpleDocField(
                 "format",
                 "File format (GeoTiff, NetCDF)",
                 DATASET.c.metadata,
                 False,
-                offset=dataset_section.get("format") or ["format", "name"],
+                offset=dataset_section.get("format") or ("format", "name"),
             ),
             "label": SimpleDocField(
                 "label",
                 "Label",
                 DATASET.c.metadata,
                 False,
-                offset=dataset_section.get("label") or ["label"],
+                offset=dataset_section.get("label") or ("label",),
             ),
         }
     )

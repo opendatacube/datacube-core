@@ -10,7 +10,7 @@ import logging
 import uuid
 from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 from itertools import groupby
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 import deprecat
 import numpy
@@ -275,7 +275,7 @@ class Datacube:
         resampling: Resampling | dict[str, Resampling] | None = None,
         align: XY[float] | Iterable[float] | None = None,
         skip_broken_datasets: bool | None = None,
-        dask_chunks: dict[str, str | int] | None = None,
+        dask_chunks: Mapping[str, int | Literal["auto"]] | None = None,
         like: GeoBox | xarray.Dataset | xarray.DataArray | None = None,
         fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None,
         datasets: Sequence[Dataset] | None = None,
@@ -859,7 +859,7 @@ class Datacube:
         sources: xarray.DataArray,
         geobox: GeoBox,
         measurements: list[Measurement],
-        dask_chunks: dict[str, str | int],
+        dask_chunks: Mapping[str, int | Literal["auto"]],
         skip_broken_datasets: bool = False,
         extra_dims: ExtraDimensions | None = None,
         patch_url: Callable[[str], str] | None = None,
@@ -934,7 +934,7 @@ class Datacube:
                 else:
                     n_total += t_size
 
-            def _cbk(*ignored):
+            def _cbk(_a: int, _b: int) -> Any | None:
                 nonlocal n
                 n += 1
                 return cbk(n, n_total)
@@ -996,7 +996,7 @@ class Datacube:
         measurements: Mapping[str, Measurement] | list[Measurement],
         resampling: Resampling | dict[str, Resampling] | None = None,
         fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None,
-        dask_chunks: dict[str, str | int] | None = None,
+        dask_chunks: Mapping[str, int | Literal["auto"]] | None = None,
         skip_broken_datasets: bool = False,
         progress_cbk: ProgressFunction | None = None,
         extra_dims: ExtraDimensions | None = None,
@@ -1325,7 +1325,7 @@ def get_bounds(datasets: Iterable[Dataset], crs: CRS) -> Geometry:
 def _calculate_chunk_sizes(
     sources: xarray.DataArray,
     geobox: GeoBox,
-    dask_chunks: dict[str, str | int],
+    dask_chunks: Mapping[str, int | Literal["auto"]],
     extra_dims: ExtraDimensions | None = None,
 ) -> tuple[tuple, ...]:
     extra_dim_names: tuple[str, ...] = ()

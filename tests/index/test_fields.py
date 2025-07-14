@@ -49,8 +49,8 @@ def test_split_uri() -> None:
 def test_get_single_field() -> None:
     fields = parse_fields(
         {
-            "platform": {"description": "Satellite", "offset": ["platform", "code"]},
-            "instrument": {"offset": ["instrument", "name"]},
+            "platform": {"description": "Satellite", "offset": ("platform", "code")},
+            "instrument": {"offset": ("instrument", "name")},
         },
         DATASET.c.metadata,
     )
@@ -63,7 +63,7 @@ def test_get_single_field() -> None:
             "Satellite",
             DATASET.c.metadata,
             True,
-            offset=["platform", "code"],
+            offset=("platform", "code"),
         ),
     )
     assert isinstance(field, SimpleDocField)
@@ -78,7 +78,7 @@ def test_get_multi_field() -> None:
             "orbit": {
                 "description": "Orbit number",
                 "type": "integer",
-                "offset": [["acquisition", "platform_orbit"], ["orbit"]],
+                "offset": [("acquisition", "platform_orbit"), ("orbit",)],
             }
         },
         DATASET.c.metadata,
@@ -93,7 +93,7 @@ def test_get_multi_field() -> None:
             "Orbit number",
             DATASET.c.metadata,
             True,
-            offset=[["acquisition", "platform_orbit"], ["orbit"]],
+            offset=[("acquisition", "platform_orbit"), ("orbit",)],
         ),
     )
     assert isinstance(field, SimpleDocField)

@@ -121,7 +121,7 @@ def test_dask_chunks() -> None:
     assert _calculate_chunk_sizes(sources, geobox, {"y": 2, "x": 3}) == ((1,), (2, 3))
 
     with pytest.raises(ValueError):
-        _calculate_chunk_sizes(sources, geobox, {"x": "aouto"})
+        _calculate_chunk_sizes(sources, geobox, {"x": "aouto"})  # type: ignore[dict-item]
 
     with pytest.raises(KeyError):
         _calculate_chunk_sizes(sources, geobox, {"zz": 1})

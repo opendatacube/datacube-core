@@ -107,9 +107,9 @@ def _dataset_bulk_select_fields() -> tuple:
     return (Dataset.product_ref, Dataset.metadata_doc, Dataset.uri)
 
 
-def get_native_fields() -> dict[str, NativeField]:
+def get_native_fields() -> dict[str, PgField]:
     # Native fields (hard-coded into the schema)
-    fields = {
+    fields: dict[str, PgField] = {
         "id": NativeField("id", "Dataset UUID", Dataset.__table__.c.id),
         "indexed_time": NativeField(
             "indexed_time", "When dataset was indexed", Dataset.__table__.c.added
@@ -164,7 +164,7 @@ def mk_simple_offset_field(
     )
 
 
-def get_dataset_fields(metadata_type_definition):
+def get_dataset_fields(metadata_type_definition: dict[str, Any]) -> dict[str, Any]:
     dataset_section = metadata_type_definition["dataset"]
 
     fields = get_native_fields()
@@ -176,15 +176,15 @@ def get_dataset_fields(metadata_type_definition):
                 "Time when dataset was created (processed)",
                 Dataset.metadata_doc,
                 False,
-                offset=dataset_section.get("creation_dt") or ["creation_dt"],
+                offset=dataset_section.get("creation_dt") or ("creation_dt",),
             ),
             "format": mk_simple_offset_field(
                 "format",
                 "File format (GeoTiff, NetCDF)",
-                dataset_section.get("format") or ["format", "name"],
+                dataset_section.get("format") or ("format", "name"),
             ),
             "label": mk_simple_offset_field(
-                "label", "Label", dataset_section.get("label") or ["label"]
+                "label", "Label", dataset_section.get("label") or ("label",)
             ),
         }
     )
@@ -237,7 +237,7 @@ time_min = DateDocField(
     "Min of time when dataset was acquired",
     Dataset.metadata_doc,
     False,  # is it indexed
-    offset=[["properties", "dtr:start_datetime"], ["properties", "datetime"]],
+    offset=[("properties", "dtr:start_datetime"), ("properties", "datetime")],
     selection="least",
 )
 
@@ -247,7 +247,7 @@ time_max = DateDocField(
     "Max of time when dataset was acquired",
     Dataset.metadata_doc,
     False,  # is it indexed
-    offset=[["properties", "dtr:end_datetime"], ["properties", "datetime"]],
+    offset=[("properties", "dtr:end_datetime"), ("properties", "datetime")],
     selection="greatest",
 )
 

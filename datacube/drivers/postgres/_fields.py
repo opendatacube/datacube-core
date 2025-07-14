@@ -7,7 +7,7 @@ Build and index fields within documents.
 """
 
 from collections import namedtuple
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
@@ -22,6 +22,7 @@ from datacube import utils
 from datacube.model import Range
 from datacube.model.fields import Expression, Field
 from datacube.utils import get_doc_offset
+from datacube.utils.changes import Offset
 from datacube.utils.dates import tz_aware
 
 from .sql import FLOAT8RANGE
@@ -131,7 +132,7 @@ class PgDocField(PgField):
 
     def _alchemy_offset_value(
         self,
-        doc_offsets: tuple[tuple[str]],
+        doc_offsets: Sequence[Offset],
         agg_function: Callable[[Any], ColumnElement],
     ) -> ColumnElement:
         """
@@ -189,7 +190,8 @@ class PgDocField(PgField):
 
 class SimpleDocField(PgDocField):
     """
-    A field with a single value (eg. String, int) calculated as an offset inside a (jsonb) document.
+    A field with a single value (e.g. String, int) calculated as an offset inside
+    a (jsonb) document.
     """
 
     def __init__(
@@ -197,8 +199,8 @@ class SimpleDocField(PgDocField):
         name: str,
         description: str,
         alchemy_column,
-        indexed,
-        offset=None,
+        indexed: bool,
+        offset: Offset | Sequence[Offset] | None = None,
         selection: str = "first",
     ) -> None:
         super().__init__(name, description, alchemy_column, indexed)

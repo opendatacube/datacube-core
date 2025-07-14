@@ -247,8 +247,7 @@ def task_app(make_config, make_tasks):
                 config, tasks = load_config(
                     index, app_config, make_config, make_tasks, *args, **kwargs
                 )
-
-            if input_tasks_file:
+            else:
                 config, tasks = load_tasks(input_tasks_file)
 
             if output_tasks_file:

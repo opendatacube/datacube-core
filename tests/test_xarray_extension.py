@@ -18,7 +18,7 @@ multi_coords = xr.DataArray(
         (
             "spec",
             pd.MultiIndex.from_arrays(
-                np.array([["2001-01-01"], ["2001-01-01"]]), names=("time", "solar_day")
+                [["2001-01-01"], ["2001-01-01"]], names=("time", "solar_day")
             ),
         )
     ],

@@ -11,7 +11,9 @@ import functools
 import logging
 import os
 import sys
+from collections.abc import Mapping
 from textwrap import dedent
+from typing import Literal
 
 import click
 from lark.exceptions import UnexpectedEOF
@@ -57,7 +59,7 @@ def compose(*functions):
 
 
 class ColorFormatter(logging.Formatter):
-    colors = {
+    colors: Mapping[str, Mapping[Literal["fg"], str]] = {
         "info": {"fg": "white"},
         "error": {"fg": "red"},
         "exception": {"fg": "red"},
