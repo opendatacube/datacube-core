@@ -812,7 +812,7 @@ def _make_tiffs_and_yamls(tiffs_dir: str, config: dict, day_offset: int):
 
     # Alter band data
     bands = config["image"]["bands"]
-    for band in bands.keys():
+    for band in bands:
         # Copy dict to avoid aliases in yaml output (for better legibility)
         bands[band]["shape"] = copy(GEOTIFF["shape"])
         bands[band]["cell_size"] = {
@@ -890,10 +890,11 @@ def ga_metadata_type_doc():
 @pytest.fixture
 def default_metadata_types(index, eo3_metadata_type_docs):
     """Inserts the default metadata types into the Index"""
-    if index.supports_legacy:
-        type_docs = default_metadata_type_docs()
-    else:
-        type_docs = eo3_metadata_type_docs
+    type_docs = (
+        default_metadata_type_docs()
+        if index.supports_legacy
+        else eo3_metadata_type_docs
+    )
     for d in type_docs:
         index.metadata_types.add(index.metadata_types.from_doc(d))
     return index.metadata_types.get_all()
@@ -965,7 +966,7 @@ def clirunner(datacube_env_name: str):
             cli_method, exe_opts, catch_exceptions=catch_exceptions
         )
         if expect_success:
-            assert 0 == result.exit_code, (
+            assert result.exit_code == 0, (
                 f"Error for {opts!r}. output: {result.output!r}"
             )
         return result
@@ -990,7 +991,7 @@ def clirunner_raw():
         runner = CliRunner()
         result = runner.invoke(cli_method, exe_opts, catch_exceptions=catch_exceptions)
         if expect_success:
-            assert 0 == result.exit_code, (
+            assert result.exit_code == 0, (
                 f"Error for {opts!r}. output: {result.output!r}"
             )
         return result

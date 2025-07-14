@@ -6,6 +6,7 @@
 Test utility functions from :module:`datacube.utils`
 """
 
+import contextlib
 import os
 import pathlib
 import string
@@ -128,14 +129,15 @@ def test_stats_dates() -> None:
 
 def test_uri_to_local_path() -> None:
     if os.name == "nt":
-        assert "C:\\tmp\\test.tmp" == str(uri_to_local_path("file:///C:/tmp/test.tmp"))
-        assert "\\\\remote\\path\\file.txt" == str(
-            uri_to_local_path("file://remote/path/file.txt")
+        assert str(uri_to_local_path("file:///C:/tmp/test.tmp")) == "C:\\tmp\\test.tmp"
+        assert (
+            str(uri_to_local_path("file://remote/path/file.txt"))
+            == "\\\\remote\\path\\file.txt"
         )
 
     else:
-        assert "/tmp/something.txt" == str(
-            uri_to_local_path("file:///tmp/something.txt")
+        assert (
+            str(uri_to_local_path("file:///tmp/something.txt")) == "/tmp/something.txt"
         )
 
         with pytest.raises(ValueError):
@@ -597,12 +599,9 @@ def test_num2numpy() -> None:
     assert num2numpy(256, "uint8") is None
     assert num2numpy(-1, "uint16") is None
     assert num2numpy(-1, "uint32") is None
-    try:
-        # Numpy 1.x supports wrapping of unsisinged types
+    with contextlib.suppress(OverflowError):
+        # Numpy 1.x supports wrapping of unsigned types, 2.0 throws OverflowError.
         assert num2numpy(-1, "uint8", ignore_range=True) == np.uint8(255)
-    except OverflowError:
-        # Numpy 2.0 will throw Overflow error rather than wrapping
-        pass
 
     assert num2numpy(0, "uint8") == 0
     assert num2numpy(255, "uint8") == 255

@@ -114,20 +114,18 @@ def _write_cog(
     assert geobox.shape == (h, w)
 
     if overview_levels is None:
-        if min(w, h) < 512:
-            overview_levels = []
-        else:
-            overview_levels = [2**i for i in range(1, 6)]
-
-    if fname != ":mem:":
+        overview_levels = [] if min(w, h) < 512 else [2**i for i in range(1, 6)]
+    not_mem = fname != ":mem:"
+    if not_mem:
         path = check_write_path(
             fname, overwrite
         )  # aborts if overwrite=False and file exists already
 
-    if isinstance(overview_resampling, str):
-        resampling = resampling_s2rio(overview_resampling)
-    else:
-        resampling = overview_resampling
+    resampling = (
+        resampling_s2rio(overview_resampling)
+        if isinstance(overview_resampling, str)
+        else overview_resampling
+    )
 
     if (blocksize % 16) != 0:
         warnings.warn("Block size must be a multiple of 16, will be adjusted")
@@ -162,58 +160,59 @@ def _write_cog(
             return
 
         for _, win in dst.block_windows():
-            if pix.ndim == 2:
-                block = pix[win.toslices()]
-            else:
-                block = pix[(slice(None),) + win.toslices()]
+            block = (
+                pix[win.toslices()]
+                if pix.ndim == 2
+                else pix[(slice(None),) + win.toslices()]
+            )
 
             dst.write(block, indexes=band, window=win)
 
     # Deal efficiently with "no overviews needed case"
     if len(overview_levels) == 0:
-        if fname == ":mem:":
-            with rasterio.MemoryFile() as mem:
-                with mem.open(driver="GTiff", **rio_opts) as dst:
-                    _write(pix, band, dst)
-                return bytes(mem.getbuffer())
-        else:
+        if not_mem:
             with rasterio.open(path, mode="w", driver="GTiff", **rio_opts) as dst:
                 _write(pix, band, dst)
             return path
+        with rasterio.MemoryFile() as mem:
+            with mem.open(driver="GTiff", **rio_opts) as dst:
+                _write(pix, band, dst)
+            return bytes(mem.getbuffer())
 
     # copy re-compresses anyway so skip compression for temp image
     tmp_opts = toolz.dicttoolz.dissoc(rio_opts, "compress", "predictor", "zlevel")
     tmp_opts.update(intermediate_compression)
 
-    with rasterio.Env(GDAL_TIFF_OVR_BLOCKSIZE=ovr_blocksize):
-        with rasterio.MemoryFile() as mem:
-            with mem.open(driver="GTiff", **tmp_opts) as tmp:
-                _write(pix, band, tmp)
-                tmp.build_overviews(overview_levels, resampling)
+    with (
+        rasterio.Env(GDAL_TIFF_OVR_BLOCKSIZE=ovr_blocksize),
+        rasterio.MemoryFile() as mem,
+        mem.open(driver="GTiff", **tmp_opts) as tmp,
+    ):
+        _write(pix, band, tmp)
+        tmp.build_overviews(overview_levels, resampling)
 
-                if fname == ":mem:":
-                    with rasterio.MemoryFile() as mem2:
-                        rio_copy(
-                            tmp,
-                            mem2.name,
-                            driver="GTiff",
-                            copy_src_overviews=True,
-                            **toolz.dicttoolz.dissoc(
-                                rio_opts,
-                                "width",
-                                "height",
-                                "count",
-                                "dtype",
-                                "crs",
-                                "transform",
-                                "nodata",
-                            ),
-                        )
-                        return bytes(mem2.getbuffer())
+        if not_mem:
+            rio_copy(tmp, path, driver="GTiff", copy_src_overviews=True, **rio_opts)
+            return path
 
-                rio_copy(tmp, path, driver="GTiff", copy_src_overviews=True, **rio_opts)
-
-    return path
+        with rasterio.MemoryFile() as mem2:
+            rio_copy(
+                tmp,
+                mem2.name,
+                driver="GTiff",
+                copy_src_overviews=True,
+                **toolz.dicttoolz.dissoc(
+                    rio_opts,
+                    "width",
+                    "height",
+                    "count",
+                    "dtype",
+                    "crs",
+                    "transform",
+                    "nodata",
+                ),
+            )
+            return bytes(mem2.getbuffer())
 
 
 _delayed_write_cog_to_mem = dask.delayed(  # pylint: disable=invalid-name

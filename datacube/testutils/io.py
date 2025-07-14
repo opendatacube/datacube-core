@@ -149,10 +149,11 @@ def native_load(ds, measurements=None, basis=None, **kw):
     geobox = native_geobox(
         ds, measurements, basis
     )  # early exit via exception if no compatible grid exists
-    if measurements is not None:
-        mm = ds.product.lookup_measurements(measurements)
-    else:
-        mm = ds.product.measurements
+    mm = (
+        ds.product.measurements
+        if measurements is None
+        else ds.product.lookup_measurements(measurements)
+    )
 
     return Datacube.load_data(
         Datacube.group_datasets([ds], "time"), geobox, measurements=mm, **kw
@@ -296,7 +297,7 @@ def rio_geobox(meta):
 
 
 def _fix_resampling(kw: dict) -> None:
-    r = kw.get("resampling", None)
+    r = kw.get("resampling")
     if isinstance(r, str):
         kw["resampling"] = resampling_s2rio(r)
 

@@ -51,7 +51,7 @@ def _get_band_and_layer(b: dict[str, Any]) -> tuple[int | None, str | None]:
 
 def _extract_driver_data(ds: Dataset, mm: dict[str, Any]) -> Any | None:
     ds_data = ds.metadata_doc.get("driver_data", None)
-    mm_data = mm.get("driver_data", None)
+    mm_data = mm.get("driver_data")
     if isinstance(ds_data, dict) and isinstance(mm_data, str):
         return ds_data.get(mm_data, {})
     if mm_data is not None:
@@ -68,10 +68,7 @@ def measurement_paths(ds: Dataset) -> dict[str, str]:
     """
     if not ds.uri:
         raise ValueError("No locations on this dataset")
-    if not ds.has_multiple_uris():
-        base = ds.uri
-    else:
-        base = pick_uri(ds.uris)
+    base = pick_uri(ds.uris) if ds.has_multiple_uris() else ds.uri
 
     return {k: uri_resolve(base, m.get("path")) for k, m in ds.measurements.items()}
 
@@ -112,10 +109,7 @@ class BandInfo:
 
         if not ds.uri:
             raise ValueError("No uris defined on a dataset")
-        if not ds.has_multiple_uris():
-            base_uri = ds.uri
-        else:
-            base_uri = ds.legacy_uri(uri_scheme)
+        base_uri = ds.legacy_uri(uri_scheme) if ds.has_multiple_uris() else ds.uri
         uri = uri_resolve(base_uri, mm.get("path"))
         if patch_url is not None:
             uri = patch_url(uri)

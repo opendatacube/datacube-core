@@ -182,6 +182,7 @@ select = [
     "I",  # isort
     "N",  # pep8-naming
     "RUF", # Ruff-specific rules
+    "SIM", # flake8-simplify
     "UP", # pyupgrade
     "W",  # pycodestyle warnings
     "F",  # pyflakes
@@ -196,6 +197,7 @@ ignore = [
     "B905",
     "RUF005",
     "RUF012",
+    "SIM115",
 ]
 
 [tool.ruff.lint.pep8-naming]
@@ -212,6 +214,7 @@ extend-ignore-names = [
 "datacube/drivers/postgis/_schema.py" = ["E711"]
 "datacube/drivers/postgres/_api.py" = ["E711"]
 "datacube/drivers/postgres/_schema.py" = ["E711"]
+"datacube/utils/cog.py" = ["SIM117"] # Fixed in separate PR.
 
 [tool.ruff.lint.pycodestyle]
 max-line-length = 120

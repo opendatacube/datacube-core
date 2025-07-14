@@ -70,10 +70,7 @@ def driver_based_load(
 ):
     fail_on_error = not skip_broken_datasets
 
-    if extra_dims is None:
-        extra_coords = []
-    else:
-        extra_coords = _extract_coords(extra_dims)
+    extra_coords = [] if extra_dims is None else _extract_coords(extra_dims)
 
     tss = [
         datetime.fromtimestamp(float(ts) * 1e-9)

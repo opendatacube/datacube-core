@@ -79,7 +79,7 @@ def find_config(
         else:
             paths.extend(_DEFAULT_CONFIG_SEARCH_PATH)
             using_default_paths = True
-    elif isinstance(paths_in, str) or isinstance(paths_in, PathLike):
+    elif isinstance(paths_in, str | PathLike):
         paths.append(paths_in)
     else:
         paths.extend(paths_in)

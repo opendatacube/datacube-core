@@ -63,9 +63,7 @@ class DatasetTuple(NamedTuple):
 
     @property
     def uri_is_string(self) -> bool:
-        if isinstance(self.uri_, str):
-            return True
-        return False
+        return isinstance(self.uri_, str)
 
     @property
     def is_legacy(self) -> bool:

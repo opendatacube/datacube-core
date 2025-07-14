@@ -581,10 +581,7 @@ class PostgisDbAPI:
                 # assume func, clause, or other expression, and leave as-is
                 return o
 
-        if order_by is not None:
-            order_by = [_ob_exprs(o) for o in order_by]
-        else:
-            order_by = []
+        order_by = [] if order_by is None else [_ob_exprs(o) for o in order_by]
 
         select_columns = tuple(
             f.alchemy_expression.label(f.name)  # type: ignore[union-attr]
@@ -961,10 +958,7 @@ class PostgisDbAPI:
         :return:  Number of spatial index entries updated or verified as unindexed.
         """
         verified = 0
-        if crs_seq:
-            crses = list(crs_seq)
-        else:
-            crses = self._db.spatially_indexed_crses()
+        crses = list(crs_seq) if crs_seq else self._db.spatially_indexed_crses()
 
         # Update implementation.
         # Design will change, but this method should be fairly low level to be as efficient as possible
@@ -1383,10 +1377,11 @@ class PostgisDbAPI:
                 derived_id=row.derived_dataset_ref,
             )
             relations.append(rel)
-            if direction == LineageDirection.SOURCES:
-                next_id = rel.source_id
-            else:
-                next_id = rel.derived_id
+            next_id = (
+                rel.source_id
+                if direction == LineageDirection.SOURCES
+                else rel.derived_id
+            )
             if next_id not in ids_so_far:
                 next_lvl_ids.add(next_id)
                 ids_so_far.add(next_id)

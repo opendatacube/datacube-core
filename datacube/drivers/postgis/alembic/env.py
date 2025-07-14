@@ -85,18 +85,10 @@ def include_name(
             return False
 
         # Ignore dynamically generated spatial index tables
-        if is_spindex_table_name(name):
-            return False
-
-        # Include other tables
-        return True
+        return not is_spindex_table_name(name)
     elif type_ == "schema":
-        if name is None or name == SCHEMA_NAME:
-            # Monitor default and odc schema
-            return True
-        else:
-            # Ignore any other schemas
-            return False
+        # Monitor default and odc schema
+        return name is None or name == SCHEMA_NAME
     elif type_ == "column":
         # Include all columns
         return True

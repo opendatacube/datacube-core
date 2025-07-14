@@ -297,7 +297,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             for record in connection.get_duplicates(group_fields, expressions):
                 as_dict = record._asdict()
-                if "ids" in as_dict.keys():
+                if "ids" in as_dict:
                     ids = as_dict.pop("ids")
                     yield (
                         namedtuple("search_result", as_dict.keys())(**as_dict),
@@ -880,7 +880,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     def _get_dataset_types(self, q) -> set:
         types = set()
-        if "product" in q.keys():
+        if "product" in q:
             types.add(self.products.get_by_name(q["product"]))
         else:
             # Otherwise search any metadata type that has all the given search fields.

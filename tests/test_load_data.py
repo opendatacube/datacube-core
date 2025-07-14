@@ -299,9 +299,9 @@ def test_hdf5_lock_release_on_failure() -> None:
     )
     src = RasterDatasetDataSource(BandInfo(ds, "xx"))
 
-    with pytest.raises(OSError):
+    with pytest.raises(OSError):  # noqa: SIM117
         with src.open():
-            assert False and "Did not expect to get here"
+            raise Exception("Did not expect to get here")
 
     assert not HDF5_LOCK._is_owned()  # type: ignore[attr-defined]
 
@@ -407,7 +407,7 @@ def test_missing_file_handling() -> None:
         rio_slurp("no-such-file.tiff")
 
     # check that only requested exceptions are caught
-    with pytest.raises(IOError):
+    with pytest.raises(IOError):  # noqa: SIM117
         with ignore_exceptions_if(True, (ValueError, ArithmeticError)):
             rio_slurp("no-such-file.tiff")
 

@@ -213,10 +213,7 @@ class BoolOptionHandler(ODCOptionHandler):
         value = super().validate_and_normalise(value)
         if isinstance(value, bool):
             return value
-        elif isinstance(value, str) and value.lower() == "true":
-            return True
-        else:
-            return False
+        return isinstance(value, str) and value.lower() == "true"
 
 
 class IAMAuthenticationOptionHandler(ODCOptionHandler):
@@ -233,10 +230,7 @@ class IAMAuthenticationOptionHandler(ODCOptionHandler):
     def validate_and_normalise(self, value: Any) -> Any:
         if isinstance(value, bool):
             return value
-        elif isinstance(value, str) and value.lower() in ("y", "yes"):
-            return True
-        else:
-            return False
+        return isinstance(value, str) and value.lower() in ("y", "yes")
 
     @override
     def handle_dependent_options(self, value: Any) -> None:

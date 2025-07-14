@@ -221,7 +221,7 @@ def test_read_docs_from_s3(sample_document_files, monkeypatch) -> None:
 
         _test_read_docs_impl(mocked_s3_objs)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError):  # noqa: SIM117
         with _open_from_s3("https://not-s3.ga/file.txt"):
             pass
 
@@ -250,10 +250,9 @@ def _test_read_docs_impl(sample_documents: Iterable[tuple[str, int]]) -> None:
             assert isinstance(uri, str)
 
         url = as_url(doc_url)
-        if num_docs > 1:
-            expect_uris = [as_url(url) + f"#part={i}" for i in range(num_docs)]
-        else:
-            expect_uris = [as_url(url)]
+        expect_uris = (
+            [url + f"#part={i}" for i in range(num_docs)] if num_docs > 1 else [url]
+        )
 
         assert [f for f, _ in all_docs] == expect_uris
 

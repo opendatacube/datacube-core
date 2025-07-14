@@ -423,7 +423,7 @@ def test_ini_from_paths(
         cfg = ODCConfig()
         assert cfg[None]._name == "legacy"
 
-    with suppress_deprecations():
+    with suppress_deprecations():  # noqa: SIM117
         with monkeypatch.context() as mp:
             mp.setenv(
                 "DATACUBE_CONFIG_PATH",

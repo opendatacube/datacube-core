@@ -239,10 +239,7 @@ class GeoboxTiles:
         """
         Return tile indexes overlapping the polygon
         """
-        if self._gbox.crs is None:
-            poly = polygon
-        else:
-            poly = polygon.to_crs(self._gbox.crs)
+        poly = polygon if self._gbox.crs is None else polygon.to_crs(self._gbox.crs)
         yy, xx = self.range_from_bbox(poly.boundingbox)
         for idx in itertools.product(yy, xx):
             gbox = self[idx]

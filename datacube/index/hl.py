@@ -313,10 +313,7 @@ def resolve_legacy_lineage(
         doc = ds.doc
 
         db_ds = db_dss.get(ds.id)
-        if db_ds:
-            product = db_ds.product
-        else:
-            product = matcher(doc)
+        product = db_ds.product if db_ds else matcher(doc)
 
         check_intended_eo3(ds, product)
         return with_cache(

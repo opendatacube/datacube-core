@@ -33,7 +33,7 @@ def test_band_layer() -> None:
 def test_band_info() -> None:
     bands = [
         {"name": n, "dtype": "uint8", "units": "K", "nodata": 33, "path": n + ".tiff"}
-        for n in "a b c".split(" ")
+        for n in ["a", "b", "c"]
     ]
 
     ds = mk_sample_dataset(bands, uri="file:///tmp/datataset.yml", format="GeoTIFF")
@@ -93,7 +93,7 @@ def test_band_info_with_url_mangling() -> None:
 
     bands = [
         {"name": n, "dtype": "uint8", "units": "K", "nodata": 33, "path": n + ".tiff"}
-        for n in "a b c".split(" ")
+        for n in ["a", "b", "c"]
     ]
 
     ds = mk_sample_dataset(bands, uri="file:///tmp/datataset.yml", format="GeoTIFF")

@@ -60,6 +60,8 @@ __all__ = [
     "ranges_overlap",
 ]
 
+import contextlib
+
 from deprecat import deprecat
 from odc.geo import CRS, BoundingBox, Geometry, Resolution, res_, resyx_, wh_, yx_
 from odc.geo.geobox import GeoBox
@@ -743,7 +745,7 @@ class Product:
         if self._canonical_measurements is None:
 
             def fix_nodata(m: dict[str, Any]) -> dict[str, Any]:
-                nodata = m.get("nodata", None)
+                nodata = m.get("nodata")
                 if isinstance(nodata, str):
                     m = dict(**m)
                     m["nodata"] = float(nodata)
@@ -761,10 +763,11 @@ class Product:
         """
         List of dimension labels for data in this product
         """
-        if self.grid_spec is not None:
-            spatial_dims = self.grid_spec.dimensions
-        else:
-            spatial_dims = DEFAULT_SPATIAL_DIMS
+        spatial_dims = (
+            DEFAULT_SPATIAL_DIMS
+            if self.grid_spec is None
+            else self.grid_spec.dimensions
+        )
 
         return ("time",) + spatial_dims
 
@@ -882,14 +885,13 @@ class Product:
                     if (
                         "wavelength" in spectral_definition
                         and "response" in spectral_definition
+                    ) and len(spectral_definition.get("wavelength")) != len(
+                        spectral_definition.get("response")
                     ):
-                        if len(spectral_definition.get("wavelength")) != len(
-                            spectral_definition.get("response")
-                        ):
-                            raise ValueError(
-                                f"spectral_definition_map: wavelength should be the same length as response "
-                                f"in the product definition for spectral definition at index {idx}."
-                            )
+                        raise ValueError(
+                            f"spectral_definition_map: wavelength should be the same length as response "
+                            f"in the product definition for spectral definition at index {idx}."
+                        )
 
     def canonical_measurement(self, measurement: str) -> str:
         """resolve measurement alias into canonical name"""
@@ -974,10 +976,8 @@ class Product:
             return self._load_hints
 
         hints = None
-        try:
+        with contextlib.suppress(Exception):
             hints = self._extract_load_hints()
-        except Exception:
-            pass
 
         if hints is None:
             self._load_hints = {}
@@ -1319,10 +1319,7 @@ class ExtraDimensions:
 
         :return: A boolean if ExtraDimensions has an empty dimension, otherwise False.
         """
-        for value in self._coords.values():
-            if value.shape[0] == 0:
-                return True
-        return False
+        return any(value.shape[0] == 0 for value in self._coords.values())
 
     def __getitem__(self, dim_slices: ExtraDimensionSlices) -> ExtraDimensions:
         """Return a ExtraDimensions subsetted by dim_slices
@@ -1433,7 +1430,7 @@ class ExtraDimensions:
         :return: A tuple containing the integer indexes of `coord_range`.
         """
         # Convert to Tuple if it's an int or float
-        if isinstance(coord_range, int) or isinstance(coord_range, float):
+        if isinstance(coord_range, int | float):
             coord_range = (coord_range, coord_range)
 
         start_index = self.index_of(dim, coord_range[0])

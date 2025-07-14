@@ -294,7 +294,7 @@ def test_transactions_api_ctx_mgr(
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
     ds2, err = resolver(*eo3_ls8_dataset2_doc)
-    with pytest.raises(Exception) as e:
+    with pytest.raises(Exception) as e:  # noqa: SIM117
         with index.transaction() as trans:
             assert index.datasets.get(ds1.id) is None
             index.datasets.add(ds1, with_lineage=False)
@@ -328,7 +328,7 @@ def test_transactions_api_ctx_mgr_nested(
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
     ds2, err = resolver(*eo3_ls8_dataset2_doc)
-    with pytest.raises(Exception) as e:
+    with pytest.raises(Exception) as e:  # noqa: SIM117
         with index.transaction():
             with index.transaction() as trans:
                 assert index.datasets.get(ds1.id) is None
@@ -337,13 +337,13 @@ def test_transactions_api_ctx_mgr_nested(
                 raise Exception("Rollback!")
     assert "Rollback!" in str(e.value)
     assert index.datasets.get(ds1.id) is None
-    with index.transaction():
+    with index.transaction():  # noqa: SIM117
         with index.transaction() as trans:
             assert index.datasets.get(ds1.id) is None
             index.datasets.add(ds1, False)
             assert index.datasets.get(ds1.id) is not None
     assert index.datasets.get(ds1.id) is not None
-    with index.transaction():
+    with index.transaction():  # noqa: SIM117
         with index.transaction() as trans:
             index.datasets.add(ds2, False)
             assert index.datasets.get(ds2.id) is not None
@@ -749,7 +749,7 @@ def test_bulk_reads_transaction(
     eo3_ls8_dataset_doc,
     eo3_ls8_dataset2_doc,
 ) -> None:
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError) as e:  # noqa: SIM117
         with index.datasets._db_connection() as conn:
             conn.bulk_simple_dataset_search(batch_size=2)
     assert "within a transaction" in str(e.value)

@@ -123,7 +123,7 @@ def check_inconsistent_lineage(clirunner, index) -> None:
 
     child_docs = [ds.sources[x].doc for x in ("ae",)]
     modified_doc = toolz.assoc_in(
-        ds.doc, "lineage.source_datasets.ae.label".split("."), "modified"
+        ds.doc, ["lineage", "source_datasets", "ae", "label"], "modified"
     )
 
     prefix = write_files(

@@ -202,10 +202,7 @@ def xr_apply(
 
     data = numpy.empty(shape=data_array.shape, dtype=dtype)
     for i, index, entry in xr_iter(data_array):
-        if with_numeric_index:
-            v = func(i, index, entry)
-        else:
-            v = func(index, entry)
+        v = func(i, index, entry) if with_numeric_index else func(index, entry)
         data[i] = v
     return xarray.DataArray(data, coords=data_array.coords, dims=data_array.dims)
 
@@ -321,10 +318,7 @@ def traverse_datasets(
 
         func(ds, depth=depth, name=name, **kwargs)
 
-    proc = {"post-order": visit_post_order, "pre-order": visit_pre_order}.get(
-        mode, None
-    )
-
+    proc = {"post-order": visit_post_order, "pre-order": visit_pre_order}.get(mode)
     if proc is None:
         raise ValueError(f"Unsupported traversal mode: {mode}")
 

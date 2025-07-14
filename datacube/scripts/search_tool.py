@@ -25,14 +25,14 @@ from datacube.utils.dates import tz_as_utc
 PASS_INDEX = ui.pass_index("datacube-search")
 
 
-def printable_values(d) -> dict:
+def printable_values(d: dict[str, Any]) -> dict[str, str]:
     return {k: printable(v) for k, v in d.items()}
 
 
 def write_pretty(
-    out_f,
+    out_f: Any,
     field_names: Collection[str],
-    search_results,
+    search_results: list[dict[str, Any]],
     terminal_size: t_size = shutil.get_terminal_size(),
 ) -> None:
     """
@@ -55,17 +55,18 @@ def write_pretty(
         record_num += 1
 
 
-def write_csv(out_f: Any, field_names: Collection, search_results: dict) -> None:
+def write_csv(
+    out_f: Any, field_names: Collection[str], search_results: list[dict[str, Any]]
+) -> None:
     """
     Output as a CSV.
     """
-    search_results = list(search_results)
     writer = csv.DictWriter(out_f, tuple(sorted(field_names)))
     writer.writeheader()
     writer.writerows(printable_values(d) for d in search_results)
 
 
-OUTPUT_FORMATS: dict[str, Callable[[Any, Collection, dict], None]] = {
+OUTPUT_FORMATS: dict[str, Callable[[Any, Collection, list[dict[str, Any]]], None]] = {
     "csv": write_csv,
     "pretty": write_pretty,
 }
@@ -112,7 +113,7 @@ def product_counts(index, period, expressions) -> None:
     """
     Count product Datasets available by period
 
-    PERIOD: eg. 1 month, 6 months, 1 year
+    PERIOD: e.g. 1 month, 6 months, 1 year
     """
     click.echo(
         "WARNING: The `datacube-search product-counts` command is deprecated and will be removed in a future release. "
@@ -129,12 +130,12 @@ def product_counts(index, period, expressions) -> None:
 
 
 @singledispatch
-def printable(val):
+def printable(val) -> str:
     return val
 
 
 @printable.register(type(None))
-def printable_none(val) -> str:
+def printable_none(val: None) -> str:
     return ""
 
 

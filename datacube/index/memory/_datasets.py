@@ -359,11 +359,11 @@ class DatasetResource(AbstractDatasetResource):
     @override
     def get_all_dataset_ids(self, archived: bool | None = False) -> Iterable[UUID]:
         if archived:
-            return (id_ for id_ in self._archived_by_id.keys())
+            return (id_ for id_ in self._archived_by_id)
         elif archived is not None:
-            return (id_ for id_ in self._active_by_id.keys())
+            return (id_ for id_ in self._active_by_id)
         else:
-            return (id_ for id_ in self._by_id.keys())
+            return (id_ for id_ in self._by_id)
 
     @override
     @deprecat(
@@ -739,7 +739,7 @@ class DatasetResource(AbstractDatasetResource):
             ds_fields.update(custom_fields)
             result_vals = {
                 fn: ds_fields[fn].extract(ds.metadata_doc) if fn in ds_fields else None
-                for fn in field_name_d.keys()
+                for fn in field_name_d
             }
             yield result_type(**result_vals)
 
@@ -929,10 +929,7 @@ class DatasetResource(AbstractDatasetResource):
         archived: bool | None = False,
         **query: QueryField,
     ) -> Iterable[tuple]:
-        if custom_offsets:
-            custom_fields = build_custom_fields(custom_offsets)
-        else:
-            custom_fields = {}
+        custom_fields = build_custom_fields(custom_offsets) if custom_offsets else {}
 
         def make_ds_light(ds: Dataset) -> tuple:
             fields = {

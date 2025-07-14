@@ -113,7 +113,7 @@ def test_field_expression_unchanged(
 
     # The time field on the default 'eo' metadata type.
     field = default_metadata_type.dataset_fields["time"]
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
+    assert isinstance(field, PgrPgField | PgsPgField)
     assert field.sql_expression == (
         "tstzrange("
         "least("
@@ -126,7 +126,7 @@ def test_field_expression_unchanged(
     )
 
     field = default_metadata_type.dataset_fields["lat"]
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
+    assert isinstance(field, PgrPgField | PgsPgField)
     assert field.sql_expression == (
         "agdc.float8range("
         "least("
@@ -144,22 +144,19 @@ def test_field_expression_unchanged(
 
     # A single string value
     field = default_metadata_type.dataset_fields["platform"]
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
+    assert isinstance(field, PgrPgField | PgsPgField)
     assert field.sql_expression == ("agdc.dataset.metadata #>> '{platform, code}'")
 
     # A single integer value
     field = telemetry_metadata_type.dataset_fields["orbit"]
-    assert isinstance(field, PgrPgField) or isinstance(field, PgsPgField)
+    assert isinstance(field, PgrPgField | PgsPgField)
     assert field.sql_expression == (
         "CAST(agdc.dataset.metadata #>> '{acquisition, platform_orbit}' AS INTEGER)"
     )
 
 
 def _object_exists(index, index_name) -> bool:
-    if index._db.driver_name == "postgis":
-        schema_name = "odc"
-    else:
-        schema_name = "agdc"
+    schema_name = "odc" if index._db.driver_name == "postgis" else "agdc"
     with index._active_connection() as connection:
         val = connection._connection.execute(
             text(f"SELECT to_regclass('{schema_name}.{index_name}')")
@@ -337,13 +334,9 @@ def test_product_update_cli(
     def run_update_product(
         file_path, expect_success: bool = True, allow_unsafe: bool = False
     ):
-        if allow_unsafe:
-            allow_unsafe = ["--allow-unsafe"]
-        else:
-            allow_unsafe = []
-
         return clirunner(
-            ["product", "update", str(file_path)] + allow_unsafe,
+            ["product", "update", str(file_path)]
+            + (["--allow-unsafe"] if allow_unsafe else []),
             catch_exceptions=False,
             expect_success=expect_success,
         )
@@ -513,8 +506,9 @@ def test_update_metadata_type(index: Index, default_metadata_type: list[dict]) -
     index.metadata_types.update_document(different_mt_doc, allow_unsafe_updates=True)
     updated_type = index.metadata_types.get_by_name(mt_doc["name"])
     assert isinstance(
-        updated_type.dataset_fields["time"], PgrNumericRangeDocField
-    ) or isinstance(updated_type.dataset_fields["time"], PgsNumericRangeDocField)
+        updated_type.dataset_fields["time"],
+        PgrNumericRangeDocField | PgsNumericRangeDocField,
+    )
 
 
 def test_filter_types_by_fields(index: Index, wo_eo3_product) -> None:

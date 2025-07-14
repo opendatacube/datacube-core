@@ -1157,7 +1157,7 @@ def test_find_duplicates_with_time(
         )
     )
 
-    assert res == expected_result_old or res == expected_result_new
+    assert res in (expected_result_old, expected_result_new)
 
 
 def test_csv_search_via_cli_eo3(

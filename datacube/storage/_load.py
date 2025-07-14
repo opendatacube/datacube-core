@@ -82,16 +82,10 @@ def reproject_and_fuse(
     if len(datasources) == 0:
         return destination
     elif len(datasources) == 1:
-        with ignore_exceptions_if(skip_broken_datasets):
-            with datasources[0].open() as rdr:
-                read_time_slice(
-                    rdr,
-                    destination,
-                    dst_geobox,
-                    resampling,
-                    dst_nodata,
-                    extra_dim_index,
-                )
+        with ignore_exceptions_if(skip_broken_datasets), datasources[0].open() as rdr:
+            read_time_slice(
+                rdr, destination, dst_geobox, resampling, dst_nodata, extra_dim_index
+            )
 
         if progress_cbk:
             progress_cbk(1, 1)

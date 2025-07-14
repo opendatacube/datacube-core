@@ -320,10 +320,11 @@ class AbstractIndex(ABC):
             report_to_user(msg, logger=_LOG)
             # Clone Datasets (group by product for now for convenience)
             report_to_user("Cloning Datasets:")
-            if res.safe:
-                products = [p for p in self.products.get_all() if p.name in res.safe]
-            else:
-                products = []
+            products = (
+                [p for p in self.products.get_all() if p.name in res.safe]
+                if res.safe
+                else []
+            )
             results["datasets"] = self.datasets.bulk_add(
                 origin_index.datasets.get_all_docs(
                     products=products, batch_size=batch_size

@@ -279,13 +279,12 @@ def check_existing_files(paths: Sequence[str | Path]) -> None:
             file_info = " - ALREADY EXISTS"
         click.echo(f"{path}{file_info}")
 
-    if existing_files:
-        if click.confirm(
-            f"There were {len(existing_files)} existing files found "
-            "that are not indexed. Delete those files now?"
-        ):
-            for file_path in existing_files:
-                file_path.unlink()
+    if existing_files and click.confirm(
+        f"There were {len(existing_files)} existing files found "
+        "that are not indexed. Delete those files now?"
+    ):
+        for file_path in existing_files:
+            file_path.unlink()
 
     click.echo(
         f"{total} tasks files to be created ({total - len(existing_files)} "

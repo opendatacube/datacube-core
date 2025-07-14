@@ -220,10 +220,11 @@ def validate_document(document, schema, schema_folder=None):
             referenced_schema = next(iter(read_documents(path)))[1]
             return referencing.Resource(referenced_schema, DRAFT4)
 
-        if schema_folder:
-            registry = referencing.Registry(retrieve=doc_reference)
-        else:
-            registry = referencing.Registry()
+        registry = (
+            referencing.Registry(retrieve=doc_reference)
+            if schema_folder
+            else referencing.Registry()
+        )
         jsonschema.Draft4Validator.check_schema(schema)
         validator = jsonschema.Draft4Validator(schema, registry=registry)
         validator.validate(document)
@@ -301,10 +302,7 @@ def documents_equal(d1: str | float | list | dict, d2) -> bool:
     elif isinstance(d1, list):
         if len(d1) != len(d2):
             return False
-        for i in range(len(d1)):
-            if not documents_equal(d1[i], d2[i]):
-                return False
-        return True
+        return all(documents_equal(d1[i], d2[i]) for i in range(len(d1)))
     elif isinstance(d1, float):
         if math.isnan(d1) and math.isnan(d2):
             return True
@@ -356,7 +354,7 @@ def metadata_subset(element, document, full_recursion: bool = False) -> bool:
     """
     if isinstance(element, dict) and isinstance(document, dict):
         matches = True
-        for k in element.keys():
+        for k in element:
             if k not in document or not metadata_subset(
                 element[k], document[k], full_recursion=full_recursion
             ):
@@ -365,14 +363,14 @@ def metadata_subset(element, document, full_recursion: bool = False) -> bool:
         if matches:
             return True
         if full_recursion:
-            for k in document.keys():
+            for k in document:
                 if metadata_subset(element, document[k], full_recursion=full_recursion):
                     return True
     elif isinstance(document, dict) and full_recursion:
-        for k in document.keys():
+        for k in document:
             if metadata_subset(element, document[k], full_recursion=full_recursion):
                 return True
-    elif isinstance(element, list) or isinstance(element, tuple):
+    elif isinstance(element, list | tuple):
         matches = True
         for i in element:
             if not metadata_subset(i, document, full_recursion=full_recursion):
@@ -380,7 +378,7 @@ def metadata_subset(element, document, full_recursion: bool = False) -> bool:
                 break
         if matches:
             return True
-    elif isinstance(document, list) or isinstance(document, tuple):
+    elif isinstance(document, list | tuple):
         for i in document:
             if full_recursion:
                 if metadata_subset(element, i, full_recursion=full_recursion):
@@ -490,7 +488,7 @@ class DocReader:
         }
 
     def __getattr__(self, name: str):
-        if name in self.fields.keys():
+        if name in self.fields:
             return self.fields[name]
         else:
             raise AttributeError(

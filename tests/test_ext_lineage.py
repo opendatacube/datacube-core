@@ -14,8 +14,8 @@ from datacube.utils import read_documents
 
 def test_directions() -> None:
     assert LineageDirection.SOURCES != LineageDirection.DERIVED
-    assert LineageDirection.DERIVED == LineageDirection.SOURCES.opposite()
-    assert LineageDirection.SOURCES == LineageDirection.DERIVED.opposite()
+    assert LineageDirection.SOURCES.opposite() == LineageDirection.DERIVED
+    assert LineageDirection.DERIVED.opposite() == LineageDirection.SOURCES
 
 
 def test_ltree_clsmethods(data_folder) -> None:
