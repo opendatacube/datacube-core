@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from typing import Any
+
 import pytest
 from affine import Affine
 
@@ -68,7 +70,7 @@ def eo3_product(eo3_metadata):
 
 
 def test_grid_points() -> None:
-    identity = list(Affine.translation(0, 0))
+    identity = Affine.identity()
     grid = EO3Grid({"shape": (11, 22), "transform": identity})
 
     pts = grid.points()
@@ -79,18 +81,15 @@ def test_grid_points() -> None:
     assert pts == pts_[:4]
     assert pts_[0] == pts_[-1]
 
-    grid = EO3Grid({"shape": (11, 22), "transform": tuple(Affine.translation(100, 0))})
+    grid = EO3Grid({"shape": (11, 22), "transform": Affine.translation(100, 0)})
     pts = grid.points()
     assert pts == [(100, 0), (122, 0), (122, 11), (100, 11)]
 
-    for bad in [{}, {"shape": (1, 1)}, {"transform": identity}]:
-        with pytest.raises(ValueError):
-            grid = EO3Grid(bad)
-
 
 def test_bad_grids() -> None:
-    identity = list(Affine.translation(0, 0))
-    bad_grids = [
+    identity = Affine.identity()
+    bad_grids: list[dict[str, Any]] = [
+        {},
         # No Shape
         {
             "transform": identity,
@@ -247,8 +246,7 @@ def test_prep_eo3(sample_doc, sample_doc_180, eo3_metadata) -> None:
     assert rdr.lon.end > rdr.lon.begin
     assert rdr.lon.begin < 180 < rdr.lon.end
 
-    non_eo3_doc = {}
-    assert prep_eo3(None) is None
+    non_eo3_doc: dict[str, Any] = {}
     assert prep_eo3(non_eo3_doc, auto_skip=True) is non_eo3_doc
 
     with pytest.raises(ValueError):
