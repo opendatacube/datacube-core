@@ -114,20 +114,18 @@ def _write_cog(
     assert geobox.shape == (h, w)
 
     if overview_levels is None:
-        if min(w, h) < 512:
-            overview_levels = []
-        else:
-            overview_levels = [2**i for i in range(1, 6)]
+        overview_levels = [] if min(w, h) < 512 else [2**i for i in range(1, 6)]
     not_mem = fname != ":mem:"
     if not_mem:
         path = check_write_path(
             fname, overwrite
         )  # aborts if overwrite=False and file exists already
 
-    if isinstance(overview_resampling, str):
-        resampling = resampling_s2rio(overview_resampling)
-    else:
-        resampling = overview_resampling
+    resampling = (
+        resampling_s2rio(overview_resampling)
+        if isinstance(overview_resampling, str)
+        else overview_resampling
+    )
 
     if (blocksize % 16) != 0:
         warnings.warn("Block size must be a multiple of 16, will be adjusted")
@@ -162,10 +160,11 @@ def _write_cog(
             return
 
         for _, win in dst.block_windows():
-            if pix.ndim == 2:
-                block = pix[win.toslices()]
-            else:
-                block = pix[(slice(None),) + win.toslices()]
+            block = (
+                pix[win.toslices()]
+                if pix.ndim == 2
+                else pix[(slice(None),) + win.toslices()]
+            )
 
             dst.write(block, indexes=band, window=win)
 

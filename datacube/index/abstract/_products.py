@@ -162,10 +162,12 @@ class AbstractProductResource(ABC):
         batched = set()
         existing = {prod.name: prod for prod in self.get_all()}
         for doc in product_docs:
-            if metadata_types is not None:
-                if doc["metadata_type"] not in metadata_types:
-                    skipped += 1
-                    continue
+            if (
+                metadata_types is not None
+                and doc["metadata_type"] not in metadata_types
+            ):
+                skipped += 1
+                continue
             try:
                 prod = self.from_doc(doc, metadata_type_cache=metadata_types)
                 if prod.name in existing:
@@ -383,10 +385,7 @@ class AbstractProductResource(ABC):
         else:
             if isinstance(product, str):
                 product = self.get_by_name(product)
-            if product is None:
-                prods = []
-            else:
-                prods = [product]
+            prods = [] if product is None else [product]
         out: set[str] = set()
         for prod in prods:
             out.update(prod.metadata_type.dataset_fields)

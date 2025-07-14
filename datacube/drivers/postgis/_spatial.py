@@ -97,13 +97,12 @@ class SpatialIndexORMRegistry:
 
 def is_spindex_table_name(name: str) -> bool:
     bits = name.split("_")
-    if len(bits) == 2:
-        if bits[0] == "spatial":
-            try:
-                srid = int(bits[1])
-                return srid > 0
-            except ValueError:
-                pass
+    if len(bits) == 2 and bits[0] == "spatial":
+        try:
+            srid = int(bits[1])
+            return srid > 0
+        except ValueError:
+            pass
     return False
 
 

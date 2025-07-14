@@ -1029,10 +1029,7 @@ class Reproject(VirtualProduct):
         geopolygon = datasets.geopolygon
 
         merged = merge_search_terms(self, group_settings)
-        if geopolygon is None:
-            selected = list(datasets.contained_datasets())
-        else:
-            selected = None
+        selected = list(datasets.contained_datasets()) if geopolygon is None else None
 
         geobox = output_geobox(
             datasets=selected,

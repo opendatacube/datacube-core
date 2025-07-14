@@ -89,10 +89,7 @@ def test_temporal_search(dc):
 
 
 def main(args):
-    if args:
-        env = args.pop()
-    else:
-        env = "datacube_real"
+    env = args.pop() if args else "datacube_real"
     print("Testing on database ", env)
     dc = Datacube(env=env)
     benchmark(test_less_than, dc, "less_than", 20)

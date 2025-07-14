@@ -48,8 +48,8 @@ def test_legacy_location_behaviour(index, ls8_eo3_dataset) -> None:
             ls8_eo3_dataset.id
         )
         assert (
-            "file:/tmp/foo"
-            == index.datasets.get_archived_location_times(ls8_eo3_dataset.id)[0][0]
+            index.datasets.get_archived_location_times(ls8_eo3_dataset.id)[0][0]
+            == "file:/tmp/foo"
         )
         index.datasets.restore_location(ls8_eo3_dataset.id, "file:/tmp/foo")
         locations = index.datasets.get_locations(

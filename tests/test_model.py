@@ -126,7 +126,7 @@ def test_dataset_measurement_paths() -> None:
     format_ = "GeoTiff"
 
     ds = mk_sample_dataset(
-        [{"name": n, "path": n + ".tiff"} for n in "a b c".split(" ")],
+        [{"name": n, "path": n + ".tiff"} for n in ["a", "b", "c"]],
         uri="file:///tmp/datataset.yml",
         format=format_,
     )
@@ -154,8 +154,8 @@ def test_product_basics() -> None:
     assert "test_product" in repr(product)
     assert product == product
     assert product == mk_sample_product("test_product")
-    assert not (product == mk_sample_product("other"))
-    assert not (product == [()])
+    assert product != mk_sample_product("other")
+    assert product != [()]
     assert hash(product) == hash(mk_sample_product("test_product"))
     assert "time" in dir(product.metadata)
 

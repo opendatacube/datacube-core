@@ -106,7 +106,7 @@ def get_part_from_uri(uri: str) -> int | None:
             return v
 
     opts = dict(parse_qsl(urlparse(uri).fragment))
-    return maybe_int(opts.get("part", None))
+    return maybe_int(opts.get("part"))
 
 
 def as_url(maybe_uri: str) -> str:

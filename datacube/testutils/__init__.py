@@ -245,8 +245,8 @@ def mk_sample_dataset(
     product_opts=None,
 ) -> Dataset:
     # pylint: disable=redefined-builtin
-    image_bands_keys = "path layer band".split(" ")
-    measurement_keys = "dtype units nodata aliases name".split(" ")
+    image_bands_keys = ["path", "layer", "band"]
+    measurement_keys = ["dtype", "units", "nodata", "aliases", "name"]
 
     def with_keys(d, keys) -> dict:
         return {k: d[k] for k in keys if k in d}

@@ -65,10 +65,11 @@ class LineageTree:
 
     @override
     def __eq__(self, other) -> bool:
-        if not self.children and not other.children:
-            children_equal = True
-        else:
-            children_equal = self.children == other.children
+        children_equal = (
+            True
+            if not self.children and not other.children
+            else self.children == other.children
+        )
 
         return (
             self.dataset_id == other.dataset_id

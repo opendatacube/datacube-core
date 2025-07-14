@@ -37,7 +37,7 @@ def mk_band(
     """
     band_opts = {
         k: extras.pop(k)
-        for k in "path layer band nodata dtype units aliases".split()
+        for k in ["path", "layer", "band", "nodata", "dtype", "units", "aliases"]
         if k in extras
     }
 

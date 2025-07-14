@@ -55,9 +55,6 @@ def smells_like_ini(cfg_text: str) -> bool:
         line = line.strip()
         if not line:
             continue
-        if line[0] in [";", "["]:
-            return True
-        else:
-            return False
+        return line[0] in [";", "["]
     # Empty file - parse as ini so we end up with the right high level structure at least
     return True

@@ -517,10 +517,7 @@ class PostgresDbAPI:
                 # assume func, clause, or other expression, and leave as-is
                 return o
 
-        if order_by is not None:
-            order_by = [_ob_exprs(o) for o in order_by]
-        else:
-            order_by = []
+        order_by = [] if order_by is None else [_ob_exprs(o) for o in order_by]
 
         if with_source_ids:
             # Include the IDs of source datasets

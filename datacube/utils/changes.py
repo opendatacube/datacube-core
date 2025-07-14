@@ -28,9 +28,8 @@ def contains(v1: Changeable, v2: Changeable, case_sensitive: bool = False) -> bo
     For other types v1 == v2
     v2 None is interpreted as {}
     """
-    if not case_sensitive:
-        if isinstance(v1, str):
-            return isinstance(v2, str) and v1.lower() == v2.lower()
+    if not case_sensitive and isinstance(v1, str):
+        return isinstance(v2, str) and v1.lower() == v2.lower()
 
     if isinstance(v1, dict):
         return v2 is None or (
