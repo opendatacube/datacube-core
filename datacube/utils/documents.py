@@ -17,6 +17,7 @@ from collections import OrderedDict
 from collections.abc import Generator, Iterator, Mapping
 from contextlib import contextmanager
 from copy import deepcopy
+from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
@@ -206,25 +207,32 @@ def read_strings_from_netcdf(path, variable):
             yield netcdf_extract_string(chars)
 
 
-def validate_document(document, schema, schema_folder=None):
+def validate_document(
+    document,
+    schema: Mapping[str, Any],
+    schema_folder: str | PathLike[str] | None = None,
+) -> None:
     import jsonschema
     import referencing
+    from referencing import Resource
     from referencing.exceptions import NoSuchResource
     from referencing.jsonschema import DRAFT4
+    from referencing.typing import URI
+
+    # Allow schemas to reference other schemas in the given folder.
+    def doc_reference(uri: URI) -> Resource:
+        assert schema_folder is not None
+        path = Path(schema_folder).joinpath(uri)
+        if not path.exists():
+            raise NoSuchResource(f"Reference not found: {uri}")
+        referenced_schema = next(iter(read_documents(path)))[1]
+        return DRAFT4.create_resource(referenced_schema)
 
     try:
-        # Allow schemas to reference other schemas in the given folder.
-        def doc_reference(path):
-            path = Path(schema_folder).joinpath(path)
-            if not path.exists():
-                raise NoSuchResource(f"Reference not found: {path}")
-            referenced_schema = next(iter(read_documents(path)))[1]
-            return referencing.Resource(referenced_schema, DRAFT4)
-
         registry = (
-            referencing.Registry(retrieve=doc_reference)
-            if schema_folder
-            else referencing.Registry()
+            referencing.Registry()
+            if schema_folder is None
+            else referencing.Registry(retrieve=doc_reference)  # type: ignore[call-arg]
         )
         jsonschema.Draft4Validator.check_schema(schema)
         validator = jsonschema.Draft4Validator(schema, registry=registry)
