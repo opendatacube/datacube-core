@@ -49,7 +49,7 @@ jobs:
               key: doctor-rst-${{ runner.os }}-${{ steps.extract_base_branch.outputs.branch }}
 
       -   name: "Run DOCtor-RST"
-          uses: docker://oskarstark/doctor-rst:1.67.0
+          uses: docker://oskarstark/doctor-rst:1.67.0@sha256:f2f7edaccb98bd664595475cecd62ebbab8d9f68495310f6765cf6f2e6dc5d01
           with:
               args: --short --error-format=github --cache-file=/github/workspace/.cache/doctor-rst.cache
           env:
