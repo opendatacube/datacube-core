@@ -244,7 +244,7 @@ class PostgresDb:
 def handle_dynamic_token_authentication(
     engine: Engine, new_token: Callable[..., str], timeout: float | int = 600, **kwargs
 ) -> None:
-    last_token = [None]
+    last_token: list[str | None] = [None]
     last_token_time = [0.0]
 
     @event.listens_for(engine, "do_connect")

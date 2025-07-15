@@ -8,7 +8,7 @@ Build and index fields within documents.
 
 import math
 from collections import namedtuple
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any, TypeAlias
@@ -27,6 +27,7 @@ from datacube.drivers.postgis._schema import Dataset, search_field_index_map
 from datacube.model import Range
 from datacube.model.fields import Expression, Field
 from datacube.utils import cached_property, get_doc_offset
+from datacube.utils.changes import Offset
 from datacube.utils.dates import tz_as_utc
 
 DatasetJoinArgs: TypeAlias = (
@@ -188,10 +189,8 @@ class PgDocField(PgField):
 
     def search_value_to_alchemy(self, value):
         """
-        Value to use in search tables.  Identical to value_to_alchemy, unless it needs to be promoted to range type.
-
-        :param value:
-        :return:
+        Value to use in search tables. Identical to value_to_alchemy, unless it needs
+        to be promoted to range type.
         """
         return self.value_to_alchemy(value)
 
@@ -203,7 +202,7 @@ class PgDocField(PgField):
 
     def _alchemy_offset_value(
         self,
-        doc_offsets: tuple[tuple[str]],
+        doc_offsets: Sequence[Offset],
         agg_function: Callable[[Any], ColumnElement],
         type_: type | None = None,
     ) -> ColumnElement:
@@ -264,7 +263,8 @@ class PgDocField(PgField):
 
 class SimpleDocField(PgDocField):
     """
-    A field with a single value (eg. String, int) calculated as an offset inside a (jsonb) document.
+    A field with a single value (e.g. String, int) calculated as an offset inside
+    a (jsonb) document.
     """
 
     def __init__(
@@ -273,7 +273,7 @@ class SimpleDocField(PgDocField):
         description: str,
         alchemy_column,
         indexed: bool,
-        offset=None,
+        offset: Offset | Sequence[Offset] | None = None,
         selection: str = "first",
     ) -> None:
         super().__init__(name, description, alchemy_column, indexed)

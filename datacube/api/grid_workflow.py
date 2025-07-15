@@ -7,7 +7,8 @@ from __future__ import annotations
 import logging
 import typing
 from collections import OrderedDict
-from collections.abc import Generator, Hashable, Iterable
+from collections.abc import Generator, Hashable, Iterable, Mapping
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -401,7 +402,7 @@ class GridWorkflow:
     def load(
         tile: Tile,
         measurements: Iterable[str] | None = None,
-        dask_chunks: dict[str, str | int] | None = None,
+        dask_chunks: Mapping[str, int | Literal["auto"]] | None = None,
         fuse_func=None,
         resampling: str | dict | None = None,
         skip_broken_datasets: bool = False,
@@ -411,8 +412,9 @@ class GridWorkflow:
 
         The data to be loaded is defined by the output of :meth:`list_tiles`.
 
-        This is a static function and does not use the index. This can be useful when running as a worker in a
-        distributed environment and you wish to minimize database connections.
+        This is a static function and does not use the index. This can be useful
+        to minimize the number of database connections when running as a worker
+        in a distributed environment.
 
         See the documentation on using `xr with dask <http://xr.pydata.org/en/stable/dask.html>`_
         for more information.

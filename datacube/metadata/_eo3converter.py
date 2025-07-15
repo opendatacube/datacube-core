@@ -14,6 +14,7 @@ from collections.abc import Iterable, Iterator, Sequence
 from functools import singledispatch
 from typing import Any
 
+import pystac.collection
 import pystac.item
 from odc.geo import CRS
 from odc.geo.geobox import GeoBox
@@ -88,7 +89,7 @@ def _to_product(md: RasterCollectionMetadata) -> Product:
             doc["band"] = idx
         return doc
 
-    # drop ambigous aliases
+    # drop ambiguous aliases
     band_aliases = md.band_aliases(unique=True)
     doc = {
         "name": md.name,
