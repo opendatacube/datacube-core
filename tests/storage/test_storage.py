@@ -771,7 +771,7 @@ def test_rasterio_nodata(tmpdir) -> None:
 
     # fallback nodata is outside source range so it shouldn't be used
     yy = dc_read(
-        mm.path, geobox=mm.geobox, fallback_nodata=-1, dst_nodata=-999, dtype="int16"
+        mm.path, geobox=mm.geobox, fallback_nodata=-1, dst_nodata=0, dtype="int16"
     )
     np.testing.assert_array_equal(xx.astype("int16"), yy)
 

@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import inspect
+import math
 from collections.abc import Callable, Generator, Sequence
 from os import PathLike
 from pathlib import Path
@@ -394,15 +395,21 @@ def write_gtiff(
         "transform": A,
         "predictor": 2,
         "compress": "DEFLATE",
+        # Rasterio 1.4.4 and earlier sets "INIT_DEST" to "NO_DATA". If there is no
+        # NoData value set, GDAL 3.11 returns an error, and older versions assumed
+        # NoData was 0. The next line sets nodata to NaN/0 to ensure all GDAL versions
+        # behave the same way.
+        "nodata": nodata
+        if nodata is not None
+        else math.nan
+        if pix.dtype.kind == "f"
+        else 0,
     }
 
     if blocksize is not None:
         rio_opts.update(
             tiled=True, blockxsize=min(blocksize, w), blockysize=min(blocksize, h)
         )
-
-    if nodata is not None:
-        rio_opts.update(nodata=nodata)
 
     rio_opts.update(extra_rio_opts)
 
