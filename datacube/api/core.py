@@ -1276,14 +1276,7 @@ def _fuse_measurement(
     for ds in datasets:
         src = None
         with ignore_exceptions_if(skip_broken_datasets):
-            src = new_datasource(
-                BandInfo(
-                    ds,
-                    measurement.name,
-                    extra_dim_index=extra_dim_index,
-                    patch_url=patch_url,
-                )
-            )
+            src = new_datasource(BandInfo(ds, measurement.name, patch_url=patch_url))
 
         if src is None:
             if not skip_broken_datasets:
