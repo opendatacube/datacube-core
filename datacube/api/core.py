@@ -1488,10 +1488,12 @@ def _handle_legacy_resolution(
         "Legacy resolution formats are assumed to use (y, x) ordering."
     )
     if not len(resolution):
-        _LOG.warning("Emtpy resolution value. Ignoring")
+        _LOG.warning("Empty resolution value. Ignoring")
         return None
     if len(resolution) == 1:
         return resolution[0]
+    if len(resolution) > 2:
+        raise ValueError("Resolution cannot have more than 2 dimensions.")
     if resolution[0] == -resolution[1]:
         return res_(resolution[1])
     return resyx_(*resolution)
