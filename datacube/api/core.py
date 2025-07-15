@@ -270,7 +270,12 @@ class Datacube:
         measurements: str | list[str] | None = None,
         output_crs: MaybeCRS = None,
         resolution: (
-            int | float | tuple[int | float, int | float] | Resolution | None
+            int
+            | float
+            | tuple[int | float, int | float]
+            | list[int | float]
+            | Resolution
+            | None
         ) = None,
         resampling: Resampling | dict[str, Resampling] | None = None,
         align: XY[float] | Iterable[float] | None = None,
@@ -547,19 +552,8 @@ class Datacube:
             if extra_dims.has_empty_dim():
                 return xarray.Dataset()
 
-        if type(resolution) is tuple:
-            _LOG.warning(
-                "Resolution should be provided as a single int or float, or the axis order specified "
-                "using odc.geo.resxy_ or odc.geo.resyx_"
-            )
-            if resolution[0] == -resolution[1]:
-                resolution = res_(resolution[1])
-            else:
-                _LOG.warning(
-                    "Assuming resolution has been provided in (y, x) ordering. Please specify the order "
-                    "with odc.geo.resxy_ or odc.geo.resyx_"
-                )
-                resolution = resyx_(*resolution)
+        if isinstance(resolution, tuple | list):
+            resolution = _handle_legacy_resolution(resolution)
 
         load_hints = datacube_product.load_hints()
         grid_spec = None if load_hints is not None else datacube_product.grid_spec
@@ -1161,7 +1155,12 @@ def output_geobox(
     like: GeoBox | LegacyGeoBox | xarray.Dataset | xarray.DataArray | None = None,
     output_crs: Any = None,
     resolution: (
-        int | float | tuple[int | float, int | float] | Resolution | None
+        int
+        | float
+        | Resolution
+        | tuple[int | float, int | float]
+        | list[int | float]
+        | None
     ) = None,
     align: XY[float] | Iterable[float] | None = None,
     grid_spec: GridSpec | None = None,
@@ -1220,20 +1219,8 @@ def output_geobox(
 
             geopolygon = get_bounds(datasets, crs)
 
-    if type(resolution) is tuple:
-        _LOG.warning(
-            "Resolution should be provided as a single int or float, or the axis order specified "
-            "using odc.geo.resxy_ or odc.geo.resyx_"
-        )
-        if resolution[0] == -resolution[1]:
-            resolution = resolution[1]
-        else:
-            _LOG.warning(
-                "Assuming resolution has been provided in (y, x) ordering. Please specify the order "
-                "with odc.geo.resxy_ or odc.geo.resyx_"
-            )
-            resolution = resyx_(*resolution)
-    resolution = res_(cast(Resolution | int | float, resolution))
+    if isinstance(resolution, tuple | list):
+        resolution = _handle_legacy_resolution(resolution)
 
     if align is not None:
         align = yx_(align)
@@ -1489,3 +1476,24 @@ def _make_dask_array(
     if needed_irr_chunks != actual_irr_chunks:
         data = data.rechunk(chunks=chunks)
     return data
+
+
+def _handle_legacy_resolution(
+    resolution: tuple[int | float, int | float] | list[int | float],
+) -> int | float | Resolution | None:
+    ODC2DeprecationWarning(
+        "The use of tuples or lists for resolution is deprecated. "
+        "Square resolutions can be provided as an int or float, "
+        "or axis order can be specified with odc.geo.resxy_ or odc.geo.resyx_. "
+        "Legacy resolution formats are assumed to use (y, x) ordering."
+    )
+    if not len(resolution):
+        _LOG.warning("Empty resolution value. Ignoring")
+        return None
+    if len(resolution) == 1:
+        return resolution[0]
+    if len(resolution) > 2:
+        raise ValueError("Resolution cannot have more than 2 dimensions.")
+    if resolution[0] == -resolution[1]:
+        return res_(resolution[1])
+    return resyx_(*resolution)
