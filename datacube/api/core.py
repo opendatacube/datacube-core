@@ -8,6 +8,7 @@ import collections.abc
 import datetime
 import logging
 import uuid
+import warnings
 from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 from itertools import groupby
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
@@ -1474,11 +1475,12 @@ def _make_dask_array(
 def _handle_legacy_resolution(
     resolution: tuple[int | float, int | float] | list[int | float],
 ) -> int | float | Resolution | None:
-    ODC2DeprecationWarning(
+    warnings.warn(
         "The use of tuples or lists for resolution is deprecated. "
         "Square resolutions can be provided as an int or float, "
         "or axis order can be specified with odc.geo.resxy_ or odc.geo.resyx_. "
-        "Legacy resolution formats are assumed to use (y, x) ordering."
+        "Legacy resolution formats are assumed to use (y, x) ordering.",
+        ODC2DeprecationWarning,
     )
     if not len(resolution):
         _LOG.warning("Empty resolution value. Ignoring")
