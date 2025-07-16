@@ -29,7 +29,7 @@ dependencies = [
     'antimeridian',
     'attrs>=18.1',
     'cachetools',
-    'click>=8.2',
+    'click>=8',
     'cloudpickle>=0.4',
     'dask[array]',
     'deprecat',
@@ -77,6 +77,7 @@ postgres = ['psycopg2']
 [dependency-groups]
 dev = [
     # Test requirements
+    'click>=8.2', # Only the tests need >=8.2, everything else works with older click.
     'hypothesis',
     'moto>=5.0',
     'netcdf4',
