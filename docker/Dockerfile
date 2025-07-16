@@ -9,7 +9,10 @@
 FROM ghcr.io/osgeo/gdal:ubuntu-full-3.10.3 AS base
 
 ENV LC_ALL=C.UTF-8 \
-    LANG=C.UTF-8
+    LANG=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy
 
 # Both the builder image and the regular image needs build tools, otherwise "uv sync"
 # will fail.
@@ -35,12 +38,7 @@ FROM base AS builder
 
 ARG UV=https://github.com/astral-sh/uv/releases/download/0.7.21/uv-x86_64-unknown-linux-gnu.tar.gz
 
-ENV LC_ALL=C.UTF-8 \
-    LANG=C.UTF-8 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    UV_COMPILE_BYTECODE=0 \
-    UV_LINK_MODE=copy \
+ENV UV_COMPILE_BYTECODE=0 \
     UV_PROJECT_ENVIRONMENT=/app \
     UV_PYTHON_DOWNLOADS=never \
     UV_PYTHON=python3.12
@@ -98,11 +96,7 @@ RUN usermod -aG sudo ubuntu \
 
 USER ubuntu
 
-ENV LC_ALL=C.UTF-8 \
-    LANG=C.UTF-8 \
-    PATH=/app/bin:$PATH \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+ENV PATH=/app/bin:$PATH
 
 COPY --chown=1000:1000 --link docker/assets/datacube_integration.conf /home/ubuntu/.datacube_integration.conf
 
@@ -119,7 +113,6 @@ USER root
 RUN  --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     . /app/bin/activate \
     && export UV_COMPILE_BYTECODE=0 \
-    && export UV_LINK_MODE=copy \
     && export UV_PROJECT_ENVIRONMENT=/app \
     && export UV_PYTHON_DOWNLOADS=never \
     && export UV_PYTHON=python3.12 \
