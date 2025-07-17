@@ -193,7 +193,6 @@ def _native_load_1(
     dst_geobox: GeoBox | None = None,
     optional_bands: tuple[str, ...] | None = None,
     basis: str | None = None,
-    load_chunks: dict[str, int] | None = None,
     pad: int | None = None,
     **kw,
 ) -> xr.Dataset:
@@ -228,7 +227,7 @@ def _native_load_1(
             else:
                 mm.update(om)
 
-    xx = Datacube.load_data(sources, load_geobox, mm, dask_chunks=load_chunks, **kw)
+    xx = Datacube.load_data(sources, load_geobox, mm, **kw)
     return xx
 
 
@@ -240,7 +239,6 @@ def native_load(
     dst_geobox: GeoBox | None = None,
     optional_bands: tuple[str, ...] | None = None,
     basis: str | None = None,
-    load_chunks: dict[str, int] | None = None,
     pad: int | None = None,
     **kw,
 ):
@@ -287,7 +285,6 @@ def native_load(
                     dst_geobox=dst_geobox,
                     optional_bands=optional_bands,
                     basis=basis,
-                    load_chunks=load_chunks,
                     pad=pad,
                     **kw,
                 )
@@ -301,7 +298,6 @@ def native_load(
             dst_geobox=dst_geobox,
             optional_bands=optional_bands,
             basis=basis,
-            load_chunks=load_chunks,
             pad=pad,
             **kw,
         )
