@@ -8,6 +8,11 @@ What's New
 Next Release
 ============
 
+What's Changed
+--------------
+* Extend and integrate `native_load` :pull:`2053`
+
+
 v1.9.6 (11 July 2025)
 =====================
 
