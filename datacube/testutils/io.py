@@ -203,7 +203,6 @@ def _native_load_1(
     :param optional_bands: List of optional band names to load
     :param basis: Name of the band to use for computing reference frame, other
     bands might be reprojected if they use different pixel grid
-    :param load_chunks: Config of chunks if loading with dask
     :param pad: number of pixels to pad the geobox
 
     :param kw: Any other parameter that load_data accepts
@@ -253,7 +252,6 @@ def native_load(
     :param optional_bands: List of optional band names to load
     :param basis: Name of the band to use for computing reference frame, other
     bands might be reprojected if they use different pixel grid
-    :param load_chunks: Config of chunks if loading with dask
     :param pad: number of pixels to pad the geobox
 
     :param kw: Any other parameter groupby or _native_load_1 accepts
