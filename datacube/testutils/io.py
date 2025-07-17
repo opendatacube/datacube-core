@@ -199,6 +199,20 @@ def _native_load_1(
     pad: int | None = None,
     **kw,
 ) -> xr.Dataset:
+    """Load datasets with native crs
+    :param sources: grouped datasets
+    :param bands: List of band names to load
+    :param dst_geobox: Geobox of final output, if None then use geobox of input dataset
+    :param optional_bands: List of optional band names to load
+    :param basis: Name of the band to use for computing reference frame, other
+    bands might be reprojected if they use different pixel grid
+    :param load_chunks: Config of chunks if loading with dask
+    :param pad: number of pixels to pad the geobox
+
+    :param kw: Any other parameter that load_data accepts
+
+    :return: Xarray dataset
+    """
     if basis is None:
         basis = bands[0]
     (ds,) = sources.data[0]
@@ -237,12 +251,14 @@ def native_load(
     :param dss: Datasets
     :param bands: List of band names to load
     :param groupby: Function to group the datasets
-    :param args:
-    :param dst_geobox: Geobox of final output
-    :param optional_bands:
+    :param args: positional passed into gropuby
+
+    :param dst_geobox: Geobox of final output, if None then use geobox of input dataset
+    :param optional_bands: List of optional band names to load
     :param basis: Name of the band to use for computing reference frame, other
     bands might be reprojected if they use different pixel grid
-    :param pad:
+    :param load_chunks: Config of chunks if loading with dask
+    :param pad: number of pixels to pad the geobox
 
     :param kw: Any other parameter groupby or _native_load_1 accepts
 
@@ -258,13 +274,12 @@ def native_load(
         in (param.KEYWORD_ONLY, param.POSITIONAL_OR_KEYWORD, param.VAR_KEYWORD)
     }
     accepted_kw = {k: v for k, v in kw.items() if k in accepted_kw}
-
-    # source = Datacube.group_datasets(list(dss), "time")
     sources = groupby(list(dss), *args, **accepted_kw)
 
     for key in accepted_kw:
         kw.pop(key, None)
 
+    # split datasets if they are in different grid/crs
     if "grid" in sources.coords:
         for srcs in _split_by_grid(sources):
             _xx = _native_load_1(
