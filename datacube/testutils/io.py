@@ -264,7 +264,6 @@ def native_load(
 
     :return: Xarray dataset or generator of Xarray dataset
     """
-
     # Filter **kwargs to match what op accepts
     sig = inspect.signature(groupby)
     accepted_kw = {
@@ -281,18 +280,22 @@ def native_load(
 
     # split datasets if they are in different grid/crs
     if "grid" in sources.coords:
-        for srcs in _split_by_grid(sources):
-            _xx = _native_load_1(
-                srcs,
-                tuple(bands),
-                dst_geobox=dst_geobox,
-                optional_bands=optional_bands,
-                basis=basis,
-                load_chunks=load_chunks,
-                pad=pad,
-                **kw,
-            )
-            yield _xx
+
+        def yield_by_grid():
+            for srcs in _split_by_grid(sources):
+                _xx = _native_load_1(
+                    srcs,
+                    tuple(bands),
+                    dst_geobox=dst_geobox,
+                    optional_bands=optional_bands,
+                    basis=basis,
+                    load_chunks=load_chunks,
+                    pad=pad,
+                    **kw,
+                )
+                yield _xx
+
+        return yield_by_grid()
     else:
         return _native_load_1(
             sources,
