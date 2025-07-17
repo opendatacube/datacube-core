@@ -6,7 +6,7 @@ import inspect
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
 import toolz
@@ -162,9 +162,7 @@ def compute_native_load_geobox(
         return native
 
     if buffer is None:
-        buffer = 10 * cast(
-            float, max(map(abs, (native.resolution.y, native.resolution.x)))
-        )  # type: ignore
+        buffer = 10 * max(map(abs, (native.resolution.y, native.resolution.x)))
 
     assert native.crs is not None
     return GeoBox.from_geopolygon(
