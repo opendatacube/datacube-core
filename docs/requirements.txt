@@ -42,9 +42,9 @@ beautifulsoup4==4.13.4
     #   sphinx-toolbox
 bleach==6.2.0
     # via nbconvert
-boto3==1.39.4
+boto3==1.39.8
     # via datacube (pyproject.toml)
-botocore==1.39.4
+botocore==1.39.8
     # via
     #   datacube (pyproject.toml)
     #   boto3
@@ -125,7 +125,7 @@ filelock==3.18.0
     # via
     #   cachecontrol
     #   sphinx-toolbox
-fsspec==2025.5.1
+fsspec==2025.7.0
     # via dask
 geoalchemy2==0.17.1
     # via datacube (pyproject.toml)
@@ -373,7 +373,7 @@ sphinx-jinja2-compat==0.3.0
     # via sphinx-toolbox
 sphinx-prompt==1.10.0
     # via sphinx-toolbox
-sphinx-tabs==3.4.5
+sphinx-tabs==3.4.7
     # via
     #   datacube (pyproject.toml:doc)
     #   sphinx-toolbox
