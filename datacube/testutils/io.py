@@ -3,7 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import inspect
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Generator, Sequence
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -18,8 +18,7 @@ from odc.geo.warp import resampling_s2rio
 from odc.geo.xr import xr_coords
 from typing_extensions import override
 
-from datacube import Datacube
-
+from ..api import Datacube
 from ..index.eo3 import EO3Grid, is_doc_eo3
 from ..model import Dataset
 from ..storage import BandInfo, reproject_and_fuse
@@ -95,7 +94,7 @@ def eo3_geobox(ds: Dataset, band: str | None = None, grid: str = "default") -> G
     return GeoBox(parsed.shape, parsed.transform, crs)
 
 
-def native_geobox(ds: Dataset, measurements=None, basis: str | None = None):
+def native_geobox(ds: Dataset, measurements=None, basis: str | None = None) -> GeoBox:
     """Compute native GeoBox for a set of bands for a given dataset
 
     :param ds: Dataset
@@ -157,7 +156,7 @@ def compute_native_load_geobox(
     :param buffer: Buffer in units of CRS of ``ds`` (meters usually),
                    default is 10 pixels worth
     """
-    native: GeoBox = native_geobox(ds, basis=band)
+    native = native_geobox(ds, basis=band)
     if dst_geobox is None:
         return native
 
@@ -240,7 +239,7 @@ def native_load(
     basis: str | None = None,
     pad: int | None = None,
     **kw,
-):
+) -> xr.Dataset | Generator[xr.Dataset, None, None]:
     """Load datasets in native resolution.
 
     :param dss: Datasets
@@ -258,7 +257,7 @@ def native_load(
 
     :return: Xarray dataset or generator of Xarray dataset
     """
-    # Filter **kwargs to match what op accepts
+    # Filter **kw to match what groupby op accepts
     sig = inspect.signature(groupby)
     accepted_kw = {
         name
