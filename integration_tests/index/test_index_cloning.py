@@ -2,9 +2,11 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import pytest
 
 
-def test_index_clone(index_pair_populated_empty):
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
+def test_index_clone(index_pair_populated_empty) -> None:
     pop_idx, empty_idx = index_pair_populated_empty
     assert list(empty_idx.products.get_all()) == []
     results = empty_idx.clone(pop_idx)
@@ -14,7 +16,8 @@ def test_index_clone(index_pair_populated_empty):
     assert results["datasets"].skipped == 0
 
 
-def test_index_clone_small_batch(index_pair_populated_empty):
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
+def test_index_clone_small_batch(index_pair_populated_empty) -> None:
     pop_idx, empty_idx = index_pair_populated_empty
     assert list(empty_idx.products.get_all()) == []
     results = empty_idx.clone(pop_idx, batch_size=2)
@@ -24,26 +27,41 @@ def test_index_clone_small_batch(index_pair_populated_empty):
     assert results["datasets"].skipped == 0
 
 
-def test_index_clone_cli(cfg_env_pair, index_pair_populated_empty, clirunner):
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
+def test_index_clone_cli(cfg_env_pair, index_pair_populated_empty, clirunner) -> None:
     source_cfg, target_cfg = cfg_env_pair
-    clirunner([
-        '-E', target_cfg._name,
-        'system', 'clone',
-        '--lineage-only', '--skip-lineage',
-        source_cfg._name
-    ], skip_env=True, expect_success=False)
-    clirunner([
-        '-E', target_cfg._name,
-        'system', 'clone',
-        source_cfg._name
-    ], skip_env=True, expect_success=True)
+    clirunner(
+        [
+            "-E",
+            target_cfg._name,
+            "system",
+            "clone",
+            "--lineage-only",
+            "--skip-lineage",
+            source_cfg._name,
+        ],
+        skip_env=True,
+        expect_success=False,
+    )
+    clirunner(
+        ["-E", target_cfg._name, "system", "clone", source_cfg._name], skip_env=True
+    )
 
 
-def test_index_clone_cli_small_batch(cfg_env_pair, index_pair_populated_empty, clirunner):
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
+def test_index_clone_cli_small_batch(
+    cfg_env_pair, index_pair_populated_empty, clirunner
+) -> None:
     source_cfg, target_cfg = cfg_env_pair
-    clirunner([
-        '-E', target_cfg._name,
-        'system', 'clone',
-        '--batch-size', '2',
-        source_cfg._name
-    ], skip_env=True, expect_success=True)
+    clirunner(
+        [
+            "-E",
+            target_cfg._name,
+            "system",
+            "clone",
+            "--batch-size",
+            "2",
+            source_cfg._name,
+        ],
+        skip_env=True,
+    )

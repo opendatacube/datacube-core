@@ -19,6 +19,12 @@ on:
 
 permissions: {}
 
+# When a PR is updated, cancel the jobs from the previous version. Merges
+# do not define head_ref, so use run_id to never cancel those jobs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -27,20 +33,19 @@ jobs:
         python-version: ["3.12"]
         lintcommand:
           - "pylint -j 2 --report no datacube"
-          - "mypy datacube"
-          - "pycodestyle tests integration_tests examples --max-line-length 120"
+          - "mypy datacube examples tests/test_utils_rio.py integration_tests/*py"
     name: Linting
     steps:
       - name: checkout git
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@bd01e18f51369d5a26f1651c3cb451d3417e3bba # v6.3.1
       - name: run linter
         run: |
-          uv run --no-project --with '.[test,types]' ${LINT_COMMAND}
+          uv run ${LINT_COMMAND}
         env:
           LINT_COMMAND: ${{matrix.lintcommand}}
           UV_PYTHON: ${{ matrix.python-version }}

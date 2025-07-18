@@ -6,50 +6,82 @@
 Core classes used across modules.
 """
 
+from __future__ import annotations
+
 import logging
 import math
 from collections import OrderedDict
+from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
+from typing import Any, TypeAlias
+from urllib.parse import urlparse
 from uuid import UUID
 
 from affine import Affine
-from typing import Optional, List, Mapping, Any, Dict, Tuple, Iterator, Iterable, Union, Sequence
+from typing_extensions import override
 
-from urllib.parse import urlparse
-from datacube.utils import without_lineage_sources, parse_time, cached_property, uri_to_local_path, \
-    schema_validated, DocReader
-from .fields import Field, get_dataset_fields
-from ._base import Range, ranges_overlap, Not, QueryField, QueryDict  # noqa: F401
+from datacube.utils import (
+    DocReader,
+    cached_property,
+    parse_time,
+    schema_validated,
+    uri_to_local_path,
+    without_lineage_sources,
+)
+
+from ._base import Not, QueryDict, QueryField, Range, ranges_overlap  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
-from .lineage import LineageDirection, LineageTree, LineageRelation, InconsistentLineageException  # noqa: F401
+from .fields import Field, get_dataset_fields
+from .lineage import (
+    InconsistentLineageException,
+    LineageDirection,
+    LineageRelation,
+    LineageTree,
+)
 
 __all__ = [
-    "Field", "get_dataset_fields",
-    "Range", "ranges_overlap",
-    "LineageDirection", "LineageTree", "LineageRelation", "InconsistentLineageException",
-    "Dataset", "Product", "MetadataType", "Measurement", "GridSpec",
-    "QueryField", "QueryDict",
+    "Dataset",
+    "ExtraDimensions",
+    "Field",
+    "GridSpec",
+    "InconsistentLineageException",
+    "LineageDirection",
+    "LineageRelation",
+    "LineageTree",
+    "Measurement",
+    "MetadataType",
+    "Product",
+    "QueryDict",
+    "QueryField",
+    "Range",
+    "get_dataset_fields",
     "metadata_from_doc",
-    "ExtraDimensions"
+    "ranges_overlap",
 ]
 
-from odc.geo import CRS, BoundingBox, Geometry, wh_, resyx_
+import contextlib
+
+from deprecat import deprecat
+from odc.geo import CRS, BoundingBox, Geometry, Resolution, res_, resyx_, wh_, yx_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
+from odc.geo.gridspec import GridSpec as GeoGridSpec
+from odc.stac.model import RasterCollectionMetadata
+
 from datacube.migration import ODC2DeprecationWarning
-from deprecat import deprecat
 
 from ..utils.uris import pick_uri
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
-DEFAULT_SPATIAL_DIMS = ('y', 'x')  # Used when product lacks grid_spec
+DEFAULT_SPATIAL_DIMS = ("y", "x")  # Used when product lacks grid_spec
 
-SCHEMA_PATH = Path(__file__).parent / 'schema'
+SCHEMA_PATH: Path = Path(__file__).parent / "schema"
 
 
 # TODO: Multi-dimension code is has incomplete type hints and significant type issues that will require attention
+
 
 class Dataset:
     """
@@ -66,25 +98,25 @@ class Dataset:
 
     @deprecat(
         deprecated_args={
-            'uris': {
+            "uris": {
                 "version": "1.9",
-                "reason": "Multiple locations per dataset are deprecated - prefer passing single uri to uri argument"
+                "reason": "Multiple locations per dataset are deprecated - prefer passing single uri to uri argument",
             }
         }
     )
-    def __init__(self,
-                 product: "Product",
-                 metadata_doc: Dict[str, Any],
-                 uris: Optional[List[str]] = None,
-                 uri: Optional[str] = None,
-                 sources: Optional[Mapping[str, 'Dataset']] = None,
-                 indexed_by: Optional[str] = None,
-                 indexed_time: Optional[datetime] = None,
-                 archived_time: Optional[datetime] = None,
-                 source_tree: Optional[LineageTree] = None,
-                 derived_tree: Optional[LineageTree] = None):
-        assert isinstance(product, Product)
-
+    def __init__(
+        self,
+        product: Product,
+        metadata_doc: dict[str, Any],
+        uris: list[str] | None = None,
+        uri: str | None = None,
+        sources: Mapping[str, Dataset] | None = None,
+        indexed_by: str | None = None,
+        indexed_time: datetime | None = None,
+        archived_time: datetime | None = None,
+        source_tree: LineageTree | None = None,
+        derived_tree: LineageTree | None = None,
+    ) -> None:
         self.product = product
 
         #: The document describing the dataset as a dictionary. It is often serialised as YAML on disk
@@ -126,8 +158,9 @@ class Dataset:
     @property
     @deprecat(
         reason="Multiple locations are now deprecated. Please use the 'uri' attribute instead.",
-        version='1.9.0',
-        category=ODC2DeprecationWarning)
+        version="1.9.0",
+        category=ODC2DeprecationWarning,
+    )
     def uris(self) -> Sequence[str]:
         """
         List of active locations, newest to oldest.
@@ -165,23 +198,25 @@ class Dataset:
     @property
     @deprecat(
         reason="The 'type' attribute has been deprecated. Please use the 'product' attribute instead.",
-        version='1.9.0',
-        category=ODC2DeprecationWarning)
-    def type(self) -> "Product":
+        version="1.9.0",
+        category=ODC2DeprecationWarning,
+    )
+    def type(self) -> Product:
         # For compatibility
         return self.product
 
     @property
     def is_eo3(self) -> bool:
         from datacube.index.eo3 import is_doc_eo3
+
         return is_doc_eo3(self.metadata_doc)
 
     @property
-    def metadata_type(self) -> 'MetadataType':
+    def metadata_type(self) -> MetadataType:
         return self.product.metadata_type
 
     @property
-    def local_uri(self) -> Optional[str]:
+    def local_uri(self) -> str | None:
         """
         Return the uri if it is local, or None.
 
@@ -190,14 +225,14 @@ class Dataset:
         if not self._uris:
             return None
 
-        local_uris = [uri for uri in self._uris if uri.startswith('file:')]
+        local_uris = [uri for uri in self._uris if uri.startswith("file:")]
         if local_uris:
             return local_uris[0]
 
         return None
 
     @property
-    def local_path(self) -> Optional[Path]:
+    def local_path(self) -> Path | None:
         """
         A path to this dataset on the local filesystem (if available).
         """
@@ -205,8 +240,7 @@ class Dataset:
 
     @property
     def id(self) -> UUID:
-        """ UUID of a dataset
-        """
+        """UUID of a dataset"""
         # This is a string in a raw document.
         return UUID(self.metadata.id)
 
@@ -221,33 +255,32 @@ class Dataset:
     @property
     def uri_scheme(self) -> str:
         if not self._uris:
-            return ''
+            return ""
 
         url = urlparse(self.uri)
-        if url.scheme == '':
-            return 'file'
+        if url.scheme == "":
+            return "file"
         return str(url.scheme)
 
     @property
-    def measurements(self) -> Dict[str, Any]:
+    def measurements(self) -> dict[str, Any]:
         # It's an optional field in documents.
         # Dictionary of key -> measurement descriptor
         metadata = self.metadata
-        if not hasattr(metadata, 'measurements'):
+        if not hasattr(metadata, "measurements"):
             return {}
         return metadata.measurements
 
     @cached_property
-    def center_time(self) -> Optional[datetime]:
-        """ mid-point of time range
-        """
+    def center_time(self) -> datetime | None:
+        """mid-point of time range"""
         time = self.time
         if time is None:
             return None
         return time.begin + (time.end - time.begin) // 2
 
     @property
-    def time(self) -> Optional[Range]:
+    def time(self) -> Range | None:
         try:
             time = self.metadata.time
             return Range(parse_time(time.begin), parse_time(time.end))
@@ -255,11 +288,8 @@ class Dataset:
             return None
 
     @cached_property
-    def key_time(self):
-        """
-        :rtype: datetime.datetime
-        """
-        if 'key_time' in self.metadata.fields:
+    def key_time(self) -> datetime | None:
+        if "key_time" in self.metadata.fields:
             return self.metadata.key_time
 
         # Existing datasets are already using the computed "center_time" for their storage index key
@@ -269,32 +299,39 @@ class Dataset:
         return self.center_time
 
     @property
-    def bounds(self) -> Optional[BoundingBox]:
-        """ :returns: bounding box of the dataset in the native crs
-        """
+    def bounds(self) -> BoundingBox | None:
+        """:returns: bounding box of the dataset in the native crs"""
         gs = self._gs
         if gs is None:
             return None
 
-        bounds = gs['geo_ref_points']
-        return BoundingBox(left=min(bounds['ur']['x'], bounds['ll']['x']),
-                           right=max(bounds['ur']['x'], bounds['ll']['x']),
-                           top=max(bounds['ur']['y'], bounds['ll']['y']),
-                           bottom=min(bounds['ur']['y'], bounds['ll']['y']),
-                           crs=self.crs)
+        bounds = gs["geo_ref_points"]
+        return BoundingBox(
+            left=min(bounds["ur"]["x"], bounds["ll"]["x"]),
+            right=max(bounds["ur"]["x"], bounds["ll"]["x"]),
+            top=max(bounds["ur"]["y"], bounds["ll"]["y"]),
+            bottom=min(bounds["ur"]["y"], bounds["ll"]["y"]),
+            crs=self.crs,
+        )
 
     @property
-    def transform(self) -> Optional[Affine]:
+    def transform(self) -> Affine | None:
         geo = self._gs
         if geo is None:
             return None
 
-        bounds = geo.get('geo_ref_points')
+        bounds = geo.get("geo_ref_points")
         if bounds is None:
             return None
 
-        return Affine(bounds['lr']['x'] - bounds['ul']['x'], 0, bounds['ul']['x'],
-                      0, bounds['lr']['y'] - bounds['ul']['y'], bounds['ul']['y'])
+        return Affine(
+            bounds["lr"]["x"] - bounds["ul"]["x"],
+            0,
+            bounds["ul"]["x"],
+            0,
+            bounds["lr"]["y"] - bounds["ul"]["y"],
+            bounds["ul"]["y"],
+        )
 
     @property
     def is_archived(self) -> bool:
@@ -304,7 +341,6 @@ class Dataset:
         (an archived dataset is one that is not intended to be used by users anymore: eg. it has been
         replaced by another dataset. It will not show up in search results, but still exists in the
         system via provenance chains or through id lookup.)
-
         """
         return self.archived_time is not None
 
@@ -312,45 +348,42 @@ class Dataset:
     @deprecat(
         reason="The 'is_active' attribute has been deprecated. Please use 'is_archived' instead.",
         version="1.9.0",
-        category=ODC2DeprecationWarning
+        category=ODC2DeprecationWarning,
     )
     def is_active(self) -> bool:
         """
         Is this dataset active?
 
         (ie. dataset hasn't been archived)
-
         """
         return not self.is_archived
 
     @property
-    def _gs(self) -> Optional[Dict[str, Any]]:
+    def _gs(self) -> dict[str, Any] | None:
         try:
             return self.metadata.grid_spatial
         except AttributeError:
             return None
 
     @property
-    def crs(self) -> Optional[CRS]:
-        """ Return CRS if available
-        """
+    def crs(self) -> CRS | None:
+        """Return CRS if available"""
         projection = self._gs
 
         if not projection:
             return None
 
-        crs = projection.get('spatial_reference', None)
+        crs = projection.get("spatial_reference", None)
         if crs:
             return CRS(str(crs))
         return None
 
     @cached_property
-    def extent(self) -> Optional[Geometry]:
-        """ :returns: valid extent of the dataset or None
-        """
+    def extent(self) -> Geometry | None:
+        """:returns: valid extent of the dataset or None"""
 
-        def xytuple(obj):
-            return obj['x'], obj['y']
+        def xytuple(obj: dict) -> tuple[float, float]:
+            return obj["x"], obj["y"]
 
         # If no projection or crs, they have no extent.
         projection = self._gs
@@ -361,30 +394,37 @@ class Dataset:
             _LOG.debug("No CRS, assuming no extent (dataset %s)", self.id)
             return None
 
-        valid_data = projection.get('valid_data')
-        geo_ref_points = projection.get('geo_ref_points')
+        valid_data = projection.get("valid_data")
+        geo_ref_points = projection.get("geo_ref_points")
         if valid_data:
             return Geometry(valid_data, crs=crs)
         elif geo_ref_points:
-            return polygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
-                           crs=crs)
+            return polygon(
+                [
+                    xytuple(geo_ref_points[key])
+                    for key in ("ll", "ul", "ur", "lr", "ll")
+                ],
+                crs=crs,
+            )
 
         return None
 
+    @override
     def __eq__(self, other) -> bool:
         if isinstance(other, Dataset):
             return self.id == other.id
         return False
 
-    def __hash__(self):
+    @override
+    def __hash__(self) -> int:
         return hash(self.id)
 
-    def __str__(self):
-        str_loc = 'not available' if not self.uri else self.uri
-        return "Dataset <id={id} product={type} location={loc}>".format(id=self.id,
-                                                                        type=self.product.name,
-                                                                        loc=str_loc)
+    @override
+    def __str__(self) -> str:
+        str_loc = "not available" if not self.uri else self.uri
+        return f"Dataset <id={self.id} product={self.product.name} location={str_loc}>"
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()
 
@@ -392,13 +432,12 @@ class Dataset:
     def metadata(self) -> DocReader:
         return self.metadata_type.dataset_reader(self.metadata_doc)
 
-    def metadata_doc_without_lineage(self) -> Dict[str, Any]:
-        """ Return metadata document without nested lineage datasets
-        """
+    def metadata_doc_without_lineage(self) -> dict[str, Any]:
+        """Return metadata document without nested lineage datasets"""
         return without_lineage_sources(self.metadata_doc, self.metadata_type)
 
 
-class Measurement():
+class Measurement:
     """
     Describes a single data variable of a Product or Dataset.
 
@@ -413,21 +452,39 @@ class Measurement():
 
     Can also include attributes like alternative names 'aliases', and spectral and bit flags
     definitions to aid with interpreting the data.
-
     """
-    REQUIRED_KEYS = ('name', 'dtype', 'nodata', 'units')
-    OPTIONAL_KEYS = ('aliases', 'spectral_definition', 'flags_definition', 'scale_factor', 'add_offset',
-                     'extra_dim', 'dims')
-    ATTR_SKIP = ['name', 'dtype', 'aliases', 'resampling_method', 'fuser', 'extra_dim', 'dims', 'extra_dim_index']
 
-    def __init__(self, canonical_name=None, *args, **kwargs):
+    REQUIRED_KEYS = ("name", "dtype", "nodata", "units")
+    OPTIONAL_KEYS = (
+        "aliases",
+        "spectral_definition",
+        "flags_definition",
+        "scale_factor",
+        "add_offset",
+        "extra_dim",
+        "dims",
+    )
+    ATTR_SKIP = [
+        "name",
+        "dtype",
+        "aliases",
+        "resampling_method",
+        "fuser",
+        "extra_dim",
+        "dims",
+        "extra_dim_index",
+    ]
+
+    def __init__(self, canonical_name: str | None = None, *args, **kwargs) -> None:
         self._data = {}
 
         missing_keys = set(self.REQUIRED_KEYS) - set(kwargs)
         if missing_keys:
-            raise ValueError("Measurement required keys missing: {}".format(missing_keys))
+            raise ValueError(f"Measurement required keys missing: {missing_keys}")
 
-        self.canonical_name = canonical_name or kwargs.get('name')
+        canonical_name_tmp = canonical_name or kwargs.get("name")
+        assert canonical_name_tmp is not None
+        self.canonical_name: str = canonical_name_tmp
 
         # Handle positional arguments (e.g., Measurement([('a', 1), ('b', 2)]))
         if args:
@@ -436,7 +493,7 @@ class Measurement():
             arg = args[0]
             if isinstance(arg, dict):
                 self._data = arg.copy()  # Copy the dict to avoid modifying the original
-            elif hasattr(arg, '__iter__'):  # Handle iterables like lists of tuples
+            elif hasattr(arg, "__iter__"):  # Handle iterables like lists of tuples
                 for key, value in arg:
                     self[key] = value  # Use self.__setitem__ for assignment
             else:
@@ -444,8 +501,8 @@ class Measurement():
         self.update(kwargs)
 
     def __getattr__(self, key: str) -> Any:
-        """ Allow access to items as attributes. """
-        if key == '_data':
+        """Allow access to items as attributes."""
+        if key == "_data":
             # return self._data
             raise AttributeError("Measurement() object has no attribute '_data'")
         return self._data.get(key)
@@ -456,27 +513,28 @@ class Measurement():
         """
         return self._data[key]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         """
         Sets the value associated with the given key.
         """
         self._data[key] = value
 
-    def __delitem__(self, key):
+    def __delitem__(self, key) -> None:
         if key in self.REQUIRED_KEYS:
-            raise KeyError("Measurement() requires key {}".format(key))
+            raise KeyError(f"Measurement() requires key {key}")
         del self._data[key]
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
         return key in self._data
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._data)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator:
         return iter(self._data)
 
-    def __str__(self):
+    @override
+    def __str__(self) -> str:
         return repr(self)
 
     def keys(self):
@@ -499,10 +557,10 @@ class Measurement():
         Removes the key and returns its value from the dictionary or a default value if the key is not found.
         """
         if key in self.REQUIRED_KEYS:
-            raise KeyError("Measurement() requires key {}".format(key))
+            raise KeyError(f"Measurement() requires key {key}")
         return self._data.pop(key, default)
 
-    def update(self, *args, **kwargs):
+    def update(self, *args, **kwargs) -> None:
         if args:
             if len(args) > 1:
                 raise TypeError("update() takes at most 1 positional argument")
@@ -510,7 +568,7 @@ class Measurement():
             if isinstance(arg, dict):
                 for key, value in arg.items():
                     self[key] = value
-            elif hasattr(arg, '__iter__'):
+            elif hasattr(arg, "__iter__"):
                 for key, value in arg:
                     self[key] = value
             else:
@@ -519,27 +577,46 @@ class Measurement():
         for key, value in kwargs.items():
             self[key] = value
 
-    def __repr__(self) -> str:
-        return f"Measurement({repr(self._data)})"
+    @override
+    def __eq__(self, other) -> bool:
+        return isinstance(other, Measurement) and self._data == other._data
 
-    def copy(self) -> 'Measurement':
+    @override
+    def __hash__(self) -> int:
+        return hash(self._data)
+
+    @override
+    def __repr__(self) -> str:
+        return f"Measurement({self._data!r})"
+
+    def copy(self) -> Measurement:
         """Required as the super class `dict` method returns a `dict`
-           and does not preserve Measurement class"""
+        and does not preserve Measurement class"""
         return Measurement(**self._data)
 
-    def dataarray_attrs(self) -> Dict[str, Any]:
+    def dataarray_attrs(self) -> dict[str, Any]:
         """This returns attributes filtered for display in a dataarray."""
         return {key: value for key, value in self.items() if key not in self.ATTR_SKIP}
 
+    def __getstate__(self):
+        state = {**self._data}
+        state["canonical_name"] = self.canonical_name
+        return state
 
-@schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
+    def __setstate__(self, state):
+        self.__init__(**state)
+
+
+@schema_validated(SCHEMA_PATH / "metadata-type-schema.yaml")
 class MetadataType:
     """Metadata Type definition"""
 
-    def __init__(self,
-                 definition: Mapping[str, Any],
-                 dataset_search_fields: Optional[Mapping[str, Field]] = None,
-                 id_: Optional[int] = None):
+    def __init__(
+        self,
+        definition: Mapping[str, Any],
+        dataset_search_fields: Mapping[str, Field] | None = None,
+        id_: int | None = None,
+    ) -> None:
         if dataset_search_fields is None:
             dataset_search_fields = get_dataset_fields(definition)
         self.definition = definition
@@ -548,20 +625,21 @@ class MetadataType:
 
     @property
     def name(self) -> str:
-        return self.definition.get('name', None)
+        return self.definition.get("name", None)
 
     @property
     def description(self) -> str:
-        return self.definition.get('description', None)
+        return self.definition.get("description", None)
 
     def dataset_reader(self, dataset_doc: Mapping[str, Field]) -> DocReader:
-        return DocReader(self.definition['dataset'], self.dataset_fields, dataset_doc)
+        return DocReader(self.definition["dataset"], self.dataset_fields, dataset_doc)
 
     @classmethod
-    def validate_eo3(cls, doc):
-        cls.validate(doc)
+    def validate_eo3(cls, doc) -> None:
+        cls.validate(doc)  # type: ignore[attr-defined]
         validate_eo3_compatible_type(doc)
 
+    @override
     def __eq__(self, other: Any) -> bool:
         if self is other:
             return True
@@ -571,37 +649,44 @@ class MetadataType:
 
         return self.name == other.name
 
+    @override
     def __str__(self) -> str:
-        return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
+        return f"MetadataType(name={self.name!r}, id_={self.id!r})"
 
+    @override
     def __repr__(self) -> str:
         return str(self)
 
 
-@schema_validated(SCHEMA_PATH / 'dataset-type-schema.yaml')
+@schema_validated(SCHEMA_PATH / "dataset-type-schema.yaml")
 class Product:
     """
     Product definition
 
-    :param MetadataType metadata_type:
-    :param dict definition:
+    :param metadata_type:
+    :param definition:
     """
 
-    def __init__(self,
-                 metadata_type: MetadataType,
-                 definition: Mapping[str, Any],
-                 id_: Optional[int] = None):
-        assert isinstance(metadata_type, MetadataType)
+    def __init__(
+        self,
+        metadata_type: MetadataType,
+        definition: Mapping[str, Any],
+        id_: int | None = None,
+        stac: RasterCollectionMetadata | None = None,
+    ) -> None:
         self.id = id_
         self.metadata_type = metadata_type
         #: product definition document
         self.definition = definition
-        self._extra_dimensions: Optional[Mapping[str, Any]] = None
-        self._canonical_measurements: Optional[Mapping[str, Measurement]] = None
-        self._all_measurements: Optional[Dict[str, Measurement]] = None
-        self._load_hints: Optional[Dict[str, Any]] = None
+        self._extra_dimensions: Mapping[str, Any] | None = None
+        self._canonical_measurements: Mapping[str, Measurement] | None = None
+        self._all_measurements: dict[str, Measurement] | None = None
+        self._load_hints: dict[str, Any] | None = None
 
-    def _resolve_aliases(self):
+        # Used for mapping between STAC Collections and Products.
+        self._stac = stac
+
+    def _resolve_aliases(self) -> dict[str, Measurement]:
         if self._all_measurements is not None:
             return self._all_measurements
         mm = self.measurements
@@ -609,7 +694,7 @@ class Product:
 
         for m in mm.values():
             oo[m.name] = m
-            for alias in m.get('aliases', []):
+            for alias in m.get("aliases", []):
                 # TODO: check for duplicates
                 # if alias is in oo already -- bad
                 m_alias = dict(**m)
@@ -620,8 +705,12 @@ class Product:
         return self._all_measurements
 
     @property
+    def stac(self) -> RasterCollectionMetadata | None:
+        return self._stac
+
+    @property
     def name(self) -> str:
-        return self.definition['name']
+        return self.definition["name"]
 
     @property
     def description(self) -> str:
@@ -633,11 +722,11 @@ class Product:
 
     @property
     def managed(self) -> bool:
-        return self.definition.get('managed', False)
+        return self.definition.get("managed", False)
 
     @property
     def metadata_doc(self) -> Mapping[str, Any]:
-        return self.definition['metadata']
+        return self.definition["metadata"]
 
     @property
     def metadata(self) -> DocReader:
@@ -654,76 +743,97 @@ class Product:
         """
         # from copy import deepcopy
         if self._canonical_measurements is None:
-            def fix_nodata(m):
-                nodata = m.get('nodata', None)
+
+            def fix_nodata(m: dict[str, Any]) -> dict[str, Any]:
+                nodata = m.get("nodata")
                 if isinstance(nodata, str):
                     m = dict(**m)
-                    m['nodata'] = float(nodata)
+                    m["nodata"] = float(nodata)
                 return m
 
-            self._canonical_measurements = OrderedDict((m['name'], Measurement(**fix_nodata(m)))
-                                                       for m in self.definition.get('measurements', []))
+            self._canonical_measurements = OrderedDict(
+                (m["name"], Measurement(**fix_nodata(m)))
+                for m in self.definition.get("measurements", {})
+            )
 
         return self._canonical_measurements
 
     @property
-    def dimensions(self) -> Tuple[str, str, str]:
+    def dimensions(self) -> tuple[str, str, str]:
         """
         List of dimension labels for data in this product
         """
-        if self.grid_spec is not None:
-            spatial_dims = self.grid_spec.dimensions
-        else:
-            spatial_dims = DEFAULT_SPATIAL_DIMS
+        spatial_dims = (
+            DEFAULT_SPATIAL_DIMS
+            if self.grid_spec is None
+            else self.grid_spec.dimensions
+        )
 
-        return ('time',) + spatial_dims
+        return ("time",) + spatial_dims
 
     @property
-    def extra_dimensions(self) -> "ExtraDimensions":
+    def extra_dimensions(self) -> ExtraDimensions:
         """
         Dictionary of metadata for the third dimension.
         """
         if self._extra_dimensions is None:
-            self._extra_dimensions = OrderedDict((d['name'], d)
-                                                 for d in self.definition.get('extra_dimensions', []))
+            self._extra_dimensions = OrderedDict(
+                (d["name"], d) for d in self.definition.get("extra_dimensions", [])
+            )
         return ExtraDimensions(self._extra_dimensions)
 
     @cached_property
-    @deprecat(
-        reason="The Grid Workflow is deprecated. This property may return an (optional) odc-geo GridSpec in future.",
-        version="1.9.0",
-        category=ODC2DeprecationWarning
-    )
-    def grid_spec(self) -> Optional['GridSpec']:
+    def grid_spec(self) -> GridSpec | GeoGridSpec | None:
         """
         Grid specification for this product
         """
-        storage = self.definition.get('storage')
+        storage = self.definition.get("storage")
         if storage is None:
             return None
 
-        crs = storage.get('crs')
+        crs = storage.get("crs")
         if crs is None:
             return None
 
         crs = CRS(str(crs).strip())
 
-        def extract_point(name):
+        def extract_point(name: str):
             xx = storage.get(name, None)
-            return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
+            # Else-branch has type "int | None".
+            return (
+                tuple(xx[dim] for dim in crs.dimensions) if isinstance(xx, dict) else xx
+            )
 
         # extract both tile_size and tile_shape for backwards compatibility
-        gs_params = {name: extract_point(name)
-                     for name in ('tile_size', 'resolution', 'origin')}
+        gs_params = {
+            name: extract_point(name)
+            for name in ("tile_size", "tile_shape", "resolution", "origin")
+        }
 
-        complete = all(gs_params[k] is not None for k in ('tile_size', 'resolution'))
+        complete = gs_params["resolution"] is not None and (
+            gs_params["tile_size"] or gs_params["tile_shape"]
+        )
         if not complete:
             return None
 
+        if gs_params["tile_shape"] is not None:
+            # convert origin to XY
+            if isinstance(gs_params["origin"], tuple):
+                gs_params["origin"] = yx_(gs_params["origin"])
+
+            if isinstance(gs_params["resolution"], tuple):
+                gs_params["resolution"] = resyx_(*gs_params["resolution"])
+            else:
+                gs_params["resolution"] = res_(gs_params["resolution"])
+
+            del gs_params["tile_size"]
+            return GeoGridSpec(crs=crs, **gs_params)
+
+        del gs_params["tile_shape"]
         return GridSpec(crs=crs, **gs_params)
 
     @staticmethod
-    def validate_extra_dims(definition: Mapping[str, Any]):
+    def validate_extra_dims(definition: Mapping[str, Any]) -> None:
         """Validate 3D metadata in the product definition.
 
         Perform some basic checks for validity of the 3D dataset product definition:
@@ -738,29 +848,32 @@ class Product:
         """
         # Dict of extra dimensions names and values in the product definition
         defined_extra_dimensions = OrderedDict(
-            (d.get("name"), d.get("values")) for d in definition.get("extra_dimensions", [])
+            (d.get("name"), d.get("values"))
+            for d in definition.get("extra_dimensions", [])
         )
 
-        for m in definition.get('measurements', []):
+        for m in definition.get("measurements", []):
             # Skip if not a 3D measurement
-            if 'extra_dim' not in m:
+            if "extra_dim" not in m:
                 continue
 
             # Found 3D measurement, check if extra_dimension is defined.
-            if (len(defined_extra_dimensions) == 0):
+            if len(defined_extra_dimensions) == 0:
                 raise ValueError(
                     "extra_dimensions is not defined. 3D measurements require extra_dimensions "
                     "to be defined for the dimension"
                 )
 
-            dim_name = m.get('extra_dim')
+            dim_name = m.get("extra_dim")
 
             # Check extra dimension is defined
             if dim_name not in defined_extra_dimensions:
-                raise ValueError(f"Dimension {dim_name} is not defined in extra_dimensions")
+                raise ValueError(
+                    f"Dimension {dim_name} is not defined in extra_dimensions"
+                )
 
-            if 'spectral_definition' in m:
-                spectral_definitions = m.get('spectral_definition', [])
+            if "spectral_definition" in m:
+                spectral_definitions = m.get("spectral_definition", [])
                 # Check spectral_definition of expected length
                 if len(defined_extra_dimensions[dim_name]) != len(spectral_definitions):
                     raise ValueError(
@@ -769,16 +882,19 @@ class Product:
 
                 # Check each spectral_definition has the same length for wavelength and response if both exists
                 for idx, spectral_definition in enumerate(spectral_definitions):
-                    if 'wavelength' in spectral_definition and 'response' in spectral_definition:
-                        if len(spectral_definition.get('wavelength')) != len(spectral_definition.get('response')):
-                            raise ValueError(
-                                f"spectral_definition_map: wavelength should be the same length as response "
-                                f"in the product definition for spectral definition at index {idx}."
-                            )
+                    if (
+                        "wavelength" in spectral_definition
+                        and "response" in spectral_definition
+                    ) and len(spectral_definition.get("wavelength")) != len(
+                        spectral_definition.get("response")
+                    ):
+                        raise ValueError(
+                            f"spectral_definition_map: wavelength should be the same length as response "
+                            f"in the product definition for spectral definition at index {idx}."
+                        )
 
     def canonical_measurement(self, measurement: str) -> str:
-        """ resolve measurement alias into canonical name
-        """
+        """resolve measurement alias into canonical name"""
         m = self._resolve_aliases().get(measurement, None)
         if m is None:
             raise ValueError(f"No such band/alias {measurement}")
@@ -786,7 +902,7 @@ class Product:
         return m.canonical_name
 
     def lookup_measurements(
-        self, measurements: Optional[Union[Iterable[str], str]] = None
+        self, measurements: Iterable[str] | str | None = None
     ) -> Mapping[str, Measurement]:
         """
         Find measurements by name
@@ -801,14 +917,14 @@ class Product:
         mm = self._resolve_aliases()
         return OrderedDict((m, mm[m]) for m in measurements)
 
-    def _extract_load_hints(self) -> Optional[Dict[str, Any]]:
-        _load = self.definition.get('load')
+    def _extract_load_hints(self) -> dict[str, Any] | None:
+        _load = self.definition.get("load")
         if _load is None:
             # Check for partial "storage" definition
-            storage = self.definition.get('storage', {})
+            storage = self.definition.get("storage", {})
 
-            if 'crs' in storage and 'resolution' in storage:
-                if 'tile_size' in storage:
+            if "crs" in storage and "resolution" in storage:
+                if "tile_size" in storage or "tile_shape" in storage:
                     # Fully defined GridSpec, ignore it
                     return None
 
@@ -817,13 +933,16 @@ class Product:
             else:
                 return None
 
-        crs = CRS(_load['crs'])
+        crs = CRS(_load["crs"])
 
-        def extract_point(name):
+        def extract_point(name: str):
             xx = _load.get(name, None)
-            return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
+            # Else-branch has type "int | None".
+            return (
+                tuple(xx[dim] for dim in crs.dimensions) if isinstance(xx, dict) else xx
+            )
 
-        params = {name: extract_point(name) for name in ('resolution', 'align')}
+        params = {name: extract_point(name) for name in ("resolution", "align")}
         params = {name: v for name, v in params.items() if v is not None}
 
         if "resolution" in params:
@@ -832,18 +951,18 @@ class Product:
         return dict(crs=crs, **params)
 
     @property
-    def default_crs(self) -> Optional[CRS]:
-        return self.load_hints().get('output_crs', None)
+    def default_crs(self) -> CRS | None:
+        return self.load_hints().get("output_crs", None)
 
     @property
-    def default_resolution(self) -> Optional[Tuple[float, float]]:
-        return self.load_hints().get('resolution', None)
+    def default_resolution(self) -> Resolution | None:
+        return self.load_hints().get("resolution", None)
 
     @property
-    def default_align(self) -> Optional[Tuple[float, float]]:
-        return self.load_hints().get('align', None)
+    def default_align(self) -> tuple[float, float] | None:
+        return self.load_hints().get("align", None)
 
-    def load_hints(self) -> Dict[str, Any]:
+    def load_hints(self) -> dict[str, Any]:
         """
         Returns dictionary with keys compatible with ``dc.load(..)`` named arguments:
 
@@ -857,20 +976,18 @@ class Product:
             return self._load_hints
 
         hints = None
-        try:
+        with contextlib.suppress(Exception):
             hints = self._extract_load_hints()
-        except Exception:
-            pass
 
         if hints is None:
             self._load_hints = {}
         else:
-            crs = hints.pop('crs')
+            crs = hints.pop("crs")
             self._load_hints = dict(output_crs=crs, **hints)
 
         return self._load_hints
 
-    def dataset_reader(self, dataset_doc):
+    def dataset_reader(self, dataset_doc: Mapping[str, Field]) -> DocReader:
         return self.metadata_type.dataset_reader(dataset_doc)
 
     def to_dict(self) -> Mapping[str, Any]:
@@ -878,28 +995,39 @@ class Product:
         Convert to a dictionary representation of the available fields
         """
         row = dict(**self.fields)
-        row.update(id=self.id,
-                   name=self.name,
-                   license=self.license,
-                   description=self.description)
+        row.update(
+            id=self.id,
+            name=self.name,
+            license=self.license,
+            description=self.description,
+        )
 
         if self.grid_spec is not None:
-            row.update({
-                'crs': str(self.grid_spec.crs),
-                'spatial_dimensions': self.grid_spec.dimensions,
-                'tile_size': self.grid_spec.tile_size,
-                'resolution': self.grid_spec.resolution,
-            })
+            if isinstance(self.grid_spec, GeoGridSpec):
+                tile_shape = self.grid_spec.tile_shape
+            else:
+                tile_shape = self.grid_spec.tile_resolution
+            row.update(
+                {
+                    "crs": str(self.grid_spec.crs),
+                    "spatial_dimensions": self.grid_spec.dimensions,
+                    "tile_shape": tile_shape,
+                    "resolution": self.grid_spec.resolution,
+                }
+            )
         return row
 
+    @override
     def __str__(self) -> str:
-        return "Product(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
+        return f"Product(name={self.name!r}, id_={self.id!r})"
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()
 
     # Types are uniquely identifiable by name:
 
+    @override
     def __eq__(self, other) -> bool:
         if self is other:
             return True
@@ -909,7 +1037,8 @@ class Product:
 
         return self.name == other.name
 
-    def __hash__(self):
+    @override
+    def __hash__(self) -> int:
         return hash(self.name)
 
 
@@ -918,9 +1047,9 @@ DatasetType = Product
 
 
 @deprecat(
-    reason='This version of GridSpec has been deprecated. Please use the GridSpec class defined in odc-geo.',
-    version='1.9.0',
-    category=ODC2DeprecationWarning
+    reason="This version of GridSpec has been deprecated. Please use the GridSpec class defined in odc-geo.",
+    version="1.9.0",
+    category=ODC2DeprecationWarning,
 )
 class GridSpec:
     """
@@ -936,93 +1065,104 @@ class GridSpec:
                0.0, -0.1, -48.05), CRS('EPSG:4326'))), ((1, 1), GeoBox((10, 10), Affine(0.1, 0.0, 140.95,
                0.0, -0.1, -48.05), CRS('EPSG:4326')))]
 
-    :param odc.geo.crs.CRS crs: Coordinate System used to define the grid
-    :param [float,float] tile_size: (Y, X) size of each tile, in CRS units
-    :param [float,float] resolution: (Y, X) size of each data point in the grid, in CRS units. Y will
+    :param crs: Coordinate System used to define the grid
+    :param tile_size: (Y, X) size of each tile, in CRS units
+    :param resolution: (Y, X) size of each data point in the grid, in CRS units. Y will
         usually be negative.
-    :param [float,float] origin: (Y, X) coordinates of a corner of the (0,0) tile in CRS units. default is (0.0, 0.0)
+    :param origin: (Y, X) coordinates of a corner of the (0,0) tile in CRS units. default is (0.0, 0.0)
     """
 
-    def __init__(self,
-                 crs: CRS,
-                 tile_size: Tuple[float, float],
-                 resolution: Tuple[float, float],
-                 origin: Optional[Tuple[float, float]] = None):
+    def __init__(
+        self,
+        crs: CRS,
+        tile_size: tuple[float, float],
+        resolution: tuple[float, float],
+        origin: tuple[float, float] | None = None,
+    ) -> None:
         self.crs = crs
-        _LOG.warning('In odc-geo GridSpec, tile_size has been renamed tile_shape and should be provided in pixels.')
+        _LOG.warning(
+            "In odc-geo GridSpec, tile_size has been renamed tile_shape and should be provided in pixels."
+        )
         self.tile_size = tile_size
-        _LOG.warning('In odc-geo GridSpec, resolution is expected in (X, Y) order, '
-                     'or simply X if using square pixels with inverted Y axis.')
+        _LOG.warning(
+            "In odc-geo GridSpec, resolution is expected in (X, Y) order, "
+            "or simply X if using square pixels with inverted Y axis."
+        )
         self.resolution = resolution
         if origin is not None:
-            _LOG.warning('In odc-geo GridSpec, origin is expected in (X, Y) order.')
+            _LOG.warning("In odc-geo GridSpec, origin is expected in (X, Y) order.")
         self.origin = origin or (0.0, 0.0)
 
-    def __eq__(self, other):
+    @override
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, GridSpec):
             return False
 
-        return (self.crs == other.crs
-                and self.tile_size == other.tile_size
-                and self.resolution == other.resolution
-                and self.origin == other.origin)
+        return (
+            self.crs == other.crs
+            and self.tile_size == other.tile_size
+            and self.resolution == other.resolution
+            and self.origin == other.origin
+        )
 
     @property
-    def dimensions(self) -> Tuple[str, str]:
+    def dimensions(self) -> tuple[str, str]:
         """
         List of dimension names of the grid spec
-
         """
         return self.crs.dimensions
 
     @property
-    def alignment(self) -> Tuple[float, float]:
+    def alignment(self) -> tuple[float, float]:
         """
         Pixel boundary alignment
         """
         y, x = (orig % abs(res) for orig, res in zip(self.origin, self.resolution))
-        return (y, x)
+        return y, x
 
     @property
-    def tile_resolution(self) -> Tuple[int, int]:
+    def tile_resolution(self) -> tuple[int, int]:
         """
         Tile size in pixels in CRS dimension order (Usually y,x or lat,lon)
         """
         y, x = (int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution))
-        return (y, x)
+        return y, x
 
-    def tile_coords(self, tile_index: Tuple[int, int]) -> Tuple[float, float]:
+    def tile_coords(self, tile_index: tuple[int, int]) -> tuple[float, float]:
         """
         Coordinate of the top-left corner of the tile in (Y,X) order
 
         :param tile_index: in X,Y order
         """
 
-        def coord(index: int,
-                  resolution: float,
-                  size: float,
-                  origin: float) -> float:
+        def coord(index: int, resolution: float, size: float, origin: float) -> float:
             return (index + (1 if resolution < 0 < size else 0)) * size + origin
 
-        y, x = (coord(index, res, size, origin)
-                for index, res, size, origin in zip(tile_index[::-1], self.resolution, self.tile_size, self.origin))
-        return (y, x)
+        y, x = (
+            coord(index, res, size, origin)
+            for index, res, size, origin in zip(
+                tile_index[::-1], self.resolution, self.tile_size, self.origin
+            )
+        )
+        return y, x
 
-    def tile_geobox(self, tile_index: Tuple[int, int]) -> GeoBox:
+    def tile_geobox(self, tile_index: tuple[int, int]) -> GeoBox:
         """
         Tile geobox.
 
-        :param (int,int) tile_index:
+        :param tile_index:
         """
         res_y, res_x = self.resolution
         y, x = self.tile_coords(tile_index)
         h, w = self.tile_resolution
-        geobox = GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), shape=wh_(w, h))
+        geobox = GeoBox(
+            crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), shape=wh_(w, h)
+        )
         return geobox
 
-    def tiles(self, bounds: BoundingBox,
-              geobox_cache: Optional[dict] = None) -> Iterator[Tuple[Tuple[int, int],
-                                                                     GeoBox]]:
+    def tiles(
+        self, bounds: BoundingBox, geobox_cache: dict | None = None
+    ) -> Generator[tuple[tuple[int, int], GeoBox]]:
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `bounds` rectangle.
@@ -1032,11 +1172,12 @@ class GridSpec:
            Grid cells are referenced by coordinates `(x, y)`, which is the opposite to the usual CRS
            dimension order.
 
-        :param BoundingBox bounds: Boundary coordinates of the required grid
-        :param dict geobox_cache: Optional cache to reuse geoboxes instead of creating new one each time
+        :param bounds: Boundary coordinates of the required grid
+        :param geobox_cache: Optional cache to reuse geoboxes instead of creating new one each time
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
-        def geobox(tile_index):
+
+        def geobox(tile_index: tuple[int, int]) -> GeoBox:
             if geobox_cache is None:
                 return self.tile_geobox(tile_index)
 
@@ -1048,15 +1189,21 @@ class GridSpec:
 
         tile_size_y, tile_size_x = self.tile_size
         tile_origin_y, tile_origin_x = self.origin
-        for y in GridSpec.grid_range(bounds.bottom - tile_origin_y, bounds.top - tile_origin_y, tile_size_y):
-            for x in GridSpec.grid_range(bounds.left - tile_origin_x, bounds.right - tile_origin_x, tile_size_x):
+        for y in GridSpec.grid_range(
+            bounds.bottom - tile_origin_y, bounds.top - tile_origin_y, tile_size_y
+        ):
+            for x in GridSpec.grid_range(
+                bounds.left - tile_origin_x, bounds.right - tile_origin_x, tile_size_x
+            ):
                 tile_index = (x, y)
                 yield tile_index, geobox(tile_index)
 
-    def tiles_from_geopolygon(self, geopolygon: Geometry,
-                              tile_buffer: Optional[Tuple[float, float]] = None,
-                              geobox_cache: Optional[dict] = None) -> Iterator[Tuple[Tuple[int, int],
-                                                                                     GeoBox]]:
+    def tiles_from_geopolygon(
+        self,
+        geopolygon: Geometry,
+        tile_buffer: tuple[float, float] | None = None,
+        geobox_cache: dict | None = None,
+    ) -> Generator[tuple[tuple[int, int], GeoBox]]:
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and overlapping with the specified `geopolygon`.
@@ -1066,10 +1213,10 @@ class GridSpec:
            Grid cells are referenced by coordinates `(x, y)`, which is the opposite to the usual CRS
            dimension order.
 
-        :param odc.geo.Geometry geopolygon: Polygon to tile
+        :param geopolygon: Polygon to tile
         :param tile_buffer: Optional <float,float> tuple, (extra padding for the query
                             in native units of this GridSpec)
-        :param dict geobox_cache: Optional cache to reuse geoboxes instead of creating new one each time
+        :param geobox_cache: Optional cache to reuse geoboxes instead of creating new one each time
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
         geopolygon = geopolygon.to_crs(self.crs)
@@ -1077,10 +1224,12 @@ class GridSpec:
         bbox = bbox.buffered(*tile_buffer) if tile_buffer else bbox
 
         for tile_index, tile_geobox in self.tiles(bbox, geobox_cache):
-            tile_geobox = tile_geobox.buffered(*tile_buffer) if tile_buffer else tile_geobox
+            tile_geobox = (
+                tile_geobox.buffered(*tile_buffer) if tile_buffer else tile_geobox
+            )
 
             if intersects(tile_geobox.extent, geopolygon):
-                yield (tile_index, tile_geobox)
+                yield tile_index, tile_geobox
 
     @staticmethod
     def grid_range(lower: float, upper: float, step: float) -> range:
@@ -1107,12 +1256,13 @@ class GridSpec:
         if step < 0.0:
             lower, upper, step = -upper, -lower, -step
         assert step > 0.0
-        return range(int(math.floor(lower / step)), int(math.ceil(upper / step)))
+        return range(math.floor(lower / step), math.ceil(upper / step))
 
+    @override
     def __str__(self) -> str:
-        return "GridSpec(crs=%s, tile_size=%s, resolution=%s)" % (
-            self.crs, self.tile_size, self.resolution)
+        return f"GridSpec(crs={self.crs}, tile_size={self.tile_size}, resolution={self.resolution})"
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()
 
@@ -1123,11 +1273,12 @@ def metadata_from_doc(doc: Mapping[str, Any]) -> MetadataType:
     according to metadata spec.
     """
     from .fields import get_dataset_fields
-    MetadataType.validate(doc)  # type: ignore
+
+    MetadataType.validate(doc)  # type: ignore[attr-defined]
     return MetadataType(doc, get_dataset_fields(doc))
 
 
-ExtraDimensionSlices = dict[str, float | tuple[float, float]]
+ExtraDimensionSlices: TypeAlias = dict[str, float | tuple[float, float]]
 
 
 class ExtraDimensions:
@@ -1138,7 +1289,7 @@ class ExtraDimensions:
     the original dimension coordinates.
     """
 
-    def __init__(self, extra_dim: Mapping[str, Any]):
+    def __init__(self, extra_dim: Mapping[str, Any]) -> None:
         """Init function
 
         :param extra_dim: Dimension definition dict, typically retrieved from the product definition's
@@ -1150,16 +1301,16 @@ class ExtraDimensions:
         self._dims = extra_dim
         # Dimension slices that results in this ExtraDimensions object
         self._dim_slice = {
-            name: (0, len(dim['values'])) for name, dim in extra_dim.items()
+            name: (0, len(dim["values"])) for name, dim in extra_dim.items()
         }
         # Coordinate information
         self._coords = {
             name: xarray.DataArray(
-                data=dim['values'],
-                coords={name: dim['values']},
+                data=dim["values"],
+                coords={name: dim["values"]},
                 dims=(name,),
                 name=name,
-            ).astype(dim['dtype'])
+            ).astype(dim["dtype"])
             for name, dim in extra_dim.items()
         }
 
@@ -1168,12 +1319,9 @@ class ExtraDimensions:
 
         :return: A boolean if ExtraDimensions has an empty dimension, otherwise False.
         """
-        for value in self._coords.values():
-            if value.shape[0] == 0:
-                return True
-        return False
+        return any(value.shape[0] == 0 for value in self._coords.values())
 
-    def __getitem__(self, dim_slices: ExtraDimensionSlices) -> "ExtraDimensions":
+    def __getitem__(self, dim_slices: ExtraDimensionSlices) -> ExtraDimensions:
         """Return a ExtraDimensions subsetted by dim_slices
 
         :param dim_slices: Dict of dimension slices to subset by.
@@ -1196,14 +1344,16 @@ class ExtraDimensions:
         for dim_name, dim_slice in dim_slices.items():
             # Adjust slices relative to original.
             if dim_name in ed._dim_slice:
-                ed._dim_slice[dim_name] = (    # type: ignore[assignment]
+                ed._dim_slice[dim_name] = (  # type: ignore[assignment]
                     ed._dim_slice[dim_name][0] + dim_slice[0],  # type: ignore[index]
                     ed._dim_slice[dim_name][0] + dim_slice[1],  # type: ignore[index]
                 )
 
             # Subset dimension values.
             if dim_name in ed._dims:
-                ed._dims[dim_name]['values'] = ed._dims[dim_name]['values'][slice(*dim_slice)]  # type: ignore[misc]
+                ed._dims[dim_name]["values"] = ed._dims[dim_name]["values"][
+                    slice(*dim_slice)  # type: ignore[misc]
+                ]
 
             # Subset dimension coordinates.
             if dim_name in ed._coords:
@@ -1221,14 +1371,14 @@ class ExtraDimensions:
         return self._dims
 
     @property
-    def dim_slice(self) -> Mapping[str, Tuple[int, int]]:
+    def dim_slice(self) -> Mapping[str, tuple[int, int]]:
         """Returns dimension slice for this ExtraDimensions object
 
         :return: A dict of dimension slices that results in this ExtraDimensions object
         """
         return self._dim_slice
 
-    def measurements_values(self, dim: str) -> List[Any]:
+    def measurements_values(self, dim: str) -> list[Any]:
         """Returns the dimension values after slicing
 
         :param dim: The name of the dimension
@@ -1236,7 +1386,7 @@ class ExtraDimensions:
         """
         if dim not in self._dims:
             raise ValueError(f"Dimension {dim} not found.")
-        return self._dims[dim]['values']
+        return self._dims[dim]["values"]
 
     def measurements_slice(self, dim: str) -> slice:
         """Returns the index for slicing on a dimension
@@ -1247,7 +1397,7 @@ class ExtraDimensions:
         dim_slice = self.measurements_index(dim)
         return slice(*dim_slice)
 
-    def measurements_index(self, dim: str) -> Tuple[int, int]:
+    def measurements_index(self, dim: str) -> tuple[int, int]:
         """Returns the index for slicing on a dimension as a tuple.
 
         :param dim: The name of the dimension
@@ -1270,7 +1420,9 @@ class ExtraDimensions:
             raise ValueError(f"Dimension {dim} not found.")
         return self._coords[dim].searchsorted(value)
 
-    def coord_slice(self, dim: str, coord_range: Union[float, Tuple[float, float]]) -> Tuple[int, int]:
+    def coord_slice(
+        self, dim: str, coord_range: float | tuple[float, float]
+    ) -> tuple[int, int]:
         """Returns the Integer index for a coordinate (min, max) range.
 
         :param dim: The name of the dimension
@@ -1278,14 +1430,14 @@ class ExtraDimensions:
         :return: A tuple containing the integer indexes of `coord_range`.
         """
         # Convert to Tuple if it's an int or float
-        if isinstance(coord_range, int) or isinstance(coord_range, float):
+        if isinstance(coord_range, int | float):
             coord_range = (coord_range, coord_range)
 
         start_index = self.index_of(dim, coord_range[0])
         stop_index = self.index_of(dim, coord_range[1] + 1)
         return start_index, stop_index
 
-    def chunk_size(self) -> Tuple[Tuple[str, ...], Tuple[int, ...]]:
+    def chunk_size(self) -> tuple[tuple[str, ...], tuple[int, ...]]:
         """Returns the names and shapes of dimensions in dimension order
 
         :return: A tuple containing the names and max sizes of each dimension
@@ -1294,11 +1446,12 @@ class ExtraDimensions:
         shapes = ()
         if self.dims is not None:
             for dim in self.dims.values():
-                name = dim.get('name')
-                names += (name,)   # type: ignore[assignment]
-                shapes += (len(self.measurements_values(name)),)   # type: ignore[assignment,arg-type]
+                name = dim.get("name")
+                names += (name,)  # type: ignore[assignment]
+                shapes += (len(self.measurements_values(name)),)  # type: ignore[assignment,arg-type]
         return names, shapes
 
+    @override
     def __str__(self) -> str:
         return (
             f"ExtraDimensions(extra_dim={dict(self._dims)}, dim_slice={self._dim_slice} "
@@ -1306,5 +1459,6 @@ class ExtraDimensions:
             f")"
         )
 
+    @override
     def __repr__(self) -> str:
         return self.__str__()

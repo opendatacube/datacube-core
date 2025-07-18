@@ -2,13 +2,14 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import numpy as np
 import numpy.testing as npt
+import pandas as pd
 import pytest
 import xarray as xr
-import pandas as pd
-import numpy as np
-from datacube.testutils.geom import epsg4326, epsg3857
+
 from datacube.testutils import mk_sample_xr_dataset, remove_crs
+from datacube.testutils.geom import epsg3857, epsg4326
 from datacube.utils.xarray_geoextensions import _xarray_affine
 
 multi_coords = xr.DataArray(
@@ -17,18 +18,18 @@ multi_coords = xr.DataArray(
         (
             "spec",
             pd.MultiIndex.from_arrays(
-                np.array([["2001-01-01"], ["2001-01-01"]]), names=("time", "solar_day")
+                [["2001-01-01"], ["2001-01-01"]], names=("time", "solar_day")
             ),
         )
     ],
 ).coords
-single_coord = dict(time=np.array(["2001-01-01"]))
+single_coord = {"time": np.array(["2001-01-01"])}
 
 
 @pytest.mark.parametrize(
     "odc_style_xr_dataset", [single_coord, multi_coords], indirect=True
 )
-def test_xr_extension(odc_style_xr_dataset):
+def test_xr_extension(odc_style_xr_dataset) -> None:
     xx = odc_style_xr_dataset
 
     assert (1,) + xx.odc.geobox.shape == xx.B10.shape
@@ -45,7 +46,7 @@ def test_xr_extension(odc_style_xr_dataset):
     npt.assert_allclose(A * (0.5, 1.5), (xx.longitude.data[0], xx.latitude.data[1]))
 
 
-def test_xr_geobox():
+def test_xr_geobox() -> None:
     xy = (10, 111)
     rxy = (10, -100)
     resolution = rxy[::-1]

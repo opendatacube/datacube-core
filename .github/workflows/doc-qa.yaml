@@ -1,20 +1,31 @@
 name: Doc QA
 on:
-  # Triggers the workflow on pull request events for the main branch
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches:
+      - 'develop'
   pull_request:
     paths:
       - '**'
+
+permissions: {}
+
+# When a PR is updated, cancel the jobs from the previous version. Merges
+# do not define head_ref, so use run_id to never cancel those jobs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   pyspell:
     runs-on: ubuntu-latest
     steps:
       # Spellcheck
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
-      - uses: igsekor/pyspelling-any@v1.0.4
+      - uses: igsekor/pyspelling-any@44278deea34ea69d8f0d5179ac409c140b0a2f5a # v1.0.5
         name: Spellcheck
 
   doctor-rst:
@@ -22,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -   name: "Checkout"
-          uses: actions/checkout@v4
+          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       -   name: "Create cache dir"
           run: mkdir .cache
@@ -32,13 +43,13 @@ jobs:
           id: extract_base_branch
 
       -   name: "Cache DOCtor-RST"
-          uses: actions/cache@v4
+          uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
           with:
               path: .cache
-              key: ${{ runner.os }}-doctor-rst-${{ steps.extract_base_branch.outputs.branch }}
+              key: doctor-rst-${{ runner.os }}-${{ steps.extract_base_branch.outputs.branch }}
 
       -   name: "Run DOCtor-RST"
-          uses: docker://oskarstark/doctor-rst:1.64.0
+          uses: docker://oskarstark/doctor-rst:1.67.0@sha256:f2f7edaccb98bd664595475cecd62ebbab8d9f68495310f6765cf6f2e6dc5d01
           with:
               args: --short --error-format=github --cache-file=/github/workspace/.cache/doctor-rst.cache
           env:

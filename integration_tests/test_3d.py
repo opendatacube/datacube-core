@@ -12,18 +12,21 @@ import pytest
 import yaml
 
 try:
-    from yaml import CSafeDumper as SafeDumper  # type: ignore
-    from yaml import CSafeLoader as SafeLoader  # type: ignore
+    from yaml import CSafeDumper as SafeDumper
+    from yaml import CSafeLoader as SafeLoader
 except ImportError:
-    from yaml import SafeLoader, SafeDumper  # type: ignore
+    from yaml import SafeDumper, SafeLoader  # type: ignore
 
 import rasterio
 import xarray as xr
 from affine import Affine
-from datacube.api.core import Datacube
 from odc.geo.geobox import GeoBox
 
-pytest.importorskip("dcio_example.xarray_3d")  # skip this test if 3d driver is not installed
+from datacube.api.core import Datacube
+
+pytest.importorskip(
+    "dcio_example.xarray_3d"
+)  # skip this test if 3d driver is not installed
 _LOG = logging.getLogger(__name__)
 _LOG.setLevel(logging.DEBUG)
 
@@ -92,7 +95,7 @@ GEDI_PRODUCT_IDS = [
 # Product IDs must be in chronological order
 
 
-def custom_dumb_fuser(dst, src):
+def custom_dumb_fuser(dst, src) -> None:
     dst[:] = src[:]
 
 
@@ -230,7 +233,7 @@ def dataset_types(product_with_spectral_map, request):
 
 
 @pytest.mark.usefixtures("default_metadata_type")
-def test_missing_extra_dimensions(clirunner, invalid_dataset_type_paths):
+def test_missing_extra_dimensions(clirunner, invalid_dataset_type_paths) -> None:
     """Test error on invalid product definition."""
     for expected_msg, path in invalid_dataset_type_paths.items():
         with pytest.raises(ValueError) as exc_info:
@@ -239,7 +242,8 @@ def test_missing_extra_dimensions(clirunner, invalid_dataset_type_paths):
 
 
 @pytest.mark.usefixtures("default_metadata_type")
-def test_indexing(clirunner, index, product_def):
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
+def test_indexing(clirunner, index, product_def) -> None:
     """Test indexing features for 2D and 3D products.
 
     A few no-op indexing commands are tested as well as a simple load with shape
@@ -298,10 +302,16 @@ def test_indexing(clirunner, index, product_def):
 
     dc = Datacube(index=index)
     check_open_with_dc_simple(dc, product_def, [product_id], measurement)
+    with pytest.raises(ValueError) as e:
+        check_open_with_dc_simple(
+            dc, product_def, [product_id], measurement, resolution=[100, 100, 100, 100]
+        )
+    assert "Resolution cannot have more than 2 dimensions" in str(e.value)
 
 
 @pytest.mark.usefixtures("default_metadata_type")
-def test_indexing_with_spectral_map(clirunner, index, dataset_types):
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
+def test_indexing_with_spectral_map(clirunner, index, dataset_types) -> None:
     """Test indexing features with spectral map."""
     product_id = GEDI_PRODUCT_IDS[0]
     product_def = GEDI_PRODUCTS["3D"]
@@ -315,13 +325,14 @@ def test_indexing_with_spectral_map(clirunner, index, dataset_types):
     clirunner(["-v", "product", "add", str(dataset_types)])
 
     # Index the Dataset
-    clirunner(["-v", "dataset", "add", '--ignore-lineage', str(index_yaml)])
+    clirunner(["-v", "dataset", "add", "--ignore-lineage", str(index_yaml)])
     dc = Datacube(index=index)
     check_open_with_dc_simple(dc, product_def, [product_id], measurement)
 
 
 @pytest.mark.usefixtures("default_metadata_type")
-def test_end_to_end_multitime(clirunner, index, product_def, original_data):
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
+def test_end_to_end_multitime(clirunner, index, product_def, original_data) -> None:
     """Test simple indexing but for multiple measurements and wavelengths."""
     dc = Datacube(index=index)
 
@@ -335,7 +346,7 @@ def test_end_to_end_multitime(clirunner, index, product_def, original_data):
                 measurement=measurement,
             )
             # Index the Datasets
-            clirunner(["-v", "dataset", "add", '--ignore-lineage', str(index_yaml)])
+            clirunner(["-v", "dataset", "add", "--ignore-lineage", str(index_yaml)])
 
         if idx == 0:  # Full check for the first measurement only
             # Check data for all product IDs
@@ -351,7 +362,7 @@ def test_end_to_end_multitime(clirunner, index, product_def, original_data):
             check_open_with_dc_simple(dc, product_def, GEDI_PRODUCT_IDS, measurement)
 
 
-def check_loaded_vs_original(data, orig, product_def):
+def check_loaded_vs_original(data, orig, product_def) -> None:
     """Check that the `data` against the original data from disk."""
     data_t = data.isel(time=0)  # Only 1 time slice for now
     if product_def.wavelengths:
@@ -370,55 +381,65 @@ def check_loaded_vs_original(data, orig, product_def):
         # TODO: When the bug preventing geobox for 2D is fixed, uncomment the
         # following line
         # assert numpy.array_equal(data_t.values, orig.values)
-        _LOG.info(f"\n{str(numpy.array_equal(data_t.values, orig.values)):~^80}\n")
+        _LOG.info(f"\n{numpy.array_equal(data_t.values, orig.values)!s:~^80}\n")
 
 
 def load_with_dc(
-    dc, product_def, product_id, measurement, time=None, datasets=None, dask_chunks=None
+    dc,
+    product_def,
+    product_id,
+    measurement,
+    time=None,
+    datasets=None,
+    dask_chunks=None,
+    **kwargs,
 ):
     """Load data with dc, with settable params.
 
     If `datasets` is specified, the no `product` is used in the load command.
     `dask_chunks` get passed as-is.
     """
-    params = SimpleNamespace(
-        measurements=[measurement],
-        like=GeoBox(
+    params = {
+        "measurements": [measurement],
+        "like": GeoBox(
             product_id.size[::-1],
             product_id.affine,
             GEDI_PRODUCT.crs,
         ),
-        dask_chunks=dask_chunks,
-    )
+        "dask_chunks": dask_chunks,
+    }
     if time:
-        params.time = time
+        params["time"] = time
     if product_def.wavelengths:
-        params.z = product_def.wavelengths
+        params["z"] = product_def.wavelengths
 
     if datasets:
-        params.datasets = datasets
+        params["datasets"] = datasets
     else:
-        params.product = product_def.name.format(measurement=measurement)
+        params["product"] = product_def.name.format(measurement=measurement)
+    params.update(kwargs)
     _LOG.info(f"DC Loading {params}")
-    data = dc.load(**params.__dict__)
-    _LOG.info(f"DC Loaded\n{data}\n{'-'*80}")
+    data = dc.load(**params)
+    _LOG.info(f"DC Loaded\n{data}\n{'-' * 80}")
     return data
 
 
-def check_open_with_dc_simple(dc, product_def, product_ids, measurement):
+def check_open_with_dc_simple(
+    dc, product_def, product_ids, measurement, **kwargs
+) -> None:
     """Check data can be loaded and has the right shape.
 
     Only the first of `product_ids` is tested. The actual contents of the loaded
     data are not checked, only their shape.
     """
     product_id = product_ids[0]
-    data = load_with_dc(dc, product_def, product_id, measurement)
+    data = load_with_dc(dc, product_def, product_id, measurement, **kwargs)
     expected = [len(product_ids), *product_id.size[::-1]]
     if product_def.wavelengths:
         wlen = (
             1
             if isinstance(product_def.wavelengths, int)
-            else len(range(*product_def.wavelengths, 5)) + 1
+            else len(range(*product_def.wavelengths, 5)) + 1  # type: ignore[call-overload]
         )
         expected.insert(1, wlen)
     assert list(data[measurement].shape) == expected
@@ -426,7 +447,7 @@ def check_open_with_dc_simple(dc, product_def, product_ids, measurement):
 
 def check_open_with_dc_contents(
     dc, product_def, product_ids, measurement, original_data
-):
+) -> None:
     """Check simple and dask loads.
 
     Simple load is checked against the original file, loaded from disk. Lazy
@@ -475,12 +496,14 @@ def dataarray_has_valid_data(da):
     return da.size and not (da.values == da.nodata).all()
 
 
-def check_open_with_grid_workflow(index):
+def check_open_with_grid_workflow(index) -> None:
     """Not implemented"""
     pass
 
 
-def check_load_via_dss(dc, product_def, product_ids, measurement, original_data):
+def check_load_via_dss(
+    dc, product_def, product_ids, measurement, original_data
+) -> None:
     """Check dataset can be searched and loaded, and has the right shape.
 
     Only the first of `product_ids` is tested. The actual contents of the loaded
@@ -502,7 +525,7 @@ def check_load_via_dss(dc, product_def, product_ids, measurement, original_data)
         wlen = (
             1
             if isinstance(product_def.wavelengths, int)
-            else len(range(*product_def.wavelengths, 5)) + 1
+            else len(range(*product_def.wavelengths, 5)) + 1  # type: ignore[call-overload]
         )
         expected.insert(1, wlen)
     assert list(data[measurement].shape) == expected

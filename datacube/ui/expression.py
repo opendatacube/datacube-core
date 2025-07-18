@@ -96,10 +96,10 @@ class TreeToSearchExprs(Transformer):
 
     def time_in_expr(self, time_field, date_range):
         return {str(time_field): date_range}
-    
+
     def time_gt_expr(self, time_field, date_gt):
         return {str(time_field): date_gt}
-    
+
     def time_lt_expr(self, time_field, date_lt):
         return {str(time_field): date_lt}
 
@@ -117,18 +117,18 @@ class TreeToSearchExprs(Transformer):
 
     def date_pair(self, start, end):
         return _time_to_search_dims((start, end))
-    
+
     def range_lower_bound(self, date):
         return _time_to_search_dims((date, None))
 
     def range_upper_bound(self, date):
         return _time_to_search_dims((None, date))
 
-    def date(self, y, m=None, d=None):
+    def date(self, y, m=None, d=None) -> str:
         return "-".join(x for x in [y, m, d] if x is not None)
 
     # Merge everything into a single dict
-    def start(self, *search_exprs):
+    def start(self, *search_exprs) -> dict:
         combined = {}
         for expr in search_exprs:
             combined.update(expr)
@@ -137,11 +137,11 @@ class TreeToSearchExprs(Transformer):
 
 def parse_expressions(*expression_text):
     expr_parser = Lark(search_grammar)
-    tree = expr_parser.parse(' '.join(expression_text))
+    tree = expr_parser.parse(" ".join(expression_text))
     return TreeToSearchExprs().transform(tree)
 
 
-def main():
+def main() -> None:
     expr_parser = Lark(search_grammar)
 
     sample_inputs = """platform = "LANDSAT_8"
@@ -157,7 +157,7 @@ def main():
     platform = LANDSAT_8
     lat in [4, 6] time in 2014-03-02
     platform=LS8 lat in [-14, -23.5] instrument="OTHER"
-    """.strip().split('\n')
+    """.strip().split("\n")
 
     for sample in sample_inputs:
         transformer = TreeToSearchExprs()
@@ -169,5 +169,5 @@ def main():
         print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

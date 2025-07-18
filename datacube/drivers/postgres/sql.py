@@ -7,41 +7,38 @@ Custom types for postgres & sqlalchemy
 """
 
 from sqlalchemy import TIMESTAMP, text
-from sqlalchemy.types import Double
 from sqlalchemy.dialects.postgresql.ranges import AbstractRange, Range
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import sqltypes
-from sqlalchemy.sql.expression import Executable, ClauseElement
+from sqlalchemy.sql.expression import ClauseElement, Executable
 from sqlalchemy.sql.functions import GenericFunction
+from sqlalchemy.types import Double
 
-SCHEMA_NAME = 'agdc'
+SCHEMA_NAME = "agdc"
 
 
 class CreateView(Executable, ClauseElement):
     inherit_cache = True
 
-    def __init__(self, name, select):
+    def __init__(self, name: str, select) -> None:
         self.name = name
         self.select = select
 
 
 @compiles(CreateView)
-def visit_create_view(element, compiler, **kw):
-    return "CREATE VIEW %s AS %s" % (
-        element.name,
-        compiler.process(element.select, literal_binds=True)
-    )
+def visit_create_view(element, compiler, **kw) -> str:
+    return f"CREATE VIEW {element.name} AS {compiler.process(element.select, literal_binds=True)}"
 
 
-UPDATE_TIMESTAMP_SQL = """
-create or replace function {schema}.set_row_update_time()
+UPDATE_TIMESTAMP_SQL: str = f"""
+create or replace function {SCHEMA_NAME}.set_row_update_time()
 returns trigger as $$
 begin
   new.updated = now();
   return new;
 end;
 $$ language plpgsql;
-""".format(schema=SCHEMA_NAME)
+"""
 
 UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE = """
 alter table {schema}.{table} add column if not exists updated
@@ -63,98 +60,107 @@ create index if not exists ix_{table}_added
 on {schema}.{table}(added);
 """
 
-INSTALL_TRIGGER_SQL_TEMPLATE = """
-drop trigger if exists row_update_time_{table} on {schema}.{table};
-create trigger row_update_time_{table}
-before update on {schema}.{table}
-for each row
-execute procedure {schema}.set_row_update_time();
-"""
+INSTALL_TRIGGER_SQL_TEMPLATE = [
+    "drop trigger if exists row_update_time_{table} on {schema}.{table}",
+    """
+    create trigger row_update_time_{table}
+    before update on {schema}.{table}
+    for each row
+    execute procedure {schema}.set_row_update_time();
+    """,
+]
 
-TYPES_INIT_SQL = """
-create or replace function {schema}.common_timestamp(text)
-returns timestamp with time zone as $$
-select ($1)::timestamp at time zone 'utc';
-$$ language sql immutable returns null on null input;
-
-create type {schema}.float8range as range (
-    subtype = float8,
-    subtype_diff = float8mi
-);
-""".format(schema=SCHEMA_NAME)
+TYPES_INIT_SQL: list[str] = [
+    f"""
+    create or replace function {SCHEMA_NAME}.common_timestamp(text)
+    returns timestamp with time zone as $$
+    select ($1)::timestamp at time zone 'utc';
+    $$ language sql immutable returns null on null input;
+    """,
+    f"""
+    create type {SCHEMA_NAME}.float8range as range (
+        subtype = float8,
+        subtype_diff = float8mi
+    )
+    """,
+]
 
 
 # pylint: disable=abstract-method
 class FLOAT8RANGE(AbstractRange[Range[Double]]):
-    __visit_name__ = 'FLOAT8RANGE'
+    __visit_name__ = "FLOAT8RANGE"
 
 
 @compiles(FLOAT8RANGE)
-def visit_float8range(element, compiler, **kw):
+def visit_float8range(element, compiler, **kw) -> str:
     return "FLOAT8RANGE"
 
 
-# Register the function with SQLAlchemhy.
+# Register the function with SQLAlchemy.
 # pylint: disable=too-many-ancestors
 class CommonTimestamp(GenericFunction):
     type = TIMESTAMP(timezone=True)
-    package = 'agdc'
-    identifier = 'common_timestamp'
+    package = "agdc"
+    identifier = "common_timestamp"
     inherit_cache = False
 
-    name = 'common_timestamp'
+    name = "common_timestamp"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.packagenames = ['%s' % SCHEMA_NAME]
+        self.packagenames = (f"{SCHEMA_NAME}",)
 
 
 # pylint: disable=too-many-ancestors
 class Float8Range(GenericFunction):
     type = FLOAT8RANGE  # type: ignore[assignment]
-    package = 'agdc'
-    identifier = 'float8range'
+    package = "agdc"
+    identifier = "float8range"
     inherit_cache = False
 
-    name = 'float8range'
+    name = "float8range"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.packagenames = ['%s' % SCHEMA_NAME]
+        self.packagenames = (f"{SCHEMA_NAME}",)
 
 
 class PGNAME(sqltypes.Text):
     """Postgres 'NAME' type."""
-    __visit_name__ = 'NAME'
+
+    __visit_name__ = "NAME"
 
 
 @compiles(PGNAME)
-def visit_name(element, compiler, **kw):
+def visit_name(element, compiler, **kw) -> str:
     return "NAME"
 
 
-def pg_exists(conn, name):
+def pg_exists(conn, name: str) -> bool:
     """
     Does a postgres object exist?
-    :rtype bool
     """
     return conn.execute(text(f"SELECT to_regclass('{name}')")).scalar() is not None
 
 
-def pg_column_exists(conn, table, column):
+def pg_column_exists(conn, table, column) -> bool:
     """
     Does a postgres object exist?
-    :rtype bool
     """
-    return conn.execute(text(f"""
+    return (
+        conn.execute(
+            text(f"""
                         SELECT 1 FROM pg_attribute
                         WHERE attrelid = to_regclass('{table}')
                         AND attname = '{column}'
                         AND NOT attisdropped
-                        """)).scalar() is not None
+                        """)
+        ).scalar()
+        is not None
+    )
 
 
-def escape_pg_identifier(conn, name):
+def escape_pg_identifier(conn, name: str):
     """
     Escape identifiers (tables, fields, roles, etc) for inclusion in SQL statements.
 

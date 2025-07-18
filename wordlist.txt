@@ -18,6 +18,7 @@ aio
 albers
 Algo
 algo
+allrob
 Analytics
 analytics
 aoi
@@ -26,9 +27,11 @@ api
 APIs
 apis
 ApplyMask
+aquasecurity
 ARD
 ard
 arg
+Ariana
 aSk
 au
 australia
@@ -36,13 +39,14 @@ autobuild
 autoclass
 autoconf
 autodocs
-autoflake
 autofunction
 automake
 automethod
 automodule
 autoselectionlabel
 autosummary
+autoupdate
+autoupdates
 auxuser
 aws
 backend
@@ -65,14 +69,19 @@ brazil
 Bugfix
 Bugfixes
 bY
+caitlinadams
 cartesian
 cbk
 cd
 CEOS
 cfg
+Changelog
 Cheatsheet
 cheatsheet
 cheatsheets
+chown
+CI
+ci
 CircleCI
 CLI
 cli
@@ -113,6 +122,8 @@ cyear
 cython
 da
 Dahu
+DeprecationWarning
+DeprecationWarnings
 dask
 data's
 DataArray
@@ -137,8 +148,9 @@ dbs
 dea
 deafrica
 dem
-Dependabot
+dependabot
 Deprecations
+deps
 dev
 df
 digitalearth
@@ -162,6 +174,8 @@ EarthData
 earthobservation
 ec
 eg
+emmaai
+emmanuel
 EnterpriseDB
 entrypoint
 env
@@ -185,6 +199,7 @@ f'file
 fd
 Fdoc
 feedstock
+ferdman
 Festivus
 fmask
 fmt
@@ -240,6 +255,7 @@ GridSpec
 GridWorkflow
 gridWorkflow
 GroupBy
+handedly
 HDF
 hdf
 hhBQVas
@@ -255,6 +271,7 @@ IAM
 iam
 ident
 identifier
+igsekor
 iloc
 img
 importlib
@@ -334,6 +351,7 @@ md
 metadataType
 MetadataTypes
 microsoft
+miniconda
 Miniforge
 mk
 mkdir
@@ -421,6 +439,7 @@ pgadmin
 pgintegration
 pgisintegration
 pixelquality
+pjonsson
 pkgs
 planetarycomputer
 Pluggable
@@ -449,6 +468,7 @@ pwd
 px
 py
 pydata
+pydoc
 pyenv
 PyLint
 pylint
@@ -456,7 +476,9 @@ PyPEG
 PyPI
 pypi
 pyproj
+pyproject
 pyspellcheck
+pyspelling
 pystac
 pytest
 PythonAPI
@@ -498,6 +520,7 @@ rst
 rtaib
 rtd
 rtype
+Ruff
 runtime
 rws
 sameuser
@@ -511,11 +534,13 @@ serialiser
 setuptools
 SimpleDocNav
 singledispatch
+SpacemanPaul
 spatio
 SpatioTemporal
 spc
 SPDX
 spindex
+SQL
 SQLAlchemy
 SRID
 srid
@@ -526,6 +551,7 @@ STAC
 stac
 stacker
 stacspec
+staticmethod
 stdlib
 Stereographic
 str
@@ -553,6 +579,8 @@ tmp
 toctree
 TODO
 ToFloat
+toml
+trivy
 txt
 typechecking
 typehints
@@ -566,6 +594,7 @@ ul
 unarchived
 unary
 Uncomment
+undeprecate
 ur
 URI
 uri
@@ -585,6 +614,7 @@ utm
 UUID
 uuid
 UUIDs
+uv
 ValueError
 vam
 VDI

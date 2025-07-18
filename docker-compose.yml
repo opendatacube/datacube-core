@@ -1,0 +1,50 @@
+---
+services:
+  core:
+    image: ghcr.io/opendatacube/datacube-core:tests
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      - LOCAL_UID=${LOCAL_UID:-1000}
+      - LOCAL_GID=${LOCAL_GID:-1000}
+      - POSTGRES_HOSTNAME=postgres
+      - PGPORT=35432
+      - POSTGRES_USER=opendatacube
+      - POSTGRES_PASSWORD=opendatacubepassword
+      - POSTGRES_DB=pgintegration,pgisintegration
+      - ODC_DATACUBE_INDEX_DRIVER=postgres
+      - ODC_POSTGIS_INDEX_DRIVER=postgis
+      - ODC_NOSUCHDRIVERENV_INDEX_DRIVER=no_such_driver
+      - ODC_DATACUBE_DB_URL=${ODC_DATACUBE_DB_URL:-postgresql://opendatacube:opendatacubepassword@postgres:35432/pgintegration}
+      - ODC_POSTGIS_DB_URL=${ODC_POSTGIS_DB_URL:-postgresql://opendatacube:opendatacubepassword@postgres:35432/pgisintegration}
+      - ODC_NOSUCHDRIVERENV_DB_URL=${ODC_NOSUCHDRIVERENV_DB_URL:-postgresql://opendatacube:opendatacubepassword@postgres:35432/nosuchdriverenv}
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./:/code
+    command: bash
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgis/postgis:16-3.5
+    hostname: postgres
+    environment:
+      - POSTGRES_DB=opendatacube
+      - PGPORT=35432
+      - POSTGRES_PASSWORD=opendatacubepassword
+      - POSTGRES_USER=opendatacube
+    ports:
+      - "35432:35432"
+    restart: always
+    volumes:
+      - ./docker/assets/create-pg-databases.sh:/docker-entrypoint-initdb.d/create-pg-databases.sh
+      - type: tmpfs
+        target: /var/lib/postgresql/data
+    command: -c fsync=off -c full_page_writes=off -c synchronous_commit=off
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "postgres", "-q", "--port", "35432", "-d", "pgintegration", "-U", "opendatacube"]
+      timeout: 45s
+      interval: 10s
+      retries: 10

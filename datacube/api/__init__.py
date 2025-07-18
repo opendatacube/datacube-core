@@ -7,8 +7,12 @@ Modules for the Storage and Access Query API
 """
 
 from .core import Datacube, TerminateCurrentLoad
+from .grid_workflow import GridWorkflow, GridWorkflowException, Tile
 
-__all__ = (
-    'Datacube',
-    'TerminateCurrentLoad',
-)
+__all__ = [
+    "Datacube",
+    "GridWorkflow",
+    "GridWorkflowException",
+    "TerminateCurrentLoad",
+    "Tile",
+]

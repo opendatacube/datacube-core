@@ -2,10 +2,16 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from collections.abc import Sequence
+from typing import Any
+
 from datacube.utils.documents import InvalidDocException
 
 required_sys_field_values = [
-    "id", "label", "creation_dt", "sources",
+    "id",
+    "label",
+    "creation_dt",
+    "sources",
     # Add format here?
     # Drop sources as it appears to be ignored?
 ]
@@ -27,7 +33,7 @@ expected_sys_field_values = {
 }
 
 
-def validate_eo3_offset(field_name, mdt_name, offset):
+def validate_eo3_offset(field_name: str, mdt_name: str, offset: Sequence) -> None:
     if not all(isinstance(element, str) for element in offset):
         # Not a simple offset, assume a compound offset
         for element in offset:
@@ -44,29 +50,36 @@ def validate_eo3_offset(field_name, mdt_name, offset):
     if offset[0] != "properties" or len(offset) != 2:
         raise InvalidDocException(
             f"Search_field {field_name} in metadata type {mdt_name} "
-            f"is not stored in an EO3-compliant location: {offset!r}")
+            f"is not stored in an EO3-compliant location: {offset!r}"
+        )
 
 
-def validate_eo3_offsets(field_name, mdt_name, defn):
+def validate_eo3_offsets(field_name: str, mdt_name: str, defn: dict[str, Any]) -> None:
     if defn.get("type", "string").endswith("-range"):
         # Range Type
         if "min_offset" in defn:
             validate_eo3_offset(field_name, mdt_name, defn["min_offset"])
         else:
-            raise InvalidDocException(f"No min_offset supplied for field {field_name} in metadata type {mdt_name}")
+            raise InvalidDocException(
+                f"No min_offset supplied for field {field_name} in metadata type {mdt_name}"
+            )
         if "max_offset" in defn:
             validate_eo3_offset(field_name, mdt_name, defn["max_offset"])
         else:
-            raise InvalidDocException(f"No max_offset supplied for field {field_name} in metadata type {mdt_name}")
+            raise InvalidDocException(
+                f"No max_offset supplied for field {field_name} in metadata type {mdt_name}"
+            )
     else:
         # Scalar Type
         if "offset" in defn:
             validate_eo3_offset(field_name, mdt_name, defn["offset"])
         else:
-            raise InvalidDocException(f"No offset supplied for field {field_name} in metadata type {mdt_name}")
+            raise InvalidDocException(
+                f"No offset supplied for field {field_name} in metadata type {mdt_name}"
+            )
 
 
-def validate_eo3_compatible_type(doc):
+def validate_eo3_compatible_type(doc) -> None:
     """
     Validate that a metadata type document is EO3 compatible.
 
@@ -85,8 +98,10 @@ def validate_eo3_compatible_type(doc):
                 raise InvalidDocException(
                     f"Offset for system field {k} ({v!r}) in metadata type {name} does not match EO3 standard"
                 )
-        except KeyError as e:
-            raise InvalidDocException(f"Unexpected system field in metadata type {name}: {k}")
+        except KeyError:
+            raise InvalidDocException(
+                f"Unexpected system field in metadata type {name}: {k}"
+            ) from None
     # Validate search field offsets
     for k, v in doc["dataset"]["search_fields"].items():
         if k in ["lat", "lon"]:

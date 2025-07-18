@@ -20,7 +20,7 @@ Run the command:
 
 ```shell
 docker run --rm \
-  -v $(pwd):/code -w /code/docker \
+  -v $(pwd):/code -w /code \
   -it opendatacube/datacube-tests \
-  bash -c "python3 -m pip install pip-tools && pip-compile --upgrade --output-file=constraints.txt --strip-extras constraints.in"
+  bash -c "uv pip compile --all-extras --group dev --group doc --output-file=docker/constraints.txt pyproject.toml"
 ```

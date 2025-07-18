@@ -7,41 +7,50 @@ from uuid import uuid4
 
 import pytest
 
-from datacube.cfg import ODCEnvironment
-from datacube.testutils import gen_dataset_test_dag, suppress_deprecations
-
-from datacube.utils import InvalidDocException, read_documents, SimpleDocNav
-
 from datacube import Datacube
+from datacube.cfg import ODCEnvironment
 from datacube.model import Range
+from datacube.testutils import gen_dataset_test_dag, suppress_deprecations
+from datacube.utils import InvalidDocException, SimpleDocNav, read_documents
 
 
-def test_init_memory(in_memory_config: ODCEnvironment):
+def test_init_memory(in_memory_config: ODCEnvironment) -> None:
     from datacube.drivers.indexes import index_cache
+
     idxs = index_cache()
     assert "default" in idxs._drivers
     assert "memory" in idxs._drivers
     with Datacube(env=in_memory_config, validate_connection=True) as dc:
-        assert (dc.index.url) == "memory"
+        assert dc.index.url == "memory"
         assert dc.index.environment.index_driver == "memory"
 
 
-def test_mem_user_resource(mem_index_fresh: Datacube):
+def test_mem_user_resource(mem_index_fresh: Datacube) -> None:
     # Test default user
-    assert mem_index_fresh.index.users.list_users() == [("local_user", "localuser", "Default user")]
+    assert mem_index_fresh.index.users.list_users() == [
+        ("local_user", "localuser", "Default user")
+    ]
     # Test create_user success
-    mem_index_fresh.index.users.create_user("test_user_1", "password123", "odc_user", "Test1")
-    mem_index_fresh.index.users.create_user("test_user_2", "password123", "agdc_user", "Test2")
+    mem_index_fresh.index.users.create_user(
+        "test_user_1", "password123", "odc_user", "Test1"
+    )
+    mem_index_fresh.index.users.create_user(
+        "test_user_2", "password123", "agdc_user", "Test2"
+    )
     users = mem_index_fresh.index.users.list_users()
     assert ("local_user", "localuser", "Default user") in users
     assert ("odc_user", "test_user_1", "Test1") in users
     assert ("agdc_user", "test_user_2", "Test2") in users
     # Test create_user errors
     with pytest.raises(ValueError) as e:
-        mem_index_fresh.index.users.create_user("test_user_2", "password123", "agdc_user", "Test2")
+        mem_index_fresh.index.users.create_user(
+            "test_user_2", "password123", "agdc_user", "Test2"
+        )
     assert "User test_user_2 already exists" in str(e.value)
     with pytest.raises(ValueError) as e:
-        mem_index_fresh.index.users.create_user("test_user_3", "password123", "omg_user", "Test3")
+        mem_index_fresh.index.users.create_user(
+            "test_user_3", "password123", "omg_user", "Test3"
+        )
     assert "omg_user is not a known role" in str(e.value)
     # Test grant_role success
     mem_index_fresh.index.users.grant_role("agdc_admin", "test_user_1", "test_user_2")
@@ -49,25 +58,35 @@ def test_mem_user_resource(mem_index_fresh: Datacube):
     mem_index_fresh.index.users.grant_role("agdc_admin", "test_user_1", "test_user_2")
     # Test grant_role errors
     with pytest.raises(ValueError) as e:
-        mem_index_fresh.index.users.grant_role("omg_admin", "test_user_1", "test_user_2")
+        mem_index_fresh.index.users.grant_role(
+            "omg_admin", "test_user_1", "test_user_2"
+        )
     assert "omg_admin is not a known role" in str(e.value)
     with pytest.raises(ValueError) as e:
-        mem_index_fresh.index.users.grant_role("odc_admin", "test_user_1", "test_user_3")
+        mem_index_fresh.index.users.grant_role(
+            "odc_admin", "test_user_1", "test_user_3"
+        )
     assert "test_user_3 is not a known username" in str(e.value)
     # Test delete_user errors
     with pytest.raises(ValueError) as e:
-        mem_index_fresh.index.users.delete_user("test_user_1", "test_user_2", "test_user_3")
+        mem_index_fresh.index.users.delete_user(
+            "test_user_1", "test_user_2", "test_user_3"
+        )
     assert "test_user_3 is not a known username" in str(e.value)
     # Confirm one error means no users deleted
     users = mem_index_fresh.index.users.list_users()
     assert ("odc_user", "test_user_1", "Test1") in users
     # Confirm delete error success
     mem_index_fresh.index.users.delete_user("test_user_1", "test_user_2")
-    assert mem_index_fresh.index.users.list_users() == [("local_user", "localuser", "Default user")]
+    assert mem_index_fresh.index.users.list_users() == [
+        ("local_user", "localuser", "Default user")
+    ]
 
 
-def test_mem_metadatatype_resource(mem_index_fresh: Datacube):
-    assert len(mem_index_fresh.index.metadata_types.by_id) == len(mem_index_fresh.index.metadata_types.by_name)
+def test_mem_metadatatype_resource(mem_index_fresh: Datacube) -> None:
+    assert len(mem_index_fresh.index.metadata_types.by_id) == len(
+        mem_index_fresh.index.metadata_types.by_name
+    )
     assert len(list(mem_index_fresh.index.metadata_types.get_all())) == 3
     mdt = mem_index_fresh.index.metadata_types.get(1)
     assert mdt is not None and mdt.id == 1
@@ -78,9 +97,12 @@ def test_mem_metadatatype_resource(mem_index_fresh: Datacube):
     eo3.definition["dataset"]["measurements"] = ["over_here", "measurements"]
     eo3_fresh = mem_index_fresh.index.metadata_types.get_by_name("eo3")
     assert eo3.description != eo3_fresh.description
-    assert eo3.definition["dataset"]["measurements"] != eo3_fresh.definition["dataset"]["measurements"]
+    assert (
+        eo3.definition["dataset"]["measurements"]
+        != eo3_fresh.definition["dataset"]["measurements"]
+    )
     # Updating measurements definition is not safe
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         mem_index_fresh.index.metadata_types.update(eo3)
     # Updating descriptions is safe.
     eo3_fresh.definition["description"] = "New description"
@@ -88,51 +110,73 @@ def test_mem_metadatatype_resource(mem_index_fresh: Datacube):
     eo3_fresher = mem_index_fresh.index.metadata_types.get_by_name("eo3")
     assert eo3_fresher.description == eo3_fresh.description
     # Check get_with_fields
-    platform_mdts = list(mem_index_fresh.index.metadata_types.get_with_fields(["platform"]))
+    platform_mdts = list(
+        mem_index_fresh.index.metadata_types.get_with_fields(["platform"])
+    )
     assert len(platform_mdts) == 3
     assert eo3 in platform_mdts
-    ptype_mdts = list(mem_index_fresh.index.metadata_types.get_with_fields(["platform", "product_type"]))
+    ptype_mdts = list(
+        mem_index_fresh.index.metadata_types.get_with_fields(
+            ["platform", "product_type"]
+        )
+    )
     assert len(ptype_mdts) == 2
     assert eo3 not in ptype_mdts
-    pfam_mdts = list(mem_index_fresh.index.metadata_types.get_with_fields(["platform", "product_family"]))
-    pfam_mdts == [eo3]
+    pfam_mdts = list(
+        mem_index_fresh.index.metadata_types.get_with_fields(
+            ["platform", "product_family"]
+        )
+    )
+    assert pfam_mdts == [eo3]
 
 
-def test_mem_product_resource(mem_index_fresh: Datacube,
-                              extended_eo3_metadata_type_doc,
-                              extended_eo3_product_doc,
-                              base_eo3_product_doc
-                              ):
+def test_mem_product_resource(
+    mem_index_fresh: Datacube,
+    extended_eo3_metadata_type_doc,
+    extended_eo3_product_doc,
+    base_eo3_product_doc,
+) -> None:
     eo3 = mem_index_fresh.index.metadata_types.get_by_name("eo3")
     # Test Empty index works as expected:
-    assert list(mem_index_fresh.index.products.get_with_fields(("measurements", "extent"))) == []
+    assert (
+        list(mem_index_fresh.index.products.get_with_fields(("measurements", "extent")))
+        == []
+    )
     assert list(mem_index_fresh.index.products.search_robust()) == []
     assert list(mem_index_fresh.index.products.get_with_types([eo3])) == []
     assert mem_index_fresh.index.products.get_by_name("product1") is None
     # Add an e03 product doc
     wo_prod = mem_index_fresh.index.products.add_document(base_eo3_product_doc)
     assert wo_prod is not None
-    assert wo_prod.name == 'ga_ls_wo_3'
+    assert wo_prod.name == "ga_ls_wo_3"
     assert mem_index_fresh.index.products.get_by_name("ga_ls_wo_3").name == "ga_ls_wo_3"
     # Attempt to add a product without a metadata type
-    with pytest.raises(InvalidDocException) as e:
+    with pytest.raises(InvalidDocException):
         ls8_prod = mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
     # Add extended eo3 metadatatype
-    eo3ext = mem_index_fresh.index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
+    eo3ext = mem_index_fresh.index.metadata_types.from_doc(
+        extended_eo3_metadata_type_doc
+    )
     mem_index_fresh.index.metadata_types.add(eo3ext)
     # Add an extended eo3 product doc
     ls8_prod = mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
-    assert ls8_prod.name == 'ga_ls8c_ard_3'
-    assert mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3").name == 'ga_ls8c_ard_3'
+    assert ls8_prod.name == "ga_ls8c_ard_3"
+    assert (
+        mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3").name
+        == "ga_ls8c_ard_3"
+    )
     assert list(mem_index_fresh.index.products.get_with_types([eo3ext])) == [ls8_prod]
     # Verify we cannot mess with the cache
     ls8_prod.definition["description"] = "foo"
     ls8_prod.definition["measurements"][0]["name"] = "blueish"
     ls8_fresh = mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3")
     assert ls8_prod.description != ls8_fresh.description
-    assert ls8_prod.definition["measurements"][0]["name"] != ls8_fresh.definition["measurements"][0]["name"]
+    assert (
+        ls8_prod.definition["measurements"][0]["name"]
+        != ls8_fresh.definition["measurements"][0]["name"]
+    )
     # Updating measurements definition is not safe
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         mem_index_fresh.index.products.update(ls8_prod)
     # Updating descriptions is safe.
     ls8_fresh.definition["description"] = "New description"
@@ -140,30 +184,62 @@ def test_mem_product_resource(mem_index_fresh: Datacube,
     ls8_fresher = mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3")
     assert ls8_fresher.description == ls8_fresh.description
     # Test get_with_fields
-    assert len(list(mem_index_fresh.index.products.get_with_fields(("platform", "product_family")))) == 2
-    assert len(list(mem_index_fresh.index.products.get_with_fields(("platform", "eo_sun_elevation")))) == 1
+    assert (
+        len(
+            list(
+                mem_index_fresh.index.products.get_with_fields(
+                    ("platform", "product_family")
+                )
+            )
+        )
+        == 2
+    )
+    assert (
+        len(
+            list(
+                mem_index_fresh.index.products.get_with_fields(
+                    ("platform", "eo_sun_elevation")
+                )
+            )
+        )
+        == 1
+    )
     # Test search_robust
-    search_results = list(mem_index_fresh.index.products.search_robust(region_code="my_backyard"))
+    search_results = list(
+        mem_index_fresh.index.products.search_robust(region_code="my_backyard")
+    )
     assert len(search_results) == 2
-    for prod, unmatched in search_results:
+    for _, unmatched in search_results:
         assert "region_code" in unmatched
-    search_results = list(mem_index_fresh.index.products.search_robust(product_family="the_simpsons"))
+    search_results = list(
+        mem_index_fresh.index.products.search_robust(product_family="the_simpsons")
+    )
     assert len(search_results) == 0
-    search_results = list(mem_index_fresh.index.products.search_robust(platform="landsat-8"))
+    search_results = list(
+        mem_index_fresh.index.products.search_robust(platform="landsat-8")
+    )
     assert len(search_results) == 2
     for prod, unmatched in search_results:
-        if prod.name == 'ga_ls8c_ard_3':
+        if prod.name == "ga_ls8c_ard_3":
             assert unmatched == {}
         else:
-            assert unmatched["platform"] == 'landsat-8'
+            assert unmatched["platform"] == "landsat-8"
     # Test search_by_metadata
-    lds = list(mem_index_fresh.index.products.search_by_metadata({"product_family": "ard"}))
+    lds = list(
+        mem_index_fresh.index.products.search_by_metadata({"product_family": "ard"})
+    )
     assert len(lds) == 0
-    lds = list(mem_index_fresh.index.products.search_by_metadata({"odc:product_family": "ard"}))
+    lds = list(
+        mem_index_fresh.index.products.search_by_metadata({"odc:product_family": "ard"})
+    )
     assert len(lds) == 1
-    lds = list(mem_index_fresh.index.products.search_by_metadata({"platform": "landsat-8"}))
+    lds = list(
+        mem_index_fresh.index.products.search_by_metadata({"platform": "landsat-8"})
+    )
     assert len(lds) == 0
-    lds = list(mem_index_fresh.index.products.search_by_metadata({"eo:platform": "landsat-8"}))
+    lds = list(
+        mem_index_fresh.index.products.search_by_metadata({"eo:platform": "landsat-8"})
+    )
     assert len(lds) == 1
     # Test delete
     mem_index_fresh.index.products.delete([ls8_fresh])
@@ -171,13 +247,16 @@ def test_mem_product_resource(mem_index_fresh: Datacube,
 
 
 # Hand crafted tests with recent real-world eo3 examples
-def test_mem_dataset_add_eo3(mem_index_eo3: Datacube,
-                             dataset_with_lineage_doc,
-                             datasets_with_unembedded_lineage_doc):
+def test_mem_dataset_add_eo3(
+    mem_index_eo3: Datacube,
+    dataset_with_lineage_doc,
+    datasets_with_unembedded_lineage_doc,
+) -> None:
     dc = mem_index_eo3
     assert list(dc.index.datasets.get_all_dataset_ids(True)) == []
     assert list(dc.index.datasets.get_all_dataset_ids(False)) == []
     from datacube.index.hl import Doc2Dataset
+
     resolver = Doc2Dataset(dc.index)
     with pytest.raises(ValueError) as e:
         ds, err = resolver(dataset_with_lineage_doc[0], dataset_with_lineage_doc[1])
@@ -185,24 +264,30 @@ def test_mem_dataset_add_eo3(mem_index_eo3: Datacube,
     (doc_ls8, loc_ls8), (doc_wo, loc_wo) = datasets_with_unembedded_lineage_doc
     assert not dc.index.datasets.has(doc_ls8["id"])
     assert not dc.index.datasets.has(doc_wo["id"])
-    assert list(dc.index.datasets.bulk_has((doc_ls8["id"], doc_wo["id"]))) == [False, False]
+    assert list(dc.index.datasets.bulk_has((doc_ls8["id"], doc_wo["id"]))) == [
+        False,
+        False,
+    ]
 
     ds, err = resolver(doc_ls8, loc_ls8)
     assert err is None
     dc.index.datasets.add(ds)
     assert dc.index.datasets.has(doc_ls8["id"])
-    ls8_ds = dc.index.datasets.get(
-        doc_ls8["id"],
-        include_sources=True
-    )
+    ls8_ds = dc.index.datasets.get(doc_ls8["id"], include_sources=True)
     assert ls8_ds is not None
-    ds, err = resolver(datasets_with_unembedded_lineage_doc[1][0], datasets_with_unembedded_lineage_doc[1][1])
+    ds, err = resolver(
+        datasets_with_unembedded_lineage_doc[1][0],
+        datasets_with_unembedded_lineage_doc[1][1],
+    )
     assert err is None
     dc.index.datasets.add(ds)
-    assert list(dc.index.datasets.bulk_has((doc_ls8["id"], doc_wo["id"]))) == [True, True]
+    assert list(dc.index.datasets.bulk_has((doc_ls8["id"], doc_wo["id"]))) == [
+        True,
+        True,
+    ]
 
 
-def test_mem_ds_lineage(mem_eo3_data: tuple):
+def test_mem_ds_lineage(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     wo_ds = dc.index.datasets.get(wo_id, include_sources=True)
     ls8_ds = wo_ds.sources["ard"]
@@ -216,60 +301,113 @@ def test_mem_ds_lineage(mem_eo3_data: tuple):
     assert "cloud_cover" in dc.index.products.get_field_names(ls8_ds.product)
 
 
-def test_mem_ds_search_dups(mem_eo3_data: tuple):
+def test_mem_ds_search_dups(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     ls8_ds = dc.index.datasets.get(ls8_id)
-    dup_results = dc.index.datasets.search_product_duplicates(ls8_ds.product, "cloud_cover", "dataset_maturity")
+    dup_results = dc.index.datasets.search_product_duplicates(
+        ls8_ds.product, "cloud_cover", "dataset_maturity"
+    )
     assert len(dup_results) == 0
 
 
-def test_mem_ds_locations(mem_eo3_data: tuple):
+def test_mem_ds_locations(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     before_test = datetime.datetime.now()
     ls8ds = dc.index.datasets.get(ls8_id)
     with suppress_deprecations():
-        dc.index.datasets.add_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method
+        dc.index.datasets.add_location(
+            ls8_id, "file:///test_loc_1"
+        )  # Test of deprecated method
         assert ls8ds.uri == dc.index.datasets.get_location(ls8_id)
-        assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
-        assert list(dc.index.datasets.get_archived_locations(ls8_id)) == []  # Test of deprecated method
-        dc.index.datasets.archive_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method
-        assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
-        assert "file:///test_loc_1" in dc.index.datasets.get_archived_locations(ls8_id)  # Test of deprecated method
+        assert "file:///test_loc_1" in dc.index.datasets.get_locations(
+            ls8_id
+        )  # Test of deprecated method
+        assert (
+            list(dc.index.datasets.get_archived_locations(ls8_id)) == []
+        )  # Test of deprecated method
+        dc.index.datasets.archive_location(
+            ls8_id, "file:///test_loc_1"
+        )  # Test of deprecated method
+        assert "file:///test_loc_1" not in dc.index.datasets.get_locations(
+            ls8_id
+        )  # Test of deprecated method
+        assert "file:///test_loc_1" in dc.index.datasets.get_archived_locations(
+            ls8_id
+        )  # Test of deprecated method
         found = False
-        for loc, dt in dc.index.datasets.get_archived_location_times(ls8_id):  # Test of deprecated method
+        for loc, dt in dc.index.datasets.get_archived_location_times(
+            ls8_id
+        ):  # Test of deprecated method
             if loc == "file:///test_loc_1":
                 found = True
                 assert dt >= before_test
                 break
         assert found
-        assert dc.index.datasets.restore_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method
-        assert "file:///test_loc_1" in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
-        assert list(dc.index.datasets.get_archived_locations(ls8_id)) == []  # Test of deprecated method
-        assert list(dc.index.datasets.get_datasets_for_location("file:///test_loc_1", "exact"))[0].id == ls8_id
-        assert dc.index.datasets.remove_location(ls8_id, "file:///test_loc_1")  # Test of deprecated method
-        assert "file:///test_loc_1" not in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
-        assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(ls8_id)  # Test of deprecated method
-        assert dc.index.datasets.add_location(ls8_id, "file:///test_loc_2")  # Test of deprecated method
+        assert dc.index.datasets.restore_location(
+            ls8_id, "file:///test_loc_1"
+        )  # Test of deprecated method
+        assert "file:///test_loc_1" in dc.index.datasets.get_locations(
+            ls8_id
+        )  # Test of deprecated method
+        assert (
+            list(dc.index.datasets.get_archived_locations(ls8_id)) == []
+        )  # Test of deprecated method
+        assert (
+            next(
+                iter(
+                    dc.index.datasets.get_datasets_for_location(
+                        "file:///test_loc_1", "exact"
+                    )
+                )
+            ).id
+            == ls8_id
+        )
+        assert dc.index.datasets.remove_location(
+            ls8_id, "file:///test_loc_1"
+        )  # Test of deprecated method
+        assert "file:///test_loc_1" not in dc.index.datasets.get_locations(
+            ls8_id
+        )  # Test of deprecated method
+        assert "file:///test_loc_1" not in dc.index.datasets.get_archived_locations(
+            ls8_id
+        )  # Test of deprecated method
+        assert dc.index.datasets.add_location(
+            ls8_id, "file:///test_loc_2"
+        )  # Test of deprecated method
 
-        assert "file:///test_loc_2" in dc.index.datasets.get_locations(ls8_id)  # Test of deprecated method
+        assert "file:///test_loc_2" in dc.index.datasets.get_locations(
+            ls8_id
+        )  # Test of deprecated method
         ds = dc.index.datasets.get(ls8_id)
         assert ds.uri in ds.uris  # Test of deprecated property
 
-        assert dc.index.datasets.archive_location(ls8_id, "file:///test_loc_2")  # Test of deprecated method
-        assert dc.index.datasets.remove_location(ls8_id, "file:///test_loc_2")  # Test of deprecated method
-        assert "file:///test_loc_2" not in list(dc.index.datasets.get_locations(ls8_id))  # Test of deprecated method
+        assert dc.index.datasets.archive_location(
+            ls8_id, "file:///test_loc_2"
+        )  # Test of deprecated method
+        assert dc.index.datasets.remove_location(
+            ls8_id, "file:///test_loc_2"
+        )  # Test of deprecated method
         assert "file:///test_loc_2" not in list(
-            dc.index.datasets.get_archived_locations(ls8_id)  # Test of deprecated method
+            dc.index.datasets.get_locations(ls8_id)
+        )  # Test of deprecated method
+        assert "file:///test_loc_2" not in list(
+            dc.index.datasets.get_archived_locations(
+                ls8_id
+            )  # Test of deprecated method
         )
-        assert not dc.index.datasets.archive_location(ls8_id, "file:////not_a_valid_loc")  # Test of deprecated method
-        assert not dc.index.datasets.remove_location(ls8_id, "file:////not_a_valid_loc")  # Test of deprecated method
+        assert not dc.index.datasets.archive_location(
+            ls8_id, "file:////not_a_valid_loc"
+        )  # Test of deprecated method
+        assert not dc.index.datasets.remove_location(
+            ls8_id, "file:////not_a_valid_loc"
+        )  # Test of deprecated method
         assert dc.index.datasets.remove_location(ls8_id, ls8ds.uri)
     ls8ds = dc.index.datasets.get(ls8_id)
     assert ls8ds.uri is None
     assert dc.index.datasets.get_location(ls8_id) is None
 
 
-def test_mem_ds_updates(mem_eo3_data: tuple):
+def test_mem_ds_updates(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     # Test updates
     raw = dc.index.datasets.get(ls8_id)
@@ -287,9 +425,10 @@ def test_mem_ds_updates(mem_eo3_data: tuple):
         assert "file:///update_test_2" in raw._uris
         # Make bad change ok
         from datacube.utils import changes
-        updated = dc.index.datasets.update(raw, updates_allowed={
-            ("properties", "silly_sausages"): changes.allow_any
-        })
+
+        updated = dc.index.datasets.update(
+            raw, updates_allowed={("properties", "silly_sausages"): changes.allow_any}
+        )
         assert "silly_sausages" in updated.metadata_doc["properties"]
         raw = dc.index.datasets.get(ls8_id)
     assert "silly_sausages" in raw.metadata_doc["properties"]
@@ -297,126 +436,145 @@ def test_mem_ds_updates(mem_eo3_data: tuple):
     assert "file:///update_test_2" in raw._uris
 
 
-def test_mem_ds_expand_periods(mem_index_fresh: Datacube):
-    periods = list(mem_index_fresh.index.datasets._expand_period(
-        "1 day",
-        datetime.datetime(2016, 5, 5),
-        datetime.datetime(2016, 5, 8),
-    ))
+def test_mem_ds_expand_periods(mem_index_fresh: Datacube) -> None:
+    periods = list(
+        mem_index_fresh.index.datasets._expand_period(
+            "1 day",
+            datetime.datetime(2016, 5, 5),
+            datetime.datetime(2016, 5, 8),
+        )
+    )
     assert periods == [
         Range(
             datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 6, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 5, 6, tzinfo=datetime.timezone.utc),
         ),
         Range(
             datetime.datetime(2016, 5, 6, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc),
         ),
         Range(
             datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 8, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 5, 8, tzinfo=datetime.timezone.utc),
         ),
     ]
-    periods = list(mem_index_fresh.index.datasets._expand_period(
-        "2 days",
-        datetime.datetime(2016, 5, 5),
-        datetime.datetime(2016, 5, 8),
-    ))
+    periods = list(
+        mem_index_fresh.index.datasets._expand_period(
+            "2 days",
+            datetime.datetime(2016, 5, 5),
+            datetime.datetime(2016, 5, 8),
+        )
+    )
     assert periods == [
         Range(
             datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc),
         ),
         Range(
             datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 9, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 5, 9, tzinfo=datetime.timezone.utc),
         ),
     ]
-    periods = list(mem_index_fresh.index.datasets._expand_period(
-        "1 weeks",
-        datetime.datetime(2016, 5, 1),
-        datetime.datetime(2016, 5, 25),
-    ))
+    periods = list(
+        mem_index_fresh.index.datasets._expand_period(
+            "1 weeks",
+            datetime.datetime(2016, 5, 1),
+            datetime.datetime(2016, 5, 25),
+        )
+    )
     assert periods == [
         Range(
             datetime.datetime(2016, 5, 1, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 8, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 5, 8, tzinfo=datetime.timezone.utc),
         ),
         Range(
             datetime.datetime(2016, 5, 8, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 15, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 5, 15, tzinfo=datetime.timezone.utc),
         ),
         Range(
             datetime.datetime(2016, 5, 15, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 22, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 5, 22, tzinfo=datetime.timezone.utc),
         ),
         Range(
             datetime.datetime(2016, 5, 22, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 29, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 5, 29, tzinfo=datetime.timezone.utc),
         ),
     ]
-    periods = list(mem_index_fresh.index.datasets._expand_period(
-        "2 months",
-        datetime.datetime(2016, 3, 5),
-        datetime.datetime(2016, 12, 25),
-    ))
+    periods = list(
+        mem_index_fresh.index.datasets._expand_period(
+            "2 months",
+            datetime.datetime(2016, 3, 5),
+            datetime.datetime(2016, 12, 25),
+        )
+    )
     assert periods == [
         Range(
             datetime.datetime(2016, 3, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc),
         ),
         Range(
             datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 7, 5, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 7, 5, tzinfo=datetime.timezone.utc),
         ),
         Range(
             datetime.datetime(2016, 7, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 9, 5, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 9, 5, tzinfo=datetime.timezone.utc),
         ),
         Range(
             datetime.datetime(2016, 9, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 11, 5, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2016, 11, 5, tzinfo=datetime.timezone.utc),
         ),
         Range(
             datetime.datetime(2016, 11, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2017, 1, 5, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2017, 1, 5, tzinfo=datetime.timezone.utc),
         ),
     ]
-    periods = list(mem_index_fresh.index.datasets._expand_period(
-        "2 years",
-        datetime.datetime(2016, 3, 5),
-        datetime.datetime(2019, 12, 25),
-    ))
+    periods = list(
+        mem_index_fresh.index.datasets._expand_period(
+            "2 years",
+            datetime.datetime(2016, 3, 5),
+            datetime.datetime(2019, 12, 25),
+        )
+    )
     assert periods == [
         Range(
             datetime.datetime(2016, 3, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2018, 3, 5, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2018, 3, 5, tzinfo=datetime.timezone.utc),
         ),
         Range(
             datetime.datetime(2018, 3, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2020, 3, 5, tzinfo=datetime.timezone.utc)
+            datetime.datetime(2020, 3, 5, tzinfo=datetime.timezone.utc),
         ),
     ]
 
 
-def test_spatiotemporal_extent(mem_eo3_data: tuple):
+def test_spatiotemporal_extent(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     ls8 = dc.index.datasets.get(ls8_id)
     wo = dc.index.datasets.get(wo_id)
-    with pytest.raises(KeyError) as e:
+    with pytest.raises(KeyError):
         dc.index.datasets.temporal_extent(ids=[uuid4()])
 
-    with (suppress_deprecations(), pytest.raises(KeyError) as e):
-        dc.index.datasets.get_product_time_bounds("orthentik_producked")  # Test of deprecated method
+    with suppress_deprecations(), pytest.raises(KeyError):
+        dc.index.datasets.get_product_time_bounds(
+            "orthentik_producked"
+        )  # Test of deprecated method
 
     # Test get_product_time_bounds
     for ds in (ls8, wo):
         with suppress_deprecations():
-            tmin, tmax = dc.index.datasets.get_product_time_bounds(ds.product.name)  # Test of deprecated method
+            tmin, tmax = dc.index.datasets.get_product_time_bounds(
+                ds.product.name
+            )  # Test of deprecated method
         assert (tmin is None and tmax is None) or tmin < tmax
         tmin2, tmax2 = dc.index.products.temporal_extent(product=ds.product)
         assert tmin2 == tmin and tmax2 == tmax
-        ids = [doc["id"] for prod, doc, uris in dc.index.datasets.get_all_docs_for_product(product=ds.product)]
+        ids = [
+            doc["id"]
+            for prod, doc, uris in dc.index.datasets.get_all_docs_for_product(
+                product=ds.product
+            )
+        ]
         tmin2, tmax2 = dc.index.datasets.temporal_extent(ids=ids)
         assert tmin2 == tmin and tmax2 == tmax
 
@@ -425,7 +583,7 @@ def test_spatiotemporal_extent(mem_eo3_data: tuple):
     assert dc.index.datasets.spatial_extent([ls8_id, wo_id]) is None
 
 
-def test_mem_ds_archive_purge(mem_eo3_data: tuple):
+def test_mem_ds_archive_purge(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     # Test archiving, restoring and purging datasets
     # Both datasets are not archived
@@ -455,103 +613,121 @@ def test_mem_ds_archive_purge(mem_eo3_data: tuple):
     assert list(dc.index.datasets.get_all_dataset_ids(False)) == []
 
 
-def test_mem_ds_search_and_count(mem_eo3_data: tuple):
+def test_mem_ds_search_and_count(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     # No source_filter; no results
     assert not list(dc.index.datasets.search(platform="deplatformed"))
-    lds = list(dc.index.datasets.search(platform='landsat-8'))
+    lds = list(dc.index.datasets.search(platform="landsat-8"))
     assert len(lds) == 2
-    assert dc.index.datasets.count(platform='landsat-8') == 2
-    lds = list(dc.index.datasets.search(platform='landsat-8', limit=1))
+    assert dc.index.datasets.count(platform="landsat-8") == 2
+    lds = list(dc.index.datasets.search(platform="landsat-8", limit=1))
     assert len(lds) == 1
     with suppress_deprecations():
         # Testing source_filter arg, which is deprecated
-        lds = list(dc.index.datasets.search(source_filter={"product_family": 'ard'}))
+        lds = list(dc.index.datasets.search(source_filter={"product_family": "ard"}))
         assert len(lds) == 1
-        assert dc.index.datasets.count(source_filter={"product_family": 'ard'}) == 1
-        lds = list(dc.index.datasets.search(platform='landsat-8', source_filter={"product_family": 'ard'}))
+        assert dc.index.datasets.count(source_filter={"product_family": "ard"}) == 1
+        lds = list(
+            dc.index.datasets.search(
+                platform="landsat-8", source_filter={"product_family": "ard"}
+            )
+        )
         assert len(lds) == 1
-        lds = list(dc.index.datasets.search(product_family='wo', source_filter={"product_family": 'ard'}))
+        lds = list(
+            dc.index.datasets.search(
+                product_family="wo", source_filter={"product_family": "ard"}
+            )
+        )
         assert len(lds) == 1
-        lds = list(dc.index.datasets.search(product_family='ard', source_filter={"product_family": 'ard'}))
+        lds = list(
+            dc.index.datasets.search(
+                product_family="ard", source_filter={"product_family": "ard"}
+            )
+        )
         assert len(lds) == 0
-        assert dc.index.datasets.count(product_family='ard', source_filter={"product_family": 'ard'}) == 0
-    lds = list(dc.index.datasets.search(product="ga_ls_wo_3", platform='landsat-8'))
+        assert (
+            dc.index.datasets.count(
+                product_family="ard", source_filter={"product_family": "ard"}
+            )
+            == 0
+        )
+    lds = list(dc.index.datasets.search(product="ga_ls_wo_3", platform="landsat-8"))
     assert len(lds) == 1
     with pytest.raises(ValueError):
         lds = list(dc.index.datasets.search(product="weird_whacky_product"))
     with pytest.raises(ValueError):
-        lds = list(dc.index.datasets.search(product_family='addams'))
+        lds = list(dc.index.datasets.search(product_family="addams"))
 
-    lds = list(dc.index.datasets.search(archived=None, platform='landsat-8'))
+    lds = list(dc.index.datasets.search(archived=None, platform="landsat-8"))
     assert len(lds) == 2
-    lds = list(dc.index.datasets.search(archived=True, platform='landsat-8'))
+    lds = list(dc.index.datasets.search(archived=True, platform="landsat-8"))
     assert len(lds) == 0
 
     dc.index.datasets.archive([ls8_id, wo_id])
-    lds = list(dc.index.datasets.search(platform='landsat-8'))
+    lds = list(dc.index.datasets.search(platform="landsat-8"))
     assert len(lds) == 0
-    lds = list(dc.index.datasets.search(archived=None, platform='landsat-8'))
+    lds = list(dc.index.datasets.search(archived=None, platform="landsat-8"))
     assert len(lds) == 2
-    lds = list(dc.index.datasets.search(archived=True, platform='landsat-8'))
+    lds = list(dc.index.datasets.search(archived=True, platform="landsat-8"))
     assert len(lds) == 2
 
 
-def test_mem_ds_search_and_count_by_product(mem_eo3_data: tuple):
+def test_mem_ds_search_and_count_by_product(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
     # No source_filter; no results
     assert not list(dc.index.datasets.search_by_product(platform="deplatformed"))
-    lds = list(dc.index.datasets.search_by_product(platform='landsat-8'))
+    lds = list(dc.index.datasets.search_by_product(platform="landsat-8"))
     assert len(lds) == 2
-    for dss, product in lds:
+    for product, dss in lds:
         for ds in dss:
             assert ds.product.name == product.name
-    lds = list(dc.index.datasets.count_by_product(platform='landsat-8'))
+    lds = list(dc.index.datasets.count_by_product(platform="landsat-8"))
     assert len(lds) == 2
-    for prod, count in lds:
+    for _, count in lds:
         assert count == 1
 
 
-def test_mem_ds_search_returning(mem_eo3_data: tuple):
+def test_mem_ds_search_returning(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
-    lds = list(dc.index.datasets.search_returning(
-        field_names=[
-            "platform", "id", "product_family"
-        ],
-        platform='landsat-8'
-    ))
+    lds = list(
+        dc.index.datasets.search_returning(
+            field_names=["platform", "id", "product_family"], platform="landsat-8"
+        )
+    )
     assert len(lds) == 2
     for res in lds:
         assert res.platform == "landsat-8"
         assert res.id in (str(ls8_id), str(wo_id))
-    lds = list(dc.index.datasets.search_returning(
-        platform='landsat-8'
-    ))
+    lds = list(dc.index.datasets.search_returning(platform="landsat-8"))
     assert len(lds) == 2
     for res in lds:
         assert res.platform == "landsat-8"
         assert res.id in (str(ls8_id), str(wo_id))
-    lds = list(dc.index.datasets.search_returning(
-        field_names=["id", "platform"],
-        custom_offsets={
-            "cloud_cover": ["properties", "eo:cloud_cover"],
-            "instrument": ["properties", "eo:instrument"],
-        },
-        platform='landsat-8'
-    ))
+    lds = list(
+        dc.index.datasets.search_returning(
+            field_names=["id", "platform"],
+            custom_offsets={
+                "cloud_cover": ["properties", "eo:cloud_cover"],
+                "instrument": ["properties", "eo:instrument"],
+            },
+            platform="landsat-8",
+        )
+    )
     assert len(lds) == 2
     for res in lds:
         assert res.platform == "landsat-8"
         assert res.id in (str(ls8_id), str(wo_id))
         assert res.cloud_cover < 59.0 and res.cloud_cover > 58.9
         assert res.instrument.endswith("OLI_TIRS")
-    lds = list(dc.index.datasets.search_returning(
-        custom_offsets={
-            "cloud_cover": ["properties", "eo:cloud_cover"],
-            "instrument": ["properties", "eo:instrument"],
-        },
-        platform='landsat-8'
-    ))
+    lds = list(
+        dc.index.datasets.search_returning(
+            custom_offsets={
+                "cloud_cover": ["properties", "eo:cloud_cover"],
+                "instrument": ["properties", "eo:instrument"],
+            },
+            platform="landsat-8",
+        )
+    )
     for res in lds:
         assert res.cloud_cover < 59.0 and res.cloud_cover > 58.9
         assert res.instrument.endswith("OLI_TIRS")
@@ -559,78 +735,120 @@ def test_mem_ds_search_returning(mem_eo3_data: tuple):
             assert res.id in (str(ls8_id), str(wo_id))
 
 
-def test_mem_ds_search_summary(mem_eo3_data: tuple):
+def test_mem_ds_search_summary(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
-    lds = list(dc.index.datasets.search_returning(platform='landsat-8'))
+    lds = list(dc.index.datasets.search_returning(platform="landsat-8"))
     assert len(lds) == 2
     for res in lds:
         assert res.platform == "landsat-8"
         assert res.id in (str(ls8_id), str(wo_id))
 
 
-def test_mem_ds_search_returning_datasets_light(mem_eo3_data: tuple):
+def test_mem_ds_search_returning_datasets_light(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
-    lds = list(dc.index.datasets.search_returning_datasets_light(
-        field_names=['platform', 'id'],
-        platform='landsat-8'))
+    lds = list(
+        dc.index.datasets.search_returning_datasets_light(
+            field_names=["platform", "id"], platform="landsat-8"
+        )
+    )
     assert len(lds) == 2
     for res in lds:
-        assert res.__class__.__name__ == 'DatasetLight'
+        assert res.__class__.__name__ == "DatasetLight"
         assert res.platform == "landsat-8"
         assert res.id in (str(ls8_id), str(wo_id))
-    lds = list(dc.index.datasets.search_returning_datasets_light(
-        archived=None,
-        field_names=['platform', 'id'],
-        platform='landsat-8'))
+    lds = list(
+        dc.index.datasets.search_returning_datasets_light(
+            archived=None, field_names=["platform", "id"], platform="landsat-8"
+        )
+    )
     assert len(lds) == 2
-    lds = list(dc.index.datasets.search_returning_datasets_light(
-        archived=True,
-        field_names=['platform', 'id'],
-        platform='landsat-8'))
+    lds = list(
+        dc.index.datasets.search_returning_datasets_light(
+            archived=True, field_names=["platform", "id"], platform="landsat-8"
+        )
+    )
     assert len(lds) == 0
 
 
-def test_mem_ds_search_by_metadata(mem_eo3_data: tuple):
+def test_mem_ds_search_by_metadata(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
-    lds = list(dc.index.datasets.search_by_metadata({"properties": {"product_family": "ard"}}))
+    lds = list(
+        dc.index.datasets.search_by_metadata({"properties": {"product_family": "ard"}})
+    )
     assert len(lds) == 0
-    lds = list(dc.index.datasets.search_by_metadata({"properties": {"odc:product_family": "ard"}}))
+    lds = list(
+        dc.index.datasets.search_by_metadata(
+            {"properties": {"odc:product_family": "ard"}}
+        )
+    )
     assert len(lds) == 1
-    lds = list(dc.index.datasets.search_by_metadata({"properties": {"platform": "landsat-8"}}))
+    lds = list(
+        dc.index.datasets.search_by_metadata({"properties": {"platform": "landsat-8"}})
+    )
     assert len(lds) == 0
-    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}))
+    lds = list(
+        dc.index.datasets.search_by_metadata(
+            {"properties": {"eo:platform": "landsat-8"}}
+        )
+    )
     assert len(lds) == 2
-    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}, archived=None))
+    lds = list(
+        dc.index.datasets.search_by_metadata(
+            {"properties": {"eo:platform": "landsat-8"}}, archived=None
+        )
+    )
     assert len(lds) == 2
-    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}, archived=True))
+    lds = list(
+        dc.index.datasets.search_by_metadata(
+            {"properties": {"eo:platform": "landsat-8"}}, archived=True
+        )
+    )
     assert len(lds) == 0
     dc.index.datasets.archive([ls8_id, wo_id])
-    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}))
+    lds = list(
+        dc.index.datasets.search_by_metadata(
+            {"properties": {"eo:platform": "landsat-8"}}
+        )
+    )
     assert len(lds) == 0
-    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}, archived=None))
+    lds = list(
+        dc.index.datasets.search_by_metadata(
+            {"properties": {"eo:platform": "landsat-8"}}, archived=None
+        )
+    )
     assert len(lds) == 2
-    lds = list(dc.index.datasets.search_by_metadata({"properties": {"eo:platform": "landsat-8"}}, archived=True))
+    lds = list(
+        dc.index.datasets.search_by_metadata(
+            {"properties": {"eo:platform": "landsat-8"}}, archived=True
+        )
+    )
     assert len(lds) == 2
 
 
-def test_mem_ds_count_product_through_time(mem_eo3_data: tuple):
+def test_mem_ds_count_product_through_time(mem_eo3_data: tuple) -> None:
     dc, ls8_id, wo_id = mem_eo3_data
-    lds = list(dc.index.datasets.count_by_product_through_time(
-        period="1 day",
-        time=[datetime.datetime(2016, 5, 10), datetime.datetime(2016, 5, 15)]
-    ))
-    for prod, counts in lds:
+    lds = list(
+        dc.index.datasets.count_by_product_through_time(
+            period="1 day",
+            time=[datetime.datetime(2016, 5, 10), datetime.datetime(2016, 5, 15)],
+        )
+    )
+    for _, counts in lds:
         for rng, count in counts:
-            if rng.begin == datetime.datetime(2016, 5, 12, tzinfo=datetime.timezone.utc):
+            if rng.begin == datetime.datetime(
+                2016, 5, 12, tzinfo=datetime.timezone.utc
+            ):
                 assert count == 1
             else:
                 assert count == 0
 
-    counts = list(dc.index.datasets.count_product_through_time(
-        period="1 month",
-        product="ga_ls_wo_3",
-        time=[datetime.datetime(2016, 4, 1), datetime.datetime(2016, 12, 1)]
-    ))
+    counts = list(
+        dc.index.datasets.count_product_through_time(
+            period="1 month",
+            product="ga_ls_wo_3",
+            time=[datetime.datetime(2016, 4, 1), datetime.datetime(2016, 12, 1)],
+        )
+    )
     for rng, count in counts:
         if rng.begin == datetime.datetime(2016, 5, 1, tzinfo=datetime.timezone.utc):
             assert count == 1
@@ -639,32 +857,33 @@ def test_mem_ds_count_product_through_time(mem_eo3_data: tuple):
 
 
 # Tests adapted from test_dataset_add
-def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube):
+def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube) -> None:
     idx = mem_index_fresh.index
     # Make sure index is empty
     assert list(idx.products.get_all()) == []
-    for path, metadata_doc in read_documents(dataset_add_configs.metadata):
+    for _, metadata_doc in read_documents(dataset_add_configs.metadata):
         idx.metadata_types.add(idx.metadata_types.from_doc(metadata_doc))
-    for path, product_doc in read_documents(dataset_add_configs.products):
+    for _, product_doc in read_documents(dataset_add_configs.products):
         idx.products.add_document(product_doc)
     ds_ids = set()
     ds_bad_ids = set()
     from datacube.index.hl import Doc2Dataset
+
     resolver = Doc2Dataset(idx)
-    for path, ds_doc in read_documents(dataset_add_configs.datasets):
-        ds, err = resolver(ds_doc, 'file:///fake_uri')
+    for _, ds_doc in read_documents(dataset_add_configs.datasets):
+        ds, err = resolver(ds_doc, "file:///fake_uri")
         assert err is None
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
-    for path, ds_doc in read_documents(dataset_add_configs.datasets_bad1):
-        ds, err = resolver(ds_doc, 'file:///fake_bad_uri')
+    for _, ds_doc in read_documents(dataset_add_configs.datasets_bad1):
+        ds, err = resolver(ds_doc, "file:///fake_bad_uri")
         if err is not None:
             ds_bad_ids.add(ds_doc["id"])
             continue
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
-    for path, ds_doc in read_documents(dataset_add_configs.datasets_eo3):
-        ds, err = resolver(ds_doc, 'file:///fake_eo3_uri')
+    for _, ds_doc in read_documents(dataset_add_configs.datasets_eo3):
+        ds, err = resolver(ds_doc, "file:///fake_eo3_uri")
         assert err is None
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
@@ -680,11 +899,13 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube):
     ds_ = SimpleDocNav(gen_dataset_test_dag(1, force_tree=True))
     assert ds_.id in ds_ids
     ds_from_idx = idx.datasets.get(ds_.id, include_sources=True)
-    assert ds_from_idx.sources['ab'].id == ds_.sources['ab'].id
-    assert ds_from_idx.sources['ac'].sources["cd"].id == ds_.sources['ac'].sources['cd'].id
+    assert ds_from_idx.sources["ab"].id == ds_.sources["ab"].id
+    assert (
+        ds_from_idx.sources["ac"].sources["cd"].id == ds_.sources["ac"].sources["cd"].id
+    )
 
 
-def test_mem_transactions(mem_index_fresh: Datacube):
+def test_mem_transactions(mem_index_fresh: Datacube) -> None:
     trans = mem_index_fresh.index.transaction()
     assert not trans.active
     trans.begin()
@@ -700,11 +921,20 @@ def test_mem_transactions(mem_index_fresh: Datacube):
     assert mem_index_fresh.index.thread_transaction() is None
 
 
-def test_default_clone_bulk_ops(mem_index_fresh: Datacube, index, extended_eo3_metadata_type,
-                                ls8_eo3_product, wo_eo3_product, africa_s2_eo3_product,
-                                ls8_eo3_dataset, ls8_eo3_dataset2,
-                                ls8_eo3_dataset3, ls8_eo3_dataset4,
-                                wo_eo3_dataset, africa_eo3_dataset):
+def test_default_clone_bulk_ops(
+    mem_index_fresh: Datacube,
+    index,
+    extended_eo3_metadata_type,
+    ls8_eo3_product,
+    wo_eo3_product,
+    africa_s2_eo3_product,
+    ls8_eo3_dataset,
+    ls8_eo3_dataset2,
+    ls8_eo3_dataset3,
+    ls8_eo3_dataset4,
+    wo_eo3_dataset,
+    africa_eo3_dataset,
+) -> None:
     mem_index_fresh.index.clone(index)
     assert mem_index_fresh.index.datasets.has(africa_eo3_dataset.id)
     assert mem_index_fresh.index.datasets.has(wo_eo3_dataset.id)
@@ -712,13 +942,21 @@ def test_default_clone_bulk_ops(mem_index_fresh: Datacube, index, extended_eo3_m
     assert mem_index_fresh.index.datasets.has(ls8_eo3_dataset4.id)
 
 
-@pytest.mark.parametrize('datacube_env_name', ('datacube', ))
+@pytest.mark.parametrize("datacube_env_name", ("datacube",))
 def test_default_clone_bulk_ops_multiloc(
-        mem_index_fresh: Datacube, index, extended_eo3_metadata_type,
-        ls8_eo3_product, wo_eo3_product, africa_s2_eo3_product,
-        ls8_eo3_dataset, ls8_eo3_dataset2,
-        ls8_eo3_dataset3, ls8_eo3_dataset4,
-        wo_eo3_dataset, africa_eo3_dataset):
+    mem_index_fresh: Datacube,
+    index,
+    extended_eo3_metadata_type,
+    ls8_eo3_product,
+    wo_eo3_product,
+    africa_s2_eo3_product,
+    ls8_eo3_dataset,
+    ls8_eo3_dataset2,
+    ls8_eo3_dataset3,
+    ls8_eo3_dataset4,
+    wo_eo3_dataset,
+    africa_eo3_dataset,
+) -> None:
     with suppress_deprecations():
         index.datasets.add_location(ls8_eo3_dataset.id, "file:///a/o/fish")
         mem_index_fresh.index.clone(index)
@@ -729,7 +967,8 @@ def test_default_clone_bulk_ops_multiloc(
         assert len(mem_index_fresh.index.datasets.get(ls8_eo3_dataset.id)._uris) == 2
 
 
-def test_default_clone_bulk_ops_reverse(mem_eo3_data: tuple, index):
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
+def test_default_clone_bulk_ops_reverse(mem_eo3_data: tuple, index) -> None:
     mem_idx, ls8id, woid = mem_eo3_data
     index.clone(mem_idx.index)
     assert index.datasets.has(ls8id)

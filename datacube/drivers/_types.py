@@ -2,108 +2,89 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" Defines abstract types for IO drivers.
-"""
-from typing import (
-    List, Tuple, Optional, Union, Any, Iterable,
-    TYPE_CHECKING
-)
+"""Defines abstract types for IO drivers."""
 
 from abc import ABCMeta, abstractmethod
+from collections.abc import Iterable
+from concurrent.futures import Future
+from typing import Any, TypeAlias
+
 import numpy as np
 from affine import Affine
-from concurrent.futures import Future
-from datacube.storage import BandInfo
 from odc.geo.crs import CRS
+
+from datacube.storage import BandInfo
 
 # pylint: disable=invalid-name,unsubscriptable-object,pointless-statement
 
-if TYPE_CHECKING:
-    FutureGeoRasterReader = Future['GeoRasterReader']  # pragma: no cover
-    FutureNdarray = Future[np.ndarray]                 # pragma: no cover
-else:
-    FutureGeoRasterReader = Future
-    FutureNdarray = Future
+FutureGeoRasterReader: TypeAlias = Future["GeoRasterReader"]
+FutureNdarray: TypeAlias = Future[np.ndarray]
+
+RasterShape: TypeAlias = tuple[int, int]
+RasterWindow: TypeAlias = tuple[slice, slice]
 
 
-RasterShape = Tuple[int, int]
-RasterWindow = Tuple[slice, slice]
-
-
-class GeoRasterReader(object, metaclass=ABCMeta):
-    """ Abstract base class for dataset reader.
-    """
+class GeoRasterReader(metaclass=ABCMeta):
+    """Abstract base class for dataset reader."""
 
     @property
     @abstractmethod
-    def crs(self) -> Optional[CRS]:
-        ...  # pragma: no cover
+    def crs(self) -> CRS | None: ...  # pragma: no cover
 
     @property
     @abstractmethod
-    def transform(self) -> Optional[Affine]:
-        ...  # pragma: no cover
+    def transform(self) -> Affine | None: ...  # pragma: no cover
 
     @property
     @abstractmethod
-    def dtype(self) -> np.dtype:
-        ...  # pragma: no cover
+    def dtype(self) -> np.dtype: ...  # pragma: no cover
 
     @property
     @abstractmethod
-    def shape(self) -> RasterShape:
-        ...  # pragma: no cover
+    def shape(self) -> RasterShape: ...  # pragma: no cover
 
     @property
     @abstractmethod
-    def nodata(self) -> Optional[Union[int, float]]:
-        ...  # pragma: no cover
+    def nodata(self) -> int | float | None: ...  # pragma: no cover
 
     @abstractmethod
-    def read(self,
-             window: Optional[RasterWindow] = None,
-             out_shape: Optional[RasterShape] = None) -> FutureNdarray:
-        ...  # pragma: no cover
+    def read(
+        self, window: RasterWindow | None = None, out_shape: RasterShape | None = None
+    ) -> FutureNdarray: ...  # pragma: no cover
 
 
-class ReaderDriver(object, metaclass=ABCMeta):
-    """ Interface for Reader Driver
-    """
+class ReaderDriver(metaclass=ABCMeta):
+    """Interface for Reader Driver"""
 
     @abstractmethod
-    def new_load_context(self,
-                         bands: Iterable[BandInfo],
-                         old_ctx: Optional[Any]) -> Any:
+    def new_load_context(self, bands: Iterable[BandInfo], old_ctx: Any | None) -> Any:
         """Recycle old context if available/possible and create new context.
-           ``old_ctx`` won't be used after this call.
+        ``old_ctx`` won't be used after this call.
 
-           Same context object is passed to all calls to ``open`` function that
-           happen within the same ``dc.load``.
+        Same context object is passed to all calls to ``open`` function that
+        happen within the same ``dc.load``.
 
-           If your driver doesn't need it just return ``None``
+        If your driver doesn't need it just return ``None``
         """
         ...  # pragma: no cover
 
     @abstractmethod
-    def open(self, band: BandInfo, ctx: Any) -> FutureGeoRasterReader:
-        ...  # pragma: no cover
+    def open(
+        self, band: BandInfo, ctx: Any
+    ) -> FutureGeoRasterReader: ...  # pragma: no cover
 
 
-class ReaderDriverEntry(object, metaclass=ABCMeta):
+class ReaderDriverEntry(metaclass=ABCMeta):
     @property
     @abstractmethod
-    def protocols(self) -> List[str]:
-        ...  # pragma: no cover
+    def protocols(self) -> list[str]: ...  # pragma: no cover
 
     @property
     @abstractmethod
-    def formats(self) -> List[str]:
-        ...  # pragma: no cover
+    def formats(self) -> list[str]: ...  # pragma: no cover
 
     @abstractmethod
-    def supports(self, protocol: str, fmt: str) -> bool:
-        ...  # pragma: no cover
+    def supports(self, protocol: str, fmt: str) -> bool: ...  # pragma: no cover
 
     @abstractmethod
-    def new_instance(self, cfg: dict) -> ReaderDriver:
-        ...  # pragma: no cover
+    def new_instance(self, cfg: dict) -> ReaderDriver: ...  # pragma: no cover

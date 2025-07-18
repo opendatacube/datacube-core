@@ -2,22 +2,18 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" Test New IO driver loading
-"""
+"""Test New IO driver loading"""
 
 import numpy as np
 
-from datacube.storage._load import (
-    xr_load, _default_fuser
-)
-
 from datacube.api.core import Datacube
+from datacube.storage._load import _default_fuser, xr_load
 from datacube.testutils import mk_sample_dataset
 from datacube.testutils.io import rio_slurp
 from datacube.testutils.iodriver import mk_rio_driver, tee_new_load_context
 
 
-def test_default_fuser():
+def test_default_fuser() -> None:
     dest = np.full((2, 2), -1.0)
     src1 = np.array([[0.0, -1.0], [-1.0, 6.0]])
 
@@ -43,7 +39,7 @@ def test_default_fuser():
     assert np.all(dest == src1)
 
 
-def test_new_xr_load(data_folder):
+def test_new_xr_load(data_folder) -> None:
     base = "file://" + str(data_folder) + "/metadata.yml"
 
     rdr = mk_rio_driver()
@@ -51,26 +47,25 @@ def test_new_xr_load(data_folder):
 
     _bands = []
 
-    def band_info_collector(bands, ctx):
+    def band_info_collector(bands, ctx) -> None:
         for b in bands:
             _bands.append(b)
 
     tee_new_load_context(rdr, band_info_collector)
 
-    band_a = dict(name='a',
-                  path='test.tif')
+    band_a = {"name": "a", "path": "test.tif"}
 
-    band_b = dict(name='b',
-                  band=2,
-                  path='test.tif')
+    band_b = {"name": "b", "band": 2, "path": "test.tif"}
 
     ds = mk_sample_dataset([band_a, band_b], base)
 
-    sources = Datacube.group_datasets([ds], 'time')
+    sources = Datacube.group_datasets([ds], "time")
 
-    im, meta = rio_slurp(str(data_folder) + '/test.tif')
-    measurements = [ds.product.measurements[n] for n in ('a', 'b')]
-    measurements[1]['fuser'] = lambda dst, src: _default_fuser(dst, src, measurements[1].nodata)
+    im, meta = rio_slurp(str(data_folder) + "/test.tif")
+    measurements = [ds.product.measurements[n] for n in ("a", "b")]
+    measurements[1]["fuser"] = lambda dst, src: _default_fuser(
+        dst, src, measurements[1].nodata
+    )
 
     xx, _ = xr_load(sources, meta.geobox, measurements, rdr)
 

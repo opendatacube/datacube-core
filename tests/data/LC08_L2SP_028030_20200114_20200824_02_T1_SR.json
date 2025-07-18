@@ -1,0 +1,422 @@
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "id": "LC08_L2SP_028030_20200114_20200824_02_T1_SR",
+  "properties": {
+    "datetime": "2020-01-14T17:05:46.732651Z",
+    "eo:cloud_cover": 8.18,
+    "view:sun_azimuth": 158.45194309,
+    "view:sun_elevation": 22.57988462,
+    "platform": "LANDSAT_8",
+    "instruments": [
+      "OLI",
+      "TIRS"
+    ],
+    "view:off_nadir": 0,
+    "landsat:cloud_cover_land": 8.18,
+    "landsat:wrs_type": "2",
+    "landsat:wrs_path": "028",
+    "landsat:wrs_row": "030",
+    "landsat:scene_id": "LC80280302020014LGN00",
+    "landsat:collection_category": "T1",
+    "landsat:collection_number": "02",
+    "landsat:correction": "L2SP",
+    "proj:epsg": 32615,
+    "proj:shape": [8041, 7931],
+    "proj:transform": [30, 0, 173085, 0, -30, 4904715],
+    "created": "2021-07-23T22:39:42.962Z",
+    "updated": "2021-07-23T22:39:42.962Z"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-96.40208024671348, 44.23811017843692],
+        [-96.95575299361194, 42.52538972591066],
+        [-94.76036976322224, 42.11901502264999],
+        [-94.14420841422258, 43.828489225801604],
+        [-96.40208024671348, 44.23811017843692]
+      ]
+    ]
+  },
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://landsatlook.usgs.gov/stac-server/collections/landsat-c2l2-sr/items/LC08_L2SP_028030_20200114_20200824_02_T1_SR"
+    },
+    {
+      "rel": "parent",
+      "href": "https://landsatlook.usgs.gov/stac-server/collections/landsat-c2l2-sr"
+    },
+    {
+      "rel": "collection",
+      "href": "https://landsatlook.usgs.gov/stac-server/collections/landsat-c2l2-sr"
+    },
+    {
+      "rel": "root",
+      "href": "https://landsatlook.usgs.gov/stac-server",
+      "type": "application/json"
+    }
+  ],
+  "assets": {
+    "thumbnail": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_thumb_small.jpeg",
+      "type": "image/jpeg",
+      "title": "Thumbnail image",
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_thumb_small.jpeg"
+        }
+      },
+      "file:checksum": "1340521440f80ed531c81f635ad77df7be1f2bf7fccd66cc05bc23f71633e1e92642ceb45c2631bd7a0e6ba9c06ab7a72ebc6d00eee60e9b9a8e7000a56675c60336",
+      "roles": [
+        "thumbnail"
+      ]
+    },
+    "reduced_resolution_browse": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_thumb_large.jpeg",
+      "type": "image/jpeg",
+      "title": "Reduced resolution browse image",
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_thumb_large.jpeg"
+        }
+      },
+      "file:checksum": "1340462e9ed936c1bc93c72aa339a8a09a289f619a8fba5a06534314c6bce9a6918ac4ae4e01cdb9ca124ca028d8810faaa833253494dcb4e7157566cb7cd0c988ef",
+      "roles": [
+        "overview"
+      ]
+    },
+    "index": {
+      "href": "https://landsatlook.usgs.gov/stac-browser/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1",
+      "type": "text/html",
+      "title": "HTML index page",
+      "roles": [
+        "metadata"
+      ]
+    },
+    "coastal": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B1.TIF",
+      "type": "image/vnd.stac.geotiff; cloud-optimized=true",
+      "title": "Coastal/Aerosol Band (B1)",
+      "description": "Collection 2 Level-2 Coastal/Aerosol Band (B1) Surface Reflectance",
+      "eo:bands": [
+        {
+          "name": "B1",
+          "common_name": "coastal",
+          "gsd": 30,
+          "center_wavelength": 0.44
+        }
+      ],
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B1.TIF"
+        }
+      },
+      "file:checksum": "13403132ee7509163551299602296a042ff7d86c4f60171627da3907b96d6a86ca8ad69b5567b2a22ff8b7003699c7d226d52a42945c635f00c107d037382b265c0f",
+      "roles": [
+        "data"
+      ]
+    },
+    "blue": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B2.TIF",
+      "type": "image/vnd.stac.geotiff; cloud-optimized=true",
+      "title": "Blue Band (B2)",
+      "description": "Collection 2 Level-2 Blue Band (B2) Surface Reflectance",
+      "eo:bands": [
+        {
+          "name": "B2",
+          "common_name": "blue",
+          "gsd": 30,
+          "center_wavelength": 0.48
+        }
+      ],
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B2.TIF"
+        }
+      },
+      "file:checksum": "134001ba2e7f24de7a214ebaf2d83b69530ef3c60586a2eeb4cbfd82f4ef4780ba0a6f41beb5076a4658d335beb148cefb7bcbe7f108cfd155c5fc880289f129e35d",
+      "roles": [
+        "data"
+      ]
+    },
+    "green": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B3.TIF",
+      "type": "image/vnd.stac.geotiff; cloud-optimized=true",
+      "title": "Green Band (B3)",
+      "description": "Collection 2 Level-2 Green Band (B3) Surface Reflectance",
+      "eo:bands": [
+        {
+          "name": "B3",
+          "common_name": "green",
+          "gsd": 30,
+          "center_wavelength": 0.56
+        }
+      ],
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B3.TIF"
+        }
+      },
+      "file:checksum": "134024d17cf8e377a29b1939762f0be65a28c9e7c6d18706bdc8b976d7f0bb07fd2aca16755637a1e443ed198a3a275711dc3bf3991fb0ceb12c6c08a02b20a7b69f",
+      "roles": [
+        "data"
+      ]
+    },
+    "red": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B4.TIF",
+      "type": "image/vnd.stac.geotiff; cloud-optimized=true",
+      "title": "Red Band (B4)",
+      "description": "Collection 2 Level-2 Red Band (B4) Surface Reflectance",
+      "eo:bands": [
+        {
+          "name": "B4",
+          "common_name": "red",
+          "gsd": 30,
+          "center_wavelength": 0.65
+        }
+      ],
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B4.TIF"
+        }
+      },
+      "file:checksum": "1340d08a3fd5aca81f359d6c6c4a476e4fff4786901a1ec737a5e61aea2b27cf68c21ed957a6dcbbf15e794251bd4294fdbc845fd9f26ddb788cc15dd71412554400",
+      "roles": [
+        "data"
+      ]
+    },
+    "nir08": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B5.TIF",
+      "type": "image/vnd.stac.geotiff; cloud-optimized=true",
+      "title": "Near Infrared Band 0.8 (B5)",
+      "description": "Collection 2 Level-2 Near Infrared Band 0.8 (B5) Surface Reflectance",
+      "eo:bands": [
+        {
+          "name": "B5",
+          "common_name": "nir08",
+          "gsd": 30,
+          "center_wavelength": 0.86
+        }
+      ],
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B5.TIF"
+        }
+      },
+      "file:checksum": "13401f14a6a3ebea6fa66cb753e037a98b605a8602bce5b0701f1164b9dc2133d78259e5cb276fb990523f228cef1bd3d2d43575752b60e3cab2116bfcd23235d505",
+      "roles": [
+        "data",
+        "reflectance"
+      ]
+    },
+    "swir16": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B6.TIF",
+      "type": "image/vnd.stac.geotiff; cloud-optimized=true",
+      "title": "Short-wave Infrared Band 1.6 (B6)",
+      "description": "Collection 2 Level-2 Short-wave Infrared Band 1.6 (B6) Surface Reflectance",
+      "eo:bands": [
+        {
+          "name": "B6",
+          "common_name": "swir16",
+          "gsd": 30,
+          "center_wavelength": 1.6
+        }
+      ],
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B6.TIF"
+        }
+      },
+      "file:checksum": "1340c3190f73a59f6bc6970f56829b8b2cc9eb4eefd346a9497c66172f05b1fccbc397057a56e2ac7fdb87510883dfe4ac0819d7088a95eb2e05b6945895e83bb6c3",
+      "roles": [
+        "data",
+        "reflectance"
+      ]
+    },
+    "swir22": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B7.TIF",
+      "type": "image/vnd.stac.geotiff; cloud-optimized=true",
+      "title": "Short-wave Infrared Band 2.2 (B7)",
+      "description": "Collection 2 Level-2 Short-wave Infrared Band 2.2 (B7) Surface Reflectance",
+      "eo:bands": [
+        {
+          "name": "B7",
+          "common_name": "swir22",
+          "gsd": 30,
+          "center_wavelength": 2.2
+        }
+      ],
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_B7.TIF"
+        }
+      },
+      "file:checksum": "1340ef7da2f70b5c4d8689734165d50463c4747cc197a12d77f0494e89a141cdffe6de1c2c8a0b80620fdfde619d9b03fc3ce398e0678639ecdf781e9d7d3d0bc645",
+      "roles": [
+        "data",
+        "reflectance"
+      ]
+    },
+    "qa_aerosol": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_QA_AEROSOL.TIF",
+      "type": "image/vnd.stac.geotiff; cloud-optimized=true",
+      "title": "Aerosol Quality Analysis Band",
+      "description": "Collection 2 Level-2 Aerosol Quality Analysis Band (ANG) Surface Reflectance",
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_SR_QA_AEROSOL.TIF"
+        }
+      },
+      "file:checksum": "1340b410aed22d62007a4373f2fe07baef482bc26b1248d4eee8e9cf6db4c5c510668cc1baa182b9eff65c4ab1a47dd060483a1a430e0ba7e114d37b156970b8ac40",
+      "roles": [
+        "metadata",
+        "data-mask",
+        "water-mask"
+      ]
+    },
+    "ANG.txt": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_ANG.txt",
+      "type": "text/plain",
+      "title": "Angle Coefficients File",
+      "description": "Collection 2 Level-2 Angle Coefficients File (ANG)",
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_ANG.txt"
+        }
+      },
+      "file:checksum": "1340afed7d1efb3ae011c0e5e5c0d9d37f1590d1eb53740d135c26021dc7809924f4e7dd666dae484cf4c7e54383fb1c725a48024e673db3d6f65a680c1c08886e83",
+      "roles": [
+        "metadata"
+      ]
+    },
+    "MTL.txt": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_MTL.txt",
+      "type": "text/plain",
+      "title": "Product Metadata File",
+      "description": "Collection 2 Level-2 Product Metadata File (MTL)",
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_MTL.txt"
+        }
+      },
+      "file:checksum": "1340e5b255dfbf38e23e7915a41e149cec5449ab7e647291d0d3d01ba6e53a95ebda87eeffdfa414f21dc8b5cd01b55a77d47dc3bad7c3fe776b44685d0d595f7105",
+      "roles": [
+        "metadata"
+      ]
+    },
+    "MTL.xml": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_MTL.xml",
+      "type": "application/xml",
+      "title": "Product Metadata File (xml)",
+      "description": "Collection 2 Level-1 Product Metadata File (xml)",
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_MTL.xml"
+        }
+      },
+      "file:checksum": "1340b4707a9135f8ab62d2c03ee5a353af6dc2c6f343ce883e9bdce0f56b1c5f4b0a3f962e4efa2d161e3a4d29f6a8a32bc3f08fd8d274bd44c7c28a63254f626da4",
+      "roles": [
+        "metadata"
+      ]
+    },
+    "MTL.json": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_MTL.json",
+      "type": "application/json",
+      "title": "Product Metadata File (json)",
+      "description": "Collection 2 Level-2 Product Metadata File (json)",
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_MTL.json"
+        }
+      },
+      "file:checksum": "1340c49465354b708e866687f6b037f789daef9b6cd495ccf258f629a27e6686bfc56a6c62a127e01bd4ee46c9ab70e6c10c8c68369d19195b7e6cb0032e607c4bf0",
+      "roles": [
+        "metadata"
+      ]
+    },
+    "qa_pixel": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_QA_PIXEL.TIF",
+      "type": "image/vnd.stac.geotiff; cloud-optimized=true",
+      "title": "Pixel Quality Assessment Band",
+      "description": "Collection 2 Level-2 Pixel Quality Assessment Band Surface Reflectance",
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_QA_PIXEL.TIF"
+        }
+      },
+      "file:checksum": "1340fb374a0cb56fcb61999ac61b42b8ffab4c2eeec2fd6c6dfe0e4370ba1216caf685b37a104cff3bc97e6364abf94617913558addb6b58718e143fd006d7925791",
+      "roles": [
+        "cloud",
+        "cloud-shadow",
+        "snow-ice",
+        "water-mask"
+      ]
+    },
+    "qa_radsat": {
+      "href": "https://landsatlook.usgs.gov/data/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_QA_RADSAT.TIF",
+      "type": "image/vnd.stac.geotiff; cloud-optimized=true",
+      "title": "Radiometric Saturation Quality Assessment Band",
+      "description": "Collection 2 Level-2 Radiometric Saturation Quality Assessment Band Surface Reflectance",
+      "alternate": {
+        "s3": {
+          "storage:platform": "AWS",
+          "storage:requester_pays": true,
+          "href": "s3://usgs-landsat/collection02/level-2/standard/oli-tirs/2020/028/030/LC08_L2SP_028030_20200114_20200824_02_T1/LC08_L2SP_028030_20200114_20200824_02_T1_QA_RADSAT.TIF"
+        }
+      },
+      "file:checksum": "1340f350703208f41a2e85edf42dbfb3d4ba7e22c354f2c3c74416bdebe4496497acf5efdbcb3e639fa8838b14550badc081b5c1e3cf5633f427d4a8029338643324",
+      "roles": [
+        "saturation"
+      ]
+    }
+  },
+  "bbox": [
+    -96.95575299361194,
+    42.11901502264999,
+    -94.14420841422258,
+    44.23811017843692
+  ],
+  "stac_extensions": [
+    "https://landsat.usgs.gov/stac/landsat-extension/v1.1.1/schema.json",
+    "https://stac-extensions.github.io/view/v1.0.0/schema.json",
+    "https://stac-extensions.github.io/projection/v1.0.0/schema.json",
+    "https://stac-extensions.github.io/file/v1.0.0/schema.json",
+    "https://stac-extensions.github.io/eo/v1.0.0/schema.json",
+    "https://stac-extensions.github.io/alternate-assets/v1.1.0/schema.json",
+    "https://stac-extensions.github.io/storage/v1.0.0/schema.json"
+  ],
+  "collection": "landsat-c2l2-sr",
+  "description": "Landsat Collection 2 Level-2 Surface Reflectance Product"
+}

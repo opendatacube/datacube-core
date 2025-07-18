@@ -7,4 +7,10 @@ User configuration.
 """
 
 import warnings
-warnings.warn("The old datacube.config  is no longer supported.  Please use the new datacube.cfg library")
+
+from datacube.migration import ODC2DeprecationWarning
+
+warnings.warn(
+    "The old datacube.config  is no longer supported.  Please use the new datacube.cfg library",
+    ODC2DeprecationWarning,
+)

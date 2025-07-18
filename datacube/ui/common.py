@@ -5,15 +5,22 @@
 """
 Common methods for UI code.
 """
+
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Union, Optional
 
-from toolz.functoolz import identity  # type: ignore[import]
+from toolz.functoolz import identity
 
-from datacube.utils import read_documents, InvalidDocException, SimpleDocNav, is_supported_document_type, is_url
+from datacube.utils import (
+    InvalidDocException,
+    SimpleDocNav,
+    is_supported_document_type,
+    is_url,
+    read_documents,
+)
 
 
-def get_metadata_path(possible_path: Union[str, Path]) -> str:
+def get_metadata_path(possible_path: str | Path) -> str:
     """
     Find a metadata path for a given input/dataset path.
 
@@ -30,45 +37,45 @@ def get_metadata_path(possible_path: Union[str, Path]) -> str:
         return str(dataset_path)
 
     # Otherwise there may be a sibling file with appended suffix '.agdc-md.yaml'.
-    expected_name = dataset_path.parent.joinpath('{}.agdc-md'.format(dataset_path.name))
+    expected_name = dataset_path.parent.joinpath(f"{dataset_path.name}.agdc-md")
     found = _find_any_metadata_suffix(expected_name)
     if found:
         return str(found)
 
     # Otherwise if it's a directory, there may be an 'agdc-metadata.yaml' file describing all contained datasets.
     if dataset_path.is_dir():
-        expected_name = dataset_path.joinpath('agdc-metadata')
+        expected_name = dataset_path.joinpath("agdc-metadata")
         found = _find_any_metadata_suffix(expected_name)
         if found:
             return str(found)
 
     if is_supported_document_type(dataset_path):
-        raise ValueError(f'No such file {dataset_path}')
+        raise ValueError(f"No such file {dataset_path}")
     else:
-        raise ValueError(f'No supported metadata docs found for dataset {dataset_path}')
+        raise ValueError(f"No supported metadata docs found for dataset {dataset_path}")
 
 
-def _find_any_metadata_suffix(path: Path) -> Optional[Path]:
+def _find_any_metadata_suffix(path: Path) -> Path | None:
     """
     Find any supported metadata files that exist with the given file path stem.
     (supported suffixes are tried on the name)
 
     Eg. searching for '/tmp/ga-metadata' will find if any files such as '/tmp/ga-metadata.yaml' or
     '/tmp/ga-metadata.json', or '/tmp/ga-metadata.yaml.gz' etc that exist: any suffix supported by read_documents()
-
-    :type path: pathlib.Path
     """
-    existing_paths = list(filter(is_supported_document_type, path.parent.glob(path.name + '*')))
+    existing_paths = list(
+        filter(is_supported_document_type, path.parent.glob(path.name + "*"))
+    )
     if not existing_paths:
         return None
 
     if len(existing_paths) > 1:
-        raise ValueError('Multiple matched metadata files: {!r}'.format(existing_paths))
+        raise ValueError(f"Multiple matched metadata files: {existing_paths!r}")
 
     return existing_paths[0]
 
 
-def ui_path_doc_stream(paths, logger=None, uri=True, raw=False):
+def ui_path_doc_stream(paths, logger=None, uri: bool = True, raw: bool = False):
     """Given a stream of URLs, or Paths that could be directories, generate a stream of
     (path, doc) tuples.
 
@@ -86,7 +93,6 @@ def ui_path_doc_stream(paths, logger=None, uri=True, raw=False):
 
     :param raw: By default docs are wrapped in :class:`SimpleDocNav`, but you can
     instead request them to be raw dictionaries
-
     """
 
     def _resolve_doc_files(paths):
@@ -97,7 +103,7 @@ def ui_path_doc_stream(paths, logger=None, uri=True, raw=False):
                 if logger is not None:
                     logger.error(str(e))
 
-    def _path_doc_stream(files, uri=True, raw=False):
+    def _path_doc_stream(files, uri: bool = True, raw: bool = False) -> Iterator:
         maybe_wrap = identity if raw else SimpleDocNav
 
         for fname in files:
@@ -105,8 +111,8 @@ def ui_path_doc_stream(paths, logger=None, uri=True, raw=False):
                 for p, doc in read_documents(fname, uri=uri):
                     yield p, maybe_wrap(doc)
 
-            except InvalidDocException as e:
+            except InvalidDocException:
                 if logger is not None:
-                    logger.error('Failed reading documents from %s', str(fname))
+                    logger.error("Failed reading documents from %s", str(fname))
 
     yield from _path_doc_stream(_resolve_doc_files(paths), uri=uri, raw=raw)

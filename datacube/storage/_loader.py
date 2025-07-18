@@ -11,9 +11,10 @@ separate file to reduce formatting issues.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Generator, Mapping, Sequence
 from datetime import datetime
 from types import SimpleNamespace
-from typing import Sequence
+from typing import Literal
 
 import xarray as xr
 from odc.geo.geobox import GeoBox, GeoboxTiles
@@ -28,6 +29,8 @@ from odc.loader import (
     resolve_chunk_shape,
 )
 from odc.loader.types import ReaderDriverSpec
+
+from datacube.storage._load import ProgressFunction
 
 from ..model import Dataset, ExtraDimensions, Measurement
 from . import BandInfo
@@ -51,7 +54,7 @@ def _extract_coords(extra_dims: ExtraDimensions) -> list[FixedCoord]:
             values=d["values"],
             dtype=str(d.get("dtype", "float32")),
             dim=k,
-            units=d.get("units", None),
+            units=d.get("units", "1"),
         )
         for k, d in coords.items()
     ]
@@ -62,18 +65,15 @@ def driver_based_load(
     sources: xr.DataArray,
     geobox: GeoBox,
     measurements: Sequence[Measurement],
-    dask_chunks=None,
-    skip_broken_datasets=False,
-    progress_cbk=None,
+    dask_chunks: Mapping[str, int | Literal["auto"]] | None = None,
+    skip_broken_datasets: bool = False,
+    progress_cbk: ProgressFunction | None = None,
     extra_dims: ExtraDimensions | None = None,
-    patch_url=None,
-):
+    patch_url: Callable[[str], str] | None = None,
+) -> xr.Dataset:
     fail_on_error = not skip_broken_datasets
 
-    if extra_dims is None:
-        extra_coords = []
-    else:
-        extra_coords = _extract_coords(extra_dims)
+    extra_coords = [] if extra_dims is None else _extract_coords(extra_dims)
 
     tss = [
         datetime.fromtimestamp(float(ts) * 1e-9)
@@ -120,7 +120,7 @@ def driver_based_load(
     if patch_url is None:
         patch_url = lambda x: x  # noqa: E731
 
-    def _dss():
+    def _dss() -> Generator:
         for tidx, dss in enumerate(sources.data):
             for ds in dss:
                 yield tidx, ds
@@ -151,7 +151,7 @@ def driver_based_load(
             tyx_bins.setdefault((tidx, iy, ix), []).append(len(srcs) - 1)
 
     if driver == "kk-debug":
-        return SimpleNamespace(
+        return SimpleNamespace(  # type: ignore[return-value]
             load_cfg=load_cfg,
             template=template,
             srcs=srcs,

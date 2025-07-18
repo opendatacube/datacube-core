@@ -96,6 +96,8 @@ variables, e.g.:
 Configuration Files
 ===================
 
+.. _format:
+
 Format
 ------
 

@@ -2,11 +2,16 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from alembic import context
+from collections.abc import Iterable, MutableMapping
+from typing import Literal
 
-from datacube.cfg import ODCConfig
+from alembic import context
+from alembic.operations import MigrationScript
+from alembic.runtime.migration import MigrationContext
+
+from datacube.cfg import ODCConfig, ODCEnvironment
 from datacube.drivers.postgis._connections import PostGisDb
-from datacube.drivers.postgis._schema import MetadataObj
+from datacube.drivers.postgis._schema import Base
 from datacube.drivers.postgis._spatial import is_spindex_table_name
 from datacube.drivers.postgis.sql import SCHEMA_NAME
 
@@ -29,8 +34,7 @@ except AttributeError:
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = MetadataObj
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -48,7 +52,6 @@ def run_migrations_offline() -> None:
 
     Calls to context.execute() here emit the given string to the
     script output.
-
     """
     context.configure(
         dialect_name="postgresql",
@@ -62,25 +65,30 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def include_name(name, type_, parent_names):
+def include_name(
+    name,
+    type_: Literal[
+        "schema",
+        "table",
+        "column",
+        "index",
+        "unique_constraint",
+        "foreign_key_constraint",
+    ],
+    parent_names: MutableMapping[
+        Literal["schema_name", "table_name", "schema_qualified_table_name"], str | None
+    ],
+) -> bool:
     if type_ == "table":
         # Ignore postgis system table
         if name == "spatial_ref_sys" and parent_names["schema_name"] is None:
             return False
 
         # Ignore dynamically generated spatial index tables
-        if is_spindex_table_name(name):
-            return False
-
-        # Include other tables
-        return True
+        return not is_spindex_table_name(name)
     elif type_ == "schema":
-        if name is None or name == SCHEMA_NAME:
-            # Monitor default and odc schema
-            return True
-        else:
-            # Ignore any other schemas
-            return False
+        # Monitor default and odc schema
+        return name is None or name == SCHEMA_NAME
     elif type_ == "column":
         # Include all columns
         return True
@@ -89,19 +97,19 @@ def include_name(name, type_, parent_names):
         return True
 
 
-def get_odc_env():
+def get_odc_env() -> ODCEnvironment:
     # In active Alembic Config?
-    cfg = config.attributes.get('cfg')
-    env = config.attributes.get('env')
-    raw_config = config.attributes.get('raw_config')
+    cfg = config.attributes.get("cfg")
+    env = config.attributes.get("env")
+    raw_config = config.attributes.get("raw_config")
     if not (cfg or env or raw_config):
         # No?  How about from alembic CLI -X args?
         x_args = context.get_x_argument(as_dictionary=True)
-        cfg = x_args.get('cfg')
+        cfg = x_args.get("cfg")
         if cfg:
-            cfg = cfg.split(':')
-        env = x_args.get('env')
-        raw_config = x_args.get('raw_config')
+            cfg = cfg.split(":")
+        env = x_args.get("env")
+        raw_config = x_args.get("raw_config")
     return ODCConfig.get_environment(env=env, config=cfg, raw_config=raw_config)
 
 
@@ -110,7 +118,6 @@ def run_migrations_online() -> None:
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
-
     """
     # An active postgis Connection:
     connection = config.attributes.get("connection")
@@ -124,9 +131,7 @@ def run_migrations_online() -> None:
         connectable = index._db._engine
     else:
         db = PostGisDb.create(
-            get_odc_env(),
-            application_name="migration",
-            validate=False
+            get_odc_env(), application_name="migration", validate=False
         )
         connectable = db._engine
 
@@ -134,10 +139,24 @@ def run_migrations_online() -> None:
         run_migration_with_connection(connection)
 
 
-def run_migration_with_connection(connection):
+def run_migration_with_connection(connection) -> None:
+    # Do not generate a file with --autogenerate unless there is a difference.
+    def process_revision_directives(
+        context: MigrationContext,
+        revision: str | Iterable[str | None] | Iterable[str],
+        directives: list[MigrationScript],
+    ) -> None:
+        assert config.cmd_opts is not None
+        if getattr(config.cmd_opts, "autogenerate", False):
+            script = directives[0]
+            assert script.upgrade_ops is not None
+            if script.upgrade_ops.is_empty():
+                directives[:] = []
+
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
+        process_revision_directives=process_revision_directives,
         version_table_schema=SCHEMA_NAME,
         include_schemas=True,
         include_name=include_name,

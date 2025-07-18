@@ -70,7 +70,7 @@ Developer setup
 ::
 
    cd datacube-core
-   pip install --upgrade -e .
+   pip install --upgrade -e .  --group dev
 
 4. Install the `pre-commit <https://pre-commit.com>`__ hooks to help follow ODC coding
    conventions when committing with git.
@@ -158,4 +158,3 @@ Build the python virtual environment:
     source "${pyenv}/bin/activate"
     pip install -U pip wheel cython numpy
     pip install -e '.[dev]'
-    pip install flake8 mypy pylint autoflake black

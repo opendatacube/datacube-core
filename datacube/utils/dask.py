@@ -2,52 +2,56 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" Dask Distributed Tools
+"""Dask Distributed Tools"""
 
-"""
-from typing import Any, Iterable, Optional, Union, Tuple
-from random import randint
-import toolz  # type: ignore[import]
-import queue
-from dask.distributed import Client
-import dask
-import threading
 import logging
 import os
+import queue
+import threading
+from collections.abc import Iterable
+from random import randint
+from typing import Any
 
+import dask
+import toolz
+from dask.delayed import Delayed, DelayedLeaf, delayed
+from dask.distributed import Client
 
-__all__ = (
-    "start_local_dask",
-    "pmap",
+__all__ = [
     "compute_tasks",
     "partition_map",
+    "pmap",
     "save_blob_to_file",
     "save_blob_to_s3",
-)
+    "start_local_dask",
+]
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def get_total_available_memory(check_jupyter_hub=True):
-    """ Figure out how much memory is available
-        1. Check MEM_LIMIT environment variable, set by jupyterhub
-        2. Use hardware information if that not set
+def get_total_available_memory(check_jupyter_hub: bool = True) -> int:
+    """Figure out how much memory is available
+    1. Check MEM_LIMIT environment variable, set by jupyterhub
+    2. Use hardware information if that not set
     """
     if check_jupyter_hub:
-        mem_limit = os.environ.get('MEM_LIMIT', None)
+        mem_limit = os.environ.get("MEM_LIMIT", None)
         if mem_limit is not None:
             return int(mem_limit)
 
     from psutil import virtual_memory
+
     return virtual_memory().total
 
 
-def compute_memory_per_worker(n_workers: int = 1,
-                              mem_safety_margin: Optional[Union[str, int]] = None,
-                              memory_limit: Optional[Union[str, int]] = None) -> int:
-    """ Figure out how much memory to assign per worker.
+def compute_memory_per_worker(
+    n_workers: int = 1,
+    mem_safety_margin: str | int | None = None,
+    memory_limit: str | int | None = None,
+) -> int:
+    """Figure out how much memory to assign per worker.
 
-        result can be passed into ``memory_limit=`` parameter of dask worker/cluster/client
+    result can be passed into ``memory_limit=`` parameter of dask worker/cluster/client
     """
     from dask.utils import parse_bytes
 
@@ -60,7 +64,7 @@ def compute_memory_per_worker(n_workers: int = 1,
     if memory_limit is None and mem_safety_margin is None:
         total_bytes = get_total_available_memory()
         # leave 500Mb or half of all memory if RAM is less than 1 Gb
-        mem_safety_margin = min(500*(1024*1024), total_bytes//2)
+        mem_safety_margin = min(500 * (1024 * 1024), total_bytes // 2)
     elif memory_limit is None:
         total_bytes = get_total_available_memory()
     elif mem_safety_margin is None:
@@ -68,15 +72,18 @@ def compute_memory_per_worker(n_workers: int = 1,
         mem_safety_margin = 0
     else:
         total_bytes = memory_limit
+    assert mem_safety_margin is not None  # For typechecker.
 
-    return (total_bytes - mem_safety_margin)//n_workers
+    return (total_bytes - mem_safety_margin) // n_workers
 
 
-def start_local_dask(n_workers: int = 1,
-                     threads_per_worker: Optional[int] = None,
-                     mem_safety_margin: Optional[Union[str, int]] = None,
-                     memory_limit: Optional[Union[str, int]] = None,
-                     **kw):
+def start_local_dask(
+    n_workers: int = 1,
+    threads_per_worker: int | None = None,
+    mem_safety_margin: str | int | None = None,
+    memory_limit: str | int | None = None,
+    **kw,
+):
     """
     Wrapper around ``distributed.Client(..)`` constructor that deals with memory better.
 
@@ -92,34 +99,42 @@ def start_local_dask(n_workers: int = 1,
     .. note::
 
         if ``memory_limit=`` is supplied, it will be parsed and divided equally between workers.
-
     """
-
     # if dashboard.link set to default value and running behind hub, make dashboard link go via proxy
-    if dask.config.get("distributed.dashboard.link") == '{scheme}://{host}:{port}/status':
-        jup_prefix = os.environ.get('JUPYTERHUB_SERVICE_PREFIX')
+    if (
+        dask.config.get("distributed.dashboard.link")
+        == "{scheme}://{host}:{port}/status"
+    ):
+        jup_prefix = os.environ.get("JUPYTERHUB_SERVICE_PREFIX")
         if jup_prefix is not None:
-            jup_prefix = jup_prefix.rstrip('/')
-            dask.config.set({"distributed.dashboard.link": f"{jup_prefix}/proxy/{{port}}/status"})
+            jup_prefix = jup_prefix.rstrip("/")
+            dask.config.set(
+                {"distributed.dashboard.link": f"{jup_prefix}/proxy/{{port}}/status"}
+            )
 
-    memory_limit = compute_memory_per_worker(n_workers=n_workers,
-                                             memory_limit=memory_limit,
-                                             mem_safety_margin=mem_safety_margin)
+    memory_limit = compute_memory_per_worker(
+        n_workers=n_workers,
+        memory_limit=memory_limit,
+        mem_safety_margin=mem_safety_margin,
+    )
 
-    client = Client(n_workers=n_workers,
-                    threads_per_worker=threads_per_worker,
-                    memory_limit=memory_limit,
-                    **kw)
+    client = Client(
+        n_workers=n_workers,
+        threads_per_worker=threads_per_worker,
+        memory_limit=memory_limit,
+        **kw,
+    )
 
     return client
 
 
-def _randomize(prefix):
-    return '{}-{:08x}'.format(prefix, randint(0, 0xFFFFFFFF))
+def _randomize(prefix: str) -> str:
+    return f"{prefix}-{randint(0, 0xFFFFFFFF):08x}"
 
 
-def partition_map(n: int, func: Any, its: Iterable[Any],
-                  name: str = 'compute') -> Iterable[Any]:
+def partition_map(
+    n: int, func: Any, its: Iterable[Any], name: str = "compute"
+) -> Iterable[Any]:
     """
     Parallel map in lumps.
 
@@ -144,44 +159,42 @@ def partition_map(n: int, func: Any, its: Iterable[Any],
 
     Iterator of ``dask.Delayed`` objects.
     """
+
     def lump_proc(dd):
         return [func(d) for d in dd]
 
-    proc = dask.delayed(lump_proc, nout=1, pure=True)
-    data_name = _randomize('data_' + name)
+    proc = delayed(lump_proc, nout=1, pure=True)
+    data_name = _randomize("data_" + name)
     name = _randomize(name)
 
     for i, dd in enumerate(toolz.partition_all(n, its)):
-        lump = dask.delayed(dd,
-                            pure=True,
-                            traverse=False,
-                            name=data_name + str(i))
+        lump = delayed(dd, pure=True, traverse=False, name=data_name + str(i))
         yield proc(lump, dask_key_name=name + str(i))
 
 
-def compute_tasks(tasks: Iterable[Any], client: Client,
-                  max_in_flight: int = 3) -> Iterable[Any]:
-    """ Parallel compute stream with back pressure.
+def compute_tasks(
+    tasks: Iterable[Any], client: Client, max_in_flight: int = 3
+) -> Iterable[Any]:
+    """Parallel compute stream with back pressure.
 
-        Equivalent to:
+    Equivalent to:
 
 
-        .. code-block:: python
+    .. code-block:: python
 
-            (client.compute(task).result()
-              for task in tasks)
+        (client.compute(task).result()
+          for task in tasks)
 
-        but with up to ``max_in_flight`` tasks being processed at the same time.
-        Input/Output order is preserved, so there is a possibility of head of
-        line blocking.
+    but with up to ``max_in_flight`` tasks being processed at the same time.
+    Input/Output order is preserved, so there is a possibility of head of
+    line blocking.
 
-        .. note::
+    .. note::
 
-              lower limit is 3 concurrent tasks to simplify implementation,
-              there is no point calling this function if you want one active
-              task and supporting exactly 2 active tasks is not worth the complexity,
-              for now. We might special-case 2 at some point.
-
+          lower limit is 3 concurrent tasks to simplify implementation,
+          there is no point calling this function if you want one active
+          task and supporting exactly 2 active tasks is not worth the complexity,
+          for now. We might special-case 2 at some point.
     """
     # New thread:
     #    1. Take dask task from iterator
@@ -195,10 +208,10 @@ def compute_tasks(tasks: Iterable[Any], client: Client,
     from .generic import it2q, qmap
 
     # (max_in_flight - 2) -- one on each side of queue
-    wrk_q = queue.Queue(maxsize=max(1, max_in_flight - 2))  # type: queue.Queue
+    wrk_q: queue.Queue = queue.Queue(maxsize=max(1, max_in_flight - 2))
 
     # fifo_timeout='0ms' ensures that priority of later tasks is lower
-    futures = (client.compute(task, fifo_timeout='0ms') for task in tasks)
+    futures = (client.compute(task, fifo_timeout="0ms") for task in tasks)
 
     in_thread = threading.Thread(target=it2q, args=(futures, wrk_q))
     in_thread.start()
@@ -208,13 +221,15 @@ def compute_tasks(tasks: Iterable[Any], client: Client,
     in_thread.join()
 
 
-def pmap(func: Any,
-         its: Iterable[Any],
-         client: Client,
-         lump: int = 1,
-         max_in_flight: int = 3,
-         name: str = 'compute') -> Iterable[Any]:
-    """ Parallel map with back pressure.
+def pmap(
+    func: Any,
+    its: Iterable[Any],
+    client: Client,
+    lump: int = 1,
+    max_in_flight: int = 3,
+    name: str = "compute",
+) -> Iterable[Any]:
+    """Parallel map with back pressure.
 
     Equivalent to this:
 
@@ -239,52 +254,56 @@ def pmap(func: Any,
         yield from xx
 
 
-def _save_blob_to_file(data: Union[bytes, str],
-                       fname: str,
-                       with_deps=None) -> Tuple[str, bool]:
+def _save_blob_to_file(
+    data: bytes | str, fname: str, with_deps=None
+) -> tuple[str, bool]:
     if isinstance(data, str):
-        data = data.encode('utf8')
+        data = data.encode("utf8")
 
     try:
-        with open(fname, 'wb') as f:
+        with open(fname, "wb") as f:
             f.write(data)
-    except IOError:
-        return (fname, False)
+    except OSError:
+        return fname, False
 
-    return (fname, True)
+    return fname, True
 
 
-def _save_blob_to_s3(data: Union[bytes, str],
-                     url: str,
-                     profile: Optional[str] = None,
-                     creds=None,
-                     region_name: Optional[str] = None,
-                     with_deps=None,
-                     **kw) -> Tuple[str, bool]:
+def _save_blob_to_s3(
+    data: bytes | str,
+    url: str,
+    profile: str | None = None,
+    creds=None,
+    region_name: str | None = None,
+    with_deps=None,
+    **kw,
+) -> tuple[str, bool]:
     from botocore.errorfactory import ClientError
     from botocore.exceptions import BotoCoreError
-    from .aws import s3_dump, s3_client
+
+    from .aws import s3_client, s3_dump
 
     try:
-        s3 = s3_client(profile=profile,
-                       creds=creds,
-                       region_name=region_name,
-                       cache=True)
+        s3 = s3_client(
+            profile=profile, creds=creds, region_name=region_name, cache=True
+        )
 
         result = s3_dump(data, url, s3=s3, **kw)
-    except (IOError, BotoCoreError, ClientError):
+    except (OSError, BotoCoreError, ClientError):
         result = False
 
     return url, result
 
 
-_save_blob_to_file_delayed = dask.delayed(_save_blob_to_file, name='save-to-disk', pure=False)
-_save_blob_to_s3_delayed = dask.delayed(_save_blob_to_s3, name='save-to-s3', pure=False)
+_save_blob_to_file_delayed = delayed(
+    _save_blob_to_file, name="save-to-disk", pure=False
+)
+_save_blob_to_s3_delayed = delayed(_save_blob_to_s3, name="save-to-s3", pure=False)
 
 
-def save_blob_to_file(data,
-                      fname,
-                      with_deps=None):
+def save_blob_to_file(
+    data: bytes | str, fname: str, with_deps=None
+) -> Delayed | DelayedLeaf:
     """
     Dump from memory to local filesystem as a dask delayed operation.
 
@@ -306,18 +325,19 @@ def save_blob_to_file(data,
 
        Dask workers must be local or have network filesystem mounted in
        the same path as calling code.
-
     """
     return _save_blob_to_file_delayed(data, fname, with_deps=with_deps)
 
 
-def save_blob_to_s3(data,
-                    url,
-                    profile=None,
-                    creds=None,
-                    region_name=None,
-                    with_deps=None,
-                    **kw):
+def save_blob_to_s3(
+    data: bytes | str,
+    url: str,
+    profile: str | None = None,
+    creds=None,
+    region_name: str | None = None,
+    with_deps=None,
+    **kw,
+) -> Delayed | DelayedLeaf:
     """
     Dump from memory to S3 as a dask delayed operation.
 
@@ -337,9 +357,12 @@ def save_blob_to_s3(data,
     ``(url, True)`` tuple on success
     ``(url, False)`` on any error
     """
-    return _save_blob_to_s3_delayed(data, url,
-                                    profile=profile,
-                                    creds=creds,
-                                    region_name=region_name,
-                                    with_deps=with_deps,
-                                    **kw)
+    return _save_blob_to_s3_delayed(
+        data,
+        url,
+        profile=profile,
+        creds=creds,
+        region_name=region_name,
+        with_deps=with_deps,
+        **kw,
+    )

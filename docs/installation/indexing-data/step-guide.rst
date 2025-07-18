@@ -33,9 +33,11 @@ The ODC can handle many different types of data, and requires a bit of
 information up front to know what to do with them. This is the task of a
 Product Definition.
 
-More detailed information on the structure of a product definition document can be found :ref:`here <product-doc>`
+More detailed information on the structure of a product definition document can be found
+`here <https://github.com/opendatacube/eo3/blob/develop/SPECIFICATION-odc-product.md>`__.
 
-Some example Product definitions are supplied `here <https://github.com/opendatacube/datacube-dataset-config/tree/main/products>`_.
+Some example Product definitions are supplied
+`here <https://github.com/opendatacube/datacube-dataset-config/tree/main/products>`__.
 Other examples include the `Digital Earth Africa product definitions <https://github.com/digitalearthafrica/config/tree/master/products>`_.
 
 

@@ -8,52 +8,56 @@ Important functions are:
 * :func:`reproject_and_fuse`
 
 """
+
 import logging
 import numbers
 from collections import OrderedDict
-import numpy as np
-from xarray.core.dataarray import DataArray as XrDataArray, DataArrayCoordinates
-from xarray.core.dataset import Dataset as XrDataset
-from typing import (
-    Union, Optional, Callable,
-    List, Any, Iterator, Iterable, Mapping, Tuple, Hashable, cast
-)
+from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Sequence
+from typing import Any, TypeAlias, cast
 
-from datacube.utils import ignore_exceptions_if
-from datacube.utils.math import invalid_mask
+import numpy as np
 from odc.geo.geobox import GeoBox
 from odc.geo.roi import roi_is_empty
-from odc.geo.xr import xr_coords
 from odc.geo.warp import Resampling
-from datacube.model import Measurement
+from odc.geo.xr import xr_coords
+from xarray.core.coordinates import DataArrayCoordinates
+from xarray.core.dataarray import DataArray as XrDataArray
+from xarray.core.dataset import Dataset as XrDataset
+
 from datacube.drivers._types import ReaderDriver
+from datacube.model import Measurement
+from datacube.utils import ignore_exceptions_if
+from datacube.utils.math import invalid_mask
+
 from ..drivers.datasource import DataSource
 from ._base import BandInfo
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
-FuserFunction = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
-ProgressFunction = Callable[[int, int], Any]  # pylint: disable=invalid-name
+FuserFunction: TypeAlias = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
+ProgressFunction: TypeAlias = Callable[[int, int], Any]  # pylint: disable=invalid-name
 
 
 def _default_fuser(dst: np.ndarray, src: np.ndarray, dst_nodata) -> None:
-    """ Overwrite only those pixels in `dst` with `src` that are "not valid"
+    """Overwrite only those pixels in `dst` with `src` that are "not valid"
 
-        For every pixel in dst that equals to dst_nodata replace it with pixel
-        from src.
+    For every pixel in dst that equals to dst_nodata replace it with pixel
+    from src.
     """
     np.copyto(dst, src, where=invalid_mask(dst, dst_nodata))
 
 
-def reproject_and_fuse(datasources: List[DataSource],
-                       destination: np.ndarray,
-                       dst_geobox: GeoBox,
-                       dst_nodata: Optional[Union[int, float]],
-                       resampling: Resampling = 'nearest',
-                       fuse_func: Optional[FuserFunction] = None,
-                       skip_broken_datasets: bool = False,
-                       progress_cbk: Optional[ProgressFunction] = None,
-                       extra_dim_index: Optional[int] = None):
+def reproject_and_fuse(
+    datasources: Sequence[DataSource],
+    destination: np.ndarray,
+    dst_geobox: GeoBox,
+    dst_nodata: int | float | None,
+    resampling: Resampling = "nearest",
+    fuse_func: FuserFunction | None = None,
+    skip_broken_datasets: bool = False,
+    progress_cbk: ProgressFunction | None = None,
+    extra_dim_index: int | None = None,
+) -> np.ndarray:
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 
@@ -66,6 +70,7 @@ def reproject_and_fuse(datasources: List[DataSource],
     """
     # pylint: disable=too-many-locals
     from ._read import read_time_slice
+
     assert len(destination.shape) == 2
 
     def copyto_fuser(dest: np.ndarray, src: np.ndarray) -> None:
@@ -77,9 +82,10 @@ def reproject_and_fuse(datasources: List[DataSource],
     if len(datasources) == 0:
         return destination
     elif len(datasources) == 1:
-        with ignore_exceptions_if(skip_broken_datasets):
-            with datasources[0].open() as rdr:
-                read_time_slice(rdr, destination, dst_geobox, resampling, dst_nodata, extra_dim_index)
+        with ignore_exceptions_if(skip_broken_datasets), datasources[0].open() as rdr:
+            read_time_slice(
+                rdr, destination, dst_geobox, resampling, dst_nodata, extra_dim_index
+            )
 
         if progress_cbk:
             progress_cbk(1, 1)
@@ -91,7 +97,14 @@ def reproject_and_fuse(datasources: List[DataSource],
         for n_so_far, source in enumerate(datasources, 1):
             with ignore_exceptions_if(skip_broken_datasets):
                 with source.open() as rdr:
-                    roi = read_time_slice(rdr, buffer_, dst_geobox, resampling, dst_nodata, extra_dim_index)
+                    roi = read_time_slice(
+                        rdr,
+                        buffer_,
+                        dst_geobox,
+                        resampling,
+                        dst_nodata,
+                        extra_dim_index,
+                    )
 
                 if not roi_is_empty(roi):
                     fuse_func(destination[roi], buffer_[roi])
@@ -111,41 +124,45 @@ def reproject_and_fuse(datasources: List[DataSource],
 def _mk_empty_ds(coords: DataArrayCoordinates, geobox: GeoBox) -> XrDataset:
     cc = OrderedDict(coords.items())
     cc.update(xr_coords(geobox, None))
-    return XrDataset(coords=cast(Mapping[Hashable, Any], cc), attrs={'crs': geobox.crs})
+    return XrDataset(coords=cast(Mapping[Hashable, Any], cc), attrs={"crs": geobox.crs})
 
 
-def _allocate_storage(coords: DataArrayCoordinates,
-                      geobox: GeoBox,
-                      measurements: Iterable[Measurement]) -> XrDataset:
+def _allocate_storage(
+    coords: DataArrayCoordinates, geobox: GeoBox, measurements: Iterable[Measurement]
+) -> XrDataset:
     xx = _mk_empty_ds(coords, geobox)
     dims = list(xx.coords.keys())
     shape = tuple(xx.sizes[k] for k in dims)
 
     for m in measurements:
         name, dtype, attrs = m.name, m.dtype, m.dataarray_attrs()
-        attrs['crs'] = geobox.crs
+        attrs["crs"] = geobox.crs
         data = np.empty(shape, dtype=dtype)
-        xx[name] = XrDataArray(data, coords=xx.coords, dims=dims, name=name, attrs=attrs)
+        xx[name] = XrDataArray(
+            data, coords=xx.coords, dims=dims, name=name, attrs=attrs
+        )
 
     return xx
 
 
-def xr_load(sources: XrDataArray,
-            geobox: GeoBox,
-            measurements: List[Measurement],
-            driver: ReaderDriver,
-            driver_ctx_prev: Optional[Any] = None,
-            skip_broken_datasets: bool = False) -> Tuple[XrDataset, Any]:
+def xr_load(
+    sources: XrDataArray,
+    geobox: GeoBox,
+    measurements: list[Measurement],
+    driver: ReaderDriver,
+    driver_ctx_prev: Any | None = None,
+    skip_broken_datasets: bool = False,
+) -> tuple[XrDataset, Any]:
     # pylint: disable=too-many-locals
     from ._read import read_time_slice_v2
 
     out = _allocate_storage(sources.coords, geobox, measurements)
 
-    def all_groups() -> Iterator[Tuple[Measurement, Tuple[int, ...], List[BandInfo]]]:
+    def all_groups() -> Iterator[tuple[Measurement, tuple[int, ...], list[BandInfo]]]:
         for idx, dss in np.ndenumerate(sources.values):
             for m in measurements:
                 bbi = [BandInfo(ds, m.name) for ds in dss]
-                yield (m, idx, bbi)
+                yield m, idx, bbi
 
     def just_bands(groups) -> Iterator[BandInfo]:
         for _, _, bbi in groups:
@@ -158,8 +175,8 @@ def xr_load(sources: XrDataArray,
     for m, idx, bbi in groups:
         dst = out.data_vars[m.name].values[idx]
         dst[:] = m.nodata
-        resampling = m.get('resampling_method', 'nearest')
-        fuse_func = m.get('fuser', None)
+        resampling = m.get("resampling_method", "nearest")
+        fuse_func = m.get("fuser", None)
 
         for band in bbi:
             rdr = driver.open(band, ctx).result()

@@ -1,0 +1,86 @@
+---
+# Dataset
+$schema: https://schemas.opendatacube.org/dataset
+id: 6c82e421-754f-5be9-bca5-0d42a1501ae1
+
+label: OPERA_L2_RTC-S1_T045-095837-IW1_20200110T192612Z_20250509T063241Z_S1A_20_v0.1
+product:
+  name: ga_s1_vertical_dualpol
+
+crs: epsg:32755
+geometry:
+  type: Polygon
+  coordinates: [[[510767.0, 5397372.0], [505471.0, 5398964.0], [500239.0, 5400536.0], [495067.0, 5402090.0], [489954.0, 5403626.0], [484897.0, 5405146.0], [479892.0, 5406650.0], [474939.0, 5408138.0], [470035.0, 5409612.0], [465178.0, 5411071.0], [460367.0, 5412517.0], [455600.0, 5413949.0], [450874.0, 5415369.0], [446189.0, 5416777.0], [441544.0, 5418173.0], [436936.0, 5419557.0], [432366.0, 5420931.0], [427830.0, 5422293.0], [423329.0, 5423646.0], [418861.0, 5424988.0], [414483.0, 5426304.0], [409144.0, 5408200.0], [413524.0, 5406884.0], [417993.0, 5405542.0], [422495.0, 5404190.0], [427032.0, 5402827.0], [431604.0, 5401454.0], [436213.0, 5400070.0], [440860.0, 5398674.0], [445546.0, 5397266.0], [450273.0, 5395847.0], [455042.0, 5394414.0], [459855.0, 5392969.0], [464713.0, 5391509.0], [469618.0, 5390036.0], [474573.0, 5388548.0], [479579.0, 5387044.0], [484639.0, 5385524.0], [489754.0, 5383988.0], [494927.0, 5382434.0], [500161.0, 5380861.0], [505459.0, 5379270.0], [510767.0, 5397372.0]]]
+
+grids:
+  default:
+    shape: [2844, 4998]
+    transform: [20.0, 0.0, 404480.0, 0.0, -20.0, 5431500.0, 0.0, 0.0, 1.0]
+
+properties:
+  eo:gsd: 20.0
+  eo:constellation: Sentinel-1
+  eo:platform: Sentinel-1A
+  eo:instrument: SENTINEL-1A CSAR
+  created: 2025-05-09T06:32:47.291415Z
+  dtr:start_datetime: 2020-01-10T19:26:12.134041Z
+  dtr:end_datetime: 2020-01-10T19:26:15.215320Z
+  product:type: RTC_S1
+  product:timeliness_category: NTC
+  ceosard:type: NRB
+  ceosard:specification: Synthetic Aperture Radar (CEOS-ARD SAR)
+  ceosard:specification_version: 1.1
+  sar:frequency_band: C
+  sar:center_frequency: 5405000454.33435
+  sar:polarizations: [VV, VH]
+  sar:observation_direction: right
+  sar:relative_burst: t045_095837_iw1
+  sar:beam_ids: IW1
+  altm:instrument_type: sar
+  altm:instrument_mode: IW
+  sat:orbit_state: descending
+  sat:absolute_orbit: 30742
+  sat:relative_orbit: trackNumber
+  sat:orbit_cycle: 12
+  sat:osv: [S1A_OPER_AUX_POEORB_OPOD_20210316T211354_V20200109T225942_20200111T005942.EOF]
+  s1:orbit_source: POE precise orbit
+  processing:level: L2
+  processing:facility: Geoscience Australia
+  processing:datetime: 2025-05-09T06:32:47.291415Z
+  processing:version: 0.1
+  nrb:source_id: [S1A_IW_SLC__1SDV_20200110T192612_20200110T192639_030742_03865D_8C62.SAFE]
+  nrb:pixel_spacing_x: 20.0
+  nrb:pixel_spacing_y: 20.0
+  nrb:resolution_x: 20.0
+  nrb:resolution_y: 20.0
+  nrb:speckle_filter_applied: 'false'
+  nrb:speckle_filter_window: []
+  nrb:measurement_type: gamma0
+  nrb:measurement_convention: linear backscatter intensity
+  nrb:conversion_eq: 10*log10[backscatter_linear]
+  nrb:noise_removal_applied: 'true'
+  nrb:static_tropospheric_correction_applied: 'true'
+  nrb:wet_tropospheric_correction_applied: 'false'
+  nrb:bistatic_correction_applied: 'true'
+  nrb:ionospheric_correction_applied: 'false'
+  datetime: 2020-01-10T19:26:12.134041Z
+  odc:region_code: t045_095837_iw1
+  odc:product_family: Sentinel-1
+  nrb:scene_id: S1A_IW_SLC__1SDV_20200110T192612_20200110T192639_030742_03865D_8C62
+  odc:processing_datetime: 2025-05-09T06:32:47.291415Z
+  odc:file_format: GeoTIFF
+
+measurements:
+  VV:
+    path: OPERA_L2_RTC-S1_T045-095837-IW1_20200110T192612Z_20250509T063241Z_S1A_20_v0.1_VV.tif
+  VH:
+    path: OPERA_L2_RTC-S1_T045-095837-IW1_20200110T192612Z_20250509T063241Z_S1A_20_v0.1_VH.tif
+  mask:
+    path: OPERA_L2_RTC-S1_T045-095837-IW1_20200110T192612Z_20250509T063241Z_S1A_20_v0.1_mask.tif
+
+accessories:
+  thumbnail:
+    path: OPERA_L2_RTC-S1_T045-095837-IW1_20200110T192612Z_20250509T063241Z_S1A_20_v0.1.png
+
+lineage: {}
+...

@@ -2,21 +2,27 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import Iterable, Optional, Tuple
+from __future__ import annotations
+
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
+
+from typing_extensions import override
+
+from datacube.drivers.postgis import PostGisDb
 from datacube.index.abstract import AbstractUserResource
 from datacube.index.postgis._transaction import IndexResourceAddIn
-from datacube.drivers.postgis import PostGisDb
+
+if TYPE_CHECKING:
+    from datacube.index.postgis.index import Index
 
 
 class UserResource(AbstractUserResource, IndexResourceAddIn):
-    def __init__(self, db: PostGisDb, index) -> None:
-        """
-        :type db: datacube.drivers.postgis.PostGisDb
-        """
-        from datacube.index.postgres.index import Index
+    def __init__(self, db: PostGisDb, index: Index) -> None:
         self._db = db
-        self._index: Index = index
+        self._index = index
 
+    @override
     def grant_role(self, role: str, *usernames: str) -> None:
         """
         Grant a role to users
@@ -24,14 +30,17 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             connection.grant_role(role, usernames)
 
-    def create_user(self, username: str, password: str,
-                    role: str, description: Optional[str] = None) -> None:
+    @override
+    def create_user(
+        self, username: str, password: str, role: str, description: str | None = None
+    ) -> None:
         """
         Create a new user.
         """
         with self._db_connection() as connection:
             connection.create_user(username, password, role, description=description)
 
+    @override
     def delete_user(self, *usernames: str) -> None:
         """
         Delete a user
@@ -39,11 +48,10 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             connection.drop_users(usernames)
 
-    def list_users(self) -> Iterable[Tuple[str, str, Optional[str]]]:
+    @override
+    def list_users(self) -> Iterable[tuple[str, str, str | None]]:
         """
         :return: list of (role, user, description)
-        :rtype: list[(str, str, str)]
         """
         with self._db_connection() as connection:
-            for role, user, description in connection.list_users():
-                yield role, user, description
+            yield from connection.list_users()

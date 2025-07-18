@@ -2,33 +2,59 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from collections.abc import Iterable
+
+from typing_extensions import override
 
 from datacube.index.abstract import AbstractMetadataTypeResource
 from datacube.model import MetadataType
+from datacube.utils.changes import Change
+from datacube.utils.documents import JsonDict
 
 
 class MetadataTypeResource(AbstractMetadataTypeResource):
-    def from_doc(self, definition):
+    @override
+    def from_doc(self, definition: JsonDict) -> MetadataType:
         raise NotImplementedError
 
-    def add(self, metadata_type, allow_table_lock=False):
+    @override
+    def add(
+        self, metadata_type: MetadataType, allow_table_lock: bool = False
+    ) -> MetadataType:
         raise NotImplementedError
 
-    def can_update(self, metadata_type, allow_unsafe_updates=False):
+    @override
+    def can_update(
+        self, metadata_type: MetadataType, allow_unsafe_updates: bool = False
+    ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         raise NotImplementedError
 
-    def update(self, metadata_type: MetadataType, allow_unsafe_updates=False, allow_table_lock=False):
+    @override
+    def update(
+        self,
+        metadata_type: MetadataType,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ) -> MetadataType:
         raise NotImplementedError
 
-    def get_unsafe(self, id_):
+    @override
+    def get_unsafe(self, id_: int) -> MetadataType:
         raise KeyError(id_)
 
-    def get_by_name_unsafe(self, name):
+    @override
+    def get_by_name_unsafe(self, name: str) -> MetadataType:
         raise KeyError(name)
 
-    def check_field_indexes(self, allow_table_lock=False,
-                            rebuild_views=False, rebuild_indexes=False):
+    @override
+    def check_field_indexes(
+        self,
+        allow_table_lock: bool = False,
+        rebuild_views: bool = False,
+        rebuild_indexes: bool = False,
+    ) -> None:
         raise NotImplementedError
 
-    def get_all(self):
+    @override
+    def get_all(self) -> Iterable[MetadataType]:
         return []

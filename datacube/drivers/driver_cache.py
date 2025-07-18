@@ -3,12 +3,13 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from typing import Dict, Any, Tuple, Iterable
+from collections.abc import Generator
+from typing import Any
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def load_drivers(group: str) -> Dict[str, Any]:
+def load_drivers(group: str) -> dict[str, Any]:
     """
     Load available drivers for a given group name.
 
@@ -25,31 +26,36 @@ def load_drivers(group: str) -> Dict[str, Any]:
     :returns: Dictionary String -> Driver Object
     """
 
-    def safe_load(ep):
+    def safe_load(ep) -> dict | None:
         # pylint: disable=broad-except,bare-except
         try:
             driver_init = ep.load()
         except Exception as e:
-            _LOG.warning('Failed to resolve driver %s::%s', group, ep.name)
-            _LOG.warning('Error was: %s', repr(e))
+            _LOG.warning("Failed to resolve driver %s::%s", group, ep.name)
+            _LOG.warning("Error was: %s", repr(e))
             return None
 
         try:
             driver = driver_init()
         except Exception:
-            _LOG.warning('Exception during driver init, driver name: %s::%s', group, ep.name)
+            _LOG.warning(
+                "Exception during driver init, driver name: %s::%s", group, ep.name
+            )
             return None
 
         if driver is None:
-            _LOG.warning('Driver init returned None, driver name: %s::%s', group, ep.name)
+            _LOG.warning(
+                "Driver init returned None, driver name: %s::%s", group, ep.name
+            )
 
         return driver
 
-    def resolve_all(group: str) -> Iterable[Tuple[str, Any]]:
+    def resolve_all(group: str) -> Generator[tuple[str, Any]]:
         from importlib.metadata import entry_points
+
         for ep in entry_points(group=group):
             driver = safe_load(ep)
             if driver is not None:
-                yield (ep.name, driver)
+                yield ep.name, driver
 
-    return dict((name, driver) for name, driver in resolve_all(group))
+    return dict(resolve_all(group))

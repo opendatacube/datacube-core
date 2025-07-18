@@ -6,31 +6,27 @@
 """
 Datacube configuration
 """
+
+from __future__ import annotations
+
 import os
 import warnings
-
+from collections.abc import Sequence
 from os import PathLike
 from threading import Lock
-from typing import Any, TypeAlias, Union, cast
+from typing import Any, TypeAlias, cast
 
+from ..migration import ODC2DeprecationWarning
 from .cfg import find_config, parse_text
 from .exceptions import ConfigException
 from .opt import (
-    ODCOptionHandler,
     AliasOptionHandler,
-    IndexDriverOptionHandler,
     BoolOptionHandler,
+    IndexDriverOptionHandler,
     IntOptionHandler,
+    ODCOptionHandler,
 )
 from .utils import ConfigDict, check_valid_env_name
-from ..migration import ODC2DeprecationWarning
-
-# TypeAliases for more concise type hints
-# (Unions required as typehint | operator doesn't work with string forward-references.
-GeneralisedPath: TypeAlias = str | PathLike | list[str | PathLike]
-GeneralisedCfg: TypeAlias = Union["ODCConfig", GeneralisedPath]
-GeneralisedEnv: TypeAlias = Union["ODCEnvironment", str]
-GeneralisedRawCfg: TypeAlias = str | ConfigDict
 
 
 class ODCConfig:
@@ -40,7 +36,6 @@ class ODCConfig:
     **Attributes**
 
     .. py:attribute:: allow_envvar_overrides
-       :type: bool
        :value: True
 
        If True, environment variables can override the values explicitly specified in the supplied configuration.
@@ -49,7 +44,6 @@ class ODCConfig:
        still be read from environment variables, even if this attribute is False.
 
     .. py:attribute:: raw_text
-       :type: str | None
 
        The raw configuration text being used, as read from the configuration
        file or supplied directly by the user.  May be None if the user
@@ -58,31 +52,27 @@ class ODCConfig:
        environment variables.
 
     .. py:attribute:: raw_config
-       :type: dict[str, dict[str, Any]]
 
        The raw dictionary form of the configuration, as supplied directly
        by the user, or as parsed from raw_text. Does not include dynamic
        environments or values overridden by environment variables.
 
     .. py:attribute:: known_environments
-       :type: dict[str, "ODCEnvironment"]
 
        A dictionary containing all environments defined in raw_config,
        plus any dynamic environments read so far.
        Environment themselves are not validated until read from.
 
     .. py:attribute:: canonical_names
-       :type: dict[str, list[str]]
 
        A dictionary mapping canonical environment names to all aliases for
        that environment.
-
     """
 
     allow_envvar_overrides: bool = True
     raw_text: str | None = None
     raw_config: ConfigDict = {}
-    known_environments: dict[str, "ODCEnvironment"] = {}
+    known_environments: dict[str, ODCEnvironment] = {}
     canonical_names: dict[str, list[str]] = {}
     is_default = False
 
@@ -91,14 +81,14 @@ class ODCConfig:
         paths: GeneralisedPath | None = None,
         raw_dict: ConfigDict | None = None,
         text: str | None = None,
-    ):
+    ) -> None:
         """
         When called with no args, reads the first config file found in the config path list is used.
         The config path list is taken from:
 
         1) Environment variable $ODC_CONFIG_PATH (as a UNIX path style colon-separated path list)
         2) Environment variable $DATACUBE_CONFIG_PATH (as a UNIX path style colon-separated path list)
-           This is a deprecated legacy environment variable, and please note that it's behaviour has changed
+           This is a deprecated legacy environment variable, and please note that its behaviour has changed
            slightly from datacube 1.8.x.
         3) The default config search path (i.e. .cfg._DEFAULT_CONFIG_SEARCH_PATH)
 
@@ -119,7 +109,7 @@ class ODCConfig:
                      Used as is - environment variable overrides are NOT applied.
         """
         # Cannot supply both text AND paths.
-        args_supplied: int = sum(map(lambda x: int(bool(x)), (paths, raw_dict, text)))
+        args_supplied: int = sum(int(bool(x)) for x in (paths, raw_dict, text))
         if args_supplied > 1:
             raise ConfigException(
                 "Can only supply one of configuration path(s), raw dictionary, "
@@ -144,7 +134,7 @@ class ODCConfig:
             self.raw_config = parse_text(cast(str, self.raw_text))
 
         self._aliases: dict[str, str] = {}
-        self.known_environments: dict[str, "ODCEnvironment"] = {
+        self.known_environments: dict[str, ODCEnvironment] = {
             section: ODCEnvironment(
                 self, section, self.raw_config[section], self.allow_envvar_overrides
             )
@@ -164,7 +154,7 @@ class ODCConfig:
         env: GeneralisedEnv | None = None,
         config: GeneralisedCfg | None = None,
         raw_config: GeneralisedRawCfg | None = None,
-    ) -> "ODCEnvironment":
+    ) -> ODCEnvironment:
         """
         Obtain an ODCConfig object from the most general possible arguments.
 
@@ -216,7 +206,7 @@ class ODCConfig:
     def _set_default(self) -> None:
         self.is_default = True
 
-    def __getitem__(self, item: str | None) -> "ODCEnvironment":
+    def __getitem__(self, item: str | None) -> ODCEnvironment:
         """
         Environments can be accessed by name (canonical or aliases) with the getitem dunder method.
 
@@ -288,7 +278,7 @@ class ODCEnvironment:
         name: str,
         raw: dict[str, Any],
         allow_env_overrides: bool = True,
-    ):
+    ) -> None:
         self._cfg: ODCConfig = cfg
         check_valid_env_name(name)
         self._name: str = name
@@ -309,7 +299,7 @@ class ODCEnvironment:
             alias = self._raw["alias"]
             check_valid_env_name(alias)
             self._cfg._add_alias(self._name, alias)
-            for opt in self._raw.keys():
+            for opt in self._raw:
                 if opt != "alias":
                     raise ConfigException(
                         f"Alias environments should only contain an alias option. Extra option {opt} found."
@@ -322,7 +312,7 @@ class ODCEnvironment:
             IntOptionHandler("dc_load_limit", self, minval=0),
         ]
 
-    def get_all_aliases(self):
+    def get_all_aliases(self) -> list[str]:
         return self._cfg.get_aliases(self._name)
 
     def __getitem__(self, key: str) -> Any:
@@ -349,7 +339,7 @@ class ODCEnvironment:
         try:
             return self[item]
         except KeyError:
-            raise AttributeError(item)
+            raise AttributeError(item) from None
 
     def _handle_option(self, handler: ODCOptionHandler) -> None:
         val = handler.get_val_from_environment()
@@ -360,3 +350,11 @@ class ODCEnvironment:
         val = handler.validate_and_normalise(val)
         self._normalised[handler.name] = val
         handler.handle_dependent_options(val)
+
+
+# TypeAliases for more concise type hints.
+# Located after class definitions so Sphinx can resolve them.
+GeneralisedPath: TypeAlias = str | PathLike | Sequence[str | PathLike]
+GeneralisedCfg: TypeAlias = ODCConfig | GeneralisedPath
+GeneralisedEnv: TypeAlias = str | ODCEnvironment
+GeneralisedRawCfg: TypeAlias = str | ConfigDict

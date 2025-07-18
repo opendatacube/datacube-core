@@ -3,24 +3,35 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-from ._types import BatchStatus, DSID, DatasetTuple, dsid_to_uuid, DatasetSpatialMixin
-from ._users import AbstractUserResource
-from ._metadata_types import AbstractMetadataTypeResource, default_metadata_type_docs, _DEFAULT_METADATA_TYPES_PATH
-from ._products import AbstractProductResource
-from ._lineage import AbstractLineageResource, NoLineageResource
 from ._datasets import AbstractDatasetResource
-from ._transactions import AbstractTransaction, UnhandledTransaction
 from ._index import AbstractIndex, AbstractIndexDriver
+from ._lineage import AbstractLineageResource, NoLineageResource
+from ._metadata_types import (
+    _DEFAULT_METADATA_TYPES_PATH,
+    AbstractMetadataTypeResource,
+    default_metadata_type_docs,
+)
+from ._products import AbstractProductResource
+from ._transactions import AbstractTransaction, UnhandledTransaction
+from ._types import DSID, BatchStatus, DatasetSpatialMixin, DatasetTuple, dsid_to_uuid
+from ._users import AbstractUserResource
 
 __all__ = [
-    "BatchStatus",
-    "DSID", "dsid_to_uuid",
-    "DatasetTuple", "DatasetSpatialMixin",
-    "default_metadata_type_docs", "_DEFAULT_METADATA_TYPES_PATH",
-    "AbstractUserResource",
-    "AbstractMetadataTypeResource", "AbstractProductResource",
-    "AbstractLineageResource", "NoLineageResource",
+    "DSID",
+    "_DEFAULT_METADATA_TYPES_PATH",
     "AbstractDatasetResource",
-    "AbstractTransaction", "UnhandledTransaction",
-    "AbstractIndex", "AbstractIndexDriver",
+    "AbstractIndex",
+    "AbstractIndexDriver",
+    "AbstractLineageResource",
+    "AbstractMetadataTypeResource",
+    "AbstractProductResource",
+    "AbstractTransaction",
+    "AbstractUserResource",
+    "BatchStatus",
+    "DatasetSpatialMixin",
+    "DatasetTuple",
+    "NoLineageResource",
+    "UnhandledTransaction",
+    "default_metadata_type_docs",
+    "dsid_to_uuid",
 ]

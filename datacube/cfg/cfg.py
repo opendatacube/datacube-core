@@ -8,22 +8,28 @@ Low level config path resolution, loading and multi-format parsing functions.
 The default search path and default config also live here.
 """
 
+from __future__ import annotations
+
 import os
 import warnings
 from enum import Enum
 from os import PathLike
 from os.path import expanduser
+from typing import TYPE_CHECKING
 
 from datacube.cfg.exceptions import ConfigException
-from datacube.cfg.utils import ConfigDict, smells_like_ini, SemaphoreCallback
+from datacube.cfg.utils import ConfigDict, SemaphoreCallback, smells_like_ini
 from datacube.migration import ODC2DeprecationWarning
 
-_DEFAULT_CONFIG_SEARCH_PATH = [
-    "datacube.conf",      # i.e. in the current working directory.
-    expanduser("~/.datacube.conf"),   # i.e. in user's home directory.
+if TYPE_CHECKING:
+    from datacube.cfg.api import GeneralisedPath
+
+_DEFAULT_CONFIG_SEARCH_PATH: list[str] = [
+    "datacube.conf",  # i.e. in the current working directory.
+    expanduser("~/.datacube.conf"),  # i.e. in user's home directory.
     # Check if we are running under a Windows and use Windowsy default paths?
     "/etc/default/datacube.conf",  # Preferred location for global config file
-    "/etc/datacube.conf",          # Legacy location for global config file
+    "/etc/datacube.conf",  # Legacy location for global config file
 ]
 
 _DEFAULT_CONF = """
@@ -35,8 +41,10 @@ default:
 """
 
 
-def find_config(paths_in: None | str | PathLike | list[str | PathLike],
-                default_cb: SemaphoreCallback | None = None) -> str:
+def find_config(
+    paths_in: GeneralisedPath | None,
+    default_cb: SemaphoreCallback | None = None,
+) -> str:
     """
     Given a file system path, or a list of file system paths, return the contents of the first file
     in the list that can be read as a string.
@@ -52,32 +60,33 @@ def find_config(paths_in: None | str | PathLike | list[str | PathLike],
     If None was passed in, AND no readable file could be found, a default configuration text is returned.
 
     :param paths_in: A file system path, or a list of file system paths, or None.
+    :param default_cb: A default semaphore callback object, or None.
     :return: The contents of the first readable file found.
     """
     using_default_paths: bool = False
     paths: list[str | PathLike] = []
     if paths_in is None:
         if os.environ.get("ODC_CONFIG_PATH"):
-            paths.extend(os.environ["ODC_CONFIG_PATH"].split(':'))
+            paths.extend(os.environ["ODC_CONFIG_PATH"].split(":"))
         elif os.environ.get("DATACUBE_CONFIG_PATH"):
             warnings.warn(
                 "Datacube config path being determined by legacy $DATACUBE_CONFIG_PATH environment variable. "
                 "This environment variable is deprecated and the behaviour of it has changed somewhat since datacube "
                 "1.8.x.   Please refer to the documentation for details and switch to $ODC_CONFIG_PATH",
-                ODC2DeprecationWarning
+                ODC2DeprecationWarning,
             )
-            paths.extend(os.environ["DATACUBE_CONFIG_PATH"].split(':'))
+            paths.extend(os.environ["DATACUBE_CONFIG_PATH"].split(":"))
         else:
             paths.extend(_DEFAULT_CONFIG_SEARCH_PATH)
             using_default_paths = True
-    elif isinstance(paths_in, str) or isinstance(paths_in, PathLike):
+    elif isinstance(paths_in, str | PathLike):
         paths.append(paths_in)
     else:
         paths.extend(paths_in)
 
     for path in paths:
         try:
-            with open(path, "r") as fp:
+            with open(path) as fp:
                 return fp.read()
         except OSError:
             continue
@@ -94,10 +103,11 @@ class CfgFormat(Enum):
     """
     An Enum class for config file formats.
     """
-    AUTO = 0   # Format unspecified - autodetect
+
+    AUTO = 0  # Format unspecified - autodetect
     INI = 1
     YAML = 2
-    JSON = 2   # JSON is a subset of YAML
+    JSON = 2  # JSON is a subset of YAML
 
 
 def parse_text(cfg_text: str, fmt: CfgFormat = CfgFormat.AUTO) -> ConfigDict:
@@ -107,14 +117,14 @@ def parse_text(cfg_text: str, fmt: CfgFormat = CfgFormat.AUTO) -> ConfigDict:
     Raises a ConfigException if the file cannot be parsed.
 
     :param cfg_text: Configuration string in INI, YAML or JSON format
-    :param fmt: Whether to use the ini or yaml/json parser. By default autodetects file format.
+    :param fmt: Whether to use the ini or yaml/json parser. Autodetects file format by default.
     :return: A raw config dictionary
     """
     raw_config = {}
-    if fmt == fmt.INI or (
-            fmt == fmt.AUTO and smells_like_ini(cfg_text)):
+    if fmt == fmt.INI or (fmt == fmt.AUTO and smells_like_ini(cfg_text)):
         # INI parsing
         import configparser
+
         try:
             ini_config = configparser.ConfigParser()
             ini_config.read_string(cfg_text)
@@ -125,13 +135,14 @@ def parse_text(cfg_text: str, fmt: CfgFormat = CfgFormat.AUTO) -> ConfigDict:
 
                 raw_config[section] = sect
         except configparser.Error as e:
-            raise ConfigException(f"Invalid INI file: {e}")
+            raise ConfigException(f"Invalid INI file: {e}") from None
     else:
         # YAML/JSON parsing
         import yaml
+
         try:
             raw_config = yaml.load(cfg_text, Loader=yaml.Loader)
         except yaml.parser.ParserError as e:
-            raise ConfigException(f"Invalid YAML file:{e}")
+            raise ConfigException(f"Invalid YAML file:{e}") from None
 
     return raw_config

@@ -2,16 +2,17 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import yaml
 import datetime
 import decimal
 from textwrap import dedent
+
 import pytest
+import yaml
 
-from datacube.model.fields import get_dataset_fields, parse_search_field, Expression
 from datacube.model import Range, metadata_from_doc
+from datacube.model.fields import Expression, get_dataset_fields, parse_search_field
 
-METADATA_DOC = yaml.safe_load('''---
+METADATA_DOC = yaml.safe_load("""---
 name: test
 description: test all simple search field types
 dataset:
@@ -48,9 +49,9 @@ dataset:
       type: datetime
       description: field of type 'datetime'
       offset: [x_datetime_path]
-''')
+""")
 
-SAMPLE_DOC = yaml.safe_load('''---
+SAMPLE_DOC = yaml.safe_load("""---
 x_string_path: some_string
 x_double_path: 6.283185307179586
 x_integer_path: 4466778
@@ -59,9 +60,9 @@ x_datetime_path: 1999-04-15 12:33:55.001
 some:
   path:
     x_default_type_path: just_a_string
-''')
+""")
 
-METADATA_DOC_RANGES = yaml.safe_load('''---
+METADATA_DOC_RANGES = yaml.safe_load("""---
 name: test
 description: test all simple search field types
 dataset:
@@ -90,9 +91,9 @@ dataset:
        type: integer-range
        min_offset: [[a]]
        max_offset: [[b]]
-''')
+""")
 
-SAMPLE_DOC_RANGES = yaml.safe_load('''---
+SAMPLE_DOC_RANGES = yaml.safe_load("""---
 t:
   a: 1999-04-15
   b: 1999-04-16
@@ -101,26 +102,27 @@ x:
   b: 2
   c: 3
   d: 4
-''')
+""")
 
 
-def test_get_dataset_simple_fields():
+def test_get_dataset_simple_fields() -> None:
     xx = get_dataset_fields(METADATA_DOC)
-    assert xx['x_default_type'].type_name == 'string'
+    assert xx["x_default_type"].type_name == "string"
 
-    type_map = dict(
-        double=float,
-        integer=int,
-        string=str,
-        datetime=datetime.datetime,
-        numeric=decimal.Decimal,
-    )
+    type_map = {
+        "double": float,
+        "integer": int,
+        "string": str,
+        "datetime": datetime.datetime,
+        "numeric": decimal.Decimal,
+    }
 
     for n, f in xx.items():
         assert n == f.name
         assert isinstance(f.description, str)
 
         expected_type = type_map.get(f.type_name)
+        assert expected_type is not None
         vv = f.extract(SAMPLE_DOC)
         assert isinstance(vv, expected_type)
 
@@ -128,74 +130,84 @@ def test_get_dataset_simple_fields():
         assert f.extract({}) is None
 
 
-def test_get_dataset_range_fields():
+def test_get_dataset_range_fields() -> None:
     xx = get_dataset_fields(METADATA_DOC_RANGES)
-    v = xx['x_range'].extract(SAMPLE_DOC_RANGES)
+    v = xx["x_range"].extract(SAMPLE_DOC_RANGES)
     assert v == Range(1, 4)
 
-    v = xx['t_range'].extract(SAMPLE_DOC_RANGES)
-    assert v.begin.strftime('%Y-%m-%d') == "1999-04-15"
-    assert v.end.strftime('%Y-%m-%d') == "1999-04-16"
+    v = xx["t_range"].extract(SAMPLE_DOC_RANGES)
+    assert v.begin.strftime("%Y-%m-%d") == "1999-04-15"
+    assert v.end.strftime("%Y-%m-%d") == "1999-04-16"
 
     # missing range should return None
-    assert xx['ab'].extract({}) is None
+    assert xx["ab"].extract({}) is None
 
     # partially missing Range
-    assert xx['ab'].extract(dict(a=3)) == Range(3, None)
-    assert xx['ab'].extract(dict(b=4)) == Range(None, 4)
+    assert xx["ab"].extract({"a": 3}) == Range(3, None)
+    assert xx["ab"].extract({"b": 4}) == Range(None, 4)
 
     # float-range conversion
-    assert xx['float_range'].type_name == 'numeric-range'
+    assert xx["float_range"].type_name == "numeric-range"
 
 
-def test_metadata_from_doc():
+def test_metadata_from_doc() -> None:
     mm = metadata_from_doc(METADATA_DOC)
     assert mm.definition is METADATA_DOC
 
     rdr = mm.dataset_reader(SAMPLE_DOC)
-    assert rdr.x_double == SAMPLE_DOC['x_double_path']
-    assert rdr.x_integer == SAMPLE_DOC['x_integer_path']
-    assert rdr.x_string == SAMPLE_DOC['x_string_path']
-    assert rdr.x_numeric == decimal.Decimal(SAMPLE_DOC['x_numeric_path'])
+    assert rdr.x_double == SAMPLE_DOC["x_double_path"]
+    assert rdr.x_integer == SAMPLE_DOC["x_integer_path"]
+    assert rdr.x_string == SAMPLE_DOC["x_string_path"]
+    assert rdr.x_numeric == decimal.Decimal(SAMPLE_DOC["x_numeric_path"])
 
 
-def test_bad_field_definition():
+def test_bad_field_definition() -> None:
     def doc(s):
         return yaml.safe_load(dedent(s))
 
     with pytest.raises(ValueError):
-        parse_search_field(doc('''
+        parse_search_field(
+            doc("""
         type: bad_type
         offset: [a]
-        '''))
+        """)
+        )
 
     with pytest.raises(ValueError):
-        parse_search_field(doc('''
+        parse_search_field(
+            doc("""
         type: badtype-range
         offset: [a]
-        '''))
+        """)
+        )
 
     with pytest.raises(ValueError):
-        parse_search_field(doc('''
+        parse_search_field(
+            doc("""
         type: double
         description: missing offset
-        '''))
+        """)
+        )
 
     with pytest.raises(ValueError):
-        parse_search_field(doc('''
+        parse_search_field(
+            doc("""
         type: double-range
         description: missing min_offset
         max_offset: [[a]]
-        '''))
+        """)
+        )
 
     with pytest.raises(ValueError):
-        parse_search_field(doc('''
+        parse_search_field(
+            doc("""
         type: double-range
         description: missing max_offset
         min_offset: [[a]]
-        '''))
+        """)
+        )
 
 
-def test_expression():
+def test_expression() -> None:
     assert Expression() == Expression()
     assert (Expression() == object()) is False

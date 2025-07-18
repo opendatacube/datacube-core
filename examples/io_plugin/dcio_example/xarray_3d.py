@@ -2,25 +2,27 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" xarray 3D driver plugin for 3D support testing
-"""
+"""xarray 3D driver plugin for 3D support testing"""
+
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator, Optional, Tuple, Union
+from typing import Any
 from urllib.parse import urlparse
 
 import numpy as np
 import xarray as xr
 from affine import Affine
+from odc.geo import CRS
+
 from datacube.storage import BandInfo
 from datacube.utils.math import num2numpy
-from odc.geo import CRS
 
 PROTOCOL = ["file", "xarray_3d"]
 FORMAT = "xarray_3d"
 
 
-def uri_split(uri: str) -> Tuple[str, str, str]:
+def uri_split(uri: str) -> tuple[str, str, str]:
     """
     Splits uri into protocol, root, and group
 
@@ -30,7 +32,7 @@ def uri_split(uri: str) -> Tuple[str, str, str]:
 
     If the URI contains no '#' extension, the root group "" is returned.
 
-    :param str uri: The URI to be parsed
+    :param uri: The URI to be parsed
     :return: (protocol, root, group)
     """
     components = urlparse(uri)
@@ -42,28 +44,28 @@ def uri_split(uri: str) -> Tuple[str, str, str]:
     return scheme, path, group
 
 
-RasterShape = Tuple[int, ...]
-RasterWindow = Tuple[Union[int, Tuple[int, int]], ...]
+RasterShape = tuple[int, ...]
+RasterWindow = tuple[int | tuple[int, int], ...]
 
 load_no = 0
 
 
-class XArrayDataSource3D(object):
-    class BandDataSource(object):
+class XArrayDataSource3D:
+    class BandDataSource:
         def __init__(
             self,
             dataset: xr.Dataset,
             var_name: str,
-            no_data: Optional[float],
+            no_data: float | None,
         ) -> None:
             """
             Initialises the BandDataSource class.
 
             The BandDataSource class to read array slices out of the xr.Dataset.
 
-            :param xr.Dataset dataset: The xr.Dataset
-            :param str var_name: The variable name of the xr.DataArray
-            :param float no_data: The no data value if known
+            :param dataset: The xr.Dataset
+            :param var_name: The variable name of the xr.DataArray
+            :param no_data: The no data value if known
             """
             self.ds = dataset
             self._var_name = var_name
@@ -89,8 +91,8 @@ class XArrayDataSource3D(object):
             self._nodata = num2numpy(self._nodata, self.dtype)
 
         @property
-        def nodata(self) -> Optional[float]:
-            return self._nodata  # type: ignore
+        def nodata(self) -> float | None:
+            return self._nodata
 
         @property
         def crs(self) -> CRS:
@@ -110,19 +112,19 @@ class XArrayDataSource3D(object):
 
         def read(
             self,
-            window: Optional[RasterWindow] = None,
-            out_shape: Optional[RasterShape] = None,
+            window: RasterWindow | None = None,
+            out_shape: RasterShape | None = None,
         ) -> np.ndarray:
             """
             Reads a slice into the xr.DataArray.
 
-            :param RasterWindow window: The slice to read
-            :param RasterShape out_shape: The desired output shape
+            :param window: The slice to read
+            :param out_shape: The desired output shape
             :return: Requested data in a :class:`numpy.ndarray`
             """
 
             if window is None:
-                ix: Tuple = (...,)
+                ix: tuple = (...,)
             else:
                 ix = tuple(slice(*w) if isinstance(w, tuple) else w for w in window)
 
@@ -142,7 +144,7 @@ class XArrayDataSource3D(object):
         """
         Initialises the XarrayDataSource3D class.
 
-        :param BandInfo band: BandInfo containing the dataset metadata.
+        :param band: BandInfo containing the dataset metadata.
         """
         self._band_info = band
         if band.band == 0:
@@ -173,7 +175,7 @@ class XArrayDataSource3D(object):
         )
 
 
-class XArrayReaderDriver3D(object):
+class XArrayReaderDriver3D:
     def __init__(self) -> None:
         self.name = "XArrayReader3D"
         self.protocols = PROTOCOL

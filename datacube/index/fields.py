@@ -7,18 +7,21 @@ Common datatypes for DB drivers.
 """
 
 from datetime import date, datetime, time
-from dateutil.tz import tz
-from typing import List
 
-from datacube.model import Range, Not
+from dateutil.tz import UTC
+from typing_extensions import override
+
+from datacube.model import Not, Range
 from datacube.model.fields import Expression, Field
 
-__all__ = ['Field',
-           'Expression',
-           'OrExpression',
-           'UnknownFieldError',
-           'to_expressions',
-           'as_expression']
+__all__ = [
+    "Expression",
+    "Field",
+    "OrExpression",
+    "UnknownFieldError",
+    "as_expression",
+    "to_expressions",
+]
 
 
 class UnknownFieldError(Exception):
@@ -26,23 +29,25 @@ class UnknownFieldError(Exception):
 
 
 class OrExpression(Expression):
-    def __init__(self, *exprs):
-        super(OrExpression, self).__init__()
+    def __init__(self, *exprs) -> None:
+        super().__init__()
         self.exprs = exprs
         # Or expressions built by dc.load are always made up of simple expressions that share the same field.
         self.field = exprs[0].field
 
-    def evaluate(self, ctx):
+    @override
+    def evaluate(self, ctx) -> bool:
         return any(expr.evaluate(ctx) for expr in self.exprs)
 
 
 class NotExpression(Expression):
-    def __init__(self, expr):
-        super(NotExpression, self).__init__()
+    def __init__(self, expr) -> None:
+        super().__init__()
         self.expr = expr
         self.field = expr.field
 
-    def evaluate(self, ctx):
+    @override
+    def evaluate(self, ctx) -> bool:
         return not self.expr.evaluate(ctx)
 
 
@@ -61,9 +66,9 @@ def as_expression(field: Field, value) -> Expression:
         return as_expression(
             field,
             Range(
-                datetime.combine(value, time.min.replace(tzinfo=tz.tzutc())),
-                datetime.combine(value, time.max.replace(tzinfo=tz.tzutc()))
-            )
+                datetime.combine(value, time.min.replace(tzinfo=UTC)),
+                datetime.combine(value, time.max.replace(tzinfo=UTC)),
+            ),
         )
     return field == value
 
@@ -71,15 +76,13 @@ def as_expression(field: Field, value) -> Expression:
 def _to_expression(get_field, name: str, value) -> Expression:
     field = get_field(name)
     if field is None:
-        raise UnknownFieldError('Unknown field %r' % name)
+        raise UnknownFieldError(f"Unknown field {name!r}")
 
     return as_expression(field, value)
 
 
-def to_expressions(get_field, **query) -> List[Expression]:
+def to_expressions(get_field, **query) -> list[Expression]:
     """
     Convert a simple query (dict of param names and values) to expression objects.
-    :type get_field: (str) -> Field
-    :type query: dict[str,str|float|datacube.model.Range]
     """
     return [_to_expression(get_field, name, value) for name, value in query.items()]

@@ -3,32 +3,31 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from typing import cast
-from odc.geo.geom import CRS, Geometry, box
-from datacube.model import Range, QueryDict, QueryField
+
+from odc.geo.crs import CRS
+from odc.geo.geom import Geometry, box
+
+from datacube.model import QueryDict, QueryField, Range
 from datacube.utils.documents import JsonDict
 
 H_SPATIAL_KEYS = ("lon", "longitude", "x")
 V_SPATIAL_KEYS = ("lat", "latitude", "y")
-COORDS_SPATIAL_KEYS = H_SPATIAL_KEYS + V_SPATIAL_KEYS
+COORDS_SPATIAL_KEYS: tuple[str, ...] = H_SPATIAL_KEYS + V_SPATIAL_KEYS
 
 CRS_SPATIAL_KEYS = ("crs", "coordinate_reference_system")
 
 # All of the above
-NON_GEOPOLYGON_SPATIAL_KEYS = COORDS_SPATIAL_KEYS + CRS_SPATIAL_KEYS
+NON_GEOPOLYGON_SPATIAL_KEYS: tuple[str, ...] = COORDS_SPATIAL_KEYS + CRS_SPATIAL_KEYS
 
 # All of the above plus geopolygon
-SPATIAL_KEYS = NON_GEOPOLYGON_SPATIAL_KEYS + ("geopolygon",)
+SPATIAL_KEYS: tuple[str, ...] = NON_GEOPOLYGON_SPATIAL_KEYS + ("geopolygon",)
 
 
 def strip_all_spatial_fields_from_query(q: QueryDict) -> QueryDict:
-    return {
-        k: v
-        for k, v in q.items()
-        if k not in SPATIAL_KEYS
-    }
+    return {k: v for k, v in q.items() if k not in SPATIAL_KEYS}
 
 
-def extract_geom_from_query(**q: QueryField | tuple) -> Geometry | None:
+def extract_geom_from_query(**q: QueryField) -> Geometry | None:
     """
     Utility method for index drivers supporting spatial indexes.
 
@@ -38,21 +37,21 @@ def extract_geom_from_query(**q: QueryField | tuple) -> Geometry | None:
     :return: A polygon or multipolygon type Geometry.  None if no spatial query clauses.
     """
     geom: Geometry | None = None
-    if q.get("geopolygon") is not None:
+    polygon_candidate = q.get("geopolygon")
+    if polygon_candidate is not None:
         # New geometry-style spatial query
-        geom_term = cast(JsonDict | Geometry, q.get("geopolygon"))
+        geom_term = cast(JsonDict | Geometry, polygon_candidate)
         try:
             geom = Geometry(geom_term)
         except ValueError:
             # Can't convert to single Geometry. If it is an iterable of Geometries, return the union
             for term in geom_term:
-                if geom is None:
-                    geom = Geometry(term)
-                else:
-                    geom = geom.union(Geometry(term))
+                geom = Geometry(term) if geom is None else geom.union(Geometry(term))
         for spatial_key in NON_GEOPOLYGON_SPATIAL_KEYS:
             if spatial_key in q:
-                raise ValueError(f"Cannot specify spatial key {spatial_key} AND geopolygon in the same query")
+                raise ValueError(
+                    f"Cannot specify spatial key {spatial_key} AND geopolygon in the same query"
+                )
         assert geom and geom.crs
     else:
         # Old lat/lon--style spatial query (or no spatial query)
@@ -64,13 +63,15 @@ def extract_geom_from_query(**q: QueryField | tuple) -> Geometry | None:
             if coord in q:
                 if lon is not None:
                     raise ValueError(
-                        "Multiple horizontal coordinate ranges supplied: use only one of x, lon, longitude")
+                        "Multiple horizontal coordinate ranges supplied: use only one of x, lon, longitude"
+                    )
                 lon = q.get(coord)
         for coord in V_SPATIAL_KEYS:
             if coord in q:
                 if lat is not None:
                     raise ValueError(
-                        "Multiple vertical coordinate ranges supplied: use only one of y, lat, latitude")
+                        "Multiple vertical coordinate ranges supplied: use only one of y, lat, latitude"
+                    )
                 lat = q.get(coord)
         crs_in = None
         for coord in CRS_SPATIAL_KEYS:
@@ -78,10 +79,7 @@ def extract_geom_from_query(**q: QueryField | tuple) -> Geometry | None:
                 if crs_in is not None:
                     raise ValueError("CRS is supplied twice")
                 crs_in = q.get(coord)
-        if crs_in is None:
-            crs = CRS("epsg:4326")
-        else:
-            crs = CRS(crs_in)
+        crs = CRS("epsg:4326") if crs_in is None else CRS(crs_in)
         if lat is None and lon is None:
             # No spatial query
             return None
@@ -91,7 +89,7 @@ def extract_geom_from_query(**q: QueryField | tuple) -> Geometry | None:
         delta = 0.000001
         if lat is None:
             lat = Range(begin=-90, end=90)
-        elif isinstance(lat, (int, float)):
+        elif isinstance(lat, int | float):
             lat = Range(lat - delta, lat + delta)
         else:
             # Treat as tuple
@@ -100,7 +98,7 @@ def extract_geom_from_query(**q: QueryField | tuple) -> Geometry | None:
 
         if lon is None:
             lon = Range(begin=-180, end=180)
-        elif isinstance(lon, (int, float)):
+        elif isinstance(lon, int | float):
             lon = Range(lon - delta, lon + delta)
         else:
             # Treat as tuple

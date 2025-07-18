@@ -8,16 +8,16 @@ Serialise function used in YAML output
 
 import math
 from collections import OrderedDict
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
 import numpy
 import yaml
-
-from datacube.utils.documents import transform_object_tree
-from datacube.model._base import Range
 from odc.geo.crs import CRS
+
+from datacube.model._base import Range
+from datacube.utils.documents import transform_object_tree
 
 
 class SafeDatacubeDumper(yaml.SafeDumper):  # pylint: disable=too-many-ancestors
@@ -25,10 +25,14 @@ class SafeDatacubeDumper(yaml.SafeDumper):  # pylint: disable=too-many-ancestors
 
 
 def _dict_representer(dumper: SafeDatacubeDumper, data: OrderedDict) -> yaml.Node:
-    return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+    return dumper.represent_mapping(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items()
+    )
 
 
-def _reduced_accuracy_decimal_representer(dumper: SafeDatacubeDumper, data: Decimal) -> yaml.Node:
+def _reduced_accuracy_decimal_representer(
+    dumper: SafeDatacubeDumper, data: Decimal
+) -> yaml.Node:
     return dumper.represent_float(float(data))
 
 
@@ -43,8 +47,8 @@ def _range_representer(dumper: SafeDatacubeDumper, data: Range) -> yaml.Node:
 
     return dumper.represent_mapping(
         yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        (('begin', begin), ('end', end)),
-        flow_style=True
+        (("begin", begin), ("end", end)),
+        flow_style=True,
     )
 
 
@@ -58,7 +62,6 @@ def jsonify_document(doc):
     Make a document ready for serialisation as JSON.
 
     Returns the new document, leaving the original unmodified.
-
     """
 
     def fixup_value(v):
@@ -68,11 +71,11 @@ def jsonify_document(doc):
             if math.isnan(v):
                 return "NaN"
             return "-Infinity" if v < 0 else "Infinity"
-        if isinstance(v, (datetime, date)):
+        if isinstance(v, datetime | date):
             return v.isoformat()
         if isinstance(v, numpy.dtype):
             return v.name
-        if isinstance(v, (UUID, Decimal, CRS)):
+        if isinstance(v, UUID | Decimal | CRS):
             return str(v)
         return v
 

@@ -4,11 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 import importlib
 import logging
+from collections.abc import Mapping
 from contextlib import contextmanager
 
-import toolz  # type: ignore[import]
+import toolz
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def import_function(func_ref):
@@ -23,13 +24,15 @@ def import_function(func_ref):
     :param func_ref:
     :return: function
     """
-    module_name, _, func_name = func_ref.rpartition('.')
+    module_name, _, func_name = func_ref.rpartition(".")
     module = importlib.import_module(module_name)
     return getattr(module, func_name)
 
 
 @contextmanager
-def ignore_exceptions_if(ignore_errors, errors=None):
+def ignore_exceptions_if(
+    ignore_errors, errors: tuple[type[Exception], ...] | None = None
+):
     """Ignore Exceptions raised within this block if ignore_errors is True"""
     if errors is None:
         errors = (Exception,)
@@ -38,7 +41,7 @@ def ignore_exceptions_if(ignore_errors, errors=None):
         try:
             yield
         except errors as e:
-            _LOG.warning('Ignoring Exception: %s', e)
+            _LOG.warning("Ignoring Exception: %s", e)
     else:
         yield
 
@@ -52,8 +55,8 @@ class cached_property:  # pylint: disable=invalid-name  # noqa: N801
     Source: https://github.com/bottlepy/bottle/commit/fa7733e075da0d790d809aa3d2f53071897e6f76
     """
 
-    def __init__(self, func):
-        self.__doc__ = getattr(func, '__doc__')
+    def __init__(self, func) -> None:
+        self.__doc__ = func.__doc__
         self.func = func
 
     def __get__(self, obj, cls):
@@ -63,14 +66,13 @@ class cached_property:  # pylint: disable=invalid-name  # noqa: N801
         return value
 
 
-def sorted_items(d, key=None, reverse=False):
+def sorted_items(d: Mapping | None, key=None, reverse: bool = False) -> list:
     """Given a dictionary `d` return items: (k1, v1), (k2, v2)... sorted in
     ascending order according to key.
 
-    :param dict d: dictionary
+    :param d: dictionary
     :param key: optional function remapping key
-    :param bool reverse: If True return in descending order instead of default ascending
-
+    :param reverse: If True return in descending order instead of default ascending
     """
     if d is None:
         return []

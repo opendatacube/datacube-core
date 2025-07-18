@@ -5,37 +5,39 @@
 """
 Common functions for click-based cli scripts.
 """
+
+import copy
 import functools
 import logging
 import os
-import copy
 import sys
+from collections.abc import Mapping
 from textwrap import dedent
+from typing import Literal
 
 import click
+from lark.exceptions import UnexpectedEOF
+from sqlalchemy.exc import OperationalError, ProgrammingError
+from typing_extensions import override
 
 from datacube import __version__
 from datacube.api.core import Datacube
-from datacube.cfg import ODCConfig, ODCEnvironment, ConfigException
-
+from datacube.cfg import ConfigException, ODCConfig, ODCEnvironment
 from datacube.index import index_connect
-
 from datacube.ui.expression import parse_expressions
-from sqlalchemy.exc import OperationalError, ProgrammingError
 
-_LOG_FORMAT_STRING = '%(asctime)s %(process)d %(name)s %(levelname)s %(message)s'
-CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
-_LOG = logging.getLogger(__name__)
+_LOG_FORMAT_STRING = "%(asctime)s %(process)d %(name)s %(levelname)s %(message)s"
+CLICK_SETTINGS: dict[str, list[str]] = {"help_option_names": ["-h", "--help"]}
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def _print_version(ctx, param, value):
+def _print_version(ctx, param, value) -> None:
     if not value or ctx.resilient_parsing:
         return
 
     click.echo(
-        '{prog}, version {version}'.format(
-            prog='Open Data Cube core',
-            version=__version__
+        "{prog}, version {version}".format(
+            prog="Open Data Cube core", version=__version__
         )
     )
     ctx.exit()
@@ -57,38 +59,42 @@ def compose(*functions):
 
 
 class ColorFormatter(logging.Formatter):
-    colors = {
-        'info': dict(fg='white'),
-        'error': dict(fg='red'),
-        'exception': dict(fg='red'),
-        'critical': dict(fg='red'),
-        'debug': dict(fg='blue'),
-        'warning': dict(fg='yellow')
+    colors: Mapping[str, Mapping[Literal["fg"], str]] = {
+        "info": {"fg": "white"},
+        "error": {"fg": "red"},
+        "exception": {"fg": "red"},
+        "critical": {"fg": "red"},
+        "debug": {"fg": "blue"},
+        "warning": {"fg": "yellow"},
     }
 
+    @override
     def format(self, record):
         if not record.exc_info:
             record = copy.copy(record)
-            record.levelname = click.style(record.levelname, **self.colors.get(record.levelname.lower(), {}))
+            record.levelname = click.style(
+                record.levelname, **self.colors.get(record.levelname.lower(), {})
+            )
         return logging.Formatter.format(self, record)
 
 
 class ClickHandler(logging.Handler):
-    def emit(self, record):
+    @override
+    def emit(self, record: logging.LogRecord) -> None:
         try:
             msg = self.format(record)
             click.echo(msg, err=True)
-        except:   # pylint: disable=bare-except  # noqa: E722
+        except:  # pylint: disable=bare-except  # noqa: E722
             self.handleError(record)
 
 
-def remove_handlers_of_type(logger, handler_type):
+def remove_handlers_of_type(logger, handler_type) -> None:
     for handler in logger.handlers:
         if isinstance(handler, handler_type):
             logger.removeHandler(handler)
 
 
-def _init_logging(ctx, param, value):
+def _init_logging(ctx, param, value) -> None:
     # When running in tests, we don't want to keep adding log handlers. It creates duplicate log messages up the wahoo.
     remove_handlers_of_type(logging.root, ClickHandler)
     handler = ClickHandler()
@@ -97,20 +103,22 @@ def _init_logging(ctx, param, value):
 
     logging_level = logging.WARN - 10 * value
     logging.root.setLevel(logging_level)
-    logging.getLogger('datacube').setLevel(logging_level)
+    logging.getLogger("datacube").setLevel(logging_level)
 
     if logging_level <= logging.INFO:
-        logging.getLogger('rasterio').setLevel(logging.INFO)
-
-    logging.getLogger('datacube').info('Running datacube command: %s', ' '.join(sys.argv))
+        logging.getLogger("rasterio").setLevel(logging.INFO)
+        logging.getLogger("alembic").setLevel(logging.WARNING)
+    logging.getLogger("datacube").info(
+        "Running datacube command: %s", " ".join(sys.argv)
+    )
 
     if not ctx.obj:
         ctx.obj = {}
 
-    ctx.obj['verbosity'] = value
+    ctx.obj["verbosity"] = value
 
 
-def _add_logfile(ctx, param, value):
+def _add_logfile(ctx, param, value) -> None:
     formatter = logging.Formatter(_LOG_FORMAT_STRING)
     for logfile in value:
         handler = logging.FileHandler(logfile)
@@ -118,62 +126,103 @@ def _add_logfile(ctx, param, value):
         logging.root.addHandler(handler)
 
 
-def _log_queries(ctx, param, value):
+def _log_queries(ctx, param, value) -> None:
     if value:
-        logging.getLogger('sqlalchemy.engine').setLevel('INFO')
+        logging.getLogger("sqlalchemy.engine").setLevel("INFO")
 
 
 def _set_config(ctx, param, value):
     if value:
         if not any(os.path.exists(p) for p in value):
-            raise ValueError('No specified config paths exist: {}'.format(value))
+            raise ValueError(f"No specified config paths exist: {value}")
 
         if not ctx.obj:
             ctx.obj = {}
         paths = value
-        ctx.obj['config_files'] = paths
+        ctx.obj["config_files"] = paths
     return value
 
 
-def _set_environment(ctx, param, value):
+def _set_environment(ctx, param, value) -> None:
     if not ctx.obj:
         ctx.obj = {}
-    ctx.obj['config_environment'] = value
+    ctx.obj["config_environment"] = value
 
 
-def _set_config_text(ctx, param, value):
+def _set_config_text(ctx, param, value) -> None:
     if not ctx.obj:
         ctx.obj = {}
-    ctx.obj['config_text'] = value
+    ctx.obj["config_text"] = value
 
 
 #: pylint: disable=invalid-name
-version_option = click.option('--version', is_flag=True, callback=_print_version,
-                              expose_value=False, is_eager=True,
-                              help="Display the open data cube version number and exit.")
+version_option = click.option(
+    "--version",
+    is_flag=True,
+    callback=_print_version,
+    expose_value=False,
+    is_eager=True,
+    help="Display the open data cube version number and exit.",
+)
 #: pylint: disable=invalid-name
-verbose_option = click.option('--verbose', '-v', count=True, callback=_init_logging,
-                              is_eager=True, expose_value=False, help="Use multiple times for more verbosity")
+verbose_option = click.option(
+    "--verbose",
+    "-v",
+    count=True,
+    callback=_init_logging,
+    is_eager=True,
+    expose_value=False,
+    help="Use multiple times for more verbosity",
+)
 #: pylint: disable=invalid-name
-logfile_option = click.option('--log-file', multiple=True, callback=_add_logfile,
-                              is_eager=True, expose_value=False, help="Specify log file")
+logfile_option = click.option(
+    "--log-file",
+    multiple=True,
+    callback=_add_logfile,
+    is_eager=True,
+    expose_value=False,
+    help="Specify log file",
+)
 #: pylint: disable=invalid-name
-config_option = click.option('--config', '--config-file', '-C',
-                             multiple=True, default=[], callback=_set_config, expose_value=False,
-                             help="A path to a possible configuration path. Multiple can be provided, but only "
-                                  "the first that can be read will be used.")
+config_option = click.option(
+    "--config",
+    "--config-file",
+    "-C",
+    multiple=True,
+    default=[],
+    callback=_set_config,
+    expose_value=False,
+    help="A path to a possible configuration path. Multiple can be provided, but only "
+    "the first that can be read will be used.",
+)
 
 #: pylint: disable=invalid-name
-raw_config_option = click.option('--raw-config', '--config-text', '-R',
-                                 default='', callback=_set_config_text, expose_value=False,
-                                 help="Passing in the raw contents of the configuration file to use as a string. "
-                                      "May be in JSON, YAML or INI format.  Cannot be used with the -C/--config option")
+raw_config_option = click.option(
+    "--raw-config",
+    "--config-text",
+    "-R",
+    default="",
+    callback=_set_config_text,
+    expose_value=False,
+    help="Passing in the raw contents of the configuration file to use as a string. "
+    "May be in JSON, YAML or INI format.  Cannot be used with the -C/--config option",
+)
 #: pylint: disable=invalid-name
-environment_option = click.option('--env', '-E', callback=_set_environment, expose_value=False,
-                                  help="The ODC environment to use.  Defaults to 'default'.")
+environment_option = click.option(
+    "--env",
+    "-E",
+    callback=_set_environment,
+    expose_value=False,
+    help="The ODC environment to use.  Defaults to 'default'.",
+)
 #: pylint: disable=invalid-name
-log_queries_option = click.option('--log-queries', is_flag=True, callback=_log_queries,
-                                  expose_value=False, help="Print database queries.")
+log_queries_option = click.option(
+    "--log-queries",
+    is_flag=True,
+    callback=_log_queries,
+    expose_value=False,
+    help="Print database queries.",
+)
 
 # This is a function, so it's valid to be lowercase.
 #: pylint: disable=invalid-name
@@ -184,26 +233,26 @@ global_cli_options = compose(
     environment_option,
     config_option,
     raw_config_option,
-    log_queries_option
+    log_queries_option,
 )
 
 
 @click.group(help="Data Cube command-line interface", context_settings=CLICK_SETTINGS)
 @global_cli_options
-def cli():
+def cli() -> None:
     pass
 
 
 def pass_config(f):
-    """Get an ODCEnvironment object as the first argument. """
+    """Get an ODCEnvironment object as the first argument."""
 
     def new_func(*args, **kwargs):
         obj = click.get_current_context().obj
 
         # Config options from context
-        text = obj.get('config_text')
-        paths = obj.get('config_files')
-        specific_environment = obj.get('config_environment')
+        text = obj.get("config_text")
+        paths = obj.get("config_files")
+        specific_environment = obj.get("config_environment")
 
         if text and paths:
             raise click.ClickException(
@@ -214,7 +263,7 @@ def pass_config(f):
             cfg = ODCConfig(paths=paths, text=text)
             cfg_env = cfg[specific_environment]
         except ConfigException as e:
-            raise click.ClickException(f"Configuration Error: {e}")
+            raise click.ClickException(f"Configuration Error: {e}") from None
 
         _LOG.debug("Loaded datacube config: %r", cfg_env._name)
         return f(cfg_env, *args, **kwargs)
@@ -222,12 +271,12 @@ def pass_config(f):
     return functools.update_wrapper(new_func, f)
 
 
-def pass_index(app_name=None, expect_initialised=True):
+def pass_index(app_name: str | None = None, expect_initialised: bool = True):
     """Get a connection to the index as the first argument.
 
-    :param str app_name:
+    :param app_name:
         A short name of the application for logging purposes.
-    :param bool expect_initialised:
+    :param expect_initialised:
         Whether to connect immediately on startup. Useful to catch connection config issues immediately,
         but if you're planning to fork before any usage (such as in the case of some web servers),
         you may not want this. For more information on thread/process usage, see datacube.index.Index
@@ -235,17 +284,17 @@ def pass_index(app_name=None, expect_initialised=True):
 
     def decorate(f):
         @pass_config
-        def with_index(config_env: ODCEnvironment,
-                       *args,
-                       **kwargs):
+        def with_index(config_env: ODCEnvironment, *args, **kwargs):
             command_path = click.get_current_context().command_path
             try:
-                index = index_connect(config_env,
-                                      application_name=app_name or command_path,
-                                      validate_connection=expect_initialised)
+                index = index_connect(
+                    config_env,
+                    application_name=app_name or command_path,
+                    validate_connection=expect_initialised,
+                )
                 _LOG.debug("Connected to datacube index: %s", index)
             except (OperationalError, ProgrammingError, ConfigException) as e:
-                handle_exception('Error Connecting to database: %s', e)
+                handle_exception("Error Connecting to database: %s", e)
                 return
 
             try:
@@ -259,13 +308,13 @@ def pass_index(app_name=None, expect_initialised=True):
     return decorate
 
 
-def pass_datacube(app_name=None, expect_initialised=True):
+def pass_datacube(app_name: str | None = None, expect_initialised: bool = True):
     """
     Get a DataCube from the current or default local settings.
 
-    :param str app_name:
+    :param app_name:
         A short name of the application for logging purposes.
-    :param bool expect_initialised:
+    :param expect_initialised:
         Whether to connect immediately on startup. Useful to catch connection config issues immediately,
         but if you're planning to fork before any usage (such as in the case of some web servers),
         you may not want this. For More information on thread/process usage, see datacube.index.Index
@@ -281,12 +330,12 @@ def pass_datacube(app_name=None, expect_initialised=True):
     return decorate
 
 
-def parse_endpoint(value):
-    ip, port = tuple(value.split(':'))
+def parse_endpoint(value) -> tuple[str, int]:
+    ip, port = tuple(value.split(":"))
     return ip, int(port)
 
 
-def handle_exception(msg, e):
+def handle_exception(msg, e) -> None:
     """
     Exit following an exception in a CLI app
 
@@ -300,13 +349,13 @@ def handle_exception(msg, e):
     :param msg: Message to User with optional %s
     """
     ctx = click.get_current_context()
-    if ctx.obj['verbosity'] >= 1:
+    if ctx.obj["verbosity"] >= 1:
         raise e
     else:
-        if '%s' in msg:
-            click.echo(msg % e)
+        if "%s" in msg:
+            click.echo(msg % e, err=True)
         else:
-            click.echo(msg)
+            click.echo(msg, err=True)
         ctx.exit(1)
 
 
@@ -354,18 +403,23 @@ def parsed_search_expressions(f):
     """)
 
     def my_parse(ctx, param, value):
-        return parse_expressions(*list(value))
+        try:
+            return parse_expressions(*list(value))
+        except UnexpectedEOF as e:
+            handle_exception(
+                "Invalid expression. Please refer to command documentation.", e
+            )
 
-    f = click.argument('expressions', callback=my_parse, nargs=-1)(f)
+    f = click.argument("expressions", callback=my_parse, nargs=-1)(f)
     return f
 
 
-def print_help_msg(command):
+def print_help_msg(command) -> None:
     with click.Context(command) as ctx:
         click.echo(command.get_help(ctx))
 
 
-def exit_on_empty_file(read_files_list):
+def exit_on_empty_file(read_files_list: list) -> None:
     if len(read_files_list) == 0:
-        click.echo("All files are empty, exit")
+        click.echo("All files are empty, exit", err=True)
         sys.exit(1)

@@ -13,3 +13,31 @@ updates:
     directory: "/docker"
     schedule:
       interval: "daily"
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      python-deps:
+        patterns:
+          - "*"
+#        exclude-patterns: # Packages updated almost every day.
+#          - "boto3"
+#          - "boto3-stubs"
+#          - "botocore"
+#          - "botocore-stubs"
+#  - package-ecosystem: "uv"
+#    # Have two jobs with same eco-system/directory by setting target-branch
+#    # for one of them:
+#    # https://github.com/dependabot/dependabot-core/issues/1778#issuecomment-1988140219
+#    target-branch: "develop"
+#    directory: "/"
+#    schedule:
+#      interval: "weekly"
+#    groups:
+#      uv-weekly-deps:
+#        patterns:
+#          - "boto3"
+#          - "boto3-stubs"
+#          - "botocore"
+#          - "botocore-stubs"

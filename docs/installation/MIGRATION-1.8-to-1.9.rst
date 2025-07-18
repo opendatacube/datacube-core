@@ -65,7 +65,7 @@ Major Changes between 1.8.x and 1.9.x
 
    a. Previously multiple config files could be read and merged to generate the final effective configuration file.
       From 1.9.0 only a single config file is ever read at a time
-      (see :ref:`Merging-multiple-config-files`).
+      (see :ref:`Only one`).
 
       Managed instances which have previously allowed
       user customisation by the user creating a minimal config file which was loaded merged on top of a default system
@@ -84,7 +84,7 @@ Major Changes between 1.8.x and 1.9.x
 
       There is now a consistent and systematic approach taken to the interaction between the
       active configuration file and environment variables
-      (see :ref:`4. Generic Environment Variable Overrides`).  Partial backwards compatibility is attempted, but
+      (see :ref:`generic-environment-variables`).  Partial backwards compatibility is attempted, but
       full backwards compatibility is not possible due to the ad hoc nature of the previous implementation.
 
       The new (preferred) environment variable names are of the form ``$ODC_<env_name>_<item_name>``.
@@ -118,7 +118,7 @@ Major Changes between 1.8.x and 1.9.x
    The postgis driver uses Alembic for managing schema migrations, so future changes to the postgis database
    schema will be much easier to roll out than in the past.
 
-   See below for more information about migrating to the :ref:`The New Postgis Index Driver`.
+   See below for more information about migrating to the :ref:`new-postgis-index-driver`.
 
    Note that many other libraries in the ODC ecosystem may not work well with the Postgis driver at first.
 
@@ -139,9 +139,7 @@ Major Changes between 1.8.x and 1.9.x
 
 6. Support for multi-dimensional loading of hyperspectral datasets
 
-   Use of this feature currently requires installing `odc-loader`_.
-
-   If `odc-loader`_ is installed, you may specify `driver='rio'` or `driver='zarr'` when loading to access the new hyperspectral loading and
+   You may specify `driver='rio'` or `driver='zarr'` when loading to access the new hyperspectral loading and
    dask-chunking features.
 
 7. The long-deprecated "ingestion" workflow and "executor" API have both been removed.
@@ -149,7 +147,8 @@ Major Changes between 1.8.x and 1.9.x
 8. Multiple locations per dataset is now deprecated, and is not supported by the ``postgis`` index driver.
 
 .. _`odc-geo`: https://github.com/opendatacube/odc-geo
-.. _`odc-loader`: https://github.com/opendatacube/odc-loader
+
+.. _new-postgis-index-driver:
 
 The New Postgis Index Driver
 ----------------------------
@@ -191,7 +190,7 @@ for EPSG:3577::
 
     datacube -E new spindex create 3577
 
-For more information, see :ref:`Create Spatial Indexes (Postgis Driver Only)`.
+For more information, see :ref:`create-spatial-indexes-postgis-driver-only`.
 
 Migrating (Cloning) Data From a Postgres Index
 ++++++++++++++++++++++++++++++++++++++++++++++

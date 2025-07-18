@@ -5,75 +5,122 @@
 ## SPDX-License-Identifier: Apache-2.0
 ##
 # gdal:ubuntu-small no longer comes with netcdf support compiled into gdal
-FROM ghcr.io/osgeo/gdal:ubuntu-full-3.10.2 AS builder
-FROM ghcr.io/osgeo/gdal:ubuntu-full-3.10.2
+# syntax=docker/dockerfile:1
+FROM ghcr.io/osgeo/gdal:ubuntu-full-3.10.3 AS base
+
+ENV LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy
+
+# Both the builder image and the regular image needs build tools, otherwise "uv sync"
+# will fail.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        git \
+        # For shapely with --no-binary.
+        libgeos-dev \
+        libhdf5-dev \
+        libnetcdf-dev \
+        libudunits2-dev \
+        libproj-dev \
+        # For psycopg2.
+        libpq-dev \
+        python3-dev
+
+FROM base AS builder
+
+ARG UV=https://github.com/astral-sh/uv/releases/download/0.7.21/uv-x86_64-unknown-linux-gnu.tar.gz
+
+ENV UV_COMPILE_BYTECODE=0 \
+    UV_PROJECT_ENVIRONMENT=/app \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PYTHON=python3.12
+
+WORKDIR /build
+
+ADD --checksum=sha256:ca3e8898adfce5fcc891d393a079013fa4bd0d9636cef11aded8a7485bcba312 --chown=root:root --chmod=644 --link $UV uv.tar.gz
+
+RUN tar xf uv.tar.gz -C /usr/local/bin --strip-components=1 --no-same-owner
+
+COPY --link pyproject.toml uv.lock /build/
+
+# Use a separate cache volume for uv on opendatacube projects, so it is
+# not inseparable from pip/poetry/npm/etc. cache stored in /root/.cache.
+RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
+    uv sync --locked --all-extras --group=dev --group=doc  --no-install-project \
+      --no-binary-package fiona \
+      --no-binary-package netcdf4 \
+      --no-binary-package rasterio \
+      --no-binary-package shapely
+
+FROM base
+
+COPY --from=builder --link /usr/local/bin/uv* /usr/local/bin/
+
 ARG V_PG=16
-ARG V_PGIS=16-postgis-3
 
 # Update and install Ubuntu packages
-
-USER root
-RUN apt-get update -y \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-change-held-packages --fix-missing --no-install-recommends \
-        git \
-        libpq-dev libudunits2-dev libproj-dev \
-        libhdf5-dev libnetcdf-dev libgeos-dev libudunits2-dev \
-        python3-dev virtualenv \
-        build-essential \
-        postgresql \
-        redis-server \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+        gosu \
+        graphviz \
+        less \
+        # Required for Sphinx.
+        pandoc \
         postgresql-client-${V_PG} \
-        postgresql-${V_PG} \
-        postgresql-${V_PGIS} \
-        sudo make graphviz \
-        tini \
-    && apt-get clean
+        sudo \
+        vim \
+        tini
+
+# Add login-script for UID/GID-remapping.
+COPY --chown=root:root --link docker/assets/remap-user.sh /usr/local/bin/remap-user.sh
+
+# users and groups.
+RUN usermod -aG sudo ubuntu \
+  && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
+  && mkdir /app /code \
+  && chown ubuntu:ubuntu /app /code
 
 # Build constrained python environment
 
-RUN virtualenv /env
-# Set the locale, this is required for some of the Python packages
-ENV PYENV=/env \
-    GDAL_CONFIG=/usr/bin/gdal-config \
-    LC_ALL=C.UTF-8
+USER ubuntu
 
-# Needed to build cf-units wheels.
-ARG UDUNITS2_XML_PATH=/usr/share/xml/udunits/udunits2-common.xml
+ENV PATH=/app/bin:$PATH
 
-COPY docker/constraints.in /conf/requirements.txt
-COPY docker/constraints.txt docker/nobinary.txt /conf/
+COPY --chown=1000:1000 --link docker/assets/datacube_integration.conf /home/ubuntu/.datacube_integration.conf
 
-
-RUN . /env/bin/activate && python3 -m pip install --upgrade pip setuptools
-RUN . /env/bin/activate && python3 -m pip install -r /conf/requirements.txt \
-                           -c /conf/constraints.txt \
-                           -c /conf/nobinary.txt
+COPY --from=builder --link --chown=1000:1000 /app /app
 
 # Copy datacube-core source code into container and install from source (with addons for tests).
-COPY . /code
+COPY --chown=1000:1000 --link . /code
 
-RUN . /env/bin/activate && python3 -m pip install '/code/[all]' \
-    && python3 -m pip install /code/examples/io_plugin \
-    && python3 -m pip install /code/tests/drivers/fail_drivers
-
-# Copy bootstrap script into image.
-COPY docker/assets/with_bootstrap /usr/local/bin/
-
-# prep db
-RUN  install --owner postgres --group postgres -D -d /var/run/postgresql /srv/postgresql \
-  && sudo -u postgres "$(find /usr/lib/postgresql/ -type f -name initdb)" -D "/srv/postgresql" --auth-host=md5 --encoding=UTF8
-
-# users and groups.
-RUN groupmod ubuntu -n odc  \
-  && usermod ubuntu -l odc \
-  && adduser odc users \
-  && adduser odc sudo \
-  && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
-  && chown -R odc:odc /env \
-  && true
-
-USER root
-VOLUME /code
 WORKDIR /code
 
-ENTRYPOINT ["/bin/tini", "-s", "--", "/usr/local/bin/with_bootstrap"]
+USER root
+
+# Install as root to have the right permissions in cache, but chown result to ubuntu.
+RUN  --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
+    . /app/bin/activate \
+    && export UV_COMPILE_BYTECODE=0 \
+    && export UV_PROJECT_ENVIRONMENT=/app \
+    && export UV_PYTHON_DOWNLOADS=never \
+    && export UV_PYTHON=python3.12 \
+    && uv pip install /code/ \
+    && uv pip install /code/examples/io_plugin \
+    && uv pip install /code/tests/drivers/fail_drivers \
+    && loc=$(uv pip show dcio-example --files | grep Location | awk -F": " '{print $2}') \
+    && chown -R ubuntu:ubuntu "$loc/dcio_example"* "$loc/dc_tests_io"*
+
+ENTRYPOINT ["/usr/local/bin/remap-user.sh"]
+CMD ["/bin/bash", "--login"]

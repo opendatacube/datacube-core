@@ -3,27 +3,36 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from typing import Type
+from collections.abc import Mapping
+from typing import Any
 
 from deprecat import deprecat
+from odc.geo import CRS
+from typing_extensions import override
+
 from datacube.cfg import ODCEnvironment
-from datacube.index.null._datasets import DatasetResource  # type: ignore
+from datacube.index.abstract import (
+    AbstractIndex,
+    AbstractIndexDriver,
+    NoLineageResource,
+    UnhandledTransaction,
+)
+from datacube.index.null._datasets import DatasetResource
 from datacube.index.null._metadata_types import MetadataTypeResource
 from datacube.index.null._products import ProductResource
 from datacube.index.null._users import UserResource
-from datacube.index.abstract import AbstractIndex, AbstractIndexDriver, UnhandledTransaction, NoLineageResource
-from datacube.model import MetadataType
-from datacube.model.fields import get_dataset_fields
 from datacube.migration import ODC2DeprecationWarning
-from odc.geo import CRS
+from datacube.model import Field, MetadataType
+from datacube.model.fields import get_dataset_fields
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class Index(AbstractIndex):
     """
     (Sub-)Minimal (non-)implementation of the Index API.
     """
+
     #   Metadata type support flags
     supports_legacy = True
     supports_eo3 = True
@@ -41,85 +50,112 @@ class Index(AbstractIndex):
         self._datasets = DatasetResource(self)
 
     @property
+    @override
     def name(self) -> str:
         return "null_index"
 
     @property
+    @override
     def environment(self) -> ODCEnvironment:
         return self._env
 
     @property
+    @override
     def users(self) -> UserResource:
         return self._users
 
     @property
+    @override
     def metadata_types(self) -> MetadataTypeResource:
         return self._metadata_types
 
     @property
+    @override
     def products(self) -> ProductResource:
         return self._products
 
     @property
+    @override
     def lineage(self) -> NoLineageResource:
         return self._lineage
 
     @property
+    @override
     def datasets(self) -> DatasetResource:
         return self._datasets
 
     @property
+    @override
     def url(self) -> str:
         return "null"
 
     @property
+    @override
     def index_id(self) -> str:
         return "null"
 
+    @override
     def transaction(self) -> UnhandledTransaction:
         return UnhandledTransaction(self.index_id)
 
     @classmethod
-    def from_config(cls, config_env, application_name=None, validate_connection=True):
-        return cls(config_env)
+    @override
+    def from_config(
+        cls,
+        cfg_env: ODCEnvironment,
+        application_name: str | None = None,
+        validate_connection: bool = True,
+    ) -> "Index":
+        return cls(cfg_env)
 
     @classmethod
-    def get_dataset_fields(cls, doc):
+    @override
+    def get_dataset_fields(cls, doc: Mapping[str, Any]) -> dict[str, Field]:
         return get_dataset_fields(doc)
 
-    def init_db(self, with_default_types=True, with_permissions=True):
+    @override
+    def init_db(
+        self, with_default_types: bool = True, with_permissions: bool = True
+    ) -> bool:
         return True
 
-    def close(self):
+    @override
+    def close(self) -> None:
         pass
 
+    @override
     def create_spatial_index(self, crs: CRS) -> bool:
         _LOG.warning("null driver does not support spatio-temporal indexes")
         return False
 
-    def __repr__(self):
+    @override
+    def __repr__(self) -> str:
         return "Index<null>"
 
 
 class NullIndexDriver(AbstractIndexDriver):
     @classmethod
-    def index_class(cls) -> Type[AbstractIndex]:
+    @override
+    def index_class(cls) -> type[AbstractIndex]:
         return Index
 
     @staticmethod
+    @override
     @deprecat(
         reason="The 'metadata_type_from_doc' static method has been deprecated. "
-               "Please use the 'index.metadata_type.from_doc()' instead.",
-        version='1.9.0',
-        category=ODC2DeprecationWarning)
+        "Please use the 'index.metadata_type.from_doc()' instead.",
+        version="1.9.0",
+        category=ODC2DeprecationWarning,
+    )
     def metadata_type_from_doc(definition: dict) -> MetadataType:
         """
         :param definition:
         """
         MetadataType.validate(definition)  # type: ignore
-        return MetadataType(definition,
-                            dataset_search_fields=Index.get_dataset_fields(definition))
+        return MetadataType(
+            definition, dataset_search_fields=Index.get_dataset_fields(definition)
+        )
 
 
-def index_driver_init():
+def index_driver_init() -> NullIndexDriver:
     return NullIndexDriver()

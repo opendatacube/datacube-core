@@ -1,6 +1,238 @@
-# pyproject.toml
+[project]
+name = 'datacube'
+dynamic = ['version']
+requires-python = ">=3.10"
+readme = "README.rst"
+license = "Apache-2.0"
+description = "An analysis environment for satellite and other earth observation data"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX",
+    "Operating System :: POSIX :: BSD",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = [
+    'affine',
+    'alembic',
+    'antimeridian',
+    'attrs>=18.1',
+    'cachetools',
+    'click>=8',
+    'cloudpickle>=0.4',
+    'dask[array]',
+    'deprecat',
+    'distributed',
+    'GeoAlchemy2>=0.17.0',
+    'jsonschema>=4.18',  # New reference resolution API
+    'lark',
+    'numpy>=1.26.0',
+    'odc-geo>=0.4.8',
+    'odc-loader<=0.5.1',  # Raster metadata API changes in 0.6.0
+    'odc-stac>=0.4.0',
+    'packaging',
+    'pandas',
+    'pyproj>=2.5',
+    'python-dateutil',
+    'pyyaml',
+    'rasterio>=1.3.11',  # Deleted Numpy version in 1.3.10
+    'ruamel.yaml',
+    'shapely>=2.0',
+    'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.
+    'toolz',
+    'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
+]
+
 [build-system]
-requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
+requires = ["setuptools>=69", "setuptools_scm[toml]>=3.4"]
+# v61 Add support for pyproject.toml, and include-package-data defaults to try when using pyproject.toml
+# v69 includes py.typed files by default
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+Homepage = "https://opendatacube.org/"
+Documentation = "https://datacube-core.readthedocs.io/"
+Source = "https://github.com/opendatacube/datacube-core/"
+Issues = "https://github.com/opendatacube/datacube-core/issues"
+Chat = "https://discord.com/invite/4hhBQVas5U"
+
+[project.optional-dependencies]
+performance = ['ciso8601', 'bottleneck']
+distributed = ['distributed', 'dask[distributed]']
+s3 = ['boto3', 'botocore']
+netcdf = ['netcdf4']
+postgres = ['psycopg2']
+
+[dependency-groups]
+dev = [
+    # Test requirements
+    'click>=8.2', # Only the tests need >=8.2, everything else works with older click.
+    'hypothesis',
+    'moto>=5.0',
+    'netcdf4',
+    'psycopg2',
+    'pytest',
+    'pytest-cov',
+    'pytest-httpserver',
+    # Linting tools
+    'pylint',
+    'ruff',
+    # Types and type checking
+    "boto3-stubs",
+    "botocore-stubs",
+    "mypy",
+    "pandas-stubs",
+    "types-affine",
+    "types-cachetools",
+    "types-jsonschema",
+    "types-psutil",
+    "types-python-dateutil",
+    "types-PyYAML",
+    "types-setuptools",
+]
+doc = [
+    'autodocsumm',
+    'beautifulsoup4',
+    'ipython',
+    'nbsphinx',
+    'pydata-sphinx-theme',
+    'recommonmark',
+    'Sphinx',
+    'sphinx_autodoc_typehints',  # Propagate mypy info into docs
+    'sphinx-click',
+    'sphinx-design',
+    'sphinx-tabs<3.4.7', # No direct dependency, temporary workaround for Dependabot.
+    'sphinx-toolbox',
+]
+
+[project.scripts]
+datacube = 'datacube.scripts.cli_app:cli'
+datacube-search = 'datacube.scripts.search_tool:cli'
+datacube-worker = 'datacube.execution.worker:main'
+
+[project.entry-points."datacube.plugins.io.read"]
+netcdf = 'datacube.drivers.netcdf.driver:reader_driver_init'
+
+[project.entry-points.'datacube.plugins.io.write']
+netcdf = 'datacube.drivers.netcdf.driver:writer_driver_init'
+
+[project.entry-points."datacube.plugins.index"]
+postgres = 'datacube.index.postgres.index:index_driver_init'
+null = 'datacube.index.null.index:index_driver_init'
+memory = 'datacube.index.memory.index:index_driver_init'
+postgis = 'datacube.index.postgis.index:index_driver_init'
+
+[tool.coverage.run]
+branch = false
+omit = [
+    "datacube/_version.py",
+    "datacube/drivers/postgis/alembic/versions/*",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    # From coverage manual (https://coverage.readthedocs.io/en/latest/excluding.html).
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+
+    # OUR EXCEPTIONS:
+    "except ImportError:",
+    "pytest.fail\\(", # Parameter checks in pytest.
+    "raise TypeError\\(", # "Impossible" errors.
+]
+
+[tool.pytest.ini_options]
+addopts = "--doctest-modules"
+testpaths = ["datacube", "tests", "integration_tests"]
+norecursedirs = [".*", "build", "dist", ".git", "tmp*", "docs", ".jj"]
+filterwarnings = [
+    "ignore::FutureWarning",
+    "ignore:datetime.datetime.utcnow*:DeprecationWarning:botocore.*",
+    "ignore:.*numpy.ndarray size changed.*:"
+]
+
+[tool.ruff]
+extend-exclude = ["datacube/drivers/postgis/alembic/versions"]
+
+[tool.ruff.lint]
+select = [
+    "A",  # Don't shadow built-ins
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "D419", # No empty doc strings
+    "E",  # pycodestyle errors
+    "EXE", # flake8-executable
+    "I",  # isort
+    "N",  # pep8-naming
+    "RUF", # Ruff-specific rules
+    "SIM", # flake8-simplify
+    "UP", # pyupgrade
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "T10", # flake8-debugger
+]
+ignore = [
+    # FIXME: re-enable these rules.
+    "B008",
+    "B022",
+    "B023",
+    "B028",
+    "B905",
+    "RUF005",
+    "RUF012",
+    "SIM115",
+]
+
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = [
+    "A", "B", "H", "L", "M", "N", "NX", "NY", "R", "S",
+    "T", "W", "WS", "X", "XX", "XY", "YY", "Y", "Z",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Generated file, exclude from linting.
+"datacube/_version.py" = ["I", "UP"]
+# SQLAlchemy has overloaded ==, so use that (or is_) to compare with None.
+"datacube/drivers/postgis/_api.py" = ["E711"]
+"datacube/drivers/postgis/_schema.py" = ["E711"]
+"datacube/drivers/postgres/_api.py" = ["E711"]
+"datacube/drivers/postgres/_schema.py" = ["E711"]
+"datacube/utils/cog.py" = ["SIM117"] # Fixed in separate PR.
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120
+
+[tool.setuptools.packages.find]
+exclude = ['integration_tests', 'tests', 'examples', 'docs']
+include = ['datacube*']
 
 [tool.setuptools_scm]
-write_to = "datacube/_version.py"
+write_to = 'datacube/_version.py'
+fallback_version = "1.9.6.dev0"
+
+[tool.mypy]
+python_version = '3.10'
+allow_redefinition = true
+enable_error_code = ['explicit-override']
+ignore_missing_imports = true
+warn_redundant_casts = true
+warn_unused_ignores = true

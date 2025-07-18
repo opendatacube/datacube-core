@@ -6,18 +6,20 @@
 Geometric operations on GeoBox class
 """
 
-from typing import Dict, Optional, Tuple, Iterable
 import itertools
 import math
-from affine import Affine
+from collections.abc import Iterable
+from typing import TypeAlias
 
-from . import Geometry, GeoBox, BoundingBox
-from .tools import align_up
+from affine import Affine
 from odc.geo.math import clamp
 
+from . import BoundingBox, GeoBox, Geometry
+from .tools import align_up
+
 # pylint: disable=invalid-name
-MaybeInt = Optional[int]
-MaybeFloat = Optional[float]
+MaybeInt: TypeAlias = int | None
+MaybeFloat: TypeAlias = float | None
 
 
 def flipy(gbox: GeoBox) -> GeoBox:
@@ -88,7 +90,7 @@ def zoom_out(gbox: GeoBox, factor: float) -> GeoBox:
     return GeoBox(W, H, A, gbox.crs)
 
 
-def zoom_to(gbox: GeoBox, shape: Tuple[int, int]) -> GeoBox:
+def zoom_to(gbox: GeoBox, shape: tuple[int, int]) -> GeoBox:
     """
     :returns: GeoBox covering the same region but with different number of pixels and therefore resolution.
     """
@@ -143,13 +145,13 @@ class GeoboxTiles:
     :param tile_shape: Shape of sub-tiles in pixels (rows, cols)
     """
 
-    def __init__(self, box: GeoBox, tile_shape: Tuple[int, int]):
+    def __init__(self, box: GeoBox, tile_shape: tuple[int, int]) -> None:
         self._gbox = box
         self._tile_shape = tile_shape
         self._shape = tuple(
             math.ceil(float(N) / n) for N, n in zip(box.shape, tile_shape)
         )
-        self._cache: Dict[Tuple[int, int], GeoBox] = {}
+        self._cache: dict[tuple[int, int], GeoBox] = {}
 
     @property
     def base(self) -> GeoBox:
@@ -165,7 +167,7 @@ class GeoboxTiles:
         """
         return self._shape
 
-    def _idx_to_slice(self, idx: Tuple[int, int]) -> Tuple[slice, slice]:
+    def _idx_to_slice(self, idx: tuple[int, int]) -> tuple[slice, slice]:
         def _slice(i, N, n) -> slice:
             _in = i * n
             if 0 <= _in < N:
@@ -176,9 +178,9 @@ class GeoboxTiles:
         ir, ic = (
             _slice(i, N, n) for i, N, n in zip(idx, self._gbox.shape, self._tile_shape)
         )
-        return (ir, ic)
+        return ir, ic
 
-    def chunk_shape(self, idx: Tuple[int, int]) -> Tuple[int, int]:
+    def chunk_shape(self, idx: tuple[int, int]) -> tuple[int, int]:
         """
         Chunk shape for a given chunk index.
 
@@ -196,9 +198,9 @@ class GeoboxTiles:
                 raise IndexError("Index ({},{}) is out of range".format(*idx))
 
         n1, n2 = map(_sz, idx, self._shape, self._tile_shape, self._gbox.shape)
-        return (n1, n2)
+        return n1, n2
 
-    def __getitem__(self, idx: Tuple[int, int]) -> GeoBox:
+    def __getitem__(self, idx: tuple[int, int]) -> GeoBox:
         """
         Lookup tile by index, index is in matrix access order: (row, col)
 
@@ -213,7 +215,7 @@ class GeoboxTiles:
         roi = self._idx_to_slice(idx)
         return self._cache.setdefault(idx, self._gbox[roi])
 
-    def range_from_bbox(self, bbox: BoundingBox) -> Tuple[range, range]:
+    def range_from_bbox(self, bbox: BoundingBox) -> tuple[range, range]:
         """
         Compute rows and columns overlapping with a given :class:`~datacube.utils.geometry.BoundingBox`
         """
@@ -231,16 +233,13 @@ class GeoboxTiles:
         NY, NX = self.shape
         xx = clamped_range(bbox.left, bbox.right, NX)
         yy = clamped_range(bbox.bottom, bbox.top, NY)
-        return (yy, xx)
+        return yy, xx
 
-    def tiles(self, polygon: Geometry) -> Iterable[Tuple[int, int]]:
+    def tiles(self, polygon: Geometry) -> Iterable[tuple[int, int]]:
         """
         Return tile indexes overlapping the polygon
         """
-        if self._gbox.crs is None:
-            poly = polygon
-        else:
-            poly = polygon.to_crs(self._gbox.crs)
+        poly = polygon if self._gbox.crs is None else polygon.to_crs(self._gbox.crs)
         yy, xx = self.range_from_bbox(poly.boundingbox)
         for idx in itertools.product(yy, xx):
             gbox = self[idx]

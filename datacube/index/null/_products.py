@@ -2,50 +2,78 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import logging
 import datetime
+import logging
+from collections.abc import Iterable
+
+from odc.geo import CRS, Geometry
+from typing_extensions import override
 
 from datacube.index.abstract import AbstractProductResource
 from datacube.model import Product
 
-from typing import Iterable
-
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class ProductResource(AbstractProductResource):
-    def add(self, product, allow_table_lock=False):
+    @override
+    def add(self, product: Product, allow_table_lock: bool = False):
         raise NotImplementedError()
 
-    def can_update(self, product, allow_unsafe_updates=False, allow_table_lock=False):
+    @override
+    def can_update(
+        self,
+        product: Product,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ):
         raise NotImplementedError()
 
-    def update(self, product: Product, allow_unsafe_updates=False, allow_table_lock=False):
+    @override
+    def update(
+        self,
+        product: Product,
+        allow_unsafe_updates: bool = False,
+        allow_table_lock: bool = False,
+    ):
         raise NotImplementedError()
 
+    @override
     def delete(self, products: Iterable[Product], allow_delete_active: bool = False):
         raise NotImplementedError()
 
-    def get_unsafe(self, id_):
+    @override
+    def get_unsafe(self, id_: int):
         raise KeyError(id_)
 
-    def get_by_name_unsafe(self, name):
+    @override
+    def get_by_name_unsafe(self, name: str):
         raise KeyError(name)
 
+    @override
     def search_robust(self, **query):
         return []
 
+    @override
     def search_by_metadata(self, metadata):
         return []
 
+    @override
     def get_all(self) -> Iterable[Product]:
         return []
 
-    def temporal_extent(self, product: str | Product) -> tuple[datetime.datetime, datetime.datetime]:
+    @override
+    def temporal_extent(
+        self, product: str | Product
+    ) -> tuple[datetime.datetime, datetime.datetime]:
         raise KeyError(str(product))
 
-    def spatial_extent(self, product, crs=None):
+    @override
+    def spatial_extent(
+        self, product: Product | str, crs: CRS | None = None
+    ) -> Geometry | None:
         raise KeyError(str(product))
 
+    @override
     def most_recent_change(self, product: str | Product) -> datetime.datetime | None:
         raise KeyError(str(product))

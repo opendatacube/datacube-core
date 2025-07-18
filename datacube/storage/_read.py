@@ -2,41 +2,35 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-""" Dataset -> Raster
-"""
+"""Dataset -> Raster"""
+
+from typing import cast
+
 import numpy as np
-from typing import Optional, Tuple, cast
-
-from ..utils.math import valid_mask
-
 from odc.geo import wh_
+from odc.geo.geobox import GeoBox, zoom_out
+from odc.geo.math import is_affine_st, is_almost_int
+from odc.geo.overlap import compute_reproject_roi
 from odc.geo.roi import (
-    roi_shape,
     roi_is_empty,
     roi_is_full,
     roi_pad,
+    roi_shape,
     w_,
 )
-from odc.geo.geobox import GeoBox, zoom_out
-from odc.geo.warp import (
-    warp_affine,
-    rio_reproject,
-    is_resampling_nn,
-    Resampling,
-    Nodata,
-)
-from odc.geo.overlap import compute_reproject_roi, is_affine_st
-from odc.geo.math import is_almost_int
+from odc.geo.types import Nodata
+from odc.geo.warp import Resampling, is_resampling_nn, rio_reproject, warp_affine
+
+from ..utils.math import valid_mask
 
 
 def rdr_geobox(rdr) -> GeoBox:
-    """ Construct GeoBox from opened dataset reader.
-    """
+    """Construct GeoBox from opened dataset reader."""
     h, w = rdr.shape
     return GeoBox(wh_(w, h), rdr.transform, rdr.crs)
 
 
-def pick_read_scale(scale: float, rdr=None, tol=1e-3):
+def pick_read_scale(scale: float, rdr=None, tol: float = 1e-3) -> float:
     assert scale > 0
     # First find nearest integer scale
     #    Scale down to nearest integer, unless we can scale up by less than tol
@@ -60,13 +54,15 @@ def pick_read_scale(scale: float, rdr=None, tol=1e-3):
     return scale
 
 
-def read_time_slice(rdr,
-                    dst: np.ndarray,
-                    dst_geobox: GeoBox,
-                    resampling: Resampling,
-                    dst_nodata: Nodata,
-                    extra_dim_index: Optional[int] = None) -> Tuple[slice, slice]:
-    """ From opened reader object read into `dst`
+def read_time_slice(
+    rdr,
+    dst: np.ndarray,
+    dst_geobox: GeoBox,
+    resampling: Resampling,
+    dst_nodata: Nodata,
+    extra_dim_index: int | None = None,
+) -> tuple[slice, slice]:
+    """From opened reader object read into `dst`
 
     :returns: affected destination region
     """
@@ -119,7 +115,9 @@ def read_time_slice(rdr,
         else:
             np.copyto(dst, pix, where=valid_mask(pix, rdr.nodata))
     else:
-        is_st = False if rr.transform.linear is None else is_affine_st(rr.transform.linear)
+        is_st = (
+            False if rr.transform.linear is None else is_affine_st(rr.transform.linear)
+        )
         if is_st:
             # add padding on src/dst ROIs, it was set to tight bounds
             # TODO: this should probably happen inside compute_reproject_roi
@@ -151,23 +149,35 @@ def read_time_slice(rdr,
             "YSCALE": 1,
         }
         if rr.transform.linear is not None:
-            A = (~src_geobox.transform)*dst_geobox.transform
-            warp_affine(pix, dst, A, resampling,
-                        src_nodata=rdr.nodata, dst_nodata=dst_nodata,
-                        **gdal_scale_params)
+            A = (~src_geobox.transform) * dst_geobox.transform
+            warp_affine(
+                pix,
+                dst,
+                A,
+                resampling,
+                src_nodata=rdr.nodata,
+                dst_nodata=dst_nodata,
+                **gdal_scale_params,
+            )
         else:
-            rio_reproject(pix, dst, src_geobox, dst_geobox, resampling,
-                          src_nodata=rdr.nodata, dst_nodata=dst_nodata,
-                          **gdal_scale_params)
+            rio_reproject(
+                pix,
+                dst,
+                src_geobox,
+                dst_geobox,
+                resampling,
+                src_nodata=rdr.nodata,
+                dst_nodata=dst_nodata,
+                **gdal_scale_params,
+            )
 
     return cast(tuple[slice, slice], rr.roi_dst)
 
 
-def read_time_slice_v2(rdr,
-                       dst_geobox: GeoBox,
-                       resampling: Resampling,
-                       dst_nodata: Nodata) -> tuple[np.ndarray | None, tuple[slice, slice]]:
-    """ From opened reader object read into `dst`
+def read_time_slice_v2(
+    rdr, dst_geobox: GeoBox, resampling: Resampling, dst_nodata: Nodata
+) -> tuple[np.ndarray | None, tuple[slice, slice]]:
+    """From opened reader object read into `dst`
 
     :returns: pixels read and ROI of dst_geobox that was affected
     """
@@ -210,7 +220,9 @@ def read_time_slice_v2(rdr,
 
         dst = pix
     else:
-        is_st = False if rr.transform.linear is None else is_affine_st(rr.transform.linear)
+        is_st = (
+            False if rr.transform.linear is None else is_affine_st(rr.transform.linear)
+        )
         if is_st:
             # add padding on src/dst ROIs, it was set to tight bounds
             # TODO: this should probably happen inside compute_reproject_roi
@@ -226,11 +238,19 @@ def read_time_slice_v2(rdr,
         pix = rdr.read(*norm_read_args(rr.roi_src, src_geobox.shape)).result()
 
         if rr.transform.linear is not None:
-            A = (~src_geobox.transform)*dst_geobox.transform
-            warp_affine(pix, dst, A, resampling,
-                        src_nodata=rdr.nodata, dst_nodata=dst_nodata)
+            A = (~src_geobox.transform) * dst_geobox.transform
+            warp_affine(
+                pix, dst, A, resampling, src_nodata=rdr.nodata, dst_nodata=dst_nodata
+            )
         else:
-            rio_reproject(pix, dst, src_geobox, dst_geobox, resampling,
-                          src_nodata=rdr.nodata, dst_nodata=dst_nodata)
+            rio_reproject(
+                pix,
+                dst,
+                src_geobox,
+                dst_geobox,
+                resampling,
+                src_nodata=rdr.nodata,
+                dst_nodata=dst_nodata,
+            )
 
     return dst, cast(tuple[slice, slice], rr.roi_dst)

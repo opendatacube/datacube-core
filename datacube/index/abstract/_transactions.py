@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from threading import Lock
 from typing import Any
 
+from typing_extensions import override
+
 from datacube.index.exceptions import TransactionException
 from datacube.utils.generic import thread_local_cache
 
@@ -17,7 +19,7 @@ class AbstractTransaction(ABC):
     Thread-local storage and locks ensures one active transaction per index per thread.
     """
 
-    def __init__(self, index_id: str):
+    def __init__(self, index_id: str) -> None:
         self._connection: Any = None
         self._tls_id = f"txn-{index_id}"
         self._obj_lock = Lock()
@@ -34,7 +36,9 @@ class AbstractTransaction(ABC):
         """
         with self._obj_lock:
             if self._connection is not None:
-                raise ValueError("Cannot start a new transaction as one is already active")
+                raise ValueError(
+                    "Cannot start a new transaction as one is already active"
+                )
             self._tls_stash()
 
     def commit(self) -> None:
@@ -70,7 +74,7 @@ class AbstractTransaction(ABC):
             self._tls_purge()
 
     @property
-    def active(self):
+    def active(self) -> bool:
         """
         :return:  True if the transaction is active.
         """
@@ -103,11 +107,11 @@ class AbstractTransaction(ABC):
         return TransactionException(errmsg, commit=False)
 
     # Context Manager Interface
-    def __enter__(self):
+    def __enter__(self) -> "AbstractTransaction":
         self.begin()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:
         if not self.active:
             # User has already manually committed or rolled back.
             return True
@@ -164,14 +168,18 @@ class AbstractTransaction(ABC):
 
 class UnhandledTransaction(AbstractTransaction):
     # Minimal implementation for index drivers with no transaction handling.
+    @override
     def _new_connection(self) -> Any:
         return True
 
+    @override
     def _commit(self) -> None:
         pass
 
+    @override
     def _rollback(self) -> None:
         pass
 
+    @override
     def _release_connection(self) -> None:
         pass

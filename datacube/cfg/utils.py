@@ -4,14 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import re
-from typing import Any, TypeAlias, Callable
+from collections.abc import Callable
+from typing import Any, TypeAlias
 
 from .exceptions import ConfigException
 
-
 # A raw configuration dictionary. A dictionary of dictionaries
 ConfigDict: TypeAlias = dict[str, dict[str, Any]]
-SemaphoreCallback = Callable[[], None]
+SemaphoreCallback: TypeAlias = Callable[[], None]
 
 
 def check_valid_env_name(name: str) -> None:
@@ -22,7 +22,9 @@ def check_valid_env_name(name: str) -> None:
     :return:  None (raises ConfigException if invalid)
     """
     if not re.fullmatch(r"^[a-z][a-z0-9]*$", name):
-        raise ConfigException(f'Environment names must consist of only lower case letters and numbers: {name}')
+        raise ConfigException(
+            f"Environment names must consist of only lower case letters and numbers: {name}"
+        )
     if name.lower() == "all":
         raise ConfigException('Environments cannot be named "ALL"')
 
@@ -36,11 +38,11 @@ def check_valid_option(name: str) -> None:
     """
     if not re.fullmatch(r"^[a-z][a-z_]*$", name):
         raise ConfigException(
-            f'Config option names must consist of only lower case letters, numbers and underscores: {name}'
+            f"Config option names must consist of only lower case letters, numbers and underscores: {name}"
         )
 
 
-def smells_like_ini(cfg_text: str):
+def smells_like_ini(cfg_text: str) -> bool:
     """
     Does this file smell like an INI file?
 
@@ -49,13 +51,10 @@ def smells_like_ini(cfg_text: str):
     :param cfg_text: The contents of the file to be smelled
     :return: True if it smells like an ini file.
     """
-    for line in cfg_text.split('\n'):
+    for line in cfg_text.split("\n"):
         line = line.strip()
         if not line:
             continue
-        if line[0] in [";", "["]:
-            return True
-        else:
-            return False
+        return line[0] in [";", "["]
     # Empty file - parse as ini so we end up with the right high level structure at least
     return True

@@ -4,11 +4,20 @@ Release Process
 #. Decide to do a release, and check with regular contributors on `Discord <https://discord.com/invite/4hhBQVas5U>`_
    that they don't have anything pending.
 
-#. Ensure version pins in setup.py and conda-environment.yml are in sync and up to date.
+#. Ensure version pins in pyproject.toml and conda-environment.yml are in sync and up to date,
+   and refresh uv.lock.
 
-#. Update the release notes in the ``develop`` branch via a PR.
+.. code-block:: bash
 
-#. Create a new **Tag** and **Release** using the `GitHub Releases Web UI`_
+   uv lock
+
+#. Create a new **Tag** and **Draft Release** using the `GitHub Releases Web UI`_
+
+#. Based on the generated release notes from GitHub, update the release notes in
+   about/whats_new.rst and the fallback version number in pyproject.toml in the
+   ``develop`` branch via a PR.
+
+#. Change the Draft Release to Published using the `GitHub Releases Web UI`_
 
 #. Wait for the `GitHub Action`_ to run and publish the new release to PyPI_
 

@@ -6,15 +6,14 @@ from uuid import uuid4 as random_uuid
 
 import pytest
 
-from datacube.model import LineageDirection, LineageTree, InconsistentLineageException
+from datacube.model import InconsistentLineageException, LineageDirection, LineageTree
 from datacube.model.lineage import LineageRelations
 
 
-@pytest.mark.parametrize('datacube_env_name', ('postgis',))
-def test_lineage_home_api(index):
+@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+def test_lineage_home_api(index) -> None:
     a_uuids = [random_uuid() for i in range(10)]
     b_uuids = [random_uuid() for i in range(10)]
-    all_uuids = a_uuids + b_uuids
     assert index.lineage.get_homes(*a_uuids) == {}
     # Test delete of non-existent entries
     assert index.lineage.clear_home(*a_uuids) == 0
@@ -23,21 +22,21 @@ def test_lineage_home_api(index):
     for home in index.lineage.get_homes(*a_uuids).values():
         assert home == "spam"
     # Test update with and without allow_update
-    index.lineage.set_home("eggs", *a_uuids) == 0
-    index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 10
+    assert index.lineage.set_home("eggs", *a_uuids) == 0
+    assert index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 10
     for home in index.lineage.get_homes(*a_uuids).values():
         assert home == "eggs"
     assert index.lineage.get_homes(*b_uuids) == {}
-    index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 0
-    index.lineage.set_home("eggs", *b_uuids, allow_updates=True) == 10
+    assert index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 0
+    assert index.lineage.set_home("eggs", *b_uuids, allow_updates=True) == 10
 
     # Test clear_home with actual work done.
     assert index.lineage.clear_home(*a_uuids) == 10
     assert index.lineage.clear_home(*b_uuids) == 10
 
 
-@pytest.mark.parametrize('datacube_env_name', ('postgis',))
-def test_lineage_merge(index, src_lineage_tree, compatible_derived_tree):
+@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+def test_lineage_merge(index, src_lineage_tree, compatible_derived_tree) -> None:
     stree, ids = src_lineage_tree
     dtree, ids = compatible_derived_tree
 
@@ -51,8 +50,8 @@ def test_lineage_merge(index, src_lineage_tree, compatible_derived_tree):
         assert ard_subtree.dataset_id in (ids["ard1"], ids["ard2"])
 
 
-@pytest.mark.parametrize('datacube_env_name', ('postgis',))
-def test_lineage_tree_index_api_simple(index, src_lineage_tree):
+@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+def test_lineage_tree_index_api_simple(index, src_lineage_tree) -> None:
     tree, ids = src_lineage_tree
     # Test api responses for lineage not in database:
     src_tree = index.lineage.get_source_tree(ids["root"])
@@ -102,8 +101,10 @@ def test_lineage_tree_index_api_simple(index, src_lineage_tree):
     assert not src_tree.children
 
 
-@pytest.mark.parametrize('datacube_env_name', ('postgis',))
-def test_lineage_tree_index_api_consistent(index, src_lineage_tree, compatible_derived_tree):
+@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+def test_lineage_tree_index_api_consistent(
+    index, src_lineage_tree, compatible_derived_tree
+) -> None:
     tree1, ids = src_lineage_tree
     tree2, ids = compatible_derived_tree
 
@@ -119,8 +120,8 @@ def test_lineage_tree_index_api_consistent(index, src_lineage_tree, compatible_d
     assert tree2c
 
 
-@pytest.mark.parametrize('datacube_env_name', ('postgis',))
-def test_lineage_tree_index_api_inconsistent_homes(index, src_lineage_tree):
+@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+def test_lineage_tree_index_api_inconsistent_homes(index, src_lineage_tree) -> None:
     tree, ids = src_lineage_tree
     home_update = LineageTree(
         dataset_id=ids["ard1"],
@@ -134,7 +135,7 @@ def test_lineage_tree_index_api_inconsistent_homes(index, src_lineage_tree):
                     home="level1a",
                 )
             ]
-        }
+        },
     )
     index.lineage.add(tree)
     with pytest.raises(InconsistentLineageException):
@@ -144,8 +145,8 @@ def test_lineage_tree_index_api_inconsistent_homes(index, src_lineage_tree):
     assert dbtree.home == "not_too_ard"
 
 
-@pytest.mark.parametrize('datacube_env_name', ('postgis',))
-def test_get_extensions(index, dataset_with_external_lineage):
+@pytest.mark.parametrize("datacube_env_name", ("postgis",))
+def test_get_extensions(index, dataset_with_external_lineage) -> None:
     dataset, src_lineage_tree, derived_lineage_tree, ids = dataset_with_external_lineage
 
     ds = index.datasets.get(ids["root"])
@@ -178,7 +179,9 @@ def test_get_extensions(index, dataset_with_external_lineage):
     assert ds.source_tree.children["ard"][0].children
     assert ds.derived_tree.children["dra"][0].children
 
-    ds = index.datasets.get(ids["root"], include_sources=True, include_deriveds=True, max_depth=1)
+    ds = index.datasets.get(
+        ids["root"], include_sources=True, include_deriveds=True, max_depth=1
+    )
     assert ds.source_tree is not None
     assert ds.derived_tree is not None
     assert not ds.source_tree.children["ard"][0].children

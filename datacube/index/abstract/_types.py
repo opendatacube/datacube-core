@@ -2,13 +2,14 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from typing import NamedTuple, Iterable, cast, Sequence
+from collections.abc import Iterable, Sequence
+from typing import NamedTuple, TypeAlias
 from uuid import UUID
 
 from deprecat import deprecat
 
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Product, Dataset
+from datacube.model import Dataset, Product
 from datacube.utils import cached_property
 from datacube.utils.documents import JsonDict
 
@@ -17,15 +18,16 @@ class BatchStatus(NamedTuple):
     """
     A named tuple representing the results of a batch add operation:
 
-      - completed: Number of objects added to theMay be None for internal functions and for datasets.
-      - skipped: Number of objects skipped, either because they already exist
+    :param completed: Number of objects added to theMay be None for internal functions and for datasets.
+    :param skipped: Number of objects skipped, either because they already exist
         or the documents are invalid for this driver.
-      - seconds_elapsed: seconds elapsed during the bulk add operation;
-      - safe: an optional list of names of bulk added objects that are safe to be
+    :param seconds_elapsed: seconds elapsed during the bulk add operation;
+    :param safe: an optional list of names of bulk added objects that are safe to be
         used for lower level bulk adds. Includes objects added, and objects skipped
         because they already exist in the index and are identical to the version
         being added.  May be None for internal functions and for datasets.
     """
+
     completed: int
     skipped: int
     seconds_elapsed: float
@@ -34,7 +36,7 @@ class BatchStatus(NamedTuple):
 
 # Non-strict Dataset ID representation
 
-DSID = str | UUID
+DSID: TypeAlias = str | UUID
 
 
 def dsid_to_uuid(dsid: DSID) -> UUID:
@@ -50,48 +52,42 @@ def dsid_to_uuid(dsid: DSID) -> UUID:
 class DatasetTuple(NamedTuple):
     """
     A named tuple representing a complete dataset:
-    - product: A Product model.
-    - metadata: The dataset metadata document
-    - uri_: The dataset location or list of locations
+    :param product: A Product model.
+    :param metadata: The dataset metadata document
+    :param uri\\_: The dataset location or list of locations
     """
+
     product: Product
     metadata: JsonDict
     uri_: str | list[str]
 
     @property
-    def uri_is_string(self):
-        if isinstance(self.uri_, str):
-            return True
-        return False
+    def uri_is_string(self) -> bool:
+        return isinstance(self.uri_, str)
 
     @property
-    def is_legacy(self):
-        if self.uri_is_string:
-            return False
-        return len(self.uri_) > 1
+    def is_legacy(self) -> bool:
+        return not isinstance(self.uri_, str) and len(self.uri_) > 1
 
     @property
     def uri(self) -> str:
-        if self.uri_is_string:
-            return cast(str, self.uri_)
-        elif self.is_legacy:
-            return self.uris[0]
-        else:
-            return cast(list[str], self.uri_)[0]
+        if isinstance(self.uri_, str):
+            return self.uri_
+        return self.uri_[0]
 
     @property
     @deprecat(
         reason="Multiple uris are deprecated. Please use the uri field and ensure that datasets only have one location",
-        version='1.9.0',
-        category=ODC2DeprecationWarning)
+        version="1.9.0",
+        category=ODC2DeprecationWarning,
+    )
     def uris(self) -> Sequence[str]:
-        if self.uri_is_string:
-            return [cast(str, self.uri_)]
-        else:
-            return cast(list[str], self.uri_)
+        if isinstance(self.uri_, str):
+            return [self.uri_]
+        return self.uri_
 
 
-# The special handling of grid_spatial, etc appears to NOT apply to EO3.
+# The special handling of grid_spatial, etc. appears to NOT apply to EO3.
 # Does EO3 handle it in metadata?
 class DatasetSpatialMixin:
     __slots__ = ()

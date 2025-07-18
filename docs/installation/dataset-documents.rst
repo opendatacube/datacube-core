@@ -9,7 +9,7 @@ Dataset metadata documents define critical metadata about a dataset including:
    - acquisition time
    - provenance information
 
-Traditionally the :ref:`dataset-metadata-doc-eo` format was used to capture
+Traditionally the eo format was used to capture
 information about individual datasets. However there are a number of issues with
 this format, so it is now deprecated and we recommend everyone move to using
 the :ref:`dataset-metadata-doc-eo3`.  The legacy eo format is not supported by
@@ -137,6 +137,8 @@ at indexing time in the `odc-apps-dc-tools`_ package.
    [Y] = [a3, a4, a5] [ Line ]
    [1]   [ 0,  0,  1] [  1   ]
 
+.. _`formal specification`: https://github.com/opendatacube/eo3/blob/develop/SPECIFICATION.md
+
 .. _odc-apps-dc-tools: https://github.com/opendatacube/odc-tools/tree/develop/apps/dc_tools
 
 .. _dataset-metadata-doc-3d:
@@ -144,9 +146,8 @@ at indexing time in the `odc-apps-dc-tools`_ package.
 3D dataset metadata
 -------------------
 
-3D loading can be achieved through ``odc-loader`` package.
+3D loading can be achieved through ``odc-loader`` package:
 
-#. Install odc-loader, e.g. ``pip install odc-loader``
 #. Add a ``driver="rio",`` argument to ``dc.load()``
 
 Time-stacked NetCDF files

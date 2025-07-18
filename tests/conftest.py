@@ -10,23 +10,33 @@ tests in this and sub packages.
 """
 
 import os
+from pathlib import Path
 
+import pystac
+import pystac.collection
+import pystac.item
 import pytest
 from affine import Affine
-
-from datacube import Datacube
 from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox
-from datacube.utils.documents import read_documents
-from datacube.model import Measurement, MetadataType, Product, Dataset
-from datacube.index.eo3 import prep_eo3
 
-AWS_ENV_VARS = (
-    "AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN"
-    "AWS_DEFAULT_REGION AWS_DEFAULT_OUTPUT AWS_PROFILE "
-    "AWS_ROLE_SESSION_NAME AWS_CA_BUNDLE "
-    "AWS_SHARED_CREDENTIALS_FILE AWS_CONFIG_FILE"
-).split(" ")
+from datacube import Datacube
+from datacube.index.eo3 import prep_eo3
+from datacube.model import Dataset, Measurement, MetadataType, Product
+from datacube.utils.documents import read_documents
+
+AWS_ENV_VARS = [
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_SESSION_TOKEN",
+    "AWS_DEFAULT_REGION",
+    "AWS_DEFAULT_OUTPUT",
+    "AWS_PROFILE",
+    "AWS_ROLE_SESSION_NAME",
+    "AWS_CA_BUNDLE",
+    "AWS_SHARED_CREDENTIALS_FILE",
+    "AWS_CONFIG_FILE",
+]
 
 
 @pytest.fixture
@@ -292,7 +302,7 @@ netcdf_num = 1
 def tmpnetcdf_filename(tmpdir):
     """Return a generated filename for a non-existent netcdf file"""
     global netcdf_num
-    filename = str(tmpdir.join("testfile_np_%s.nc" % netcdf_num))
+    filename = str(tmpdir.join(f"testfile_np_{netcdf_num}.nc"))
     netcdf_num += 1
     return filename
 
@@ -306,7 +316,9 @@ def odc_style_xr_dataset(request):
     geobox = GeoBox(wh_(100, 100), affine, CRS(GEO_PROJ))
 
     return Datacube.create_storage(
-        request.param, geobox, [Measurement(name="B10", dtype="int16", nodata=0, units="1")]
+        request.param,
+        geobox,
+        [Measurement(name="B10", dtype="int16", nodata=0, units="1")],
     )
 
 
@@ -316,7 +328,7 @@ def workdir(tmpdir_factory):
 
 
 @pytest.fixture
-def without_aws_env(monkeypatch):
+def without_aws_env(monkeypatch) -> None:
     for e in AWS_ENV_VARS:
         monkeypatch.delenv(e, raising=False)
 
@@ -336,3 +348,52 @@ def dask_client():
     yield client
     client.close()
     del client
+
+
+# Test fixtures brought in from odc-stac
+
+TEST_DATA_FOLDER: Path = Path(__file__).parent.joinpath("data")
+PARTIAL_PROJ_STAC: str = "only_crs_proj.json"
+SENTINEL_STAC_COLLECTION: str = "sentinel-2-l2a.collection.json"
+SENTINEL_STAC_MS: str = "S2B_MSIL2A_20190629T212529_R043_T06VVN_20201006T080531.json"
+SENTINEL_STAC_MS_RASTER_EXT: str = (
+    "S2B_MSIL2A_20190629T212529_R043_T06VVN_20201006T080531_raster_ext.json"
+)
+USGS_LANDSAT_STAC_v1: str = "LC08_L2SP_028030_20200114_20200824_02_T1_SR.json"
+
+
+@pytest.fixture
+def partial_proj_stac():
+    return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(PARTIAL_PROJ_STAC)))
+
+
+@pytest.fixture
+def no_bands_stac(partial_proj_stac):
+    partial_proj_stac.assets.clear()
+    return partial_proj_stac
+
+
+@pytest.fixture
+def usgs_landsat_stac_v1():
+    return pystac.item.Item.from_file(
+        str(TEST_DATA_FOLDER.joinpath(USGS_LANDSAT_STAC_v1))
+    )
+
+
+@pytest.fixture
+def sentinel_stac_ms():
+    return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_MS)))
+
+
+@pytest.fixture
+def sentinel_stac_ms_with_raster_ext():
+    return pystac.item.Item.from_file(
+        str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_MS_RASTER_EXT))
+    )
+
+
+@pytest.fixture
+def sentinel_stac_collection():
+    return pystac.collection.Collection.from_file(
+        str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_COLLECTION))
+    )

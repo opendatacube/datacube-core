@@ -9,24 +9,27 @@ Core SQL schema settings.
 import logging
 import os
 
+from alembic import command, config
+from alembic.migration import MigrationContext
+from alembic.runtime.environment import EnvironmentContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import MetaData, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.sql.ddl import DropSchema
-from alembic import command, config
-from alembic.migration import MigrationContext
-from alembic.script import ScriptDirectory
-from alembic.runtime.environment import EnvironmentContext
 
-from datacube.drivers.postgis.sql import (INSTALL_TRIGGER_SQL_TEMPLATE,
-                                          SCHEMA_NAME, TYPES_INIT_SQL,
-                                          UPDATE_TIMESTAMP_SQL,
-                                          escape_pg_identifier)
+from datacube.drivers.postgis.sql import (
+    INSTALL_TRIGGER_SQL_TEMPLATE,
+    SCHEMA_NAME,
+    TYPES_INIT_SQL,
+    UPDATE_TIMESTAMP_SQL,
+    escape_pg_identifier,
+)
 
-USER_ROLES = ('odc_user', 'odc_manage', 'odc_admin')
+USER_ROLES = ("odc_user", "odc_manage", "odc_admin")
 
 SQL_NAMING_CONVENTIONS = {
-    "ix": 'ix_%(column_0_label)s',
+    "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
     "ck": "ck_%(table_name)s_%(constraint_name)s",
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
@@ -36,17 +39,18 @@ SQL_NAMING_CONVENTIONS = {
     # tix: test-index, created by hand for testing, particularly in dev.
 }
 
-POSTGIS_DRIVER_DIR = os.path.dirname(__file__)
+POSTGIS_DRIVER_DIR: str = os.path.dirname(__file__)
 
-ALEMBIC_INI_LOCATION = os.path.join(POSTGIS_DRIVER_DIR, "alembic.ini")
+ALEMBIC_INI_LOCATION: str = os.path.join(POSTGIS_DRIVER_DIR, "alembic.ini")
 
 METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
 
-_LOG = logging.getLogger(__name__)
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def install_timestamp_trigger(connection):
+def install_timestamp_trigger(connection) -> None:
     from . import _schema
+
     TABLE_NAMES = [  # noqa: N806
         _schema.MetadataType.__tablename__,
         _schema.Product.__tablename__,
@@ -56,23 +60,26 @@ def install_timestamp_trigger(connection):
     connection.execute(text(UPDATE_TIMESTAMP_SQL))
 
     for name in TABLE_NAMES:
-        connection.execute(text(INSTALL_TRIGGER_SQL_TEMPLATE.format(schema=SCHEMA_NAME, table=name)))
+        for s in INSTALL_TRIGGER_SQL_TEMPLATE:
+            connection.execute(text(s.format(schema=SCHEMA_NAME, table=name)))
 
 
-def schema_qualified(name):
+def schema_qualified(name: str) -> str:
     """
     >>> schema_qualified('dataset')
     'odc.dataset'
     """
-    return '{}.{}'.format(SCHEMA_NAME, name)
+    return f"{SCHEMA_NAME}.{name}"
 
 
-def _get_quoted_connection_info(connection):
-    db, user = connection.execute(text("select quote_ident(current_database()), quote_ident(current_user)")).fetchone()
+def _get_quoted_connection_info(connection) -> tuple:
+    db, user = connection.execute(
+        text("select quote_ident(current_database()), quote_ident(current_user)")
+    ).fetchone()
     return db, user
 
 
-def ensure_db(engine, with_permissions=True):
+def ensure_db(engine, with_permissions: bool = True) -> bool:
     """
     Initialise the db if needed.
 
@@ -85,38 +92,45 @@ def ensure_db(engine, with_permissions=True):
         #  NB. Using default SQLA2.0 auto-begin commit-as-you-go behaviour
         quoted_db_name, quoted_user = _get_quoted_connection_info(c)
 
-        _ensure_extension(c, 'POSTGIS')
+        _ensure_extension(c, "POSTGIS")
         c.commit()
 
         if with_permissions:
-            _LOG.info('Ensuring user roles.')
-            _ensure_role(c, 'odc_user')
-            _ensure_role(c, 'odc_manage', inherits_from='odc_user')
-            _ensure_role(c, 'odc_admin', inherits_from='odc_manage', add_user=True)
+            _LOG.info("Ensuring user roles.")
+            _ensure_role(c, "odc_user")
+            _ensure_role(c, "odc_manage", inherits_from="odc_user")
+            _ensure_role(c, "odc_admin", inherits_from="odc_manage", add_user=True)
 
-            c.execute(text(f"""
+            c.execute(
+                text(f"""
             grant all on database {quoted_db_name} to odc_admin;
-            """))
+            """)
+            )
             c.commit()
 
         if is_new:
             sqla_txn = c.begin()
             if with_permissions:
                 # Switch to 'odc_admin', so that all items are owned by them.
-                c.execute(text('set role odc_admin'))
-            _LOG.info('Creating schema.')
+                c.execute(text("set role odc_admin"))
+            _LOG.info("Creating schema.")
             c.execute(CreateSchema(SCHEMA_NAME))
-            _LOG.info('Creating types.')
-            c.execute(text(TYPES_INIT_SQL))
-            from ._schema import orm_registry, ALL_STATIC_TABLES
-            _LOG.info('Creating tables.')
-            _LOG.info("Dataset indexes: %s", repr(orm_registry.metadata.tables["odc.dataset"].indexes))
-            orm_registry.metadata.create_all(c, tables=ALL_STATIC_TABLES)
+            _LOG.info("Creating types.")
+            for s in TYPES_INIT_SQL:
+                c.execute(text(s))
+            from ._schema import orm_registry
+
+            _LOG.info("Creating tables.")
+            _LOG.info(
+                "Dataset indexes: %s",
+                repr(orm_registry.metadata.tables["odc.dataset"].indexes),
+            )
+            orm_registry.metadata.create_all(c)
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
             sqla_txn.commit()
             if with_permissions:
-                c.execute(text(f'set role {quoted_user}'))
+                c.execute(text(f"set role {quoted_user}"))
             c.commit()
             # Stamp with latest Alembic revision
             alembic_cfg = config.Config(ALEMBIC_INI_LOCATION)
@@ -124,27 +138,39 @@ def ensure_db(engine, with_permissions=True):
             command.stamp(alembic_cfg, "head")
 
         if with_permissions:
-            _LOG.info('Adding role grants.')
-            c.execute(text(f"""
-            grant usage on schema {SCHEMA_NAME} to odc_user;
-            grant select on all tables in schema {SCHEMA_NAME} to odc_user;
+            _LOG.info("Adding role grants.")
+            c.execute(text(f"grant usage on schema {SCHEMA_NAME} to odc_user"))
+            c.execute(
+                text(f"grant select on all tables in schema {SCHEMA_NAME} to odc_user")
+            )
 
-            grant insert on {SCHEMA_NAME}.dataset,
-                            {SCHEMA_NAME}.dataset_lineage to odc_manage;
-            grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_manage;
+            c.execute(
+                text(
+                    f"grant insert on {SCHEMA_NAME}.dataset,"
+                    f"{SCHEMA_NAME}.dataset_lineage to odc_manage"
+                )
+            )
+            c.execute(
+                text(
+                    f"grant usage, select on all sequences in schema {SCHEMA_NAME} to odc_manage"
+                )
+            )
 
-            -- Manage allows deletion of types that have nothing written yet (admin needed to delete the data itself)
-            grant insert, delete on {SCHEMA_NAME}.product,
-                                    {SCHEMA_NAME}.metadata_type to odc_manage;
-            -- Allow creation of indexes, views
-            grant create on schema {SCHEMA_NAME} to odc_manage;
-            """))
+            # Manage allows deletion of types that have nothing written yet (admin needed to delete the data itself)
+            c.execute(
+                text(
+                    f"grant insert, delete on {SCHEMA_NAME}.product,"
+                    f"{SCHEMA_NAME}.metadata_type to odc_manage"
+                )
+            )
+            # Allow creation of indexes, views
+            c.execute(text(f"grant create on schema {SCHEMA_NAME} to odc_manage"))
             c.commit()
 
     return is_new
 
 
-def database_exists(engine):
+def database_exists(engine) -> bool:
     """
     Have they init'd this database?
     """
@@ -163,7 +189,6 @@ def schema_is_latest(engine: Engine) -> bool:
 
     See the ``update_schema()`` function below for actually applying the updates.
     """
-
     # No schema changes recently. Everything is perfect.
 
     cfg = config.Config(ALEMBIC_INI_LOCATION)
@@ -177,7 +202,7 @@ def schema_is_latest(engine: Engine) -> bool:
             context = MigrationContext.configure(
                 connection=conn,
                 environment_context=env_ctx,
-                opts={"version_table_schema": "odc"}
+                opts={"version_table_schema": "odc"},
             )
             current_rev = context.get_current_revision()
 
@@ -185,11 +210,14 @@ def schema_is_latest(engine: Engine) -> bool:
     if latest_rev == current_rev:
         return True
     import warnings
-    warnings.warn(f"Current Alembic schema revision is {current_rev} expected {latest_rev}")
+
+    warnings.warn(
+        f"Current Alembic schema revision is {current_rev} expected {latest_rev}"
+    )
     return False
 
 
-def update_schema(engine: Engine):
+def update_schema(engine: Engine) -> None:
     """
     Check and apply any missing schema changes to the database.
 
@@ -205,53 +233,65 @@ def update_schema(engine: Engine):
         command.upgrade(cfg, "head")
 
 
-def _ensure_extension(conn, extension_name="POSTGIS"):
-    sql = text(f'create extension if not exists {extension_name}')
+def _ensure_extension(conn, extension_name: str = "POSTGIS") -> None:
+    sql = text(f"create extension if not exists {extension_name}")
     conn.execute(sql)
 
 
-def _ensure_role(conn, name, inherits_from=None, add_user=False, create_db=False):
+def _ensure_role(
+    conn, name: str, inherits_from=None, add_user: bool = False, create_db: bool = False
+) -> None:
     if has_role(conn, name):
-        _LOG.debug('Role exists: %s', name)
+        _LOG.debug("Role exists: %s", name)
         return
 
     sql = [
-        'create role %s nologin inherit' % name,
-        'createrole' if add_user else 'nocreaterole',
-        'createdb' if create_db else 'nocreatedb'
+        f"create role {name} nologin inherit",
+        "createrole" if add_user else "nocreaterole",
+        "createdb" if create_db else "nocreatedb",
     ]
     if inherits_from:
-        sql.append('in role ' + inherits_from)
-    conn.execute(text(' '.join(sql)))
+        sql.append("in role " + inherits_from)
+    conn.execute(text(" ".join(sql)))
 
 
-def grant_role(conn, role, users):
+def grant_role(conn, role, users) -> None:
     if role not in USER_ROLES:
-        raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
+        raise ValueError(f"Unknown role {role!r}. Expected one of {USER_ROLES!r}")
 
     users = [escape_pg_identifier(conn, user) for user in users]
-    conn.execute(text('revoke {roles} from {users}'.format(users=', '.join(users), roles=', '.join(USER_ROLES))))
-    conn.execute(text('grant {role} to {users}'.format(users=', '.join(users), role=role)))
-
-
-def has_role(conn, role_name):
-    return bool(
-        conn.execute(text(f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'")).fetchall()
+    conn.execute(
+        text(
+            "revoke {roles} from {users}".format(
+                users=", ".join(users), roles=", ".join(USER_ROLES)
+            )
+        )
+    )
+    conn.execute(
+        text("grant {role} to {users}".format(users=", ".join(users), role=role))
     )
 
 
-def has_schema(engine):
+def has_role(conn, role_name: str) -> bool:
+    return bool(
+        conn.execute(
+            text(f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'")
+        ).fetchall()
+    )
+
+
+def has_schema(engine) -> bool:
     inspector = inspect(engine)
     return SCHEMA_NAME in inspector.get_schema_names()
 
 
-def drop_db(connection):
+def drop_db(connection) -> None:
     # if_exists parameter seems to not be working in SQLA1.4?
     if has_schema(connection.engine):
         connection.execute(DropSchema(SCHEMA_NAME, cascade=True, if_exists=True))
 
 
-def to_pg_role(role):
+def to_pg_role(role) -> str:
     """
     Convert a role name to a name for use in PostgreSQL
 
@@ -267,11 +307,10 @@ def to_pg_role(role):
     ...
     ValueError: Unknown role 'fake'. Expected one of ...
     """
-    pg_role = 'odc_' + role.lower()
+    pg_role = "odc_" + role.lower()
     if pg_role not in USER_ROLES:
         raise ValueError(
-            'Unknown role %r. Expected one of %r' %
-            (role, [r.split('_')[1] for r in USER_ROLES])
+            f"Unknown role {role!r}. Expected one of {[r.split('_')[1] for r in USER_ROLES]!r}"
         )
     return pg_role
 
@@ -288,6 +327,6 @@ def from_pg_role(pg_role):
     ValueError: Not a pg role: 'fake'. Expected one of ...
     """
     if pg_role not in USER_ROLES:
-        raise ValueError('Not a pg role: %r. Expected one of %r' % (pg_role, USER_ROLES))
+        raise ValueError(f"Not a pg role: {pg_role!r}. Expected one of {USER_ROLES!r}")
 
-    return pg_role.split('_')[1]
+    return pg_role.split("_")[1]

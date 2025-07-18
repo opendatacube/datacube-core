@@ -40,8 +40,6 @@ user configuration file, then you will now need to take a copy of the system con
 add your extensions to your copy, and ensure that the Open Data Cube reads from your
 modified file.
 
-.. _`Only one`: #Merging-multiple-config-files
-
 1a. Default Search Paths
 ++++++++++++++++++++++++
 
@@ -236,6 +234,8 @@ Refer to the ``--help`` text for more information.
    environment can be specified with the ``$ODC_ENVIRONMENT`` environment
    variable.
 
+.. _generic-environment-variables:
+
 4. Generic Environment Variable Overrides
 -----------------------------------------
 
@@ -357,6 +357,8 @@ Migrating from datacube-1.8
 The new configuration engine introduced in datacube-1.9 is not fully backwards compatible with that used
 previously.  This section notes the changes which administrators, maintainers and developers should be aware
 of before upgrading.
+
+.. _`Only one`:
 
 Merging multiple config files
 -----------------------------

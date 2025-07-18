@@ -2,14 +2,23 @@
 .circleci
 .github
 .travis
+.pre-commit-config.yaml
+.readthedocs.yaml
+.mergify.yml
 integration_tests
+tests
+!tests/drivers/fail_drivers
+
+# Files that are only used by docker compose.
+docker-compose.yml
+docker/assets/create-pg-databases.sh
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
+**/__pycache__
+**/*.py[cod]
 
 # C extensions
-*.so
+**/*.so
 
 # Distribution / packaging
 .Python
@@ -25,9 +34,11 @@ lib64/
 parts/
 sdist/
 var/
-*.egg-info/
+.venv
+**/*.egg-info/
 .installed.cfg
-*.egg
+**/*.egg
+conda-environment.yml
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -39,7 +50,7 @@ var/
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# Test / coverage reports
 htmlcov/
 .tox/
 .coverage
@@ -47,10 +58,14 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-*,cover
+*.cover
 .hypothesis
 .pytest_cache
 .mypy_cache
+pylintrc
+.ruff_cache
+spellcheck.yaml
+wordlist.txt
 
 # Translations
 *.mo
@@ -74,9 +89,15 @@ target/
 docs/html/
 
 # Generated Documentation
-generate/
+**/generate/
 docs/notebooks/
 
 #Local Visual Studio Code configurations
 .vscode/
 .env
+
+CONTRIBUTING.md
+code-of-conduct.md
+.editorconfig
+LICENSE
+README.rst

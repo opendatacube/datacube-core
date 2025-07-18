@@ -5,21 +5,17 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
-
 from datacube import Datacube
 from datacube.testutils import gen_tiff_dataset, mk_test_image
 
-odc_loader = pytest.importorskip("odc.loader")
 
-
-def test_with_driver(tmpdir):
+def test_with_driver(tmpdir) -> None:
     tmpdir = Path(str(tmpdir))
 
-    spatial = dict(
-        resolution=(15, -15),
-        offset=(11230, 1381110),
-    )
+    spatial = {
+        "resolution": (15, -15),
+        "offset": (11230, 1381110),
+    }
 
     nodata = -999
     aa = mk_test_image(96, 64, "int16", nodata=nodata)
@@ -29,7 +25,7 @@ def test_with_driver(tmpdir):
         tmpdir,
         prefix="ds1-",
         timestamp="2018-07-19",
-        **spatial
+        **spatial,
     )
     assert ds.time is not None
     mm = ["aa"]

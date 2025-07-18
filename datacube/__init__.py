@@ -17,17 +17,13 @@ The main class to access the datacube is :class:`datacube.Datacube`.
 try:
     from ._version import version as __version__
 except ImportError:
-    __version__ = 'Unknown/Not Installed'
+    __version__ = "Unknown/Not Installed"
 
 from .api import Datacube
-import warnings
 from .utils import xarray_geoextensions
 
-# Ensure deprecation warnings from datacube modules are shown
-warnings.filterwarnings('always', category=DeprecationWarning, module=r'^datacube\.')
-
-__all__ = (
+__all__ = [
     "Datacube",
     "__version__",
     "xarray_geoextensions",
-)
+]
