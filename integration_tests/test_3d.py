@@ -302,6 +302,11 @@ def test_indexing(clirunner, index, product_def) -> None:
 
     dc = Datacube(index=index)
     check_open_with_dc_simple(dc, product_def, [product_id], measurement)
+    with pytest.raises(ValueError) as e:
+        check_open_with_dc_simple(
+            dc, product_def, [product_id], measurement, resolution=[100, 100, 100, 100]
+        )
+    assert "Resolution cannot have more than 2 dimensions" in str(e.value)
 
 
 @pytest.mark.usefixtures("default_metadata_type")
@@ -380,45 +385,55 @@ def check_loaded_vs_original(data, orig, product_def) -> None:
 
 
 def load_with_dc(
-    dc, product_def, product_id, measurement, time=None, datasets=None, dask_chunks=None
+    dc,
+    product_def,
+    product_id,
+    measurement,
+    time=None,
+    datasets=None,
+    dask_chunks=None,
+    **kwargs,
 ):
     """Load data with dc, with settable params.
 
     If `datasets` is specified, the no `product` is used in the load command.
     `dask_chunks` get passed as-is.
     """
-    params = SimpleNamespace(
-        measurements=[measurement],
-        like=GeoBox(
+    params = {
+        "measurements": [measurement],
+        "like": GeoBox(
             product_id.size[::-1],
             product_id.affine,
             GEDI_PRODUCT.crs,
         ),
-        dask_chunks=dask_chunks,
-    )
+        "dask_chunks": dask_chunks,
+    }
     if time:
-        params.time = time
+        params["time"] = time
     if product_def.wavelengths:
-        params.z = product_def.wavelengths
+        params["z"] = product_def.wavelengths
 
     if datasets:
-        params.datasets = datasets
+        params["datasets"] = datasets
     else:
-        params.product = product_def.name.format(measurement=measurement)
+        params["product"] = product_def.name.format(measurement=measurement)
+    params.update(kwargs)
     _LOG.info(f"DC Loading {params}")
-    data = dc.load(**params.__dict__)
+    data = dc.load(**params)
     _LOG.info(f"DC Loaded\n{data}\n{'-' * 80}")
     return data
 
 
-def check_open_with_dc_simple(dc, product_def, product_ids, measurement) -> None:
+def check_open_with_dc_simple(
+    dc, product_def, product_ids, measurement, **kwargs
+) -> None:
     """Check data can be loaded and has the right shape.
 
     Only the first of `product_ids` is tested. The actual contents of the loaded
     data are not checked, only their shape.
     """
     product_id = product_ids[0]
-    data = load_with_dc(dc, product_def, product_id, measurement)
+    data = load_with_dc(dc, product_def, product_id, measurement, **kwargs)
     expected = [len(product_ids), *product_id.size[::-1]]
     if product_def.wavelengths:
         wlen = (
