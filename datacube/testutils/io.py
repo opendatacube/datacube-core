@@ -2,19 +2,23 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+import inspect
+from collections.abc import Callable, Generator, Sequence
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
 import toolz
-import xarray
+import xarray as xr
 from odc.geo import wh_
 from odc.geo.geobox import GeoBox, zoom_to
+from odc.geo.geobox import pad as gbox_pad
 from odc.geo.warp import resampling_s2rio
 from odc.geo.xr import xr_coords
 from typing_extensions import override
 
+from ..api import Datacube
 from ..index.eo3 import EO3Grid, is_doc_eo3
 from ..model import Dataset
 from ..storage import BandInfo, reproject_and_fuse
@@ -90,7 +94,7 @@ def eo3_geobox(ds: Dataset, band: str | None = None, grid: str = "default") -> G
     return GeoBox(parsed.shape, parsed.transform, crs)
 
 
-def native_geobox(ds: Dataset, measurements=None, basis: str | None = None):
+def native_geobox(ds: Dataset, measurements=None, basis: str | None = None) -> GeoBox:
     """Compute native GeoBox for a set of bands for a given dataset
 
     :param ds: Dataset
@@ -132,32 +136,169 @@ def native_geobox(ds: Dataset, measurements=None, basis: str | None = None):
     return geobox
 
 
-def native_load(ds, measurements=None, basis=None, **kw):
-    """Load single dataset in native resolution.
+def compute_native_load_geobox(
+    ds: Dataset,
+    band: str,
+    dst_geobox: GeoBox | None = None,
+    buffer: float | None = None,
+) -> GeoBox:
+    """Compute area of interest for an input dataset given final output geobox.
 
-    :param ds: Dataset
-    :param measurements: List of band names to load
+    Take native projection and resolution from ``ds, band`` pair and compute
+    region in that projection that fully encloses footprint of the
+    ``dst_geobox`` with ``buffer``. Construct GeoBox that encloses that
+    region fully with resolution/pixel alignment copied from supplied band.
+
+    :param ds: Sample dataset (only resolution and projection is used, not footprint)
+    :param band: Reference band to use
+    :param dst_geobox:
+                 (resolution of output GeoBox will match resolution of this band)
+    :param buffer: Buffer in units of CRS of ``ds`` (meters usually) to cover enough aoi
+        when ``dst_geobox`` is different than that of input ``ds``,
+        default is 10 pixels worth
+    """
+    native = native_geobox(ds, basis=band)
+    if dst_geobox is None:
+        return native
+
+    if buffer is None:
+        buffer = 10 * max(map(abs, (native.resolution.y, native.resolution.x)))
+
+    assert native.crs is not None
+    return GeoBox.from_geopolygon(
+        dst_geobox.extent.to_crs(native.crs).buffer(buffer),
+        crs=native.crs,
+        resolution=native.resolution,
+        align=native.alignment,
+    )
+
+
+def _split_by_grid(xx: xr.DataArray) -> list[xr.DataArray]:
+    """Split datasets by grid/crs"""
+
+    def extract(grid_id, ii):
+        yy = xx[ii]
+        crs = xx.grid2crs[grid_id]
+        yy.attrs.update(crs=crs)
+        yy.attrs.pop("grid2crs", None)
+        return yy
+
+    return [extract(grid_id, ii) for grid_id, ii in xx.groupby(xx.grid).groups.items()]
+
+
+def _native_load_1(
+    sources: xr.DataArray,
+    bands: tuple[str, ...],
+    *,
+    dst_geobox: GeoBox | None = None,
+    optional_bands: tuple[str, ...] | None = None,
+    basis: str | None = None,
+    pad: int | None = None,
+    **kw,
+) -> xr.Dataset:
+    """Load datasets with native crs
+    :param sources: grouped datasets
+    :param bands: List of band names to load
+    :param dst_geobox: Geobox of final output, if None then use geobox of input dataset
+    :param optional_bands: List of optional band names to load
     :param basis: Name of the band to use for computing reference frame, other
     bands might be reprojected if they use different pixel grid
+    :param pad: number of pixels to pad the geobox adjusted to the requirement of reproject
 
-    :param kw: Any other parameter load_data accepts
+    :param kw: Any other parameter that load_data accepts
 
     :return: Xarray dataset
     """
-    from datacube import Datacube
+    if basis is None:
+        basis = bands[0]
+    (ds,) = sources.data[0]
+    load_geobox = compute_native_load_geobox(ds, basis, dst_geobox)
+    if pad is not None:
+        load_geobox = gbox_pad(load_geobox, pad)
 
-    geobox = native_geobox(
-        ds, measurements, basis
-    )  # early exit via exception if no compatible grid exists
-    mm = (
-        ds.product.measurements
-        if measurements is None
-        else ds.product.lookup_measurements(measurements)
-    )
+    mm = ds.product.lookup_measurements(bands)
+    if optional_bands is not None:
+        for ob in optional_bands:
+            try:
+                om = ds.product.lookup_measurements(ob)
+            except KeyError:
+                continue
+            else:
+                mm.update(om)
 
-    return Datacube.load_data(
-        Datacube.group_datasets([ds], "time"), geobox, measurements=mm, **kw
-    )
+    xx = Datacube.load_data(sources, load_geobox, mm, **kw)
+    return xx
+
+
+def native_load(
+    dss: Sequence[Dataset],
+    bands: Sequence[str],
+    groupby: Callable[..., Any],
+    *args,
+    dst_geobox: GeoBox | None = None,
+    optional_bands: tuple[str, ...] | None = None,
+    basis: str | None = None,
+    pad: int | None = None,
+    **kw,
+) -> xr.Dataset | Generator[xr.Dataset, None, None]:
+    """Load datasets in native resolution.
+
+    :param dss: Datasets
+    :param bands: List of band names to load
+    :param groupby: Function to group the datasets
+    :param args: positional passed into gropuby
+
+    :param dst_geobox: Geobox of final output, if None then use geobox of input dataset
+    :param optional_bands: List of optional band names to load
+    :param basis: Name of the band to use for computing reference frame, other
+    bands might be reprojected if they use different pixel grid
+    :param pad: number of pixels to pad the geobox
+
+    :param kw: Any other parameter groupby or _native_load_1 accepts
+
+    :return: Xarray dataset or generator of Xarray dataset
+    """
+    # Filter **kw to match what groupby op accepts
+    sig = inspect.signature(groupby)
+    accepted_kw = {
+        name
+        for name, param in sig.parameters.items()
+        if param.kind
+        in (param.KEYWORD_ONLY, param.POSITIONAL_OR_KEYWORD, param.VAR_KEYWORD)
+    }
+    accepted_kw = {k: v for k, v in kw.items() if k in accepted_kw}
+    sources = groupby(list(dss), *args, **accepted_kw)
+
+    for key in accepted_kw:
+        kw.pop(key, None)
+
+    # split datasets if they are in different grid/crs
+    if "grid" in sources.coords:
+
+        def yield_by_grid():
+            for srcs in _split_by_grid(sources):
+                _xx = _native_load_1(
+                    srcs,
+                    tuple(bands),
+                    dst_geobox=dst_geobox,
+                    optional_bands=optional_bands,
+                    basis=basis,
+                    pad=pad,
+                    **kw,
+                )
+                yield _xx
+
+        return yield_by_grid()
+    else:
+        return _native_load_1(
+            sources,
+            tuple(bands),
+            dst_geobox=dst_geobox,
+            optional_bands=optional_bands,
+            basis=basis,
+            pad=pad,
+            **kw,
+        )
 
 
 def dc_read(
@@ -391,16 +532,15 @@ def rio_slurp(fname, *args, **kw):
         return rio_slurp_read(fname, *args, **kw)
 
 
-def rio_slurp_xarray(fname, *args, rgb: str = "auto", **kw) -> xarray.DataArray:
+def rio_slurp_xarray(fname, *args, rgb: str = "auto", **kw) -> xr.DataArray:
     """
     Dispatches to either:
 
     rio_slurp_read(fname, out_shape, ..)
     rio_slurp_reproject(fname, geobox, ...)
 
-    then wraps it all in xarray.DataArray with .crs,.nodata etc.
+    then wraps it all in xr.DataArray with .crs,.nodata etc.
     """
-    from xarray import DataArray
 
     if len(args) == 0:
         if "geobox" in kw:
@@ -421,6 +561,6 @@ def rio_slurp_xarray(fname, *args, rgb: str = "auto", **kw) -> xarray.DataArray:
     else:
         dims = mm.geobox.dims
 
-    return DataArray(
+    return xr.DataArray(
         im, dims=dims, coords=xr_coords(mm.geobox), attrs={"nodata": mm.nodata}
     )

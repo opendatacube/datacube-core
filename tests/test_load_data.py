@@ -17,6 +17,8 @@ from datacube.testutils import (
 )
 from datacube.testutils.io import (
     get_raster_info,
+    native_geobox,
+    native_load,
     rio_slurp,
     rio_slurp_xarray,
     write_gtiff,
@@ -413,8 +415,6 @@ def test_missing_file_handling() -> None:
 
 
 def test_native_load(tmpdir) -> None:
-    from datacube.testutils.io import native_geobox, native_load
-
     tmpdir = Path(str(tmpdir))
     spatial = {
         "resolution": (15, -15),
@@ -435,7 +435,7 @@ def test_native_load(tmpdir) -> None:
 
     assert set(get_raster_info(ds)) == set(ds.measurements)
 
-    xx = native_load(ds)
+    xx = native_load([ds], ["aa", "bb"], Datacube.group_datasets, "time")
     assert xx.odc.geobox == geobox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
@@ -445,28 +445,22 @@ def test_native_load(tmpdir) -> None:
     )
 
     # cc is different size from aa,bb
-    with pytest.raises(ValueError):
-        xx = native_load(ds)
-
-    # cc is different size from aa,bb
-    with pytest.raises(ValueError):
-        xx = native_geobox(ds)
-
-    # aa and bb are the same
-    assert native_geobox(ds, ["aa", "bb"]) == geobox
-    xx = native_load(ds, ["aa", "bb"])
+    # cc is reprojected
+    xx = native_load([ds], ["aa", "bb", "cc"], Datacube.group_datasets, "time")
     assert xx.odc.geobox == geobox
+    assert xx.odc.geobox != geobox_cc
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
 
-    # cc will be reprojected
     assert native_geobox(ds, basis="aa") == geobox
-    xx = native_load(ds, basis="aa")
+    xx = native_load(
+        [ds], ["aa", "bb", "cc"], Datacube.group_datasets, "time", basis="aa"
+    )
     assert xx.odc.geobox == geobox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
 
     # cc is compatible with self
-    xx = native_load(ds, ["cc"])
+    xx = native_load([ds], ["cc"], Datacube.group_datasets, "time")
     assert xx.odc.geobox == geobox_cc
     np.testing.assert_array_equal(cc, xx.isel(time=0).cc.values)
