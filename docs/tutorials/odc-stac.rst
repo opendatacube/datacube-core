@@ -5,7 +5,7 @@ Accessing data with odc-stac
 Introduction
 ============
 
-In this tutorial we will use Python libraries to find and load Land Use and Land Cover data from the freely available `Impact Observatory Annual Land Use Land Cover <iolulc_>`_ product.
+In this tutorial we will use Python libraries to find and load Land Use and Land Cover data from the freely available `Impact Observatory Annual Land Use Land Cover <https://planetarycomputer.microsoft.com/dataset/io-lulc-annual-v02>`_ product.
 After loading the data, we will export each year of data as a  Cloud Optimised GeoTIFF.
 This will allow you to further view or work with the data in GIS software and other tools.
 
@@ -249,7 +249,7 @@ Advanced visualisation
 
 The code we've used provides us a visualisation that allows us to check that the data loaded successfully.
 
-To produce a more descriptive plot, we recommend reviewing the `example notebook <iolulc-notebook_>`_ that Microsoft Planetary Computer provide for this dataset.
+To produce a more descriptive plot, we recommend reviewing the `example notebook <https://planetarycomputer.microsoft.com/dataset/io-lulc-annual-v02#Example-Notebook>`_ that Microsoft Planetary Computer provide for this dataset.
 
 Export loaded data
 ------------------
@@ -287,10 +287,4 @@ In the last step you exported the loaded data as a series of Cloud Optimised Geo
 Make sure you download these files from the file browser before exiting the tutorial space.
 
 .. _pystac-client: https://pystac-client.readthedocs.io/en/stable/
-.. _odc-stac: https://odc-stac.readthedocs.io/en/latest/ 
-.. _GitHub: https://github.com/opendatacube/tutorial-odc-stac/tree/main
-.. _iolulc: https://planetarycomputer.microsoft.com/dataset/io-lulc-annual-v02
-.. _iolulc-notebook: https://planetarycomputer.microsoft.com/dataset/io-lulc-annual-v02#Example-Notebook
-.. _pc-stac: https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/
-.. _pc-lulc: https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/collections/io-lulc-annual-v02
-.. _pc-item: https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/collections/io-lulc-annual-v02/items/15M-2023
+.. _odc-stac: https://odc-stac.readthedocs.io/en/latest/
