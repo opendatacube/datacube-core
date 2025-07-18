@@ -111,6 +111,7 @@ doc = [
     'sphinx_autodoc_typehints',  # Propagate mypy info into docs
     'sphinx-click',
     'sphinx-design',
+    'sphinx-tabs<3.4.7', # No direct dependency, temporary workaround for Dependabot.
     'sphinx-toolbox',
 ]
 
