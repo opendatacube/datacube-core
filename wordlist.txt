@@ -20,6 +20,7 @@ Algo
 algo
 Analytics
 analytics
+aoi
 antimeridian
 api
 APIs
@@ -182,12 +183,15 @@ ESRI
 executor
 f'file
 fd
+Fdoc
 feedstock
 Festivus
 fmask
 fmt
 fn
 func
+Ftree
+Ftutorial
 ga
 gbox
 GCS
@@ -203,8 +207,10 @@ GeoBoxes
 GeoboxTiles
 GEOGCS
 GeoJSON
+geojson
 Geomedian
 geomedian
+geopandas
 GeoPolygon
 geopolygon
 geopolygons
@@ -226,6 +232,7 @@ Github
 github
 githubusercontent
 GloVis
+gpd
 GQA
 graphviz
 gridded
@@ -248,8 +255,10 @@ IAM
 iam
 ident
 identifier
+iloc
 img
 importlib
+imshow
 IndexDriver
 INEGI
 inegi
@@ -260,11 +269,14 @@ ingestor
 INI
 ini
 init
+inplace
 installable
 io
 ipynb
+Isabela
 isel
 isinstance
+Isla
 jfEZEOkxRXgNsAsHEC
 jpg
 JSK
@@ -288,6 +300,7 @@ landsatonaws
 lbg
 LEDAPS
 ledaps
+len
 libgdal
 libhdf
 libnetcdf
@@ -306,6 +319,8 @@ lon
 lonlat
 lr
 LTS
+LULC
+lulc
 lv
 macosx
 MakeMask
@@ -318,6 +333,7 @@ maxdepth
 md
 metadataType
 MetadataTypes
+microsoft
 Miniforge
 mk
 mkdir
@@ -333,6 +349,7 @@ multipoint
 multipolygon
 multispectral
 mx
+mybinder
 mydb
 myenv
 mypassword
@@ -405,6 +422,7 @@ pgintegration
 pgisintegration
 pixelquality
 pkgs
+planetarycomputer
 Pluggable
 pmap
 png
@@ -439,6 +457,7 @@ PyPI
 pypi
 pyproj
 pyspellcheck
+pystac
 pytest
 PythonAPI
 pytz
@@ -510,9 +529,11 @@ stacspec
 stdlib
 Stereographic
 str
+strftime
 stylesheet
 subcommands
 sudo
+Supercell
 sv
 svg
 swir
@@ -526,6 +547,7 @@ tif
 timedelta
 timeslice
 timeslot
+timestep
 TIRS
 tmp
 toctree
@@ -549,6 +571,7 @@ URI
 uri
 URIs
 url
+urlpath
 usablity
 USGS
 usgs
@@ -558,6 +581,7 @@ UsingODC
 usp
 usr
 utils
+utm
 UUID
 uuid
 UUIDs
