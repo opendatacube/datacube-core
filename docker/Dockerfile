@@ -9,7 +9,10 @@
 FROM ghcr.io/osgeo/gdal:ubuntu-full-3.10.3 AS base
 
 ENV LC_ALL=C.UTF-8 \
-    LANG=C.UTF-8
+    LANG=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy
 
 # Both the builder image and the regular image needs build tools, otherwise "uv sync"
 # will fail.
@@ -33,21 +36,16 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 FROM base AS builder
 
-ARG UV=https://github.com/astral-sh/uv/releases/download/0.7.13/uv-x86_64-unknown-linux-gnu.tar.gz
+ARG UV=https://github.com/astral-sh/uv/releases/download/0.7.21/uv-x86_64-unknown-linux-gnu.tar.gz
 
-ENV LC_ALL=C.UTF-8 \
-    LANG=C.UTF-8 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    UV_COMPILE_BYTECODE=0 \
-    UV_LINK_MODE=copy \
+ENV UV_COMPILE_BYTECODE=0 \
     UV_PROJECT_ENVIRONMENT=/app \
     UV_PYTHON_DOWNLOADS=never \
     UV_PYTHON=python3.12
 
 WORKDIR /build
 
-ADD --checksum=sha256:909278eb197c5ed0e9b5f16317d1255270d1f9ea4196e7179ce934d48c4c2545 --chown=root:root --chmod=644 --link $UV uv.tar.gz
+ADD --checksum=sha256:ca3e8898adfce5fcc891d393a079013fa4bd0d9636cef11aded8a7485bcba312 --chown=root:root --chmod=644 --link $UV uv.tar.gz
 
 RUN tar xf uv.tar.gz -C /usr/local/bin --strip-components=1 --no-same-owner
 
@@ -98,11 +96,7 @@ RUN usermod -aG sudo ubuntu \
 
 USER ubuntu
 
-ENV LC_ALL=C.UTF-8 \
-    LANG=C.UTF-8 \
-    PATH=/app/bin:$PATH \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+ENV PATH=/app/bin:$PATH
 
 COPY --chown=1000:1000 --link docker/assets/datacube_integration.conf /home/ubuntu/.datacube_integration.conf
 
@@ -119,7 +113,6 @@ USER root
 RUN  --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     . /app/bin/activate \
     && export UV_COMPILE_BYTECODE=0 \
-    && export UV_LINK_MODE=copy \
     && export UV_PROJECT_ENVIRONMENT=/app \
     && export UV_PYTHON_DOWNLOADS=never \
     && export UV_PYTHON=python3.12 \
