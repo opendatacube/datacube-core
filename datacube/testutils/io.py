@@ -146,15 +146,16 @@ def compute_native_load_geobox(
 
     Take native projection and resolution from ``ds, band`` pair and compute
     region in that projection that fully encloses footprint of the
-    ``dst_geobox`` with some padding. Construct GeoBox that encloses that
+    ``dst_geobox`` with ``buffer``. Construct GeoBox that encloses that
     region fully with resolution/pixel alignment copied from supplied band.
 
     :param ds: Sample dataset (only resolution and projection is used, not footprint)
     :param band: Reference band to use
     :param dst_geobox:
                  (resolution of output GeoBox will match resolution of this band)
-    :param buffer: Buffer in units of CRS of ``ds`` (meters usually),
-                   default is 10 pixels worth
+    :param buffer: Buffer in units of CRS of ``ds`` (meters usually) to cover enough aoi
+        when ``dst_geobox`` is different than that of input ``ds``,
+        default is 10 pixels worth
     """
     native = native_geobox(ds, basis=band)
     if dst_geobox is None:
@@ -202,7 +203,7 @@ def _native_load_1(
     :param optional_bands: List of optional band names to load
     :param basis: Name of the band to use for computing reference frame, other
     bands might be reprojected if they use different pixel grid
-    :param pad: number of pixels to pad the geobox
+    :param pad: number of pixels to pad the geobox adjusted to the requirement of reproject
 
     :param kw: Any other parameter that load_data accepts
 
