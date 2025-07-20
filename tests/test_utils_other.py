@@ -312,7 +312,7 @@ def test_default_base_dir(monkeypatch) -> None:
         else:
             monkeypatch.setenv("PWD", str(p))
 
-    cwd = Path(".").resolve()
+    cwd = Path.cwd()
 
     # Default base dir (once resolved) will never be different from cwd
     assert default_base_dir().resolve() == cwd
@@ -364,7 +364,7 @@ def test_time_info() -> None:
 
 
 def test_normalise_path() -> None:
-    cwd = Path(".").resolve()
+    cwd = Path.cwd()
     assert normalise_path(".").resolve() == cwd
 
     p = Path("/a/b/c/d.txt")
