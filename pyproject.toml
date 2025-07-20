@@ -181,6 +181,7 @@ select = [
     "D419", # No empty doc strings
     "E",  # pycodestyle errors
     "EXE", # flake8-executable
+    "FLY", # flynt
     "FURB", # refurb
     "I",  # isort
     "N",  # pep8-naming
