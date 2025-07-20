@@ -812,7 +812,6 @@ doc = [
     { name = "sphinx-autodoc-typehints" },
     { name = "sphinx-click" },
     { name = "sphinx-design" },
-    { name = "sphinx-tabs" },
     { name = "sphinx-toolbox" },
 ]
 
@@ -892,7 +891,6 @@ doc = [
     { name = "sphinx-autodoc-typehints" },
     { name = "sphinx-click" },
     { name = "sphinx-design" },
-    { name = "sphinx-tabs", specifier = "<3.4.7" },
     { name = "sphinx-toolbox" },
 ]
 
