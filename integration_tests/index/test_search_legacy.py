@@ -531,10 +531,8 @@ def test_search_returning(
     id_, path_range, sat_range = results[0]
     assert id_ == pseudo_ls8_dataset.id
     # TODO: output nicer types?
-    assert path_range == SQLARange(
-        lower=Decimal("116"), upper=Decimal("116"), bounds="[]"
-    )
-    assert sat_range == SQLARange(lower=Decimal("74"), upper=Decimal("84"), bounds="[]")
+    assert path_range == SQLARange(lower=Decimal(116), upper=Decimal(116), bounds="[]")
+    assert sat_range == SQLARange(lower=Decimal(74), upper=Decimal(84), bounds="[]")
 
     results = list(
         index.datasets.search_returning(
@@ -971,15 +969,15 @@ def test_find_duplicates(
     expected_ls8_path_row_duplicates = [
         (
             (
-                SQLARange(lower=Decimal("116"), upper=Decimal("116"), bounds="[]"),
-                SQLARange(lower=Decimal("74"), upper=Decimal("84"), bounds="[]"),
+                SQLARange(lower=Decimal(116), upper=Decimal(116), bounds="[]"),
+                SQLARange(lower=Decimal(74), upper=Decimal(84), bounds="[]"),
             ),
             {pseudo_ls8_dataset.id, pseudo_ls8_dataset2.id},
         ),
         (
             (
-                SQLARange(lower=Decimal("116"), upper=Decimal("116"), bounds="[]"),
-                SQLARange(lower=Decimal("85"), upper=Decimal("87"), bounds="[]"),
+                SQLARange(lower=Decimal(116), upper=Decimal(116), bounds="[]"),
+                SQLARange(lower=Decimal(85), upper=Decimal(87), bounds="[]"),
             ),
             {pseudo_ls8_dataset3.id, pseudo_ls8_dataset4.id},
         ),
