@@ -45,14 +45,11 @@ def test_csv_serialise() -> None:
         ],
     )
 
-    assert m.getvalue() == "\r\n".join(
-        [
-            "f1,f2",
-            "12,1.0 to 2.0",
-            "2014-07-26T23:48:00+00:00,-1.0 to 2.0",
-            "2014-07-26T23:48:00+00:00,landsat",
-            "",
-        ]
+    assert m.getvalue() == (
+        "f1,f2\r\n"
+        "12,1.0 to 2.0\r\n"
+        "2014-07-26T23:48:00+00:00,-1.0 to 2.0\r\n"
+        "2014-07-26T23:48:00+00:00,landsat\r\n"
     )
 
 
@@ -72,17 +69,14 @@ def test_pretty_serialise() -> None:
         terminal_size=terminal_size((12, 12)),
     )
 
-    assert m.getvalue() == "\n".join(
-        [
-            "-[ 1 ]-----",
-            "f1      | 12",
-            "field 2 | 1.0 to 2.0",
-            "-[ 2 ]-----",
-            "f1      | 2014-07-26T23:48:00+00:00",
-            "field 2 | -1.0 to 2.0",
-            "-[ 3 ]-----",
-            "f1      | 2014-07-26T23:48:00+00:00",
-            "field 2 | landsat",
-            "",
-        ]
+    assert m.getvalue() == (
+        "-[ 1 ]-----\n"
+        "f1      | 12\n"
+        "field 2 | 1.0 to 2.0\n"
+        "-[ 2 ]-----\n"
+        "f1      | 2014-07-26T23:48:00+00:00\n"
+        "field 2 | -1.0 to 2.0\n"
+        "-[ 3 ]-----\n"
+        "f1      | 2014-07-26T23:48:00+00:00\n"
+        "field 2 | landsat\n"
     )

@@ -112,7 +112,6 @@ doc = [
     'sphinx_autodoc_typehints',  # Propagate mypy info into docs
     'sphinx-click',
     'sphinx-design',
-    'sphinx-tabs<3.4.7', # No direct dependency, temporary workaround for Dependabot.
     'sphinx-toolbox',
 ]
 
@@ -181,6 +180,8 @@ select = [
     "D419", # No empty doc strings
     "E",  # pycodestyle errors
     "EXE", # flake8-executable
+    "FLY", # flynt
+    "FURB", # refurb
     "I",  # isort
     "N",  # pep8-naming
     "RUF", # Ruff-specific rules

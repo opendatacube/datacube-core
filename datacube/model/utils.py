@@ -49,14 +49,9 @@ def machine_info() -> dict[str, dict[str, dict[str, str | dict[str, dict[str, st
     if hasattr(os, "uname"):
         info["uname"] = " ".join(os.uname())
     else:
-        info["uname"] = " ".join(
-            [
-                platform.system(),
-                platform.node(),
-                platform.release(),
-                platform.version(),
-                platform.machine(),
-            ]
+        info["uname"] = (
+            f"{platform.system()} {platform.node()} {platform.release()} "
+            f"{platform.version()} {platform.machine()}"
         )
 
     return {"lineage": {"machine": info}}

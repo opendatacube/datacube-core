@@ -585,7 +585,7 @@ def test_jsonify() -> None:
     ]
 
     # Converts keys to strings:
-    assert sorted(jsonify_document({1: "a", "2": Decimal("2")}).items()) == [
+    assert sorted(jsonify_document({1: "a", "2": Decimal(2)}).items()) == [
         ("1", "a"),
         ("2", "2"),
     ]

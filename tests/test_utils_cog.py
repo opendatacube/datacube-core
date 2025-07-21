@@ -12,6 +12,7 @@ import xarray as xr
 from dask.base import is_dask_collection
 from dask.delayed import Delayed
 
+from datacube import Datacube
 from datacube.testutils import gen_tiff_dataset, mk_test_image, suppress_deprecations
 from datacube.testutils.io import native_load, rio_slurp, rio_slurp_xarray
 from datacube.utils.cog import _write_cog, to_cog, write_cog
@@ -32,7 +33,7 @@ def gen_test_data(prefix, dask=False, shape=None, dtype="int16", nodata=-999):
     if dask:
         extras.update(dask_chunks={"time": 1})
 
-    xx = native_load(ds, **extras)
+    xx = native_load([ds], ["aa"], Datacube.group_datasets, "time", **extras)
 
     return xx.aa.isel(time=0), ds
 
