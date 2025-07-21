@@ -130,9 +130,9 @@ Catalogs, collections, and items
 Many Earth observation data providers generate STAC metadata, which can be used to find and load data you're interested in.
 STAC metadata has four important components:
 
-* **Catalog**: A structure for organising multiple datasets managed by a given provider. For example, `Planetary Computer's Catalog <pc-stac_>`_
-* **Collection**: A structure for organising all items in a single dataset. For example, `Land Use Land Cover Collection <pc-lulc_>`_
-* **Item** A single spatio-temporal item, such as one observation in a dataset. For example, `Land Use Land Cover Data for Supercell 15M in 2013 <pc-item_>`_
+* **Catalog**: A structure for organising multiple datasets managed by a given provider. For example, `Planetary Computer's Catalog <https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/>`_
+* **Collection**: A structure for organising all items in a single dataset. For example, `Land Use Land Cover Collection <https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/collections/io-lulc-annual-v02>`_
+* **Item** A single spatio-temporal item, such as one observation in a dataset. For example, `Land Use Land Cover Data for Supercell 15M in 2013 <https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/collections/io-lulc-annual-v02/items/15M-2023>`_
 * **Asset** A single data measurement associated with an item, such as a single band. The Land Use Land Cover Dataset has only one asset, called "data".
 
 We must specify the catalog and collection we wish to search, and which assets we want to load. 
