@@ -373,7 +373,7 @@ sphinx-jinja2-compat==0.3.0
     # via sphinx-toolbox
 sphinx-prompt==1.10.0
     # via sphinx-toolbox
-sphinx-tabs==3.4.5
+sphinx-tabs==3.4.7
     # via sphinx-toolbox
 sphinx-toolbox==4.0.0
     # via datacube (pyproject.toml:doc)
