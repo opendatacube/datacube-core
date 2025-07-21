@@ -32,7 +32,7 @@ jobs:
       matrix:
         python-version: ["3.12"]
         lintcommand:
-          - "pylint -j 2 --report no datacube"
+          - "pylint -j 2 datacube"
           - "mypy datacube examples tests/test_utils_rio.py integration_tests/*py"
     name: Linting
     steps:
