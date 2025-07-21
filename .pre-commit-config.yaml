@@ -35,7 +35,7 @@ repos:
         - id: uv-lock
         # Compile requirements
         - id: pip-compile
-          args: [--all-extras, --group=dev, --group=doc --output-file=docker/constraints.txt, pyproject.toml]
+          args: [--extra=s3, --group=doc, --output-file=docs/requirements.txt, pyproject.toml]
     - repo: https://github.com/Lucas-C/pre-commit-hooks
       rev: v1.5.5
       hooks:
