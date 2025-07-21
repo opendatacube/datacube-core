@@ -127,7 +127,7 @@ def default_base_dir() -> pathlib.Path:
     2. Contains Absolute path (sanity check)
     3. Absolute ath in PWD resolves to the same directory as cwd (process didn't call chdir after starting)
     """
-    cwd = pathlib.Path(".").resolve()
+    cwd = Path.cwd()
 
     _pwd = os.environ.get("PWD")
     if _pwd is None:
