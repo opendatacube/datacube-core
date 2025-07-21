@@ -14,6 +14,7 @@ import numpy as np
 import rasterio
 from click.testing import CliRunner
 
+from datacube.index import Index
 from datacube.utils.documents import load_from_yaml
 
 # On Windows, symlinks are not supported in Python 2 and require
@@ -193,7 +194,7 @@ def alter_product_for_testing(product: dict, metadata_type=None) -> dict:
     return product
 
 
-def ensure_datasets_are_indexed(index, valid_uuids: list) -> None:
+def ensure_datasets_are_indexed(index: Index, valid_uuids: list) -> None:
     datasets = list(index.datasets.search(product="ls5_nbar_scene"))
     assert len(datasets) == len(valid_uuids)
     for dataset in datasets:

@@ -206,7 +206,7 @@ class DatasetResource(AbstractDatasetResource):
         self,
         dataset: Dataset,
         updates_allowed: Mapping[Offset, AllowPolicy] | None = None,
-    ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
+    ) -> tuple[bool, list[Change], list[Change]]:
         # Current exactly the same as postgres implementation.  Could be pushed up to base class?
         existing = self.get(dataset.id, include_sources=dataset.sources is not None)
         if not existing:

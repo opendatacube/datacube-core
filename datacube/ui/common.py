@@ -6,7 +6,7 @@
 Common methods for UI code.
 """
 
-from collections.abc import Iterator
+from collections.abc import Generator, Iterable
 from pathlib import Path
 
 from toolz.functoolz import identity
@@ -75,7 +75,9 @@ def _find_any_metadata_suffix(path: Path) -> Path | None:
     return existing_paths[0]
 
 
-def ui_path_doc_stream(paths, logger=None, uri: bool = True, raw: bool = False):
+def ui_path_doc_stream(
+    paths: Iterable[str | Path], logger=None, uri: bool = True, raw: bool = False
+) -> Generator[tuple[str, SimpleDocNav | dict]]:
     """Given a stream of URLs, or Paths that could be directories, generate a stream of
     (path, doc) tuples.
 
@@ -95,7 +97,7 @@ def ui_path_doc_stream(paths, logger=None, uri: bool = True, raw: bool = False):
     instead request them to be raw dictionaries
     """
 
-    def _resolve_doc_files(paths):
+    def _resolve_doc_files(paths: Iterable[str | Path]) -> Generator[str]:
         for p in paths:
             try:
                 yield get_metadata_path(p)
@@ -103,7 +105,9 @@ def ui_path_doc_stream(paths, logger=None, uri: bool = True, raw: bool = False):
                 if logger is not None:
                     logger.error(str(e))
 
-    def _path_doc_stream(files, uri: bool = True, raw: bool = False) -> Iterator:
+    def _path_doc_stream(
+        files, uri: bool = True, raw: bool = False
+    ) -> Generator[tuple[str, SimpleDocNav | dict]]:
         maybe_wrap = identity if raw else SimpleDocNav
 
         for fname in files:

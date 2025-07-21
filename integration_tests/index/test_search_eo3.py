@@ -21,7 +21,7 @@ from datacube import Datacube
 from datacube.cfg import ODCEnvironment
 from datacube.cfg.opt import _DEFAULT_DB_USER
 from datacube.index import Index
-from datacube.model import Dataset, Product, Range
+from datacube.model import Dataset, Range
 from datacube.testutils import suppress_deprecations
 from datacube.utils.dates import tz_as_utc
 
@@ -316,7 +316,7 @@ def test_search_globally_eo3(index: Index, ls8_eo3_dataset: Dataset) -> None:
 
 def test_search_by_product_eo3(
     index: Index,
-    base_eo3_product_doc: Product,
+    base_eo3_product_doc: dict,
     ls8_eo3_dataset: Dataset,
     wo_eo3_dataset: Dataset,
 ) -> None:
@@ -339,7 +339,7 @@ def test_search_by_product_eo3(
 
 
 def test_search_limit_eo3(
-    index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset
+    index: Index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset
 ) -> None:
     prod = ls8_eo3_dataset.product.name
     datasets = list(index.datasets.search(product=prod))
@@ -383,7 +383,7 @@ def test_search_limit_eo3(
 
 
 def test_search_archived_eo3(
-    index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset
+    index: Index, ls8_eo3_dataset, ls8_eo3_dataset2, wo_eo3_dataset
 ) -> None:
     prod = ls8_eo3_dataset.product.name
     datasets = list(index.datasets.search(archived=False, product=prod))
@@ -413,7 +413,7 @@ def test_search_archived_eo3(
 
 
 def test_search_order_by_eo3(
-    index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3
+    index: Index, ls8_eo3_dataset, ls8_eo3_dataset2, ls8_eo3_dataset3
 ) -> None:
     # provided as a string
     datasets = list(index.datasets.search(order_by=["id"]))
@@ -590,7 +590,11 @@ def test_search_returning_eo3(
 
 
 def test_search_returning_rows_eo3(
-    index, eo3_ls8_dataset_doc, eo3_ls8_dataset2_doc, ls8_eo3_dataset, ls8_eo3_dataset2
+    index: Index,
+    eo3_ls8_dataset_doc,
+    eo3_ls8_dataset2_doc,
+    ls8_eo3_dataset,
+    ls8_eo3_dataset2,
 ) -> None:
     dataset = ls8_eo3_dataset
     uri = eo3_ls8_dataset_doc[1]
@@ -609,8 +613,8 @@ def test_search_returning_rows_eo3(
         index.datasets.search_returning(
             ("id", "uri"),
             custom_offsets={
-                "cloud_shadow": ["properties", "fmask:cloud_shadow"],
-                "sun_azimuth": ["properties", "eo:sun_azimuth"],
+                "cloud_shadow": ("properties", "fmask:cloud_shadow"),
+                "sun_azimuth": ("properties", "eo:sun_azimuth"),
             },
             platform="landsat-8",
             instrument="OLI_TIRS",
@@ -625,8 +629,8 @@ def test_search_returning_rows_eo3(
         index.datasets.search_returning(
             [],
             custom_offsets={
-                "cloud_shadow": ["properties", "fmask:cloud_shadow"],
-                "sun_azimuth": ["properties", "eo:sun_azimuth"],
+                "cloud_shadow": ("properties", "fmask:cloud_shadow"),
+                "sun_azimuth": ("properties", "eo:sun_azimuth"),
             },
             platform="landsat-8",
             instrument="OLI_TIRS",
@@ -651,7 +655,9 @@ def test_search_returning_rows_eo3(
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
-def test_search_returning_uri(index, eo3_ls8_dataset_doc, ls8_eo3_dataset) -> None:
+def test_search_returning_uri(
+    index: Index, eo3_ls8_dataset_doc, ls8_eo3_dataset
+) -> None:
     dataset = ls8_eo3_dataset
     uri = eo3_ls8_dataset_doc[1]
 
@@ -670,7 +676,11 @@ def test_search_returning_uri(index, eo3_ls8_dataset_doc, ls8_eo3_dataset) -> No
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
 def test_search_returning_uris_legacy(
-    index, eo3_ls8_dataset_doc, eo3_ls8_dataset2_doc, ls8_eo3_dataset, ls8_eo3_dataset2
+    index: Index,
+    eo3_ls8_dataset_doc,
+    eo3_ls8_dataset2_doc,
+    ls8_eo3_dataset,
+    ls8_eo3_dataset2,
 ) -> None:
     dataset = ls8_eo3_dataset
     uri = eo3_ls8_dataset_doc[1]
@@ -775,7 +785,7 @@ def test_search_special_fields_eo3(
 
 
 def test_search_by_uri_eo3(
-    index, ls8_eo3_dataset, ls8_eo3_dataset2, eo3_ls8_dataset_doc
+    index: Index, ls8_eo3_dataset, ls8_eo3_dataset2, eo3_ls8_dataset_doc
 ) -> None:
     datasets = list(
         index.datasets.search(
@@ -789,7 +799,7 @@ def test_search_by_uri_eo3(
     assert len(datasets) == 0
 
 
-def test_search_conflicting_types(index, ls8_eo3_dataset) -> None:
+def test_search_conflicting_types(index: Index, ls8_eo3_dataset) -> None:
     # Should return no results.
     with pytest.raises(ValueError):
         next(
@@ -1079,10 +1089,10 @@ def test_find_duplicates_eo3(
     assert len(all_datasets) == 5
 
     # First two ls8 datasets have the same path/row, last two have a different row.
-    dupe_fields = namedtuple("search_result", ["region_code", "dataset_maturity"])
+    search_result = namedtuple("search_result", ["region_code", "dataset_maturity"])
     expected_ls8_path_row_duplicates = [
-        (dupe_fields("090086", "final"), {ls8_eo3_dataset.id, ls8_eo3_dataset2.id}),
-        (dupe_fields("101077", "final"), {ls8_eo3_dataset3.id, ls8_eo3_dataset4.id}),
+        (search_result("090086", "final"), {ls8_eo3_dataset.id, ls8_eo3_dataset2.id}),
+        (search_result("101077", "final"), {ls8_eo3_dataset3.id, ls8_eo3_dataset4.id}),
     ]
 
     # Specifying groups as fields:
@@ -1111,7 +1121,7 @@ def test_find_duplicates_eo3(
 
 
 def test_find_duplicates_with_time(
-    index, nrt_dataset, final_dataset, ls8_eo3_dataset
+    index: Index, nrt_dataset, final_dataset, ls8_eo3_dataset
 ) -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", FixWindingWarning)
@@ -1123,11 +1133,11 @@ def test_find_duplicates_with_time(
     all_datasets = list(index.datasets.search())
     assert len(all_datasets) == 3
 
-    dupe_fields = namedtuple("search_result", ["region_code", "time"])
+    search_result = namedtuple("search_result", ["region_code", "time"])
 
     expected_result_old = [
         (
-            dupe_fields(
+            search_result(
                 "090086", '("2023-04-30 23:50:33.884549","2023-04-30 23:50:34.884549")'
             ),
             {nrt_dataset.id, final_dataset.id},
@@ -1135,7 +1145,7 @@ def test_find_duplicates_with_time(
     ]
     expected_result_new = [
         (
-            dupe_fields(
+            search_result(
                 "090086",
                 (
                     datetime.datetime(

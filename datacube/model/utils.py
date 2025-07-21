@@ -20,6 +20,7 @@ from pandas import to_datetime
 from xarray import DataArray
 
 import datacube
+from datacube.index import Index
 from datacube.model import Dataset, Product
 from datacube.utils import InvalidDocException, SimpleDocNav
 from datacube.utils.py import sorted_items
@@ -155,7 +156,7 @@ def datasets_to_doc(output_datasets: DataArray) -> DataArray:
     :return: An array of yaml document strings
     """
 
-    def dataset_to_yaml(index, dataset):
+    def dataset_to_yaml(index: Index, dataset):
         return yaml.dump(dataset.metadata_doc, Dumper=SafeDumper, encoding="utf-8")
 
     return xr_apply(output_datasets, dataset_to_yaml, dtype="O").astype("S")

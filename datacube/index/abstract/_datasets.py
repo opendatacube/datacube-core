@@ -201,7 +201,7 @@ class AbstractDatasetResource(ABC):
         self,
         dataset: Dataset,
         updates_allowed: Mapping[Offset, AllowPolicy] | None = None,
-    ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
+    ) -> tuple[bool, list[Change], list[Change]]:
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 

@@ -30,6 +30,7 @@ from typing_extensions import override
 from datacube import Datacube
 from datacube.api.core import output_geobox, per_band_load_data_settings
 from datacube.api.query import Query, query_group_by
+from datacube.index import Index
 from datacube.model import Measurement, Product
 from datacube.model.utils import SafeDumper, xr_apply, xr_iter
 from datacube.testutils.io import native_geobox
@@ -222,7 +223,7 @@ class VirtualDatasetBox:
             else:
                 raise VirtualProductException("malformed box")
 
-        def worker(index, entry):
+        def worker(index: Index, entry):
             return set(traverse(entry))
 
         return self.map(worker).box

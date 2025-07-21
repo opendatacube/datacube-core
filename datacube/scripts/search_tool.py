@@ -18,6 +18,7 @@ from typing import Any
 import click
 from sqlalchemy.dialects.postgresql import Range
 
+from datacube.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
 from datacube.utils.dates import tz_as_utc
@@ -90,7 +91,7 @@ def cli(ctx, f) -> None:
 @ui.parsed_search_expressions
 @PASS_INDEX
 @click.pass_context
-def datasets(ctx, index, expressions) -> None:
+def datasets(ctx, index: Index, expressions) -> None:
     """
     Search available Datasets
     """
@@ -101,7 +102,7 @@ def datasets(ctx, index, expressions) -> None:
     )
     ctx.obj["write_results"](
         sorted(index.products.get_field_names()),
-        (tup._asdict() for tup in index.datasets.search_returning(**expressions)),
+        (tup._asdict() for tup in index.datasets.search_returning(**expressions)),  # type: ignore[attr-defined]
     )
 
 
@@ -109,7 +110,7 @@ def datasets(ctx, index, expressions) -> None:
 @click.argument("period", nargs=1)
 @ui.parsed_search_expressions
 @PASS_INDEX
-def product_counts(index, period, expressions) -> None:
+def product_counts(index: Index, period, expressions) -> None:
     """
     Count product Datasets available by period
 

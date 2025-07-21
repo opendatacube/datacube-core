@@ -59,7 +59,7 @@ _pseudo_telemetry_dataset_type = {
 }
 
 
-def test_archive_datasets(index, ls8_eo3_dataset) -> None:
+def test_archive_datasets(index: Index, ls8_eo3_dataset) -> None:
     datasets = list(index.datasets.search())
     assert len(datasets) == 1
     assert not datasets[0].is_archived
@@ -82,7 +82,9 @@ def test_archive_datasets(index, ls8_eo3_dataset) -> None:
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_archive_less_mature(index, final_dataset, nrt_dataset, ds_no_region) -> None:
+def test_archive_less_mature(
+    index: Index, final_dataset, nrt_dataset, ds_no_region
+) -> None:
     # case 1: add nrt then final; nrt should get archived
     index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
     assert not index.datasets.get(nrt_dataset.id).is_archived
@@ -106,7 +108,7 @@ def test_archive_less_mature(index, final_dataset, nrt_dataset, ds_no_region) ->
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_cannot_search_for_less_mature(index, nrt_dataset, ds_no_region) -> None:
+def test_cannot_search_for_less_mature(index: Index, nrt_dataset, ds_no_region) -> None:
     # if a dataset is missing a property required for finding less mature datasets,
     # it should error
     index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=0)
@@ -118,7 +120,7 @@ def test_cannot_search_for_less_mature(index, nrt_dataset, ds_no_region) -> None
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_archive_less_mature_approx_timestamp(
-    index, ga_s2am_ard3_final, ga_s2am_ard3_interim
+    index: Index, ga_s2am_ard3_final, ga_s2am_ard3_interim
 ) -> None:
     # test archive_less_mature where there's a slight difference in timestamps
     index.datasets.add(ga_s2am_ard3_interim, with_lineage=False)
@@ -129,7 +131,7 @@ def test_archive_less_mature_approx_timestamp(
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_dont_archive_less_mature(index, final_dataset, nrt_dataset) -> None:
+def test_dont_archive_less_mature(index: Index, final_dataset, nrt_dataset) -> None:
     # ensure datasets aren't archive if no archive_less_mature value is provided
     index.datasets.add(nrt_dataset, with_lineage=False)
     assert not index.datasets.get(nrt_dataset.id).is_archived
@@ -139,7 +141,7 @@ def test_dont_archive_less_mature(index, final_dataset, nrt_dataset) -> None:
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_archive_less_mature_bool(index, final_dataset, nrt_dataset) -> None:
+def test_archive_less_mature_bool(index: Index, final_dataset, nrt_dataset) -> None:
     # if archive_less_mature value gets passed as a bool via an outdated script
     index.datasets.add(nrt_dataset, with_lineage=False)
     assert not index.datasets.get(nrt_dataset.id).is_archived
@@ -148,7 +150,7 @@ def test_archive_less_mature_bool(index, final_dataset, nrt_dataset) -> None:
     assert not index.datasets.get(final_dataset.id).is_archived
 
 
-def test_purge_datasets(index, ls8_eo3_dataset) -> None:
+def test_purge_datasets(index: Index, ls8_eo3_dataset) -> None:
     assert index.datasets.has(ls8_eo3_dataset.id)
     datasets = list(index.datasets.search())
     assert len(datasets) == 1
@@ -168,7 +170,7 @@ def test_purge_datasets(index, ls8_eo3_dataset) -> None:
     assert index.datasets.get(ls8_eo3_dataset.id) is None
 
 
-def test_purge_datasets_cli(index, ls8_eo3_dataset, clirunner) -> None:
+def test_purge_datasets_cli(index: Index, ls8_eo3_dataset, clirunner) -> None:
     dsid = ls8_eo3_dataset.id
 
     # Attempt to purge non-archived dataset should fail
@@ -195,7 +197,9 @@ def test_purge_datasets_cli(index, ls8_eo3_dataset, clirunner) -> None:
     clirunner(["dataset", "purge", str(dsid)], expect_success=False)
 
 
-def test_purge_all_datasets_cli(index, cfg_env, ls8_eo3_dataset, clirunner) -> None:
+def test_purge_all_datasets_cli(
+    index: Index, cfg_env, ls8_eo3_dataset, clirunner
+) -> None:
     dsid = ls8_eo3_dataset.id
 
     # archive all datasets
@@ -283,7 +287,7 @@ def test_add_dataset_no_product_id(
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_transactions_api_ctx_mgr(
-    index,
+    index: Index,
     extended_eo3_metadata_type_doc,
     ls8_eo3_product,
     eo3_ls8_dataset_doc,
@@ -317,7 +321,7 @@ def test_transactions_api_ctx_mgr(
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_transactions_api_ctx_mgr_nested(
-    index,
+    index: Index,
     extended_eo3_metadata_type_doc,
     ls8_eo3_product,
     eo3_ls8_dataset_doc,
@@ -354,7 +358,7 @@ def test_transactions_api_ctx_mgr_nested(
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_transactions_api_manual(
-    index,
+    index: Index,
     extended_eo3_metadata_type_doc,
     ls8_eo3_product,
     eo3_ls8_dataset_doc,
@@ -365,6 +369,8 @@ def test_transactions_api_manual(
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
     ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    assert ds1 is not None
+    assert ds2 is not None
     trans = index.transaction()
     index.datasets.add(ds1, False)
     assert index.datasets.get(ds1.id) is not None
@@ -384,7 +390,7 @@ def test_transactions_api_manual(
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_transactions_api_hybrid(
-    index,
+    index: Index,
     extended_eo3_metadata_type_doc,
     ls8_eo3_product,
     eo3_ls8_dataset_doc,
@@ -437,7 +443,7 @@ def test_get_missing_things(index: Index) -> None:
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
-def test_index_dataset_with_sources(index, default_metadata_type) -> None:
+def test_index_dataset_with_sources(index: Index, default_metadata_type) -> None:
     type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
 
     parent_doc = _telemetry_dataset.copy()
@@ -466,7 +472,9 @@ def test_index_dataset_with_sources(index, default_metadata_type) -> None:
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
-def test_index_dataset_with_lineage(index, ds_with_lineage, ls8_eo3_dataset) -> None:
+def test_index_dataset_with_lineage(
+    index: Index, ds_with_lineage, ls8_eo3_dataset
+) -> None:
     assert ds_with_lineage.source_tree
     index.datasets.add(ds_with_lineage)
     sources = index.lineage.get_source_tree(ds_with_lineage.id).children
@@ -658,7 +666,8 @@ def test_index_dataset_with_location(
 
     # Check order of uris is preserved when indexing with more than one
     second_ds_doc = copy.deepcopy(_telemetry_dataset)
-    second_ds_doc["id"] = "366f32d8-e1f8-11e6-94b4-185e0f80a589"
+    test_uuid = "366f32d8-e1f8-11e6-94b4-185e0f80a589"
+    second_ds_doc["id"] = test_uuid
     with suppress_deprecations():
         index.datasets.add(
             Dataset(  # Test deprecated behaviour
@@ -669,13 +678,13 @@ def test_index_dataset_with_location(
     # test order using get_locations function
     with suppress_deprecations():
         # Test of deprecated method
-        assert index.datasets.get_locations(second_ds_doc["id"]) == [
+        assert index.datasets.get_locations(test_uuid) == [
             "file:///a",
             "file:///b",
         ]
 
         # test order using datasets.get(), it has custom query as it turns out
-        assert index.datasets.get(second_ds_doc["id"])._uris == [
+        assert index.datasets.get(test_uuid)._uris == [
             "file:///a",
             "file:///b",
         ]
@@ -689,16 +698,14 @@ def test_index_dataset_with_location(
                 sources={},
             )
         )
-        assert index.datasets.get_locations(
-            second_ds_doc["id"]
-        ) == [  # Test of deprecated method
+        assert index.datasets.get_locations(test_uuid) == [  # Test of deprecated method
             "file:///c",
             "file:///d",
             "file:///a",
             "file:///b",
         ]
         assert index.datasets.get(
-            second_ds_doc["id"]
+            test_uuid
         ).uris == [  # Test of deprecated functionality
             "file:///c",
             "file:///d",

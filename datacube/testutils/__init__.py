@@ -187,8 +187,8 @@ def mk_sample_product(
     description: str = "Sample",
     measurements: Sequence[str | tuple | dict] = ("red", "green", "blue"),
     with_grid_spec: bool = False,
-    metadata_type=None,
-    storage=None,
+    metadata_type: MetadataType | None = None,
+    storage: dict | None = None,
     load: dict | bool | None = None,
 ) -> Product:
     if storage is None and with_grid_spec is True:
@@ -220,7 +220,7 @@ def mk_sample_product(
 
     measurements = [mk_measurement(m) for m in measurements]
 
-    definition = {
+    definition: dict[str, bool | str | list | dict] = {
         "name": name,
         "description": description,
         "metadata_type": metadata_type.name,
@@ -251,7 +251,7 @@ def mk_sample_dataset(
     image_bands_keys = ["path", "layer", "band"]
     measurement_keys = ["dtype", "units", "nodata", "aliases", "name"]
 
-    def with_keys(d, keys) -> dict:
+    def with_keys(d: dict[str, Any], keys: Sequence[str]) -> dict[str, Any]:
         return {k: d[k] for k in keys if k in d}
 
     measurements = [with_keys(m, measurement_keys) for m in bands]
@@ -304,7 +304,7 @@ def make_graph_abcde(node) -> tuple[Any, Any, Any, Any, Any]:
     return a, b, c, d, e
 
 
-def dataset_maker(idx: int, t=None):
+def dataset_maker(idx: int, t: datetime | None = None):
     """Return function that generates "dataset documents"
 
     (name, sources={}, **kwargs) -> dict
@@ -317,7 +317,7 @@ def dataset_maker(idx: int, t=None):
 
     t = t.isoformat()
 
-    def make(name: str, sources=_DEFAULT, **kwargs) -> dict:
+    def make(name: str, sources=_DEFAULT, **kwargs) -> dict[str, Any]:
         if sources is _DEFAULT:
             sources = {}
 
@@ -356,16 +356,21 @@ def gen_dataset_test_dag(idx: int, t=None, force_tree: bool = False) -> Any:
     return deref(root) if force_tree else root
 
 
-def load_dataset_definition(path):
+def load_dataset_definition(
+    path: str | os.PathLike[str] | pathlib.Path,
+) -> SimpleDocNav | None:
     if not isinstance(path, pathlib.Path):
         path = pathlib.Path(path)
 
     fname = get_metadata_path(path)
     for _, doc in read_documents(fname):
         return SimpleDocNav(doc)
+    return None
 
 
-def mk_test_image(w, h, dtype: str = "int16", nodata=-999, nodata_width: int = 4):
+def mk_test_image(
+    w, h, dtype: str = "int16", nodata=-999, nodata_width: int = 4
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64 | np.signedinteger[Any]]]:
     """
     Create 2d ndarray where each pixel value is formed by packing x coordinate in
     to the upper half of the pixel value and y coordinate is in the lower part.

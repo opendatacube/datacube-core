@@ -34,7 +34,9 @@ class PgField(Field):
     a JSONB column.
     """
 
-    def __init__(self, name: str, description: str, alchemy_column, indexed) -> None:
+    def __init__(
+        self, name: str, description: str, alchemy_column: ColumnElement, indexed: bool
+    ) -> None:
         super().__init__(name, description)
 
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
