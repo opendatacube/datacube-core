@@ -34,7 +34,7 @@ from .search_utils import _cli_csv_search, _csv_search_raw, _load_product_query
 
 
 @pytest.fixture
-def pseudo_ls8_type(index, ga_metadata_type):
+def pseudo_ls8_type(index: Index, ga_metadata_type):
     index.products.add_document(
         {
             "name": "ls8_telemetry",
@@ -52,7 +52,7 @@ def pseudo_ls8_type(index, ga_metadata_type):
 
 
 @pytest.fixture
-def pseudo_ls8_dataset(index, pseudo_ls8_type):
+def pseudo_ls8_dataset(index: Index, pseudo_ls8_type):
     id_ = str(uuid.uuid4())
     with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(
@@ -100,7 +100,7 @@ def pseudo_ls8_dataset(index, pseudo_ls8_type):
 
 
 @pytest.fixture
-def pseudo_ls8_dataset2(index, pseudo_ls8_type):
+def pseudo_ls8_dataset2(index: Index, pseudo_ls8_type):
     # Like the previous dataset, but a day later in time.
     id_ = str(uuid.uuid4())
     with index._active_connection() as connection:
@@ -195,7 +195,7 @@ def pseudo_ls8_dataset4(
 
 @pytest.fixture
 def ls5_dataset_w_children(
-    index, clirunner, example_ls5_dataset_path, indexed_ls5_scene_products
+    index: Index, clirunner, example_ls5_dataset_path, indexed_ls5_scene_products
 ):
     clirunner(["dataset", "add", str(example_ls5_dataset_path)])
     doc = load_dataset_definition(example_ls5_dataset_path)
@@ -417,7 +417,7 @@ def test_search_by_product(
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
-def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2) -> None:
+def test_search_limit(index: Index, pseudo_ls8_dataset, pseudo_ls8_dataset2) -> None:
     datasets = list(index.datasets.search())
     assert len(datasets) == 2
     datasets = list(index.datasets.search(limit=1))
@@ -728,7 +728,7 @@ def test_search_special_fields(
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
-def test_search_by_uri(index, ls5_dataset_w_children) -> None:
+def test_search_by_uri(index: Index, ls5_dataset_w_children) -> None:
     datasets = list(
         index.datasets.search(
             product=ls5_dataset_w_children.product.name,
@@ -834,7 +834,7 @@ def test_count_by_product_searches(
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
 @pytest.mark.usefixtures("ga_metadata_type", "indexed_ls5_scene_products")
-def test_source_filter(clirunner, index, example_ls5_dataset_path) -> None:
+def test_source_filter(clirunner, index: Index, example_ls5_dataset_path) -> None:
     clirunner(["dataset", "add", str(example_ls5_dataset_path)])
 
     all_nbar = list(index.datasets.search(product="ls5_nbar_scene"))

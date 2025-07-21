@@ -6,6 +6,7 @@ from uuid import uuid4 as random_uuid
 
 import pytest
 
+from datacube.index import Index
 from datacube.model import InconsistentLineageException, LineageDirection, LineageTree
 from datacube.model.lineage import LineageRelations
 
@@ -36,7 +37,7 @@ def test_lineage_home_api(index) -> None:
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
-def test_lineage_merge(index, src_lineage_tree, compatible_derived_tree) -> None:
+def test_lineage_merge(index: Index, src_lineage_tree, compatible_derived_tree) -> None:
     stree, ids = src_lineage_tree
     dtree, ids = compatible_derived_tree
 
@@ -51,7 +52,7 @@ def test_lineage_merge(index, src_lineage_tree, compatible_derived_tree) -> None
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
-def test_lineage_tree_index_api_simple(index, src_lineage_tree) -> None:
+def test_lineage_tree_index_api_simple(index: Index, src_lineage_tree) -> None:
     tree, ids = src_lineage_tree
     # Test api responses for lineage not in database:
     src_tree = index.lineage.get_source_tree(ids["root"])
@@ -103,7 +104,7 @@ def test_lineage_tree_index_api_simple(index, src_lineage_tree) -> None:
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
 def test_lineage_tree_index_api_consistent(
-    index, src_lineage_tree, compatible_derived_tree
+    index: Index, src_lineage_tree, compatible_derived_tree
 ) -> None:
     tree1, ids = src_lineage_tree
     tree2, ids = compatible_derived_tree
@@ -121,7 +122,9 @@ def test_lineage_tree_index_api_consistent(
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
-def test_lineage_tree_index_api_inconsistent_homes(index, src_lineage_tree) -> None:
+def test_lineage_tree_index_api_inconsistent_homes(
+    index: Index, src_lineage_tree
+) -> None:
     tree, ids = src_lineage_tree
     home_update = LineageTree(
         dataset_id=ids["ard1"],
@@ -146,7 +149,7 @@ def test_lineage_tree_index_api_inconsistent_homes(index, src_lineage_tree) -> N
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
-def test_get_extensions(index, dataset_with_external_lineage) -> None:
+def test_get_extensions(index: Index, dataset_with_external_lineage) -> None:
     dataset, src_lineage_tree, derived_lineage_tree, ids = dataset_with_external_lineage
 
     ds = index.datasets.get(ids["root"])

@@ -200,7 +200,7 @@ def check_bad_yaml(clirunner, index) -> None:
     assert "ERROR Failed reading documents from " in r.output
 
 
-def test_dataset_add_no_id(index, eo3_ls8_dataset3_doc, ls8_eo3_product) -> None:
+def test_dataset_add_no_id(index: Index, eo3_ls8_dataset3_doc, ls8_eo3_product) -> None:
     doc, uri = eo3_ls8_dataset3_doc
     del doc["id"]
 
@@ -210,7 +210,7 @@ def test_dataset_add_no_id(index, eo3_ls8_dataset3_doc, ls8_eo3_product) -> None
     assert _err == "No id defined in dataset doc"
 
 
-def test_dataset_add_not_eo3(index, ls8_eo3_product, eo3_wo_dataset_doc) -> None:
+def test_dataset_add_not_eo3(index: Index, ls8_eo3_product, eo3_wo_dataset_doc) -> None:
     from datacube.model.utils import BadMatch
 
     doc2ds = Doc2Dataset(index)
@@ -224,7 +224,9 @@ def test_dataset_eo3_no_schema(
 ) -> None:
     p = dataset_add_configs
     index = index_empty
-    ds = load_dataset_definition(p.datasets_eo3).doc
+    tmp = load_dataset_definition(p.datasets_eo3)
+    assert tmp is not None
+    ds = tmp.doc
 
     clirunner(["metadata", "add", p.metadata])
     clirunner(["product", "add", p.products])
@@ -263,7 +265,9 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
     clirunner(["dataset", "add", p.datasets_eo3])
 
     ds = load_dataset_definition(p.datasets)
+    assert ds is not None
     ds_bad1 = load_dataset_definition(p.datasets_bad1)
+    assert ds_bad1 is not None
 
     # Check .hl.Doc2Dataset
     doc2ds = Doc2Dataset(index)
@@ -295,6 +299,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
     assert ds_.id == ds.id
 
     x = index.datasets.get(ds.id, include_sources=True)
+    assert x is not None
     assert x.sources["ab"].id == ds.sources["ab"].id
     assert x.sources["ac"].sources["cd"].id == ds.sources["ac"].sources["cd"].id
 
@@ -320,9 +325,11 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
     assert r.exit_code == 0
 
     ds_eo3 = load_dataset_definition(p.datasets_eo3)
+    assert ds_eo3 is not None
     assert ds_eo3.location is not None
 
     _ds = index.datasets.get(ds_eo3.id, include_sources=True)
+    assert _ds is not None
     assert sorted(_ds.sources) == ["a", "bc1", "bc2"]
     assert _ds.crs == "EPSG:3857"
     assert _ds.extent is not None
@@ -735,6 +742,7 @@ def test_dataset_add_http(
     clirunner(["dataset", "add", httpserver.url_for("/datasets.yaml")])
 
     ds = load_dataset_definition(p.datasets)
+    assert ds is not None
     assert index.datasets.has(ds.id)
 
 

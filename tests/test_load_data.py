@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 import numpy as np
 import pytest
+from xarray import Dataset
 
 from datacube import Datacube
 from datacube.api.query import query_group_by
@@ -436,6 +437,7 @@ def test_native_load(tmpdir) -> None:
     assert set(get_raster_info(ds)) == set(ds.measurements)
 
     xx = native_load([ds], ["aa", "bb"], Datacube.group_datasets, "time")
+    assert isinstance(xx, Dataset)
     assert xx.odc.geobox == geobox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
@@ -447,6 +449,7 @@ def test_native_load(tmpdir) -> None:
     # cc is different size from aa,bb
     # cc is reprojected
     xx = native_load([ds], ["aa", "bb", "cc"], Datacube.group_datasets, "time")
+    assert isinstance(xx, Dataset)
     assert xx.odc.geobox == geobox
     assert xx.odc.geobox != geobox_cc
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
@@ -456,11 +459,13 @@ def test_native_load(tmpdir) -> None:
     xx = native_load(
         [ds], ["aa", "bb", "cc"], Datacube.group_datasets, "time", basis="aa"
     )
+    assert isinstance(xx, Dataset)
     assert xx.odc.geobox == geobox
     np.testing.assert_array_equal(aa, xx.isel(time=0).aa.values)
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
 
     # cc is compatible with self
     xx = native_load([ds], ["cc"], Datacube.group_datasets, "time")
+    assert isinstance(xx, Dataset)
     assert xx.odc.geobox == geobox_cc
     np.testing.assert_array_equal(cc, xx.isel(time=0).cc.values)

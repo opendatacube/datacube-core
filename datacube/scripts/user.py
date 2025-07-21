@@ -13,6 +13,7 @@ import yaml
 import yaml.resolver
 
 from datacube.cfg import ODCEnvironment
+from datacube.index import Index
 from datacube.index.abstract import AbstractIndex
 from datacube.ui import click as ui
 from datacube.ui.click import cli
@@ -80,7 +81,7 @@ _OUTPUT_WRITERS = {
     show_default=True,
 )
 @ui.pass_index()
-def list_users(index, f: str) -> None:
+def list_users(index: Index, f: str) -> None:
     """
     List users
     """
@@ -91,7 +92,7 @@ def list_users(index, f: str) -> None:
 @click.argument("role", type=click.Choice(USER_ROLES), nargs=1)
 @click.argument("users", nargs=-1)
 @ui.pass_index()
-def grant(index, role: str, users: Iterable[str]) -> None:
+def grant(index: Index, role: str, users: Iterable[str]) -> None:
     """
     Grant a role to users
     """
@@ -131,7 +132,7 @@ def create_user(
 @click.argument("users", nargs=-1)
 @ui.pass_index()
 @ui.pass_config
-def delete_user(config, index, users: str) -> None:
+def delete_user(config, index: Index, users: str) -> None:
     """
     Delete a User
     """

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import importlib
 import logging
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from contextlib import contextmanager
 
 import toolz
@@ -66,7 +66,9 @@ class cached_property:  # pylint: disable=invalid-name  # noqa: N801
         return value
 
 
-def sorted_items(d: Mapping | None, key=None, reverse: bool = False) -> list:
+def sorted_items(
+    d: Mapping | None, key: Callable | None = None, reverse: bool = False
+) -> list:
     """Given a dictionary `d` return items: (k1, v1), (k2, v2)... sorted in
     ascending order according to key.
 

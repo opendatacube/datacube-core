@@ -51,10 +51,10 @@ def test_read_paste(nearest_resampling, tmpdir) -> None:
     def _read(
         geobox,
         resampling=nearest_resampling,
-        fallback_nodata=-999,
-        dst_nodata=-999,
+        fallback_nodata: int | float | None = -999,
+        dst_nodata: int | float | None = -999,
         check_paste=False,
-    ):
+    ) -> tuple[np.ndarray, tuple[slice, slice]]:
         with RasterFileDataSource(mm.path, 1, nodata=fallback_nodata).open() as rdr:
             if check_paste:
                 # check that we are using paste

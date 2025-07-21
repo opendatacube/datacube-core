@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import inspect
 from collections.abc import Callable, Generator, Sequence
+from os import PathLike
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -332,8 +333,8 @@ def dc_read(
 
 
 def write_gtiff(
-    fname: Path,
-    pix,
+    fname: str | PathLike[str] | Path,
+    pix: np.ndarray[tuple[int, ...], np.dtype[np.float64 | np.signedinteger[Any]]],
     crs: str = "epsg:3857",
     resolution=(10, -10),
     offset: tuple[float, float] = (0.0, 0.0),
@@ -351,9 +352,6 @@ def write_gtiff(
     - geobox (takes precedence if supplied)
     """
     # pylint: disable=too-many-locals
-
-    from pathlib import Path
-
     import rasterio
     from affine import Affine
 

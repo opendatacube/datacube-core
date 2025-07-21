@@ -13,6 +13,7 @@ from typing_extensions import override
 from datacube.index.abstract import DSID, AbstractDatasetResource
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, Product, QueryDict, QueryField
+from datacube.utils.changes import Change
 
 
 class DatasetResource(AbstractDatasetResource):
@@ -61,7 +62,7 @@ class DatasetResource(AbstractDatasetResource):
     @override
     def can_update(
         self, dataset, updates_allowed=None
-    ) -> tuple[bool, Iterable, Iterable]:
+    ) -> tuple[bool, list[Change], list[Change]]:
         raise NotImplementedError()
 
     @override

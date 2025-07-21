@@ -10,7 +10,7 @@ import sys
 from collections import OrderedDict
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 from textwrap import dedent
-from typing import Any, cast
+from typing import Any, Literal, cast
 from uuid import UUID
 
 import click
@@ -28,6 +28,7 @@ from datacube.ui.click import cli, print_help_msg
 from datacube.ui.common import ui_path_doc_stream
 from datacube.ui.expression import parse_expressions
 from datacube.utils import SimpleDocNav, changes
+from datacube.utils.changes import AllowPolicy, Offset
 from datacube.utils.dates import tz_as_utc
 from datacube.utils.serialise import SafeDatacubeDumper
 from datacube.utils.uris import uri_resolve
@@ -48,7 +49,7 @@ def report_old_options(mapping):
     return maybe_remap
 
 
-def _resolve_uri(uri, doc):
+def _resolve_uri(uri: str, doc) -> str:
     loc = doc.location
     if loc is None:
         return uri
@@ -91,7 +92,7 @@ def dataset_stream(doc_stream, ds_resolve) -> Iterator:
         yield dataset
 
 
-def load_datasets_for_update(doc_stream, index) -> Iterator:
+def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Iterator:
     """Consume stream of dataset documents, associate each to a product by looking
     up existing dataset in the index. Datasets not in the database will be
     logged.
@@ -101,7 +102,7 @@ def load_datasets_for_update(doc_stream, index) -> Iterator:
     Generates tuples in the form (new_dataset, existing_dataset)
     """
 
-    def mk_dataset(ds, uri):
+    def mk_dataset(ds, uri: str) -> tuple[Dataset | None, Dataset | None, str | None]:
         uuid = ds.id
 
         if uuid is None:
@@ -218,12 +219,12 @@ def index_cmd(
     index: Index,
     product_names: Sequence[str],
     exclude_product_names: Sequence[str],
-    auto_add_lineage,
-    verify_lineage,
-    dry_run,
-    ignore_lineage,
-    confirm_ignore_lineage,
-    archive_less_mature,
+    auto_add_lineage: bool,
+    verify_lineage: bool,
+    dry_run: bool,
+    ignore_lineage: bool,
+    confirm_ignore_lineage: bool,
+    archive_less_mature: bool,
     dataset_paths: list[str],
 ) -> None:
     if not dataset_paths:
@@ -246,7 +247,7 @@ def index_cmd(
         _LOG.error(e)
         sys.exit(2)
 
-    def run_it(dataset_paths) -> None:
+    def run_it(dataset_paths: Iterable) -> None:
         doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
         doc_stream = remap_uri_from_doc(doc_stream)
         dss = dataset_stream(doc_stream, ds_resolve)
@@ -266,7 +267,13 @@ def index_cmd(
         run_it(dataset_paths)
 
 
-def index_datasets(dss, index, auto_add_lineage, dry_run, archive_less_mature) -> None:
+def index_datasets(
+    dss: Iterable[Dataset],
+    index: Index,
+    auto_add_lineage: bool,
+    dry_run: bool,
+    archive_less_mature: int | None,
+) -> None:
     for dataset in dss:
         _LOG.info("Matched %s", dataset)
         if not dry_run:
@@ -280,8 +287,10 @@ def index_datasets(dss, index, auto_add_lineage, dry_run, archive_less_mature) -
                 _LOG.error("Failed to add dataset %s: %s", dataset.local_uri, e)
 
 
-def parse_update_rules(keys_that_can_change) -> dict:
-    updates_allowed = {}
+def parse_update_rules(
+    keys_that_can_change: Sequence[str],
+) -> Mapping[Offset, AllowPolicy]:
+    updates_allowed: dict[Offset, AllowPolicy] = {}
     for key_str in keys_that_can_change:
         updates_allowed[tuple(key_str.split("."))] = changes.allow_any
     return updates_allowed
@@ -318,10 +327,10 @@ def parse_update_rules(keys_that_can_change) -> dict:
 @click.argument("dataset-paths", nargs=-1)
 @ui.pass_index()
 def update_cmd(
-    index,
+    index: Index,
     keys_that_can_change,
     dry_run,
-    location_policy,
+    location_policy: Literal["keep", "archive", "forget"],
     dataset_paths,
     archive_less_mature,
 ) -> None:
@@ -330,7 +339,9 @@ def update_cmd(
         print_help_msg(update_cmd)
         sys.exit(1)
 
-    def loc_action(action, new_ds, existing_ds, action_name: str) -> bool | None:
+    def loc_action(
+        action, new_ds: Dataset, existing_ds: Dataset, action_name: str
+    ) -> bool | None:
         if existing_ds.uri is None:
             return None
 
@@ -355,15 +366,15 @@ def update_cmd(
 
         return action(existing_ds.id, old_uri)
 
-    def loc_archive(new_ds, existing_ds):
+    def loc_archive(new_ds: Dataset, existing_ds: Dataset) -> bool | None:
         return loc_action(
             index.datasets.archive_location, new_ds, existing_ds, "archive"
         )
 
-    def loc_forget(new_ds, existing_ds):
+    def loc_forget(new_ds: Dataset, existing_ds: Dataset) -> bool | None:
         return loc_action(index.datasets.remove_location, new_ds, existing_ds, "forget")
 
-    def loc_keep(new_ds, existing_ds):
+    def loc_keep(new_ds: Dataset, existing_ds: Dataset) -> bool | None:
         return None
 
     update_loc = {"archive": loc_archive, "forget": loc_forget, "keep": loc_keep}[
@@ -405,7 +416,9 @@ def update_cmd(
     echo(f"{success} successful, {fail} failed")
 
 
-def update_dry_run(index, updates_allowed, dataset) -> bool:
+def update_dry_run(
+    index: Index, updates_allowed: Mapping[Offset, AllowPolicy] | None, dataset: Dataset
+) -> bool:
     try:
         can_update, safe_changes, unsafe_changes = index.datasets.can_update(
             dataset, updates_allowed=updates_allowed
