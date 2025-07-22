@@ -28,7 +28,7 @@ Launch tutorial environment
 ===========================
 
 Right-click on the Binder button below and select "Open Link in New Window" to launch the tutorial environment.
-This will allow you to keep the tutorial instructions in view alongside the environment.
+This will allow you to keep the tutorial instructions open alongside the environment.
 
 The tutorial environment may take a few minutes to start.
 
@@ -37,14 +37,14 @@ The tutorial environment may take a few minutes to start.
  :width: 240px
  :align: center
 
-| Once launched, you should see a Jupyter notebook environment with the tutorial notebook open. Open the file browser by clicking the folder icon on the left-hand menu bar (circled in red in the image below).
+| Once launched, you should see a Jupyter notebook environment with the tutorial notebook open. The tutorial notebook has headers that match up with the tutorial instructions on this page.
 
 .. image:: ../_static/tutorial-images/odc-stac/binder_view.png
  :width: 600
  :alt: A view of a Jupyter notebook environment showing that the tutorial.ipynb file is loaded. The file is open with the header "odc-stac tutorial".
  :align: center
 
-| The tutorial notebook has headers that match up with the tutorial instructions below.
+| We also recommend that you open the file browser by clicking the folder icon on the left-hand menu bar (circled in red in the image above). This will allow you to see the output files at the end of the tutorial.
 
 .. note::
    For this tutorial, we believe you will learn more if you type the code yourself, rather than using copy-paste.
@@ -215,9 +215,14 @@ Type the following into the empty cell below the **Load items with odc-stac** he
    ds
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
-You may see warnings appear in red text.
-This is expected behaviour for this dataset and does not mean anything is wrong.
+
+.. note::
+   You may see RunTimeWarnings appear in red text.
+   This comes from the :code:`affine` module and is expected behaviour for this dataset.
+   The warnings may look worrisome, but be reassured that nothing is wrong in this case.
+
 After running the cell, you should see a :code:`xarray.Dataset` summary.
+This will appear below any warnings.
 
 .. image:: ../_static/tutorial-images/odc-stac/xarray_output.png
  :width: 600
@@ -277,14 +282,19 @@ Type the following into the empty cell below the **Export loaded data** heading:
        )
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
-You should see seven new files in the file explorer, starting with "LULC_2017.tif" and ending with "LULC_2023.tif".
+You should see seven new files in the file browser, starting with "LULC_2017.tif" and ending with "LULC_2023.tif".
 
 Tutorial complete!
 ------------------
 
 Congratulations, you've used :code:`pystac-client` to search for data in a public STAC catalog and :code:`odc-stac` to load the data into an :code:`xarray`.
-In the last step you exported the loaded data as a series of Cloud Optimised GeoTIFF files, which you can now use in other applications. 
-Make sure you download these files from the file browser before exiting the tutorial space.
+In the last step you exported the loaded data as a series of Cloud Optimised GeoTIFF files, which you can now use in other applications.
+
+.. note::
+   Make sure you download these files from the file browser before exiting the tutorial space as they will be deleted when the tutorial space is closed.
+
+   To download, open the file-browser by clicking the folder icon in the left menu bar.
+   Then, download the "LULC_year.tif" files by right-clicking each file and selecting "Download".
 
 .. _pystac-client: https://pystac-client.readthedocs.io/en/stable/
 .. _odc-stac: https://odc-stac.readthedocs.io/en/latest/
