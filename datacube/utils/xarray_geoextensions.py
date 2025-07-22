@@ -47,8 +47,8 @@ def _xarray_extent(obj):
 
 def _xarray_geobox(obj):
     warnings.warn(
-        "Geobox extraction logic has moved to odc-geo and the .geobox property is now deprecated."
-        "Please access via .odc.geobox instead.",
+        "Geobox extraction logic has moved to odc-geo and the .geobox property "
+        "is now deprecated. Please access via .odc.geobox instead.",
         DeprecationWarning,
         stacklevel=2,
     )
