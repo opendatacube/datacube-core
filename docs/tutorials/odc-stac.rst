@@ -119,7 +119,7 @@ Type the following into the empty cell below the **Date range** heading:
 
    start_date = "2017-01-01"
    end_date = "2023-01-01"
-   date_query = (start_date, end_date)
+   date_range = (start_date, end_date)
 
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
@@ -135,16 +135,16 @@ STAC metadata has four important components:
 * **Item** A single spatio-temporal item, such as one observation in a dataset. For example, `Land Use Land Cover Data for Supercell 15M in 2013 <https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/collections/io-lulc-annual-v02/items/15M-2023>`_
 * **Asset** A single data measurement associated with an item, such as a single band. The Land Use Land Cover Dataset has only one asset, called "data".
 
-We must specify the catalog and collection we wish to search, and which assets we want to load. 
+We must specify the URL for the catalog we want to search, along with the desired collection (:code:`io-lulc-annual-v02`) and asset (:code:`data`). 
 The precise items that we need to load will be returned by a query that we run later.
 
 Type the following into the empty cell below the **Catalogs, collections, and items** heading:
 
 .. code-block:: python
 
-   catalog_query = "https://planetarycomputer.microsoft.com/api/stac/v1/"
-   collections_query = ["io-lulc-annual-v02"]
-   assets_query = ["data"]
+   catalog_url = "https://planetarycomputer.microsoft.com/api/stac/v1/"
+   desired_collections = ["io-lulc-annual-v02"]
+   desired_assets = ["data"]
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
 
@@ -158,7 +158,7 @@ Type the following into the empty cell below the **Connect to catalog and find i
 .. code-block:: python
 
    stac_client = Client.open(
-      catalog_query, 
+      url=catalog_url, 
       modifier=planetary_computer.sign_inplace,
    )
 
@@ -173,9 +173,9 @@ Type the following into the empty cell below the **Search for items** heading:
 .. code-block:: python
 
    items = stac_client.search(
-       collections=collections_query,
+       collections=desired_collections,
        intersects=aoi_geometry,
-       datetime=date_query,
+       datetime=date_range,
    ).item_collection()
 
    print(f"Found {len(items)} items")
@@ -206,7 +206,7 @@ Type the following into the empty cell below the **Load items with odc-stac** he
 
    ds = load(
       items=items,
-      bands=assets_query,
+      bands=desired_assets,
       geopolygon=aoi_geometry,
       crs="utm",
       resolution=30
@@ -234,7 +234,7 @@ Type the following into the empty cell below the **Visualise loaded data** headi
 
 .. code-block:: python
 
-   ds.data.plot.imshow(col="time", col_wrap=3)
+   ds["data"].plot.imshow(col="time", col_wrap=3)
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
 After running the cell, you should see the following visualisation.
@@ -256,7 +256,7 @@ Export loaded data
 
 Once you have loaded and checked your data, it is often useful to export it.
 This allows you to use the data in other software and analyses.
-The :code:`odc-geo` package adds the `.odc` extension for `xarray` datasets, allowing easy exporting of Cloud Optimised GeoTIFFs.
+The :code:`odc-geo` library provides the :code:`write_cog` function to generate and write these files from an :code:`xarray`.
 
 The code below extracts the year of each image from the dataset, then uses a loop to export each dataset to a new file.
 
@@ -268,7 +268,7 @@ Type the following into the empty cell below the **Export loaded data** heading:
 
    for timestep in range(len(ds.time)):
    
-       ds_single_year = ds.data.isel(time=timestep)
+       ds_single_year = ds["data"].isel(time=timestep)
        
        write_cog(
            ds_single_year,
