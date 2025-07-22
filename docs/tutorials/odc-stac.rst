@@ -60,7 +60,7 @@ Python imports
 
 The notebook requires five libraries to run:
 
-* :code:`geopandas` for loading an area of interest from a 
+* :code:`geopandas` for loading an area of interest from a GeoJSON file
 * :code:`odc.geo` for exporting loaded data
 * :code:`odc.stac` for loading data
 * :code:`planetary_computer` to provide authentication when accessing data
