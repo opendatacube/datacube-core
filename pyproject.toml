@@ -55,8 +55,7 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["setuptools>=69", "setuptools_scm[toml]>=3.4"]
-# v61 Add support for pyproject.toml, and include-package-data defaults to try when using pyproject.toml
+requires = ["setuptools>=69", "setuptools_scm[toml]>=8"]
 # v69 includes py.typed files by default
 build-backend = "setuptools.build_meta"
 

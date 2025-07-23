@@ -6,7 +6,7 @@ dependencies:
   - pip
   - python >=3.10
   - setuptools
-  - setuptools_scm >=3.4
+  - setuptools_scm >=8
   - toml
   - pytest-runner
   - sphinx
