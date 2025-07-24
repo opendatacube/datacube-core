@@ -27,6 +27,7 @@ concurrency:
 
 jobs:
   main:
+    timeout-minutes: 45
     runs-on: ubuntu-latest
     # Permit authenticating to PyPI
     permissions:

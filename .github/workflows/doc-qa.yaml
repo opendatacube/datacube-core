@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   pyspell:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       # Spellcheck
@@ -29,6 +30,7 @@ jobs:
         name: Spellcheck
 
   doctor-rst:
+    timeout-minutes: 15
     name: Lint (DOCtor-RST)
     runs-on: ubuntu-latest
     steps:
