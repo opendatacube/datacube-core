@@ -46,7 +46,7 @@ def test_read_paste(nearest_resampling, tmpdir) -> None:
     xx = mk_test_image(128, 64, nodata=None)
     assert (xx != -999).all()
 
-    mm = write_gtiff(pp / "tst-read-paste-128x64-int16.tif", xx, nodata=None)
+    mm = write_gtiff(pp / "tst-read-paste-128x64-int16.tif", xx, nodata=-999)
 
     def _read(
         geobox,
@@ -194,7 +194,7 @@ def test_read_paste_v2(nearest_resampling, tmpdir) -> None:
     xx = mk_test_image(128, 64, nodata=None)
     assert (xx != -999).all()
 
-    mm = write_gtiff(pp / "tst-read-paste-128x64-int16.tif", xx, nodata=None)
+    mm = write_gtiff(pp / "tst-read-paste-128x64-int16.tif", xx, nodata=-999)
 
     def _read(
         geobox,
