@@ -247,6 +247,7 @@ Github
 github
 githubusercontent
 GloVis
+Gomera
 gpd
 GQA
 graphviz
@@ -484,6 +485,7 @@ pytest
 PythonAPI
 pytz
 QGIS
+rangeland
 RasterDatasetDataSource
 RasterIO
 rasterio
