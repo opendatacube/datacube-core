@@ -93,19 +93,19 @@ Area of interest
 
 We specify the area of interest using the :code:`aoi.geojson` file, which can be loaded with :code:`geopandas`.
 
-The area of interest is the southern part of Isla Isabela, one of the islands in the Galapagos.
+The area of interest is the island of La Gomera, one of the Canary Islands.
 
 .. image:: ../_static/tutorial-images/odc-stac/aoi.png
  :width: 600
- :alt: A satellite image of Isla Isabela, with the area of interest shown as a yellow bounding box.
+ :alt: A map of La Gomera with satellite imagery, with the area of interest shown as a yellow bounding box.
  :align: center
 
 | Type the following into the empty cell below the **Area of interest** heading:
 
 .. code-block:: python
 
-   aoi = gpd.read_file("aoi.geojson")
-   aoi_geometry = aoi.iloc[0].geometry
+   desired_aoi = gpd.read_file("aoi.geojson")
+   desired_aoi_geometry = desired_aoi.iloc[0].geometry
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
 
@@ -117,28 +117,28 @@ Type the following into the empty cell below the **Date range** heading:
 
 .. code-block:: python
 
-   start_date = "2017-01-01"
-   end_date = "2023-01-01"
-   date_range = (start_date, end_date)
+   desired_start_date = "2017-01-01"
+   desired_end_date = "2023-01-01"
+   desired_date_range = (desired_start_date, desired_end_date)
 
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
 
-Catalogs, collections, and items
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+STAC metadata
+^^^^^^^^^^^^^
 
 Many Earth observation data providers generate STAC metadata, which can be used to find and load data you're interested in.
 STAC metadata has four important components:
 
 * **Catalog**: A structure for organising multiple datasets managed by a given provider. For example, `Planetary Computer's Catalog <https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/>`_
 * **Collection**: A structure for organising all items in a single dataset. For example, `Land Use Land Cover Collection <https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/collections/io-lulc-annual-v02>`_
-* **Item** A single spatio-temporal item, such as one observation in a dataset. For example, `Land Use Land Cover Data for Supercell 15M in 2013 <https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/collections/io-lulc-annual-v02/items/15M-2023>`_
+* **Item** A single spatio-temporal item, such as one observation in a dataset. For example, `Land Use Land Cover Data for Supercell 28R in 2023 <https://radiantearth.github.io/stac-browser/#/external/planetarycomputer.microsoft.com/api/stac/v1/collections/io-lulc-annual-v02/items/28R-2023>`_
 * **Asset** A single data measurement associated with an item, such as a single band. The Land Use Land Cover Dataset has only one asset, called "data".
 
 We must specify the URL for the catalog we want to search, along with the desired collection (:code:`io-lulc-annual-v02`) and asset (:code:`data`). 
 The precise items that we need to load will be returned by a query that we run later.
 
-Type the following into the empty cell below the **Catalogs, collections, and items** heading:
+Type the following into the empty cell below the **STAC metadata** heading:
 
 .. code-block:: python
 
@@ -174,26 +174,26 @@ Type the following into the empty cell below the **Search for items** heading:
 
    items = stac_client.search(
        collections=desired_collections,
-       intersects=aoi_geometry,
-       datetime=date_range,
+       intersects=desired_aoi_geometry,
+       datetime=desired_date_range,
    ).item_collection()
 
    print(f"Found {len(items)} items")
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
-After running the cell, you should see a printed sentence reporting "Found 17 items"
+After running the cell, you should see a printed sentence reporting "Found 7 items"
 
 Troubleshooting
 """""""""""""""
 
-If the sentence shows a different number of items, try checking whether your :code:`date_query` parameter is correct by printing it:
+If the sentence shows a different number of items, try checking whether your :code:`desired_date_range` parameter is correct by printing it:
 
 .. code-block:: python
 
-   print(date_query)
+   print(desired_date_range)
 
 should return :code:`('2017-01-01', '2023-01-01')`.
-If you see a different date range, return to the **Set up query parameters - Date range** section and ensure your :code:`start_date` and :code:`end_date` values match those given in the instructions.
+If you see a different date range, return to the **Set up query parameters - Date range** section and ensure your :code:`desired_start_date` and :code:`desired_end_date` values match those given in the instructions.
 
 Load items with odc-stac
 ------------------------
@@ -216,13 +216,7 @@ Type the following into the empty cell below the **Load items with odc-stac** he
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
 
-.. note::
-   You may see RunTimeWarnings appear in red text.
-   This comes from the :code:`affine` module and is expected behaviour for this dataset.
-   The warnings may look worrisome, but be reassured that nothing is wrong in this case.
-
 After running the cell, you should see a :code:`xarray.Dataset` summary.
-This will appear below any warnings.
 
 .. image:: ../_static/tutorial-images/odc-stac/xarray_output.png
  :width: 600
@@ -243,10 +237,16 @@ Type the following into the empty cell below the **Visualise loaded data** headi
 
 When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
 After running the cell, you should see the following visualisation.
+The colours in the plot represent the following land cover classes:
+
+- dark blue: water
+- green: built area
+- yellow: rangeland
+- mid blue: trees
 
 .. image:: ../_static/tutorial-images/odc-stac/output.png
  :width: 600
- :alt: A series of images showing the land cover data for each year, from 2017 to 2023. Each image shows the island in green and yellow, surrounded by ocean in blue.
+ :alt: A series of images showing the land cover data for each year, from 2017 to 2023. Each image shows the island in green, yellow and mid blue, surrounded by ocean in dark blue.
  :align: center
 
 Advanced visualisation
@@ -294,7 +294,7 @@ In the last step you exported the loaded data as a series of Cloud Optimised Geo
    Make sure you download these files from the file browser before exiting the tutorial space as they will be deleted when the tutorial space is closed.
 
    To download, open the file-browser by clicking the folder icon in the left menu bar.
-   Then, download the "LULC_year.tif" files by right-clicking each file and selecting "Download".
+   Then, download the Land Use Land Cover file for each year (denoted as `LULC_<year>.tif`) by right-clicking each file and selecting "Download".
 
 .. _pystac-client: https://pystac-client.readthedocs.io/en/stable/
 .. _odc-stac: https://odc-stac.readthedocs.io/en/latest/
