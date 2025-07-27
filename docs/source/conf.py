@@ -5,74 +5,27 @@
 import os
 import sys
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath("../.."))
-on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
-# -- General configuration ------------------------------------------------
-
-# If your documentation needs a minimal Sphinx version, state it here.
-# needs_sphinx = '1.0'
-
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
-extensions = [
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx_autodoc_typehints",
-    "sphinx.ext.graphviz",
-    "sphinx.ext.viewcode",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.extlinks",
-    "sphinx.ext.mathjax",
-    "sphinx_click.ext",
-    "click_utils",
-    # 'autodocsumm',
-    "nbsphinx",
-    # 'sphinx.ext.napoleon',
-    "sphinx_design",
-    # 'sphinx.ext.autosectionlabel',
-    "sphinx_toolbox.more_autodoc.autonamedtuple",
-    "IPython.sphinxext.ipython_console_highlighting",  # Highlights notebook cells
-]
-
-# Sphinx 8.1.3 does not manage to resolve the cyclic JsonLike type alias, so mock it.
-autodoc_mock_imports = ["datacube.utils.json_types"]
-
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ["_templates"]
-
-# The suffix of source filenames.
-source_suffix = {".rst": "restructuredtext", ".md": "restructuredtext"}
-
-# The master toctree document.
-master_doc = "index"
-
-# General information about the project.
-project = "Open Data Cube"
-
-# The version info for the project you're documenting, acts as replacement for
-# |version| and |release|, also used in various other places throughout the
-# built documents.
+# Configuration file for the Sphinx documentation builder.
 #
-# The short X.Y version.
+# For the full list of built-in configuration values, see the documentation:
+# https://www.sphinx-doc.org/en/master/usage/configuration.html
+
+# -- Project information -----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+project = "Open Data Cube"
+copyright = "2015-2025, ODC Contributors"
+author = "Open Data Cube"
 version = "1.9"
-# The full version, including alpha/beta/rc tags.
 # FIXME: obtain real version by running git
-release = version
+release = "version"
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
 # today = ''
 # Else, today_fmt is used as the format for a strftime call.
 # today_fmt = '%B %d, %Y'
-
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-exclude_patterns = [".condaenv", ".direnv", ".venv"]
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
@@ -103,10 +56,41 @@ intersphinx_mapping = {
 
 graphviz_output_format = "svg"
 
-# -- Options for HTML output ----------------------------------------------
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
+# -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx_autodoc_typehints",
+    "sphinx.ext.graphviz",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.extlinks",
+    "sphinx.ext.mathjax",
+    "sphinx_click.ext",
+    "click_utils",
+    # 'autodocsumm',
+    "nbsphinx",
+    # 'sphinx.ext.napoleon',
+    "sphinx_design",
+    # 'sphinx.ext.autosectionlabel',
+    "sphinx_toolbox.more_autodoc.autonamedtuple",
+    "IPython.sphinxext.ipython_console_highlighting",  # Highlights notebook cells
+]
+
+templates_path = ["_templates"]
+exclude_patterns = ["README.rst", ".condaenv", ".direnv", ".venv"]
+
+# The suffix of source filenames.
+source_suffix = {".rst": "restructuredtext", ".md": "restructuredtext"}
+
+# Sphinx 8.1.3 does not manage to resolve the cyclic JsonLike type alias, so mock it.
+autodoc_mock_imports = ["datacube.utils.json_types"]
+
+# -- Options for HTML output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 html_theme = "pydata_sphinx_theme"
 
 html_theme_options = {
@@ -180,10 +164,3 @@ def setup(app):
         objname="configuration value",
         indextemplate="pair: %s; configuration value",
     )
-
-
-# Clean up generated documentation files that RTD seems to be having trouble with
-if on_rtd:
-    import shutil
-
-    shutil.rmtree("./dev/generate", ignore_errors=True)
