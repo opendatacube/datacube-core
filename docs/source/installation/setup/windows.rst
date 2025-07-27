@@ -95,4 +95,4 @@ Build the documentation::
    cd datacube-core/docs
    pip install -r requirements.txt
    make html
-   open _build/html/index.html
+   open build/html/index.html
