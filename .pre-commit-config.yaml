@@ -42,8 +42,10 @@ repos:
         - id: forbid-crlf
         - id: remove-crlf
         - id: forbid-tabs
+          exclude: (make.bat|Makefile|debian/rules|.gitmodules)(\.in)?$
         - id: remove-tabs
-          args: [--whitespaces-count, '2'] 
+          exclude: (make.bat|Makefile|debian/rules|.gitmodules)(\.in)?$
+          args: [--whitespaces-count, '2']
         - id: insert-license
           files: ./(.*).py$
           args:
