@@ -69,4 +69,4 @@ Build the documentation::
     sudo apt install pandoc
     make html
 
-Then open :file:`_build/html/index.html` in your browser to view the Documentation.
+Then open :file:`build/html/index.html` in your browser to view the Documentation.

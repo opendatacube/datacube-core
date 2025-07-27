@@ -55,7 +55,7 @@ _EXAMPLE_LS5_NBAR_DATASET_FILE = INTEGRATION_TESTS_DIR / "example-ls5-nbar.yaml"
 NUM_TIME_SLICES = 3
 
 PROJECT_ROOT = Path(__file__).parents[1]
-CONFIG_SAMPLES = PROJECT_ROOT / "docs" / "config_samples"
+CONFIG_SAMPLES = PROJECT_ROOT / "docs" / "source" / "config_samples"
 
 CONFIG_FILE_PATHS = [
     os.path.expanduser("~/.datacube_integration.conf"),
