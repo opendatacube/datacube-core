@@ -478,9 +478,8 @@ def _to_yaml(ls5_telem_doc):
 
 
 def test_update_metadata_type(
-    index: Index, default_metadata_type: MetadataType | None
+    index: Index, default_metadata_type: MetadataType
 ) -> None:
-    assert default_metadata_type is not None
     mt_doc = next(
         d
         for d in default_metadata_type_docs()
