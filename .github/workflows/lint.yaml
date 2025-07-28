@@ -34,7 +34,7 @@ jobs:
         python-version: ["3.12"]
         lintcommand:
           - "pylint -j 2 datacube"
-          - "mypy datacube examples tests/test_utils_rio.py integration_tests/*py"
+          - "mypy datacube examples integration_tests tests/test_utils_rio.py"
     name: Linting
     steps:
       - name: checkout git
