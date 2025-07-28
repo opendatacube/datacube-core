@@ -95,9 +95,10 @@ def test_mem_metadatatype_resource(mem_index_fresh: Datacube) -> None:
     eo3 = mem_index_fresh.index.metadata_types.get_by_name("eo3")
     assert eo3 is not None and eo3.name == "eo3"
     # Verify we cannot mess with the cache
-    eo3.definition["description"] = "foo"
+    eo3.definition["description"] = "foo"  # type: ignore[index]
     eo3.definition["dataset"]["measurements"] = ["over_here", "measurements"]
     eo3_fresh = mem_index_fresh.index.metadata_types.get_by_name("eo3")
+    assert eo3_fresh is not None
     assert eo3.description != eo3_fresh.description
     assert (
         eo3.definition["dataset"]["measurements"]
@@ -107,9 +108,10 @@ def test_mem_metadatatype_resource(mem_index_fresh: Datacube) -> None:
     with pytest.raises(ValueError):
         mem_index_fresh.index.metadata_types.update(eo3)
     # Updating descriptions is safe.
-    eo3_fresh.definition["description"] = "New description"
+    eo3_fresh.definition["description"] = "New description"  # type: ignore[index]
     mem_index_fresh.index.metadata_types.update(eo3_fresh)
     eo3_fresher = mem_index_fresh.index.metadata_types.get_by_name("eo3")
+    assert eo3_fresher is not None
     assert eo3_fresher.description == eo3_fresh.description
     # Check get_with_fields
     platform_mdts = list(
@@ -140,6 +142,7 @@ def test_mem_product_resource(
 ) -> None:
     assert isinstance(mem_index_fresh.index, datacube.index.memory.index.Index)
     eo3 = mem_index_fresh.index.metadata_types.get_by_name("eo3")
+    assert eo3 is not None
     # Test Empty index works as expected:
     assert (
         list(mem_index_fresh.index.products.get_with_fields(("measurements", "extent")))
@@ -152,7 +155,9 @@ def test_mem_product_resource(
     wo_prod = mem_index_fresh.index.products.add_document(base_eo3_product_doc)
     assert wo_prod is not None
     assert wo_prod.name == "ga_ls_wo_3"
-    assert mem_index_fresh.index.products.get_by_name("ga_ls_wo_3").name == "ga_ls_wo_3"
+    p = mem_index_fresh.index.products.get_by_name("ga_ls_wo_3")
+    assert p is not None
+    assert p.name == "ga_ls_wo_3"
     # Attempt to add a product without a metadata type
     with pytest.raises(InvalidDocException):
         ls8_prod = mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
@@ -163,16 +168,17 @@ def test_mem_product_resource(
     mem_index_fresh.index.metadata_types.add(eo3ext)
     # Add an extended eo3 product doc
     ls8_prod = mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
+    assert ls8_prod is not None
     assert ls8_prod.name == "ga_ls8c_ard_3"
-    assert (
-        mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3").name
-        == "ga_ls8c_ard_3"
-    )
+    p = mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3")
+    assert p is not None
+    assert p.name == "ga_ls8c_ard_3"
     assert list(mem_index_fresh.index.products.get_with_types([eo3ext])) == [ls8_prod]
     # Verify we cannot mess with the cache
-    ls8_prod.definition["description"] = "foo"
+    ls8_prod.definition["description"] = "foo"  # type: ignore[index]
     ls8_prod.definition["measurements"][0]["name"] = "blueish"
     ls8_fresh = mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3")
+    assert ls8_fresh is not None
     assert ls8_prod.description != ls8_fresh.description
     assert (
         ls8_prod.definition["measurements"][0]["name"]
@@ -182,9 +188,10 @@ def test_mem_product_resource(
     with pytest.raises(ValueError):
         mem_index_fresh.index.products.update(ls8_prod)
     # Updating descriptions is safe.
-    ls8_fresh.definition["description"] = "New description"
+    ls8_fresh.definition["description"] = "New description"  # type: ignore[index]
     mem_index_fresh.index.products.update(ls8_fresh)
     ls8_fresher = mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3")
+    assert ls8_fresher is not None
     assert ls8_fresher.description == ls8_fresh.description
     # Test get_with_fields
     assert (
@@ -880,6 +887,7 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube) -> N
     for _, ds_doc in read_documents(dataset_add_configs.datasets):
         ds, err = resolver(ds_doc, "file:///fake_uri")
         assert err is None
+        assert ds is not None
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
     for _, ds_doc in read_documents(dataset_add_configs.datasets_bad1):
@@ -893,6 +901,7 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube) -> N
     for _, ds_doc in read_documents(dataset_add_configs.datasets_eo3):
         ds, err = resolver(ds_doc, "file:///fake_eo3_uri")
         assert err is None
+        assert ds is not None
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
 
@@ -907,10 +916,16 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube) -> N
     ds_ = SimpleDocNav(gen_dataset_test_dag(1, force_tree=True))
     assert ds_.id in ds_ids
     ds_from_idx = idx.datasets.get(ds_.id, include_sources=True)
+    assert ds_from_idx is not None
+    assert ds_from_idx.sources is not None
     assert ds_from_idx.sources["ab"].id == ds_.sources["ab"].id
-    assert (
-        ds_from_idx.sources["ac"].sources["cd"].id == ds_.sources["ac"].sources["cd"].id
-    )
+    p1 = ds_from_idx.sources["ac"]
+    assert p1 is not None
+    assert p1.sources is not None
+    p2 = ds_.sources["ac"]
+    assert p2 is not None
+    assert p2.sources is not None
+    assert p1.sources["cd"].id == p2.sources["cd"].id
 
 
 def test_mem_transactions(mem_index_fresh: Datacube) -> None:
