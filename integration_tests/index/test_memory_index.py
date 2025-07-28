@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import pytest
 
+import datacube.index.memory.index
 from datacube import Datacube
 from datacube.cfg import ODCEnvironment
 from datacube.model import Range
@@ -84,6 +85,7 @@ def test_mem_user_resource(mem_index_fresh: Datacube) -> None:
 
 
 def test_mem_metadatatype_resource(mem_index_fresh: Datacube) -> None:
+    assert isinstance(mem_index_fresh.index, datacube.index.memory.index.Index)
     assert len(mem_index_fresh.index.metadata_types.by_id) == len(
         mem_index_fresh.index.metadata_types.by_name
     )
@@ -136,6 +138,7 @@ def test_mem_product_resource(
     extended_eo3_product_doc,
     base_eo3_product_doc,
 ) -> None:
+    assert isinstance(mem_index_fresh.index, datacube.index.memory.index.Index)
     eo3 = mem_index_fresh.index.metadata_types.get_by_name("eo3")
     # Test Empty index works as expected:
     assert (
@@ -271,6 +274,7 @@ def test_mem_dataset_add_eo3(
 
     ds, err = resolver(doc_ls8, loc_ls8)
     assert err is None
+    assert ds is not None
     dc.index.datasets.add(ds)
     assert dc.index.datasets.has(doc_ls8["id"])
     ls8_ds = dc.index.datasets.get(doc_ls8["id"], include_sources=True)
@@ -280,6 +284,7 @@ def test_mem_dataset_add_eo3(
         datasets_with_unembedded_lineage_doc[1][1],
     )
     assert err is None
+    assert ds is not None
     dc.index.datasets.add(ds)
     assert list(dc.index.datasets.bulk_has((doc_ls8["id"], doc_wo["id"]))) == [
         True,
@@ -437,6 +442,7 @@ def test_mem_ds_updates(mem_eo3_data: tuple) -> None:
 
 
 def test_mem_ds_expand_periods(mem_index_fresh: Datacube) -> None:
+    assert isinstance(mem_index_fresh.index, datacube.index.memory.index.Index)
     periods = list(
         mem_index_fresh.index.datasets._expand_period(
             "1 day",
@@ -858,6 +864,7 @@ def test_mem_ds_count_product_through_time(mem_eo3_data: tuple) -> None:
 
 # Tests adapted from test_dataset_add
 def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube) -> None:
+    assert isinstance(mem_index_fresh.index, datacube.index.memory.index.Index)
     idx = mem_index_fresh.index
     # Make sure index is empty
     assert list(idx.products.get_all()) == []
@@ -880,6 +887,7 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube) -> N
         if err is not None:
             ds_bad_ids.add(ds_doc["id"])
             continue
+        assert ds is not None
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
     for _, ds_doc in read_documents(dataset_add_configs.datasets_eo3):
@@ -964,7 +972,9 @@ def test_default_clone_bulk_ops_multiloc(
         assert mem_index_fresh.index.datasets.has(wo_eo3_dataset.id)
         assert mem_index_fresh.index.datasets.has(ls8_eo3_dataset.id)
         assert mem_index_fresh.index.datasets.has(ls8_eo3_dataset4.id)
-        assert len(mem_index_fresh.index.datasets.get(ls8_eo3_dataset.id)._uris) == 2
+        d = mem_index_fresh.index.datasets.get(ls8_eo3_dataset.id)
+        assert d is not None
+        assert len(d._uris) == 2
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")

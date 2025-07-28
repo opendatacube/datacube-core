@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import datetime
-from collections.abc import Iterable, Sequence
-from typing import Any
+from collections.abc import Generator, Iterable, Mapping, Sequence
+from typing import Any, NamedTuple
 
 from deprecat import deprecat
 from typing_extensions import override
@@ -13,7 +13,7 @@ from typing_extensions import override
 from datacube.index.abstract import DSID, AbstractDatasetResource
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, Product, QueryDict, QueryField
-from datacube.utils.changes import Change
+from datacube.utils.changes import Change, Offset
 
 
 class DatasetResource(AbstractDatasetResource):
@@ -198,13 +198,13 @@ class DatasetResource(AbstractDatasetResource):
     def search_returning(
         self,
         field_names: Iterable[str] | None = None,
-        custom_offsets=None,
+        custom_offsets: Mapping[str, Offset] | None = None,
         limit: int | None = None,
         archived: bool | None = False,
-        order_by=None,
-        **query,
-    ) -> list:
-        return []
+        order_by: Iterable[Any] | None = None,
+        **query: QueryField,
+    ) -> Generator[NamedTuple]:
+        yield from []
 
     @override
     def count(self, archived: bool | None = False, **query) -> int:

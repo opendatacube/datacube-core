@@ -5,10 +5,10 @@
 import datetime
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from datetime import timedelta
 from time import monotonic
-from typing import Any
+from typing import Any, NamedTuple
 from uuid import UUID
 
 from deprecat import deprecat
@@ -697,26 +697,31 @@ class AbstractDatasetResource(ABC):
         archived: bool | None = False,
         order_by: Iterable[Any] | None = None,
         **query: QueryField,
-    ) -> Iterable[tuple]:
+    ) -> Generator[NamedTuple]:
         """
         Perform a search, returning only the specified fields.
 
-        This method can be faster than normal search() if you don't need all fields of each dataset.
+        This method can be faster than normal search() if you don't need all
+        fields of each dataset.
 
-        It also allows for returning rows other than datasets, such as a row per uri when requesting field 'uri'.
+        It also allows for returning rows other than datasets, such as a row
+        per uri when requesting field 'uri'.
 
-        :param field_names: Names of desired fields (default = all known search fields, unless custom_offsets is set,
-                            see below)
-        :param custom_offsets: A dictionary of offsets in the metadata doc for custom fields custom offsets
-                               are returned in addition to fields named in field_names.  Default is
-                               None, field_names only.  If field_names is None, and custom_offsets are provided,
-                               only the custom offsets are included, over-riding the normal field_names default.
+        :param field_names: Names of desired fields (default = all known search
+                            fields, unless custom_offsets is set, see below)
+        :param custom_offsets: A dictionary of offsets in the metadata doc for custom
+                               fields custom offsets are returned in addition to fields
+                               named in field_names. Default is None, field_names only.
+                               If field_names is None, and custom_offsets are provided,
+                               only the custom offsets are included, over-riding
+                               the normal field_names default.
         :param limit: Limit number of dataset (None/default = unlimited)
         :param archived: False (default): Return active datasets only.
                          None: Include archived and active datasets.
                          True: Return archived datasets only.
-        :param order_by: a field name, field, function or clause by which to sort output. None is unsorted and may allow
-                         faster return of first result depending on the index driver's implementation.
+        :param order_by: a field name, field, function or clause by which to sort
+                         output. None is unsorted and may allow faster return of first
+                         result depending on the index driver's implementation.
         :param query: search query parameters
         :return: Namedtuple of requested fields, for each matching dataset.
         """
