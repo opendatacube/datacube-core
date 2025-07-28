@@ -30,7 +30,8 @@ def test_with_driver(tmpdir) -> None:
     assert ds.time is not None
     mm = ["aa"]
     mm = [ds.product.measurements[k] for k in mm]
-    sources = Datacube.group_datasets([ds], "time")
+    # FIXME: GroupBy expected.
+    sources = Datacube.group_datasets([ds], "time")  # type: ignore[arg-type]
 
     ds_data = Datacube.load_data(sources, geobox, mm, driver="rio", dask_chunks={})
     assert ds_data is not None

@@ -338,7 +338,8 @@ A:..:0
 
     leaf = SimpleNamespace(id="N", sources=None)
     out = []
-    traverse_datasets(leaf, visitor, out=out)
+    # FIX;E: Dataset | SimpleDocNav expected.
+    traverse_datasets(leaf, visitor, out=out)  # type: ignore[arg-type]
     assert out == ["N:..:0"]
 
 
@@ -602,7 +603,8 @@ def test_netcdf_strings() -> None:
 
 
 def test_doc_reader() -> None:
-    d = DocReader({"lat": ["extent", "lat"]}, {}, doc={"extent": {"lat": 4}})
+    # FIXME: Field expected in doc Mapping.
+    d = DocReader({"lat": ["extent", "lat"]}, {}, doc={"extent": {"lat": 4}})  # type: ignore[dict-item]
     assert hasattr(d, "lat")
     assert d.lat == 4
     assert d.doc == {"extent": {"lat": 4}}

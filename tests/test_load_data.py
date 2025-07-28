@@ -59,7 +59,8 @@ def test_load_data(tmpdir) -> None:
     assert ds.time is not None
     assert ds.time == ds2.time
 
-    sources = Datacube.group_datasets([ds], "time")
+    # FIXME: GroupBy expected.
+    sources = Datacube.group_datasets([ds], "time")  # type: ignore[arg-type]
     sources2 = Datacube.group_datasets([ds, ds2], group_by)
 
     mm = ["aa"]
@@ -112,7 +113,8 @@ def test_load_data_dask(tmp_path) -> None:
         **spatial,
     )
 
-    sources = Datacube.group_datasets([ds], "time")
+    # FIXME: GroupBy expected
+    sources = Datacube.group_datasets([ds], "time")  # type: ignore[arg-type]
     mm = ds.product.measurements
 
     import dask
@@ -176,7 +178,8 @@ def test_load_data_with_url_mangling(tmpdir) -> None:
     assert ds.time is not None
     assert ds.time == ds2.time
 
-    sources = Datacube.group_datasets([ds], "time")
+    # FIXME: GroupBy expected.
+    sources = Datacube.group_datasets([ds], "time")  # type: ignore[arg-type]
     sources2 = Datacube.group_datasets([ds, ds2], group_by)
 
     mm = ["aa"]
@@ -247,7 +250,8 @@ def test_load_data_cbk(tmpdir) -> None:
     assert ds.time is not None
     assert ds.time == ds2.time
 
-    sources = Datacube.group_datasets([ds, ds2], "time")
+    # FIXME: GroupBy expected.
+    sources = Datacube.group_datasets([ds, ds2], "time")  # type: ignore[arg-type]
     progress_call_data = []
 
     def progress_cbk(n, nt) -> None:
