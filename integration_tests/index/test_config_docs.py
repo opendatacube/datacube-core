@@ -12,6 +12,8 @@ import pytest
 import yaml
 from sqlalchemy import text
 
+import datacube.index.postgis.index
+import datacube.index.postgres.index
 from datacube.drivers.postgis._fields import (
     NumericRangeDocField as PgsNumericRangeDocField,
 )
@@ -156,6 +158,9 @@ def test_field_expression_unchanged(
 
 
 def _object_exists(index: Index, index_name) -> bool:
+    assert isinstance(
+        index, datacube.index.postgres.index.Index | datacube.index.postgis.index.Index
+    )
     schema_name = "odc" if index._db.driver_name == "postgis" else "agdc"
     with index._active_connection() as connection:
         val = connection._connection.execute(
@@ -206,7 +211,9 @@ def test_update_dataset(
     assert updated.uri == "file:///test/doc.yaml"
 
     # update location
-    assert index.datasets.get(dataset.id).local_uri == "file:///test/doc.yaml"
+    d = index.datasets.get(dataset.id)
+    assert d is not None
+    assert d.local_uri == "file:///test/doc.yaml"
     update = Dataset(
         ls5_telem_type,
         example_ls5_nbar_metadata_doc,
@@ -278,11 +285,10 @@ def test_update_product_type(
     # Update with a new description
     ls5_telem_doc["description"] = "New description"
     index.products.update_document(ls5_telem_doc)
+    p = index.products.get_by_name(ls5_telem_type.name)
+    assert p is not None
     # Ensure was updated
-    assert (
-        index.products.get_by_name(ls5_telem_type.name).definition["description"]
-        == "New description"
-    )
+    assert p.definition["description"] == "New description"
 
     # Remove some match rules (looser rules -- that match more datasets -- should be allowed)
     assert "format" in ls5_telem_doc["metadata"]
@@ -349,12 +355,13 @@ def test_product_update_cli(
             expect_success=expect_success,
         )
 
-    def get_current(index: Index, product_doc):
+    def get_current(index: Index, product_doc: dict) -> str | float | dict | list:
         # It's calling out to a separate instance to update the product (through the cli),
         # so we need to clear our local index object's cache to get the updated one.
-        index.products.get_by_name_unsafe.cache_clear()
-
-        return sanitise_doc(index.products.get_by_name(product_doc["name"]).definition)
+        index.products.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
+        p = index.products.get_by_name(product_doc["name"])
+        assert p is not None
+        return sanitise_doc(p.definition)
 
     # Update an unchanged file, should be unchanged.
     file_path = tmpdir.join("unmodified-product.yaml")
@@ -414,7 +421,7 @@ def test_product_delete(index: Index, ls8_eo3_product: Product) -> None:
 
     index.products.delete([ls8_eo3_product])
 
-    index.products.get_by_name_unsafe.cache_clear()
+    index.products.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
     assert index.products.get_by_name(ls8_eo3_product.name) is None
     assert not _object_exists(index, "dix_ga_ls8c_ard_3_region_code")
     assert not _object_exists(index, "dv_ga_ls8c_ard_3_dataset")
@@ -442,7 +449,7 @@ def test_product_delete_cli(
     assert "ga_ls8c_ard_3 could not be deleted" in runner.output
     assert runner.exit_code == 0
 
-    index.products.get_by_name_unsafe.cache_clear()
+    index.products.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
     assert index.products.get_by_name("ga_ls8c_ard_3") is not None
     assert index.products.get_by_name("ga_ls_wo_3") is None
 
@@ -464,7 +471,7 @@ def test_product_delete_cli(
     )
     assert "No dataset found with id" in runner.output
 
-    index.products.get_by_name_unsafe.cache_clear()
+    index.products.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
     assert index.products.get_by_name("ga_ls8c_ard_3") is None
 
     # should be able to add product back now
@@ -555,8 +562,6 @@ def test_filter_products_by_types(index: Index, wo_eo3_product) -> None:
 
 
 def test_filter_types_by_search(index: Index, wo_eo3_product, ls8_eo3_product) -> None:
-    assert index.products
-
     # No arguments, return all.
     res = set(index.products.search())
     assert res == {ls8_eo3_product, wo_eo3_product}
@@ -590,27 +595,15 @@ def test_filter_types_by_search(index: Index, wo_eo3_product, ls8_eo3_product) -
     assert "dataset_maturity" in q
 
     # Or expression test
-    res = list(
-        index.products.search(
-            product_family=["wo", "spam"],
-        )
-    )
+    res = list(index.products.search(product_family=["wo", "spam"]))
     assert res == [wo_eo3_product]
 
     # Not expression test
-    res = list(
-        index.products.search(
-            product_family=Not("wo"),
-        )
-    )
+    res = list(index.products.search(product_family=Not("wo")))
     assert res == [ls8_eo3_product]
 
     # Mismatching fields
-    res = list(
-        index.products.search(
-            product_family="spam",
-        )
-    )
+    res = list(index.products.search(product_family="spam"))
     assert res == []
 
 
