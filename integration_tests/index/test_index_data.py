@@ -20,6 +20,7 @@ from datacube.index.eo3 import prep_eo3
 from datacube.index.exceptions import MissingRecordError
 from datacube.model import Dataset, MetadataType, Product
 from datacube.testutils import suppress_deprecations
+from datacube.utils.json_types import JsonDict
 
 _telemetry_uuid = UUID("4ec8fe97-e8b9-11e4-87ff-1040f381a756")
 _telemetry_dataset = {
@@ -47,7 +48,7 @@ _telemetry_dataset = {
     "lineage": {"source_datasets": {}, "blah": float("NaN")},
 }
 
-_pseudo_telemetry_dataset_type = {
+_pseudo_telemetry_dataset_type: JsonDict = {
     "name": "ls8_telemetry",
     "description": "LS8 test",
     "metadata": {
@@ -70,6 +71,7 @@ def test_archive_datasets(index: Index, ls8_eo3_dataset) -> None:
 
     # The model should show it as archived now.
     indexed_dataset = index.datasets.get(ls8_eo3_dataset.id)
+    assert indexed_dataset is not None
     assert indexed_dataset.is_archived
 
     index.datasets.restore([ls8_eo3_dataset.id])
@@ -78,6 +80,7 @@ def test_archive_datasets(index: Index, ls8_eo3_dataset) -> None:
 
     # And now active
     indexed_dataset = index.datasets.get(ls8_eo3_dataset.id)
+    assert indexed_dataset is not None
     assert not indexed_dataset.is_archived
 
 
@@ -87,10 +90,16 @@ def test_archive_less_mature(
 ) -> None:
     # case 1: add nrt then final; nrt should get archived
     index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=True)
-    assert not index.datasets.get(nrt_dataset.id).is_archived
+    d = index.datasets.get(nrt_dataset.id)
+    assert d is not None
+    assert not d.is_archived
     index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=True)
-    assert index.datasets.get(nrt_dataset.id).is_archived
-    assert not index.datasets.get(final_dataset.id).is_archived
+    d = index.datasets.get(nrt_dataset.id)
+    assert d is not None
+    assert d.is_archived
+    d = index.datasets.get(final_dataset.id)
+    assert d is not None
+    assert not d.is_archived
 
     # case 2: purge nrt; re-add with final already there
     index.datasets.purge([nrt_dataset.id])
@@ -102,9 +111,13 @@ def test_archive_less_mature(
     # case 3: re-index final; nrt should still get archived
     assert index.datasets.get(final_dataset.id) is not None
     index.datasets.add(nrt_dataset, with_lineage=False)
-    assert not index.datasets.get(nrt_dataset.id).is_archived
+    d = index.datasets.get(nrt_dataset.id)
+    assert d is not None
+    assert not d.is_archived
     index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=True)
-    assert index.datasets.get(nrt_dataset.id).is_archived
+    d = index.datasets.get(nrt_dataset.id)
+    assert d is not None
+    assert d.is_archived
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
@@ -112,7 +125,9 @@ def test_cannot_search_for_less_mature(index: Index, nrt_dataset, ds_no_region) 
     # if a dataset is missing a property required for finding less mature datasets,
     # it should error
     index.datasets.add(nrt_dataset, with_lineage=False, archive_less_mature=0)
-    assert not index.datasets.get(nrt_dataset.id).is_archived
+    d = index.datasets.get(nrt_dataset.id)
+    assert d is not None
+    assert not d.is_archived
     assert ds_no_region.metadata.region_code is None
     with pytest.raises(ValueError, match="region_code"):
         index.datasets.add(ds_no_region, with_lineage=False, archive_less_mature=0)
@@ -124,30 +139,48 @@ def test_archive_less_mature_approx_timestamp(
 ) -> None:
     # test archive_less_mature where there's a slight difference in timestamps
     index.datasets.add(ga_s2am_ard3_interim, with_lineage=False)
-    assert not index.datasets.get(ga_s2am_ard3_interim.id).is_archived
+    d = index.datasets.get(ga_s2am_ard3_interim.id)
+    assert d is not None
+    assert not d.is_archived
     index.datasets.add(ga_s2am_ard3_final, with_lineage=False, archive_less_mature=True)
-    assert index.datasets.get(ga_s2am_ard3_interim.id).is_archived
-    assert not index.datasets.get(ga_s2am_ard3_final.id).is_archived
+    d = index.datasets.get(ga_s2am_ard3_interim.id)
+    assert d is not None
+    assert d.is_archived
+    d = index.datasets.get(ga_s2am_ard3_final.id)
+    assert d is not None
+    assert not d.is_archived
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_dont_archive_less_mature(index: Index, final_dataset, nrt_dataset) -> None:
     # ensure datasets aren't archive if no archive_less_mature value is provided
     index.datasets.add(nrt_dataset, with_lineage=False)
-    assert not index.datasets.get(nrt_dataset.id).is_archived
+    d = index.datasets.get(nrt_dataset.id)
+    assert d is not None
+    assert not d.is_archived
     index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=None)
-    assert not index.datasets.get(nrt_dataset.id).is_archived
-    assert not index.datasets.get(final_dataset.id).is_archived
+    d = index.datasets.get(nrt_dataset.id)
+    assert d is not None
+    assert not d.is_archived
+    d = index.datasets.get(final_dataset.id)
+    assert d is not None
+    assert not d.is_archived
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
 def test_archive_less_mature_bool(index: Index, final_dataset, nrt_dataset) -> None:
     # if archive_less_mature value gets passed as a bool via an outdated script
     index.datasets.add(nrt_dataset, with_lineage=False)
-    assert not index.datasets.get(nrt_dataset.id).is_archived
+    d = index.datasets.get(nrt_dataset.id)
+    assert d is not None
+    assert not d.is_archived
     index.datasets.add(final_dataset, with_lineage=False, archive_less_mature=False)
-    assert not index.datasets.get(nrt_dataset.id).is_archived
-    assert not index.datasets.get(final_dataset.id).is_archived
+    d = index.datasets.get(nrt_dataset.id)
+    assert d is not None
+    assert not d.is_archived
+    d = index.datasets.get(final_dataset.id)
+    assert d is not None
+    assert not d.is_archived
 
 
 def test_purge_datasets(index: Index, ls8_eo3_dataset) -> None:
@@ -163,6 +196,7 @@ def test_purge_datasets(index: Index, ls8_eo3_dataset) -> None:
 
     # The model should show it as archived now.
     indexed_dataset = index.datasets.get(ls8_eo3_dataset.id)
+    assert indexed_dataset is not None
     assert indexed_dataset.is_archived
 
     # Purge dataset
@@ -182,11 +216,13 @@ def test_purge_datasets_cli(index: Index, ls8_eo3_dataset, clirunner) -> None:
     # Archive dataset
     index.datasets.archive([dsid])
     indexed_dataset = index.datasets.get(dsid)
+    assert indexed_dataset is not None
     assert indexed_dataset.is_archived
 
     # Test CLI dry run
     clirunner(["dataset", "purge", "--dry-run", str(dsid)])
     indexed_dataset = index.datasets.get(dsid)
+    assert indexed_dataset is not None
     assert indexed_dataset.is_archived
 
     # Test CLI purge
@@ -206,11 +242,13 @@ def test_purge_all_datasets_cli(
     clirunner(["dataset", "archive", "--all"])
 
     indexed_dataset = index.datasets.get(dsid)
+    assert indexed_dataset is not None
     assert indexed_dataset.is_archived
 
     # Restore all datasets
     clirunner(["dataset", "restore", "--all"])
     indexed_dataset = index.datasets.get(dsid)
+    assert indexed_dataset is not None
     assert not indexed_dataset.is_archived
 
     # Archive again
@@ -258,6 +296,7 @@ def test_get_dataset(index: Index, ls8_eo3_dataset: Dataset) -> None:
 
     for tr in (lambda x: x, lambda x: str(x)):
         ds = index.datasets.get(tr(ls8_eo3_dataset.id))
+        assert ds is not None
         assert ds.id == ls8_eo3_dataset.id
 
         (ds,) = index.datasets.bulk_get([tr(ls8_eo3_dataset.id)])
@@ -297,7 +336,9 @@ def test_transactions_api_ctx_mgr(
 
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
+    assert ds1 is not None
     ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    assert ds2 is not None
     with pytest.raises(Exception) as e:  # noqa: SIM117
         with index.transaction() as trans:
             assert index.datasets.get(ds1.id) is None
@@ -331,7 +372,9 @@ def test_transactions_api_ctx_mgr_nested(
 
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
+    assert ds1 is not None
     ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    assert ds2 is not None
     with pytest.raises(Exception) as e:  # noqa: SIM117
         with index.transaction():
             with index.transaction() as trans:
@@ -400,7 +443,9 @@ def test_transactions_api_hybrid(
 
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
     ds1, err = resolver(*eo3_ls8_dataset_doc)
+    assert ds1 is not None
     ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    assert ds2 is not None
     with index.transaction() as trans:
         assert index.datasets.get(ds1.id) is None
         index.datasets.add(ds1, False)
@@ -460,7 +505,7 @@ def test_index_dataset_with_sources(index: Index, default_metadata_type) -> None
     assert index.datasets.get(parent.id)
     assert index.datasets.get(child.id)
 
-    assert len(index.datasets.bulk_get([parent.id, child.id])) == 2
+    assert len(list(index.datasets.bulk_get([parent.id, child.id]))) == 2
 
     index.datasets.add(child, with_lineage=False)
     index.datasets.add(child, with_lineage=True)
@@ -478,6 +523,7 @@ def test_index_dataset_with_lineage(
     assert ds_with_lineage.source_tree
     index.datasets.add(ds_with_lineage)
     sources = index.lineage.get_source_tree(ds_with_lineage.id).children
+    assert sources is not None
     assert len(sources["ard"]) == 1
     assert sources["ard"][0].dataset_id == ls8_eo3_dataset.id
     assert index.datasets.get(ds_with_lineage.id)
@@ -491,10 +537,11 @@ def test_index_dataset_with_location(
     second_file = Path("/tmp/second/something.yaml").absolute()
 
     product = index.products.add_document(_pseudo_telemetry_dataset_type)
+    assert product is not None
     dataset = Dataset(product, _telemetry_dataset, uri=first_file.as_uri(), sources={})
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
-
+    assert stored is not None
     assert stored.id == _telemetry_uuid
     # TODO: Dataset types?
     assert stored.product.id == product.id
@@ -599,6 +646,7 @@ def test_index_dataset_with_location(
             dataset.id, second_file.as_uri()
         )  # Test of deprecated method
         stored = index.datasets.get(dataset.id)
+        assert stored is not None
     assert len(stored._uris) == 2
 
     # Newest to oldest.
@@ -655,6 +703,7 @@ def test_index_dataset_with_location(
     with suppress_deprecations():
         index.datasets.add(dataset)
         stored = index.datasets.get(dataset.id)
+        assert stored is not None
         locations = index.datasets.get_locations(
             dataset.id
         )  # Test of deprecated method
@@ -684,7 +733,9 @@ def test_index_dataset_with_location(
         ]
 
         # test order using datasets.get(), it has custom query as it turns out
-        assert index.datasets.get(test_uuid)._uris == [
+        d = index.datasets.get(test_uuid)
+        assert d is not None
+        assert d._uris == [
             "file:///a",
             "file:///b",
         ]
@@ -704,9 +755,9 @@ def test_index_dataset_with_location(
             "file:///a",
             "file:///b",
         ]
-        assert index.datasets.get(
-            test_uuid
-        ).uris == [  # Test of deprecated functionality
+        d = index.datasets.get(test_uuid)
+        assert d is not None
+        assert d.uris == [  # Test of deprecated functionality
             "file:///c",
             "file:///d",
             "file:///a",
