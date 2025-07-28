@@ -35,7 +35,7 @@ from datacube.drivers.postgres import _core as pgres_core
 from datacube.index import Index, index_connect
 from datacube.index.abstract import AbstractIndex, default_metadata_type_docs
 from datacube.model import Dataset, LineageDirection, LineageTree, MetadataType, Product
-from datacube.utils import SimpleDocNav
+from datacube.utils import SimpleDocNav, read_documents
 from integration_tests.utils import (
     GEOTIFF,
     _make_geotiffs,
@@ -75,12 +75,12 @@ settings.load_profile("opendatacube")
 EO3_TESTDIR = INTEGRATION_TESTS_DIR / "data" / "eo3"
 
 
-def get_eo3_test_data_doc(path: str | Path) -> dict | None:
+def get_eo3_test_data_doc(path: str | Path) -> dict:
     from datacube.utils import read_documents
 
     for _, doc in read_documents(EO3_TESTDIR / path):
         return doc
-    return None
+    pytest.fail(f"No document found for {EO3_TESTDIR / path}", False)
 
 
 @pytest.fixture
@@ -116,7 +116,7 @@ def eo3_dataset_update_path() -> str:
 
 
 @pytest.fixture
-def dataset_with_lineage_doc() -> tuple[dict | None, str]:
+def dataset_with_lineage_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("wo_ds_with_lineage.odc-metadata.yaml"),
         "s3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/"
@@ -125,7 +125,7 @@ def dataset_with_lineage_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def eo3_ls8_dataset_doc() -> tuple[dict | None, str]:
+def eo3_ls8_dataset_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("ls8_dataset.yaml"),
         "s3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/12/"
@@ -134,7 +134,7 @@ def eo3_ls8_dataset_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def eo3_ls8_dataset2_doc() -> tuple[dict | None, str]:
+def eo3_ls8_dataset2_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("ls8_dataset2.yaml"),
         "s3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2016/05/28/"
@@ -143,7 +143,7 @@ def eo3_ls8_dataset2_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def eo3_ls8_dataset3_doc() -> tuple[dict | None, str]:
+def eo3_ls8_dataset3_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("ls8_dataset3.yaml"),
         "s3://dea-public-data/baseline/ga_ls8c_ard_3/101/077/2013/04/04/"
@@ -152,7 +152,7 @@ def eo3_ls8_dataset3_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def eo3_ls8_dataset4_doc() -> tuple[dict | None, str]:
+def eo3_ls8_dataset4_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("ls8_dataset4.yaml"),
         "s3://dea-public-data/baseline/ga_ls8c_ard_3/101/077/2013/07/21/"
@@ -161,7 +161,7 @@ def eo3_ls8_dataset4_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def eo3_wo_dataset_doc() -> tuple[dict | None, str]:
+def eo3_wo_dataset_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("wo_dataset.yaml"),
         "s3://dea-public-data/derivative/ga_ls_wo_3/1-6-0/090/086/2016/05/12/"
@@ -170,7 +170,7 @@ def eo3_wo_dataset_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def eo3_africa_dataset_doc() -> tuple[dict | None, str]:
+def eo3_africa_dataset_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("s2_africa_dataset.yaml"),
         "s3://deafrica-sentinel-2/sentinel-s2-l2a-cogs/37/M/CQ/"
@@ -179,7 +179,7 @@ def eo3_africa_dataset_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def eo3_africa_dataset2_doc() -> tuple[dict | None, str]:
+def eo3_africa_dataset2_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("s2_africa_dataset2.yaml"),
         "s3://deafrica-sentinel-2/sentinel-s2-l2a-cogs/39/M/XR/"
@@ -188,7 +188,7 @@ def eo3_africa_dataset2_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def s1_dataset_doc() -> tuple[dict | None, str]:
+def s1_dataset_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("ga_s1_vertical_dualpol.yaml"),
         "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/"
@@ -197,7 +197,7 @@ def s1_dataset_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def datasets_with_unembedded_lineage_doc() -> list[tuple[dict | None, str]]:
+def datasets_with_unembedded_lineage_doc() -> list[tuple[dict, str]]:
     return [
         (
             get_eo3_test_data_doc("ls8_dataset.yaml"),
@@ -213,47 +213,47 @@ def datasets_with_unembedded_lineage_doc() -> list[tuple[dict | None, str]]:
 
 
 @pytest.fixture
-def extended_eo3_metadata_type_doc() -> dict | None:
+def extended_eo3_metadata_type_doc() -> dict:
     return get_eo3_test_data_doc("eo3_landsat_ard.odc-type.yaml")
 
 
 @pytest.fixture
-def eo3_sentinel_metadata_type_doc() -> dict | None:
+def eo3_sentinel_metadata_type_doc() -> dict:
     return get_eo3_test_data_doc("eo3_sentinel_ard.odc-type.yaml")
 
 
 @pytest.fixture
-def eo3_s1_metadata_type_doc() -> dict | None:
+def eo3_s1_metadata_type_doc() -> dict:
     return get_eo3_test_data_doc("eo3_s1_ard.odc-type.yaml")
 
 
 @pytest.fixture
-def extended_eo3_product_doc() -> dict | None:
+def extended_eo3_product_doc() -> dict:
     return get_eo3_test_data_doc("ard_ls8.odc-product.yaml")
 
 
 @pytest.fixture
-def base_eo3_product_doc() -> dict | None:
+def base_eo3_product_doc() -> dict:
     return get_eo3_test_data_doc("ga_ls_wo_3.odc-product.yaml")
 
 
 @pytest.fixture
-def africa_s2_product_doc() -> dict | None:
+def africa_s2_product_doc() -> dict:
     return get_eo3_test_data_doc("s2_africa_product.yaml")
 
 
 @pytest.fixture
-def s2_ard_product_doc() -> dict | None:
+def s2_ard_product_doc() -> dict:
     return get_eo3_test_data_doc("ga_s2am_ard_3.odc-product.yaml")
 
 
 @pytest.fixture
-def s1_product_doc() -> dict | None:
+def s1_product_doc() -> dict:
     return get_eo3_test_data_doc("ga_s1_vertical_dualpol.odc-product.yaml")
 
 
 @pytest.fixture
-def final_dataset_doc() -> tuple[dict | None, str]:
+def final_dataset_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("final_dataset.yaml"),
         "s3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2023/04/30"
@@ -262,7 +262,7 @@ def final_dataset_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def nrt_dataset_doc() -> tuple[dict | None, str]:
+def nrt_dataset_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("nrt_dataset.yaml"),
         "s3://dea-public-data/baseline/ga_ls8c_ard_3/090/086/2023/04/30_nrt"
@@ -271,7 +271,7 @@ def nrt_dataset_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def ga_s2am_ard_3_interim_doc() -> tuple[dict | None, str]:
+def ga_s2am_ard_3_interim_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("ga_s2am_ard_3_interim.yaml"),
         "s3://dea-public-data/baseline/ga_s2am_ard_3/53/JNN/2021/07/24_interim"
@@ -280,7 +280,7 @@ def ga_s2am_ard_3_interim_doc() -> tuple[dict | None, str]:
 
 
 @pytest.fixture
-def ga_s2am_ard_3_final_doc() -> tuple[dict | None, str]:
+def ga_s2am_ard_3_final_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("ga_s2am_ard_3_final.yaml"),
         "s3://dea-public-data/baseline/ga_s2am_ard_3/53/JNN/2021/07/24"
@@ -348,30 +348,40 @@ def eo3_s1_metadata_type(index: Index, eo3_s1_metadata_type_doc) -> MetadataType
 @pytest.fixture
 def ls8_eo3_product(
     index: Index, extended_eo3_metadata_type, extended_eo3_product_doc
-) -> Product | None:
-    return index.products.add_document(extended_eo3_product_doc)
+) -> Product:
+    p = index.products.add_document(extended_eo3_product_doc)
+    assert p is not None
+    return p
 
 
 @pytest.fixture
-def wo_eo3_product(index: Index, base_eo3_product_doc) -> Product | None:
-    return index.products.add_document(base_eo3_product_doc)
+def wo_eo3_product(index: Index, base_eo3_product_doc) -> Product:
+    p = index.products.add_document(base_eo3_product_doc)
+    assert p is not None
+    return p
 
 
 @pytest.fixture
-def africa_s2_eo3_product(index: Index, africa_s2_product_doc) -> Product | None:
-    return index.products.add_document(africa_s2_product_doc)
+def africa_s2_eo3_product(index: Index, africa_s2_product_doc) -> Product:
+    p = index.products.add_document(africa_s2_product_doc)
+    assert p is not None
+    return p
 
 
 @pytest.fixture
 def ga_s2am_ard_3_product(
     index: Index, eo3_sentinel_metadata_type, s2_ard_product_doc
-) -> Product | None:
-    return index.products.add_document(s2_ard_product_doc)
+) -> Product:
+    p = index.products.add_document(s2_ard_product_doc)
+    assert p is not None
+    return p
 
 
 @pytest.fixture
-def ga_s1_product(index: Index, eo3_s1_metadata_type, s1_product_doc) -> Product | None:
-    return index.products.add_document(s1_product_doc)
+def ga_s1_product(index: Index, eo3_s1_metadata_type, s1_product_doc) -> Product:
+    p = index.products.add_document(s1_product_doc)
+    assert p is not None
+    return p
 
 
 @pytest.fixture
@@ -759,12 +769,14 @@ def ls5_telem_doc(ga_metadata_type) -> dict[str, str | dict[str, str | dict[str,
 
 
 @pytest.fixture
-def ls5_telem_type(index: Index, ls5_telem_doc) -> Product | None:
-    return index.products.add_document(ls5_telem_doc)
+def ls5_telem_type(index: Index, ls5_telem_doc) -> Product:
+    p = index.products.add_document(ls5_telem_doc)
+    assert p is not None
+    return p
 
 
 @pytest.fixture(scope="session")
-def geotiffs(tmpdir_factory) -> list[dict]:
+def geotiffs(tmpdir_factory) -> list[dict[str, str | UUID | dict]]:
     """Create test geotiffs and corresponding yamls.
 
     We create one yaml per time slice, itself comprising one geotiff
@@ -915,8 +927,7 @@ def telemetry_metadata_type_doc() -> dict:
 @pytest.fixture
 def ga_metadata_type_doc() -> dict:
     _FULL_EO_METADATA = Path(__file__).parent.joinpath("extensive-eo-metadata.yaml")  # noqa: N806
-    [(path, eo_md_type)] = datacube.utils.read_documents(_FULL_EO_METADATA)
-    return eo_md_type
+    return next(read_documents(_FULL_EO_METADATA))[1]
 
 
 @pytest.fixture
@@ -940,22 +951,21 @@ def ga_metadata_type(index: Index, ga_metadata_type_doc) -> MetadataType:
 
 
 @pytest.fixture
-def default_metadata_type(index: Index, default_metadata_types) -> MetadataType | None:
-    if index.supports_legacy:
-        return index.metadata_types.get_by_name("eo")
-    else:
-        return index.metadata_types.get_by_name("eo3")
+def default_metadata_type(index: Index, default_metadata_types) -> MetadataType:
+    m = index.metadata_types.get_by_name("eo" if index.supports_legacy else "eo3")
+    assert m is not None
+    return m
 
 
 @pytest.fixture
-def telemetry_metadata_type(
-    index: Index, default_metadata_types
-) -> MetadataType | None:
-    return index.metadata_types.get_by_name("telemetry")
+def telemetry_metadata_type(index: Index, default_metadata_types) -> MetadataType:
+    m = index.metadata_types.get_by_name("telemetry")
+    assert m is not None
+    return m
 
 
 @pytest.fixture
-def indexed_ls5_scene_products(index: Index, ga_metadata_type) -> list[Product | None]:
+def indexed_ls5_scene_products(index: Index, ga_metadata_type) -> list[Product]:
     """Add Landsat 5 scene Products into the Index"""
     products = load_test_products(
         CONFIG_SAMPLES / "dataset_types" / "ls5_scenes.yaml",
@@ -965,7 +975,9 @@ def indexed_ls5_scene_products(index: Index, ga_metadata_type) -> list[Product |
 
     types = []
     for product in products:
-        types.append(index.products.add_document(product))
+        p = index.products.add_document(product)
+        assert p is not None
+        types.append(p)
 
     return types
 
