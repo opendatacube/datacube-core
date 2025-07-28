@@ -12,13 +12,16 @@ from collections import namedtuple
 from collections.abc import Sequence
 from datetime import datetime, timezone
 from os import PathLike
+from typing import Any
 
 import netCDF4
 import numpy
+import numpy as np
 from netCDF4 import Dataset
 from odc.geo import CRS
 from odc.geo.geom import box
 from odc.geo.math import data_resolution_and_offset
+from xarray import DataArray
 
 from datacube import __version__
 from datacube.utils.masking import describe_flags_def
@@ -80,7 +83,10 @@ def append_netcdf(netcdf_path: PathLike) -> Dataset:
 
 
 def create_coordinate(
-    nco: Dataset, name: str, labels: Sequence[str], units: str
+    nco: Dataset,
+    name: str,
+    labels: np.ndarray[tuple[Any, ...], np.dtype[Any]],
+    units: str,
 ) -> netCDF4.Variable:
     labels = netcdfy_coord(labels)
 
@@ -96,7 +102,7 @@ def create_coordinate(
 
 
 def create_variable(
-    nco, name: str, var: Variable, grid_mapping=None, attrs=None, **kwargs
+    nco, name: str, var: Variable | DataArray, grid_mapping=None, attrs=None, **kwargs
 ) -> netCDF4.Variable:
     assert var.dtype.kind != "U"  # Creates Non CF-Compliant NetCDF File
 
@@ -292,11 +298,15 @@ def write_flag_definition(variable, flags_definition) -> None:
     )
 
 
-def netcdfy_coord(data):
+def netcdfy_coord(
+    data: np.ndarray[tuple[Any, ...], np.dtype[Any]],
+) -> np.ndarray[tuple[Any, ...], np.dtype[Any]]:
     return netcdfy_data(data)
 
 
-def netcdfy_data(data):
+def netcdfy_data(
+    data: np.ndarray[tuple[Any, ...], np.dtype[Any]],
+) -> np.ndarray[tuple[Any, ...], np.dtype[Any]]:
     # NetCDF/CF Conventions only seem to allow storing ascii, not unicode
     if data.dtype.kind == "S" and data.dtype.itemsize > 1:
         return data.view("S1").reshape(data.shape + (-1,))
