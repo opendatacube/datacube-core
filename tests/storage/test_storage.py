@@ -84,7 +84,7 @@ def test_progress_cbk() -> None:
         output_data,
         mk_gbox(shape, crs=crs),
         dst_nodata=no_data,
-        progress_cbk=lambda *a: _cbk(*a, cbk_args),
+        progress_cbk=lambda a, b: _cbk(a, b, cbk_args),
     )
 
     assert cbk_args == [(1, 1)]
@@ -95,7 +95,7 @@ def test_progress_cbk() -> None:
         output_data,
         mk_gbox(shape, crs=crs),
         dst_nodata=no_data,
-        progress_cbk=lambda *a: _cbk(*a, cbk_args),
+        progress_cbk=lambda a, b: _cbk(a, b, cbk_args),
     )
 
     assert cbk_args == [(1, 2), (2, 2)]
