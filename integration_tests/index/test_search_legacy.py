@@ -19,6 +19,8 @@ from dateutil.tz import UTC
 from odc.geo import CRS
 from sqlalchemy.dialects.postgresql.ranges import Range as SQLARange
 
+import datacube.index.postgis.index
+import datacube.index.postgres.index
 from datacube import Datacube
 from datacube.cfg import ODCEnvironment
 from datacube.cfg.opt import _DEFAULT_DB_USER
@@ -54,6 +56,9 @@ def pseudo_ls8_type(index: Index, ga_metadata_type):
 @pytest.fixture
 def pseudo_ls8_dataset(index: Index, pseudo_ls8_type):
     id_ = str(uuid.uuid4())
+    assert isinstance(
+        index, datacube.index.postgres.index.Index | datacube.index.postgis.index.Index
+    )
     with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(
             {
@@ -93,6 +98,7 @@ def pseudo_ls8_dataset(index: Index, pseudo_ls8_type):
         )
     assert was_inserted
     d = index.datasets.get(id_)
+    assert d is not None
     # The dataset should have been matched to the telemetry type.
     assert d.product.id == pseudo_ls8_type.id
 
@@ -103,6 +109,9 @@ def pseudo_ls8_dataset(index: Index, pseudo_ls8_type):
 def pseudo_ls8_dataset2(index: Index, pseudo_ls8_type):
     # Like the previous dataset, but a day later in time.
     id_ = str(uuid.uuid4())
+    assert isinstance(
+        index, datacube.index.postgres.index.Index | datacube.index.postgis.index.Index
+    )
     with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(
             {
@@ -142,6 +151,7 @@ def pseudo_ls8_dataset2(index: Index, pseudo_ls8_type):
         )
     assert was_inserted
     d = index.datasets.get(id_)
+    assert d is not None
     # The dataset should have been matched to the telemetry type.
     assert d.product.id == pseudo_ls8_type.id
 
@@ -161,11 +171,14 @@ def pseudo_ls8_dataset3(
         "satellite_ref_point_start": {"x": 116, "y": 85},
         "satellite_ref_point_end": {"x": 116, "y": 87},
     }
-
+    assert isinstance(
+        index, datacube.index.postgres.index.Index | datacube.index.postgis.index.Index
+    )
     with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(dataset_doc, id_, pseudo_ls8_type.id)
     assert was_inserted
     d = index.datasets.get(id_)
+    assert d is not None
     # The dataset should have been matched to the telemetry type.
     assert d.product.id == pseudo_ls8_type.id
     return d
@@ -183,11 +196,14 @@ def pseudo_ls8_dataset4(
         "satellite_ref_point_start": {"x": 116, "y": 85},
         "satellite_ref_point_end": {"x": 116, "y": 87},
     }
-
+    assert isinstance(
+        index, datacube.index.postgres.index.Index | datacube.index.postgis.index.Index
+    )
     with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(dataset_doc, id_, pseudo_ls8_type.id)
         assert was_inserted
         d = index.datasets.get(id_)
+        assert d is not None
         # The dataset should have been matched to the telemetry type.
         assert d.product.id == pseudo_ls8_type.id
         return d
@@ -199,6 +215,7 @@ def ls5_dataset_w_children(
 ):
     clirunner(["dataset", "add", str(example_ls5_dataset_path)])
     doc = load_dataset_definition(example_ls5_dataset_path)
+    assert doc is not None
     return index.datasets.get(doc.id, include_sources=True)
 
 
@@ -754,21 +771,34 @@ def test_get_dataset_with_children(
 
     # Sources not loaded by default
     d = index.datasets.get(id_)
+    assert d is not None
     assert d.sources is None
 
     # Ask for all sources
     d = index.datasets.get(id_, include_sources=True)
+    assert d is not None
+    assert d.sources is not None
     assert list(d.sources.keys()) == ["level1"]
     level1 = d.sources["level1"]
+    assert level1.sources is not None
     assert list(level1.sources.keys()) == ["satellite_telemetry_data"]
-    assert list(level1.sources["satellite_telemetry_data"].sources) == []
+    sources = level1.sources["satellite_telemetry_data"]
+    assert sources.sources is not None
+    assert list(sources.sources) == []
 
     # It should also work with a string id
     d = index.datasets.get(str(id_), include_sources=True)
-    assert list(d.sources.keys()) == ["level1"]
-    level1 = d.sources["level1"]
-    assert list(level1.sources.keys()) == ["satellite_telemetry_data"]
-    assert list(level1.sources["satellite_telemetry_data"].sources) == []
+    assert d is not None
+    sources = d.sources
+    assert sources is not None
+    assert list(sources.keys()) == ["level1"]
+    level1 = sources["level1"]
+    sources = level1.sources
+    assert sources is not None
+    assert list(sources.keys()) == ["satellite_telemetry_data"]
+    s = sources["satellite_telemetry_data"]
+    assert s.sources is not None
+    assert list(s.sources) == []
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
@@ -925,7 +955,9 @@ def test_cli_info(
     # Check indexed time separately, as we don't care what timezone it's displayed in.
     indexed_time = yaml_docs[0]["indexed"]
     assert isinstance(indexed_time, datetime.datetime)
-    assert tz_as_utc(indexed_time) == tz_as_utc(pseudo_ls8_dataset.indexed_time)
+    t = pseudo_ls8_dataset.indexed_time
+    assert t is not None
+    assert tz_as_utc(indexed_time) == tz_as_utc(t)
 
     # Request two, they should have separate yaml documents
     opts.append(str(pseudo_ls8_dataset2.id))
@@ -1012,10 +1044,7 @@ def test_find_duplicates(
     ]
     f = pseudo_ls8_type.metadata_type.dataset_fields.get
     field_res = list(
-        index.datasets.search_product_duplicates(
-            pseudo_ls8_type,
-            f("time").lower.day,  # type: ignore
-        )
+        index.datasets.search_product_duplicates(pseudo_ls8_type, f("time").lower.day)
     )
 
     # Datasets 1 & 3 are on the 26th.
