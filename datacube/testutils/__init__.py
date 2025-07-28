@@ -529,12 +529,12 @@ def remove_crs(xx):
     return xx
 
 
-def sanitise_doc(d):
+def sanitise_doc(d: str | Mapping | list) -> str | float | dict | list:
     if isinstance(d, str):
         if d == "NaN":
             return math.nan
         return d
-    elif isinstance(d, dict):
+    elif isinstance(d, dict | Mapping):
         return {k: sanitise_doc(v) for k, v in d.items()}
     elif isinstance(d, list):
         return [sanitise_doc(i) for i in d]

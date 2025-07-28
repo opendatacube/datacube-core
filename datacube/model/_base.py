@@ -27,6 +27,6 @@ def ranges_overlap(ra: Range, rb: Range) -> bool:
 
 Not = namedtuple("Not", "value")
 QueryField: TypeAlias = (
-    str | float | int | Range | datetime.datetime | Iterable[Geometry] | Not
+    str | float | int | Range | datetime.datetime | Iterable[str | Geometry] | Not
 )
 QueryDict: TypeAlias = dict[str, QueryField]
