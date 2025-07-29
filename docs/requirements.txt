@@ -12,7 +12,7 @@ alabaster==1.0.0
     # via sphinx
 alembic==1.16.4
     # via datacube (pyproject.toml)
-antimeridian==0.4.2
+antimeridian==0.4.3
     # via datacube (pyproject.toml)
 apeye==1.4.1
     # via sphinx-toolbox
@@ -42,9 +42,9 @@ beautifulsoup4==4.13.4
     #   sphinx-toolbox
 bleach==6.2.0
     # via nbconvert
-boto3==1.39.9
+boto3==1.39.15
     # via datacube (pyproject.toml)
-botocore==1.39.9
+botocore==1.39.15
     # via
     #   datacube (pyproject.toml)
     #   boto3
@@ -373,7 +373,7 @@ sphinx-jinja2-compat==0.3.0
     # via sphinx-toolbox
 sphinx-prompt==1.10.0
     # via sphinx-toolbox
-sphinx-tabs==3.4.5
+sphinx-tabs==3.4.7
     # via sphinx-toolbox
 sphinx-toolbox==4.0.0
     # via datacube (pyproject.toml:doc)
