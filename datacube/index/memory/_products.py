@@ -8,6 +8,7 @@ from collections.abc import Iterable, Sequence
 from typing import cast
 from uuid import UUID
 
+from odc.geo import CRS, Geometry
 from typing_extensions import override
 
 from datacube.index.abstract import AbstractIndex, AbstractProductResource
@@ -38,7 +39,7 @@ class ProductResource(AbstractProductResource):
         self.next_id = 1
 
     @override
-    def add(self, product: Product, allow_table_lock: bool = False) -> Product:
+    def add(self, product: Product, allow_table_lock: bool = False) -> Product | None:
         Product.validate(product.definition)  # type: ignore[attr-defined]
         existing = self.get_by_name(product.name)
         if existing:
@@ -64,7 +65,7 @@ class ProductResource(AbstractProductResource):
             self.next_id += 1
             self.by_id[clone.id] = clone
             self.by_name[clone.name] = clone
-        return cast(Product, self.get_by_name(product.name))
+        return self.get_by_name(product.name)
 
     @override
     def can_update(
@@ -127,14 +128,14 @@ class ProductResource(AbstractProductResource):
         product: Product,
         allow_unsafe_updates: bool = False,
         allow_table_lock: bool = False,
-    ) -> Product:
+    ) -> Product | None:
         can_update, safe_changes, unsafe_changes = self.can_update(
             product, allow_unsafe_updates
         )
 
         if not safe_changes and not unsafe_changes:
             _LOG.warning(f"No changes detected for product {product.name}")
-            return cast(Product, self.get_by_name(product.name))
+            return self.get_by_name(product.name)
 
         if not can_update:
             errs = ", ".join(
@@ -154,7 +155,7 @@ class ProductResource(AbstractProductResource):
         persisted.id = cast(int, existing.id)
         self.by_id[persisted.id] = persisted
         self.by_name[persisted.name] = persisted
-        return cast(Product, self.get_by_name(product.name))
+        return self.get_by_name(product.name)
 
     @override
     def delete(
@@ -249,7 +250,9 @@ class ProductResource(AbstractProductResource):
         )
 
     @override
-    def spatial_extent(self, product: Product | str, crs=None):
+    def spatial_extent(
+        self, product: str | Product, crs: CRS = CRS("EPSG:4326")
+    ) -> Geometry | None:
         return None
 
     @override
