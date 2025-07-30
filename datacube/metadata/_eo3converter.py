@@ -14,8 +14,6 @@ from collections.abc import Iterable, Iterator, Sequence
 from functools import singledispatch
 from typing import Any
 
-import pystac.collection
-import pystac.item
 from odc.geo import CRS
 from odc.geo.geobox import GeoBox
 from odc.loader.types import (  # TODO: after loader 0.6.0 - add RasterSource
@@ -35,6 +33,7 @@ from odc.stac.model import (
     ParsedItem,
     RasterCollectionMetadata,
 )
+from pystac import Collection, Item
 from toolz import dicttoolz
 
 from datacube.index.abstract import default_metadata_type_docs
@@ -111,9 +110,9 @@ def infer_dc_product(x: Any, cfg: ConversionConfig | None = None) -> Product:
     )
 
 
-@infer_dc_product.register(pystac.item.Item)
+@infer_dc_product.register(Item)
 def infer_dc_product_from_item(
-    item: pystac.item.Item, cfg: ConversionConfig | None = None
+    item: Item, cfg: ConversionConfig | None = None
 ) -> Product:
     """
     Infer Datacube product object from a STAC Item.
@@ -127,7 +126,7 @@ def infer_dc_product_from_item(
 
 
 def _compute_uuid(
-    item: pystac.item.Item, mode: str = "auto", extras: Sequence[str] | None = None
+    item: Item, mode: str = "auto", extras: Sequence[str] | None = None
 ) -> uuid.UUID:
     if mode == "native":
         return uuid.UUID(item.id)
@@ -162,6 +161,38 @@ def _compute_uuid(
 
 def _to_grid(gbox: GeoBox) -> dict[str, Any]:
     return {"shape": gbox.shape.yx, "transform": gbox.transform[:6]}  # type: ignore[index]
+
+
+def _to_eo3_properties(properties: dict[str, Any]) -> dict[str, Any]:
+    """
+    Convert EO3 properties dictionary to the Stac equivalent.
+    """
+
+    def _to_eo3_type(key: str, value):
+        if key == "instruments":
+            if len(value) > 0:
+                return "_".join([i.upper() for i in value])
+            else:
+                return None
+        else:
+            return value
+
+    prop = {
+        STAC_TO_EO3_RENAMES.get(key, key): _to_eo3_type(key, val)
+        for key, val in properties.items()
+    }
+    creation_time = (
+        properties.get("odc:processing_datetime")
+        or properties.get("created")
+        or properties.get("datetime")
+    )
+    if prop.get("odc:processing_datetime") is None and creation_time:
+        prop["odc:processing_datetime"] = creation_time
+
+    if prop.get("odc:file_format") is None:
+        prop["odc:file_format"] = "GeoTIFF"
+
+    return prop
 
 
 def _to_dataset(
@@ -219,24 +250,28 @@ def _to_dataset(
     if crs is None:
         crs = EPSG4326
 
+    lineage = properties.pop("odc:lineage", {})
+
     ds_doc = {
-        "id": str(ds_uuid),
         "$schema": "https://schemas.opendatacube.org/dataset",
+        "id": str(ds_uuid),
+        "product": {"name": product.name.lower()},
         "crs": str(crs),
         "grids": grids,
-        "measurements": measurements,
-        "properties": dicttoolz.keymap(
-            lambda k: STAC_TO_EO3_RENAMES.get(k, k), properties
+        "measurements": dicttoolz.keymap(
+            lambda k: product.canonical_measurement(k), measurements
         ),
+        "properties": _to_eo3_properties(properties),
         "accessories": item.accessories,
-        "lineage": {},
+        "lineage": lineage,
     }
 
+    # Note: this bypasses consistency and lineage checks
     return Dataset(product, prep_eo3(ds_doc), uri=item.href)
 
 
 def _item_to_ds(
-    item: pystac.item.Item, product: Product, cfg: ConversionConfig | None = None
+    item: Item, product: Product, cfg: ConversionConfig | None = None
 ) -> Dataset:
     """
     Construct Dataset object from STAC Item and previously constructed Product.
@@ -258,7 +293,7 @@ def _item_to_ds(
 
 
 def stac2ds(
-    items: Iterable[pystac.item.Item],
+    items: Iterable[Item],
     cfg: ConversionConfig | None = None,
     product_cache: dict[str, Product] | None = None,
 ) -> Iterator[Dataset]:
@@ -334,9 +369,9 @@ def stac2ds(
         yield _item_to_ds(item, product, cfg)
 
 
-@infer_dc_product.register(pystac.collection.Collection)
+@infer_dc_product.register(Collection)
 def infer_dc_product_from_collection(
-    collection: pystac.collection.Collection, cfg: ConversionConfig | None = None
+    collection: Collection, cfg: ConversionConfig | None = None
 ) -> Product:
     """
     Construct Datacube Product definition from STAC Collection.
