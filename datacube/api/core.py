@@ -540,14 +540,11 @@ class Datacube:
             extra_dims = datacube_product.extra_dimensions
 
             # Extract extra_dims slice information
-            extra_dims_slice = cast(
-                ExtraDimensionSlices,
-                {
-                    k: query.pop(k, None)
-                    for k in list(query.keys())
-                    if k in extra_dims.dims and query.get(k) is not None
-                },
-            )
+            extra_dims_slice: ExtraDimensionSlices = {
+                k: v  # type: ignore[misc]
+                for k, v in query.items()
+                if v is not None and k in extra_dims.dims
+            }
             extra_dims = extra_dims[extra_dims_slice]
             # Check if empty
             if extra_dims.has_empty_dim():
@@ -1183,10 +1180,7 @@ def output_geobox(
             output_crs = load_hints.get("output_crs", None)
 
         if resolution is None:
-            resolution = cast(
-                int | float | tuple[int | float, int | float] | None,
-                load_hints.get("resolution", None),
-            )
+            resolution = load_hints.get("resolution", None)
 
         if align is None:
             align = load_hints.get("align", None)
@@ -1314,8 +1308,10 @@ def _calculate_chunk_sizes(
     if extra_dims is not None:
         extra_dim_names, extra_dim_shapes = extra_dims.chunk_size()
 
-    valid_keys = sources.dims + extra_dim_names + geobox.dimensions
-    bad_keys = cast(set[str], set(dask_chunks)) - cast(set[str], set(valid_keys))
+    valid_keys = (
+        tuple(str(dim) for dim in sources.dims) + extra_dim_names + geobox.dimensions
+    )
+    bad_keys = dask_chunks.keys() - set(valid_keys)
     if bad_keys:
         raise KeyError(
             f"Unknown dask_chunk dimension {bad_keys}. Valid dimensions are: {valid_keys}"
