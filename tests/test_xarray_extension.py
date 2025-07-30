@@ -23,7 +23,7 @@ multi_coords = xr.DataArray(
         )
     ],
 ).coords
-single_coord = {"time": np.array(["2001-01-01"])}
+single_coord = xr.DataArray(np.zeros(1), [("time", np.array(["2001-01-01"]))]).coords
 
 
 @pytest.mark.parametrize(

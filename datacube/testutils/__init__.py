@@ -499,10 +499,7 @@ def mk_sample_xr_dataset(
     if resolution is None:
         resolution = (-10, 10) if crs is None or crs.projected else (-0.01, 0.01)
 
-    t_coords = {}
-    if time is not None:
-        t_coords["time"] = mk_time_coord([time])
-
+    t_coords = None if time is None else mk_time_coord([time]).coords
     transform = Affine.translation(*xy) * Affine.scale(*resolution[::-1])
     h, w = shape
     geobox = GeoBox(wh_(w, h), transform, crs)
