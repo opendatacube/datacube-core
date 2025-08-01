@@ -7,7 +7,7 @@ from __future__ import annotations
 import datetime
 import logging
 from collections.abc import Generator, Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from cachetools.func import lru_cache
 from typing_extensions import override
@@ -16,7 +16,7 @@ from datacube.drivers.postgres import PostgresDb
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
-from datacube.model import MetadataType, Product, QueryField
+from datacube.model import Product, QueryField
 from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 from datacube.utils.documents import JsonDict
@@ -219,7 +219,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         _LOG.info("Updating product %s", product.name)
 
-        existing = cast(Product, self.get_by_name(product.name))
+        existing = self.get_by_name_unsafe(product.name)
         changing_metadata_type = (
             product.metadata_type.name != existing.metadata_type.name
         )
@@ -433,9 +433,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
     def _make(self, query_row) -> Product:
         return Product(
             definition=query_row.definition,
-            metadata_type=cast(
-                MetadataType,
-                self._index.metadata_types.get(query_row.metadata_type_ref),
+            metadata_type=self._index.metadata_types.get_unsafe(
+                query_row.metadata_type_ref
             ),
             id_=query_row.id,
         )

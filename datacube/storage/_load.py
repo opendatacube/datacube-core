@@ -12,8 +12,8 @@ Important functions are:
 import logging
 import numbers
 from collections import OrderedDict
-from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Sequence
-from typing import Any, TypeAlias, cast
+from collections.abc import Callable, Iterable, Iterator, Sequence
+from typing import Any, TypeAlias
 
 import numpy as np
 from odc.geo.geobox import GeoBox
@@ -124,7 +124,7 @@ def reproject_and_fuse(
 def _mk_empty_ds(coords: DataArrayCoordinates, geobox: GeoBox) -> XrDataset:
     cc = OrderedDict(coords.items())
     cc.update(xr_coords(geobox, None))
-    return XrDataset(coords=cast(Mapping[Hashable, Any], cc), attrs={"crs": geobox.crs})
+    return XrDataset(coords=cc, attrs={"crs": geobox.crs})
 
 
 def _allocate_storage(

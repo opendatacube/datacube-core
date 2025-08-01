@@ -480,12 +480,12 @@ def mk_sample_xr_dataset(
     shape=(33, 74),
     resolution: tuple[float, float] | None = None,
     xy=(0, 0),
-    time="2020-02-13T11:12:13.1234567Z",
+    time: str | None = "2020-02-13T11:12:13.1234567Z",
     name: str = "band",
     dtype: str = "int16",
     nodata=-999,
     units: str = "1",
-):
+) -> xr.Dataset:
     """Note that resolution is in Y,X order to match that of GeoBox.
 
     shape (height, width)

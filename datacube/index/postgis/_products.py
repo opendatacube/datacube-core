@@ -8,7 +8,7 @@ import datetime
 import logging
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from time import monotonic
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from cachetools.func import lru_cache
 from odc.geo.crs import CRS
@@ -19,7 +19,7 @@ from datacube.drivers.postgis import PostGisDb
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
-from datacube.model import MetadataType, Product, QueryDict, QueryField
+from datacube.model import Product, QueryDict, QueryField
 from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 from datacube.utils.documents import JsonDict
@@ -438,9 +438,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
     def _make(self, query_row) -> Product:
         return Product(
             definition=query_row.definition,
-            metadata_type=cast(
-                MetadataType,
-                self._index.metadata_types.get(query_row.metadata_type_ref),
+            metadata_type=self._index.metadata_types.get_unsafe(
+                query_row.metadata_type_ref
             ),
             id_=query_row.id,
         )
