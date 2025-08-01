@@ -166,9 +166,7 @@ class MemoryIndexDriver(AbstractIndexDriver):
         :param definition:
         """
         MetadataType.validate(definition)  # type: ignore
-        return MetadataType(
-            definition, dataset_search_fields=Index.get_dataset_fields(definition)
-        )
+        return MetadataType(definition, search_field_extractor=Index.get_dataset_fields)
 
 
 def index_driver_init() -> MemoryIndexDriver:

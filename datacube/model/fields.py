@@ -231,4 +231,6 @@ def get_dataset_fields(metadata_definition: Mapping[str, Any]) -> dict[str, Fiel
     implementation.
     """
     fields = toolz.get_in(["dataset", "search_fields"], metadata_definition, {})
-    return {n: parse_search_field(doc, name=n) for n, doc in fields.items()}
+    return {
+        n: parse_search_field(doc, name=n) for n, doc in fields.items()
+    }

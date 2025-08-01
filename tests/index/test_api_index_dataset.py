@@ -123,8 +123,7 @@ _EXAMPLE_METADATA_TYPE = MetadataType(
             "measurements": ["image", "bands"],
             "sources": ["lineage", "source_datasets"],
         },
-    },
-    dataset_search_fields={},
+    }
 )
 
 _EXAMPLE_PRODUCT = Product(

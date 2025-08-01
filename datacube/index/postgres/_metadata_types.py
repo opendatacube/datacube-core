@@ -284,6 +284,6 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         """
         return MetadataType(
             definition,
-            dataset_search_fields=self._db.get_dataset_fields(definition),
+            search_field_extractor=self._db.get_dataset_fields,
             id_=id_,
         )

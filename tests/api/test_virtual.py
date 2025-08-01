@@ -62,7 +62,6 @@ def example_metadata_type():
                 "sources": ["lineage", "source_datasets"],
             },
         },
-        dataset_search_fields={},
     )
 
 
