@@ -6,7 +6,7 @@
 ##
 # gdal:ubuntu-small no longer comes with netcdf support compiled into gdal
 # syntax=docker/dockerfile:1
-FROM ghcr.io/osgeo/gdal:ubuntu-full-3.10.3 AS base
+FROM ghcr.io/osgeo/gdal:ubuntu-full-3.11.3 AS base
 
 ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8 \
