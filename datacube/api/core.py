@@ -23,6 +23,7 @@ from odc.geo.geom import Geometry, bbox_union, box, intersects
 from odc.geo.warp import Resampling
 from odc.geo.xr import xr_coords
 from typing_extensions import override
+from xarray.core.coordinates import DataArrayCoordinates
 
 from datacube.cfg import GeneralisedCfg, GeneralisedEnv, GeneralisedRawCfg, ODCConfig
 from datacube.model import Dataset, ExtraDimensions, ExtraDimensionSlices, Measurement
@@ -732,7 +733,7 @@ class Datacube:
 
     @staticmethod
     def create_storage(
-        coords: Mapping[str, xarray.DataArray],
+        coords: DataArrayCoordinates | None,
         geobox: GeoBox | xarray.Dataset | xarray.DataArray,
         measurements: list[Measurement],
         data_func: (
@@ -746,7 +747,7 @@ class Datacube:
         This function makes the in memory storage structure to hold datacube data.
 
         :param coords:
-            OrderedDict holding `DataArray` objects defining the dimensions not specified by `geobox`
+            DataArrayCoordinates defining the dimensions not specified by `geobox`
 
         :param geobox:
             A GeoBox defining the output spatial projection and resolution
@@ -786,18 +787,22 @@ class Datacube:
         # 2D defaults
         # retrieve dims from coords if DataArray
         dims_default: tuple[Hashable, ...] = ()
-        if coords != {}:
+        if coords is not None:
             coords_value = next(iter(coords.values()))
             if isinstance(coords_value, xarray.DataArray):
                 dims_default = coords_value.dims + geobox.dimensions
 
         if not dims_default:
-            dims_default = tuple(coords) + geobox.dimensions
+            dims_default = (() if coords is None else coords.dims) + geobox.dimensions
 
         shape_default = (
-            tuple(c.size for k, c in coords.items() if k in dims_default) + geobox.shape
-        )
-        coords_default: OrderedDict[str, xarray.DataArray] = OrderedDict(**coords)
+            ()
+            if coords is None
+            else tuple(c.size for k, c in coords.items() if k in dims_default)
+        ) + geobox.shape
+        coords_default: OrderedDict[str, xarray.DataArray] = OrderedDict()
+        if coords is not None:
+            coords_default.update([(str(k), v) for k, v in coords.items()])
         coords_default.update(
             [(str(k), v) for k, v in xr_coords(geobox, spatial_ref).items()]
         )
@@ -896,11 +901,7 @@ class Datacube:
             )
 
         return Datacube.create_storage(
-            cast(Mapping[str, xarray.DataArray], sources.coords),
-            geobox,
-            measurements,
-            data_func,
-            extra_dims,
+            sources.coords, geobox, measurements, data_func, extra_dims
         )
 
     @staticmethod
@@ -937,10 +938,7 @@ class Datacube:
             return _cbk
 
         data = Datacube.create_storage(
-            cast(Mapping[str, xarray.DataArray], sources.coords),
-            geobox,
-            measurements,
-            extra_dims=extra_dims,
+            sources.coords, geobox, measurements, extra_dims=extra_dims
         )
         _cbk = mk_cbk(progress_cbk)
 
