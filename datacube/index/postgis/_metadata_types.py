@@ -281,4 +281,6 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
 
     def _make(self, definition: dict, id_: int | None = None) -> MetadataType:
         MetadataType.validate_eo3(definition)
-        return MetadataType(definition, search_field_extractor=self._db.get_dataset_fields, id_=id_)
+        return MetadataType(
+            definition, search_field_extractor=self._db.get_dataset_fields, id_=id_
+        )
