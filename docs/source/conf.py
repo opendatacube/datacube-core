@@ -18,9 +18,22 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = "Open Data Cube"
 copyright = "2015-2025, ODC Contributors"
 author = "Open Data Cube"
-version = "1.9"
-# FIXME: obtain real version by running git
-release = "version"
+
+# Getting the version requires importing a couple of symbols from datacube._version.
+# Importing from datacube interferes with autodoc_mock_imports, which in turn causes
+# a build failure, so adjust sys.path and do a direct import of _version, and then
+# restore sys.path to its previous value.
+version_path = os.path.abspath("../../datacube")
+sys.path.insert(0, version_path)
+
+import _version
+
+version = f"{_version.__version_tuple__[0]}.{_version.__version_tuple__[1]}"
+# The full version, including alpha/beta/rc tags.
+release = _version.__version__
+
+sys.path.remove(version_path)
+# Direct import trickery done, sys.path has been restored.
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
