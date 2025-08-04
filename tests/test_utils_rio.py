@@ -9,10 +9,10 @@ import moto
 import pytest
 
 from datacube.testutils import write_files
+from datacube.utils.aws import configure_s3_access
 from datacube.utils.rio import (
     activate_from_config,
     activate_rio_env,
-    configure_s3_access,
     deactivate_rio_env,
     get_rio_env,
     set_default_rio_config,
