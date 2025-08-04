@@ -43,6 +43,7 @@ def test_mem_user_resource(mem_index_fresh: Datacube) -> None:
     assert ("odc_user", "test_user_1", "Test1") in users
     assert ("agdc_user", "test_user_2", "Test2") in users
     # Test create_user errors
+
     with pytest.raises(ValueError) as e:
         mem_index_fresh.index.users.create_user(
             "test_user_2", "password123", "agdc_user", "Test2"

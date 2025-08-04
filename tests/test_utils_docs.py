@@ -173,7 +173,6 @@ def test_without_lineage_sources() -> None:
                 "format": ["format", "name"],
             },
         },
-        dataset_search_fields={},
     )
 
     test_doc = mk_sample(10)

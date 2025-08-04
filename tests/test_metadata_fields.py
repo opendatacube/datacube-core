@@ -52,6 +52,7 @@ dataset:
 """)
 
 SAMPLE_DOC = yaml.safe_load("""---
+id: usually_a_uuid_str
 x_string_path: some_string
 x_double_path: 6.283185307179586
 x_integer_path: 4466778

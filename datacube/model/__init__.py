@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import math
 from collections import OrderedDict
-from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any, TypeAlias
@@ -614,13 +614,16 @@ class MetadataType:
     def __init__(
         self,
         definition: Mapping[str, Any],
-        dataset_search_fields: Mapping[str, Field] | None = None,
+        search_field_extractor: Callable[[Mapping[str, Any]], Mapping[str, Field]]
+        | None = None,
         id_: int | None = None,
     ) -> None:
-        if dataset_search_fields is None:
-            dataset_search_fields = get_dataset_fields(definition)
+        # Build fields using a named extractor function for pickleability
+        if search_field_extractor is None:
+            search_field_extractor = get_dataset_fields
         self.definition = definition
-        self.dataset_fields = dataset_search_fields
+        self.search_field_extractor = search_field_extractor
+        self.dataset_fields = self.search_field_extractor(self.definition)
         self.id = id_
 
     @property
@@ -638,6 +641,21 @@ class MetadataType:
     def validate_eo3(cls, doc) -> None:
         cls.validate(doc)  # type: ignore[attr-defined]
         validate_eo3_compatible_type(doc)
+
+    # Fields defined using SQLAlchemy ORM are not pickleable,
+    # so use a named (and therefore pickleable) extraction function
+    def __getstate__(self) -> Mapping[str, Any]:
+        return {
+            "definition": self.definition,
+            "id": self.id,
+            "search_field_extractor": self.search_field_extractor,
+        }
+
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
+        self.definition = state["definition"]
+        self.id = state["id"]
+        self.search_field_extractor = state["search_field_extractor"]
+        self.dataset_fields = self.search_field_extractor(self.definition)
 
     @override
     def __eq__(self, other: Any) -> bool:
@@ -1272,10 +1290,8 @@ def metadata_from_doc(doc: Mapping[str, Any]) -> MetadataType:
     useful when there is a need to interpret dataset metadata documents
     according to metadata spec.
     """
-    from .fields import get_dataset_fields
-
     MetadataType.validate(doc)  # type: ignore[attr-defined]
-    return MetadataType(doc, get_dataset_fields(doc))
+    return MetadataType(doc)
 
 
 ExtraDimensionSlices: TypeAlias = dict[str, float | tuple[float, float]]

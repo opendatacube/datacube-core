@@ -661,7 +661,6 @@ _EXAMPLE_METADATA_TYPE = MetadataType(
             "format": ["format", "name"],
         },
     },
-    dataset_search_fields={},
 )
 
 _EXAMPLE_PRODUCT = Product(

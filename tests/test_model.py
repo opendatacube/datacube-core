@@ -431,17 +431,8 @@ def test_metadata_type() -> None:
                 "format": ["format", "name"],
             },
         },
-        dataset_search_fields={},
     )
 
-    assert "eo" in str(m)
-    assert "eo" in repr(m)
-    assert m.name == "eo"
-    assert m.description is None
-    assert m.dataset_reader({}) is not None
-
-    # again but without dataset_search_fields
-    m = MetadataType(m.definition)
     assert "eo" in str(m)
     assert "eo" in repr(m)
     assert m.name == "eo"
