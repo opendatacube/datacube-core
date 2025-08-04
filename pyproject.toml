@@ -169,7 +169,11 @@ filterwarnings = [
 ]
 
 [tool.ruff]
-extend-exclude = ["datacube/drivers/postgis/alembic/versions"]
+extend-exclude = [
+    "datacube/_version.py",
+    "datacube/drivers/postgis/alembic/versions",
+    "docs/source/conf.py",
+]
 
 [tool.ruff.lint]
 select = [
@@ -209,9 +213,6 @@ extend-ignore-names = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Generated files, exclude from linting.
-"datacube/_version.py" = ["I", "UP"]
-"docs/source/conf.py" = ["A"]
 # SQLAlchemy has overloaded ==, so use that (or is_) to compare with None.
 "datacube/drivers/postgis/_api.py" = ["E711"]
 "datacube/drivers/postgis/_schema.py" = ["E711"]
