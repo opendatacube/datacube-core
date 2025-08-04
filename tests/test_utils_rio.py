@@ -154,6 +154,7 @@ def test_rio_configure_aws_access(monkeypatch, without_aws_env, dask_client) -> 
     monkeypatch.setenv("AWS_DEFAULT_REGION", "fake-region")
 
     creds = configure_s3_access()
+    assert creds is not None
     cc = creds.get_frozen_credentials()
     assert cc.access_key == "fake-key-id"
     assert cc.secret_key == "fake-secret"
@@ -177,6 +178,7 @@ def test_rio_configure_aws_access(monkeypatch, without_aws_env, dask_client) -> 
     client = dask_client
 
     creds = configure_s3_access(client=client)
+    assert creds is not None
     cc = creds.get_frozen_credentials()
     assert cc.access_key == "fake-key-id"
     assert cc.secret_key == "fake-secret"
