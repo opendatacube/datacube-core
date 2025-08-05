@@ -18,7 +18,7 @@ What's Changed
 
 * Fix spell check by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2033
 * eo3: fix type error by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2031
-* cog: un-nest and align logic by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2034
+* cog: unnest and align logic by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2034
 * Enable flake8-simplify rules by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2035
 * search_tool: fix some types by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2036
 * Fix type checker errors by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2037
@@ -42,7 +42,7 @@ What's Changed
 * CI: check right file in pre-commit by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2064
 * pylint: remove reports parameter by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2061
 * Require setuptools_scm >= 8 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2065
-* testutils: fix NoData behavior by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2049
+* testutils: fix nodata behavior by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2049
 * CI: shorten job timeout by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2066
 * readthedocs: remove extra_requirements by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2067
 * [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2070
@@ -57,10 +57,11 @@ What's Changed
 * dockerignore: update with more patterns by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2084
 * docs: autogenerate version by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2085
 * pre-commit: update ruff hook name by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2086
-* CI: use OIDC for CodeCov by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2088
+* CI: use OIDC for codecov by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2088
 * [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2089
 * Ensure MetadataType  models can always be pickled to support Dask loading by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2083
 * Make configure_s3_access driver aware by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2087
+* Prepare for 1.9.7 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2090
 
 **Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.6...1.9.7
 
