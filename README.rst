@@ -83,7 +83,7 @@ Developer setup
 
 Install test dependencies using:
 
-   ``pip install --upgrade -e '.[test]'``
+   ``pip install --upgrade -e '.[dev]'``
 
 If install for these fails, please lodge them as issues.
 

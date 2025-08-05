@@ -72,7 +72,7 @@ Verify it all works
 Install additional test dependencies::
 
     cd datacube-core
-    pip install --upgrade -e '.[test]'
+    pip install --upgrade -e '.[dev]'
 
 Run the integration tests::
 
