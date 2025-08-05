@@ -795,10 +795,10 @@ def geotiffs(tmpdir_factory) -> list[dict[str, str | UUID | dict]]:
     :return: List of dictionaries like::
 
         {
-            'day':..., # compact day string, e.g. `19900302`
-            'uuid':..., # a unique UUID for this dataset (i.e. specific day)
-            'path':..., # path to the yaml ingestion file
-            'tiffs':... # list of paths to the actual geotiffs in that dataset, one per band.
+            "day": ...,  # compact day string, e.g. `19900302`
+            "uuid": ...,  # a unique UUID for this dataset (i.e. specific day)
+            "path": ...,  # path to the yaml ingestion file
+            "tiffs": ...,  # list of paths to the actual geotiffs in that dataset, one per band.
         }
     """
     tiffs_dir = tmpdir_factory.mktemp("tiffs")

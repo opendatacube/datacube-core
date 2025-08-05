@@ -46,10 +46,7 @@ def _print_version(ctx, param, value) -> None:
 
 def compose(*functions):
     """
-    >>> compose(
-    ...     lambda x: x+1,
-    ...     lambda y: y+2
-    ... )(1)
+    >>> compose(lambda x: x + 1, lambda y: y + 2)(1)
     4
     """
 

@@ -937,7 +937,9 @@ def multiline(coords: list[CoordList], crs: MaybeCRS) -> Geometry:
     """
     Create a 2D MultiLineString (Multiple disconnected sets of lines)
 
-    >>> multiline([[(10, 10), (20, 20), (30, 40)], [(50, 60), (70, 80), (90, 99)]], None)
+    >>> multiline(
+    ...     [[(10, 10), (20, 20), (30, 40)], [(50, 60), (70, 80), (90, 99)]], None
+    ... )
     Geometry(MULTILINESTRING ((10 10, 20 20, 30 40), (50 60, 70 80, 90 99)), None)
 
     :param coords: list of lists of x,y coordinate tuples
@@ -961,7 +963,13 @@ def multipolygon(coords: list[list[CoordList]], crs: MaybeCRS) -> Geometry:
     """
     Create a 2D MultiPolygon
 
-    >>> multipolygon([[[(10, 10), (20, 20), (20, 10), (10, 10)]], [[(40, 10), (50, 20), (50, 10), (40, 10)]]], None)
+    >>> multipolygon(
+    ...     [
+    ...         [[(10, 10), (20, 20), (20, 10), (10, 10)]],
+    ...         [[(40, 10), (50, 20), (50, 10), (40, 10)]],
+    ...     ],
+    ...     None,
+    ... )
     Geometry(MULTIPOLYGON (((10 10, 20 20, 20 10, 10 10)), ((40 10, 50 20, 50 10, 40 10))), None)
 
     :param coords: list of lists of x,y coordinate tuples
@@ -1567,7 +1575,7 @@ def assign_crs(
 
         xx = datacube.utils.geometry.assign_crs(xr.open_rasterio("some-file.tif"))
         print(xx.geobox)
-        print(xx.astype('float32').geobox)
+        print(xx.astype("float32").geobox)
 
 
     :param xx:  Dataset or DataArray

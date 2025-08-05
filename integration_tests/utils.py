@@ -74,10 +74,7 @@ def _make_geotiffs(tiffs_dir, day_offset, num_bands=NUM_BANDS):
 
     Return a dictionary mapping band_number to filename, eg::
 
-        {
-            0: '/tmp/tiffs/band01_time01.tif',
-            1: '/tmp/tiffs/band02_time01.tif'
-        }
+        {0: "/tmp/tiffs/band01_time01.tif", 1: "/tmp/tiffs/band02_time01.tif"}
     """
     tiffs = {}
     width = GEOTIFF["shape"]["x"]

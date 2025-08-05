@@ -369,8 +369,10 @@ class GridWorkflow:
 
         E.g.::
 
-            gw.list_cells(product='ls5_nbar_albers',
-                          time=('2001-1-1 00:00:00', '2001-3-31 23:59:59'))
+            gw.list_cells(
+                product="ls5_nbar_albers",
+                time=("2001-1-1 00:00:00", "2001-3-31 23:59:59"),
+            )
 
         :param cell_index: The cell index. E.g. (14, -40)
         :param query: see :py:class:`datacube.api.query.Query`
@@ -385,8 +387,10 @@ class GridWorkflow:
         List tiles of data, sorted by cell.
         ::
 
-            tiles = gw.list_tiles(product='ls5_nbar_albers',
-                                  time=('2001-1-1 00:00:00', '2001-3-31 23:59:59'))
+            tiles = gw.list_tiles(
+                product="ls5_nbar_albers",
+                time=("2001-1-1 00:00:00", "2001-3-31 23:59:59"),
+            )
 
         The values can be passed to :meth:`load`
 

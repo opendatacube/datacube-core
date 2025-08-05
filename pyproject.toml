@@ -175,6 +175,9 @@ extend-exclude = [
     "docs/source/conf.py",
 ]
 
+[tool.ruff.format]
+docstring-code-format = true # Reformat code in doc strings.
+
 [tool.ruff.lint]
 select = [
     "A",  # Don't shadow built-ins

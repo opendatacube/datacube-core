@@ -293,6 +293,9 @@ class Datacube:
         driver: Any | None = None,
         **query: QueryField,
     ) -> xarray.Dataset:
+        # Ruff reformats the legal resampling values into a tuple, so disable
+        # formatting for this code block.
+        # fmt: off
         r"""
         Load data as an ``xarray.Dataset`` object.
         Each measurement will be a data variable in the :class:`xarray.Dataset`.
@@ -304,7 +307,7 @@ class Datacube:
 
             A product can be specified using the product name::
 
-                product='ls5_ndvi_albers'
+                product = "ls5_ndvi_albers"
 
             See :meth:`list_products` for the list of products with their names and properties.
 
@@ -314,7 +317,7 @@ class Datacube:
             The ``measurements`` argument is a list of measurement names, as listed in :meth:`list_measurements`.
             If not provided, all measurements for the product will be returned::
 
-                measurements=['red', 'nir', 'swir2']
+                measurements = ["red", "nir", "swir2"]
 
         **Dimensions**
 
@@ -328,18 +331,18 @@ class Datacube:
 
             or::
 
-                x=(1516200, 1541300), y=(-3867375, -3867350), crs='EPSG:3577'
+                x=(1516200, 1541300), y=(-3867375, -3867350), crs="EPSG:3577"
 
             You can also specify a polygon with an arbitrary CRS (in e.g. the native CRS)::
 
-                geopolygon=polygon(coords, crs="EPSG:3577")
+                geopolygon = polygon(coords, crs="EPSG:3577")
 
             Or an iterable of polygons (search is done against the union of all polygons)::
 
-                geopolygon=[poly1, poly2, poly3, ....]
+                geopolygon = [poly1, poly2, poly3, ....]
 
             You can also pass a WKT string, or a GeoJSON string or any other object that can be passed to the
-            odc.geo.Geometry constructor, or an iterable of any of the above.
+            :class:`odc.geo.Geometry` constructor, or an iterable of any of the above.
 
             Performance and accuracy of geopolygon queries may vary depending on the index driver in use and the CRS.
 
@@ -348,36 +351,36 @@ class Datacube:
             A ``None`` value in the range indicates an open range, with the provided date serving as either the
             upper or lower bound. E.g.::
 
-                time=('2000-01-01', '2001-12-31')
-                time=('2000-01', '2001-12')
-                time=('2000', '2001')
-                time=('2000')
-                time=('2000', None)  # all data from 2000 onward
-                time=(None, '2000')  # all data up to and including 2000
+                time = ("2000-01-01", "2001-12-31")
+                time = ("2000-01", "2001-12")
+                time = ("2000", "2001")
+                time = "2000"
+                time = ("2000", None)  # all data from 2000 onward
+                time = (None, "2000")  # all data up to and including 2000
 
             For 3D datasets, where the product definition contains an ``extra_dimension`` specification,
             these dimensions can be queried using that dimension's name. E.g.::
 
-                z=(10, 30)
+                z = (10, 30)
 
             or::
 
-                z=5
+                z = 5
 
             or::
 
-                wvl=(560.3, 820.5)
+                wvl = (560.3, 820.5)
 
             For EO-specific datasets that are based around scenes, the time dimension can be reduced to the day level,
             using solar day to keep scenes together::
 
-                group_by='solar_day'
+                group_by = "solar_day"
 
             For data that has different values for the scene overlap that requires more complex rules for combining
             data, a function can be provided to the merging into a single time slice.
 
             See :func:`datacube.helpers.ga_pq_fuser` for an example implementation.
-            see :func:`datacube.api.query.query_group_by` for `group_by` built-in functions.
+            See :func:`datacube.api.query.query_group_by` for ``group_by`` built-in functions.
 
 
         **Output**
@@ -385,18 +388,19 @@ class Datacube:
             To reproject or resample data, supply the ``output_crs``, ``resolution``, ``resampling`` and ``align``
             fields.
 
-            By default, the resampling method is 'nearest'. However, any stored overview layers may be used
+            By default, the resampling method is ``nearest``. However, any stored overview layers may be used
             when down-sampling, which may override (or hybridise) the choice of resampling method.
 
             To reproject data to 30 m resolution for EPSG:3577::
 
-                dc.load(product='ls5_nbar_albers',
-                        x=(148.15, 148.2),
-                        y=(-35.15, -35.2),
-                        time=('1990', '1991'),
-                        output_crs='EPSG:3577`,
-                        resolution=30,
-                        resampling='cubic'
+                dc.load(
+                    product="ls5_nbar_albers",
+                    x=(148.15, 148.2),
+                    y=(-35.15, -35.2),
+                    time=("1990", "1991"),
+                    output_crs="EPSG:3577",
+                    resolution=30,
+                    resampling="cubic",
                 )
 
             odc-geo style xy objects are preferred for passing in resolution and align pairs to avoid x/y ordering
@@ -439,8 +443,8 @@ class Datacube:
 
             Valid values are::
 
-               'nearest', 'average', 'bilinear', 'cubic', 'cubic_spline',
-               'lanczos', 'mode', 'gauss',  'max', 'min', 'med', 'q1', 'q3'
+               "nearest", "average", "bilinear", "cubic", "cubic_spline",
+               "lanczos", "mode", "gauss", "max", "min", "med", "q1", "q3",
 
             Default is to use ``nearest`` for all bands.
 
@@ -472,7 +476,7 @@ class Datacube:
             resolution (i.e. :class:`odc.geo.geobox.GeoBox` or an xarray `Dataset` or `DataArray`).
             E.g.::
 
-                pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
+                pq = dc.load(product="ls5_pq_albers", like=nbar_dataset)
 
         :param fuse_func: Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
             data is simply copied over the top of each other in a relatively undefined manner. This function can
@@ -489,7 +493,8 @@ class Datacube:
             For example, loaded data could be filtered to January observations only by passing the following
             predicate function that returns True for datasets acquired in January::
 
-                def filter_jan(dataset): return dataset.time.begin.month == 1
+                def filter_jan(dataset):
+                    return dataset.time.begin.month == 1
 
             .
 
@@ -510,6 +515,7 @@ class Datacube:
 
         :return: Requested data in a :class:`xarray.Dataset`
         """
+        # fmt: on
         if product is None and datasets is None:
             raise ValueError("Must specify a product or supply datasets")
 
@@ -611,7 +617,7 @@ class Datacube:
             resolution (i.e. :class:`odc.geo.geobox.GeoBox` or an xarray `Dataset` or `DataArray`).
             E.g.::
 
-                pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
+                pq = dc.load(product="ls5_pq_albers", like=nbar_dataset)
 
         :param limit: if provided, limit the maximum number of datasets returned
         :param search_terms: see :class:`datacube.api.query.Query`

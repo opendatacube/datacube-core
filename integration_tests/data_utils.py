@@ -162,10 +162,7 @@ def _make_geotiffs(output_dir, dataset_dict, shape=(100, 100)):
 
     :return: a dictionary mapping band_number to filename, eg::
 
-        {
-            0: '/tmp/tiffs/band01_time01.tif',
-            1: '/tmp/tiffs/band02_time01.tif'
-        }
+        {0: "/tmp/tiffs/band01_time01.tif", 1: "/tmp/tiffs/band02_time01.tif"}
     """
     tiffs = {}
     width, height = shape
