@@ -8,6 +8,67 @@ What's New
 Next Release
 ============
 
+v1.9.7 (5 August 2025)
+======================
+
+This release includes a fix for a critical bug affecting dask loading and the postgis index driver.
+
+What's Changed
+--------------
+
+* Fix spell check by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2033
+* eo3: fix type error by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2031
+* cog: un-nest and align logic by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2034
+* Enable flake8-simplify rules by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2035
+* search_tool: fix some types by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2036
+* Fix type checker errors by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2037
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2043
+* Handle list type resolution by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2039
+* Fix type checker errors by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2042
+* validate_document: add type annotations by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2041
+* BandInfo: deprecate unused 3D parameter by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2040
+* Restrict to sphinx-tabs 3.4.5 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2046
+* docs: add missing index by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2047
+* tests: test legacy resolution by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2050
+* Dockerfile: set UV_LINK_MODE by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2051
+* CI: pin image by hash by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2048
+* Relax click requirement by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2052
+* Extend and integrate `native_load` by @emmaai in https://github.com/opendatacube/datacube-core/pull/2053
+* Enable more lint rules by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2056
+* Revert "Restrict to sphinx-tabs 3.4.5" by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2057
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2063
+* Fix type checker errors by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2062
+* xarray_geoextensions: add space in warning by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2060
+* CI: check right file in pre-commit by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2064
+* pylint: remove reports parameter by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2061
+* Require setuptools_scm >= 8 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2065
+* testutils: fix NoData behavior by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2049
+* CI: shorten job timeout by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2066
+* readthedocs: remove extra_requirements by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2067
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2070
+* build(deps): bump github/codeql-action from 3.29.2 to 3.29.4 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2072
+* build(deps): bump astral-sh/setup-uv from 6.3.1 to 6.4.3 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2073
+* Typecheck tests in CI by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2071
+* CI: run code coverage earlier by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2076
+* docs: introduce docs/source directory by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2068
+* docs: build with uv by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2082
+* create_storage: change parameter type by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2078
+* Various type signature adjustments by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2079
+* dockerignore: update with more patterns by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2084
+* docs: autogenerate version by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2085
+* pre-commit: update ruff hook name by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2086
+* CI: use OIDC for CodeCov by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2088
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2089
+* Ensure MetadataType  models can always be pickled to support Dask loading by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2083
+* Make configure_s3_access driver aware by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2087
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.6...1.9.7
+
+Includes contributions from @pjonsson, @SpacemanPaul, @emmaai and @Ariana-B
+
+The Open Data Cube Steering Council thanks and acknowledges the ongoing support of
+Geoscience Australia and RISE.
+
 v1.9.6 (11 July 2025)
 =====================
 
