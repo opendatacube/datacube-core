@@ -40,7 +40,7 @@ Install required python packages and create an ``odc`` conda environment.
 
 Python::
 
-   conda create --name odc_env python=3.8 datacube
+   conda create --name odc_env python=3.12 datacube
 
 Activate ``odc`` python environment::
 
