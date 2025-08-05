@@ -41,6 +41,11 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
+    - name: Get Git commit timestamps
+      run: |
+        TIMESTAMP=$(git log -1 --pretty=%ct pyproject.toml uv.lock datacube examples)
+        echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+
     - name: Build Docker
       uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
       with:
@@ -50,6 +55,8 @@ jobs:
         load: true
         cache-from: type=gha
         cache-to: type=gha,mode=max
+      env:
+        SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
 
     - name: Verify and Run Tests
       run: |
