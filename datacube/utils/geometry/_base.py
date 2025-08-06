@@ -1572,7 +1572,7 @@ def assign_crs(
 
     :param xx:  Dataset or DataArray
     :param crs: CRS to assign, if omitted try to guess from attributes
-    :param crs_coord_name: how to name crs corodinate (defaults to ``spatial_ref``)
+    :param crs_coord_name: how to name crs coordinate (defaults to ``spatial_ref``)
     """
     if crs is None:
         geobox = getattr(xx, "geobox", None)

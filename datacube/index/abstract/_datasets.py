@@ -544,7 +544,7 @@ class AbstractDatasetResource(ABC):
         """
         Perform a search, returning results as Dataset objects.
 
-        Prior to dataccube-1.9.0, search always returned datasets sorted by product.  From 1.9, no ordering
+        Prior to datacube-1.9.0, search always returned datasets sorted by product.  From 1.9, no ordering
         is guaranteed.  Ordering of results is now unspecified and may vary between index drivers.
 
         :param limit: Limit number of datasets per product (None/default = unlimited)

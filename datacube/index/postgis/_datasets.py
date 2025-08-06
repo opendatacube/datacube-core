@@ -1161,7 +1161,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         product_queries = list(self._get_product_queries(query))
         custom_query = {}
         if not product_queries:
-            # The key, values in query that are un-machable with info
+            # The key, values in query that are un-matchable with info
             # in metadata types and product definitions, perhaps there are custom
             # fields, will need to handle custom fields separately
 

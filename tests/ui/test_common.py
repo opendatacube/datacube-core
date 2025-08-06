@@ -70,7 +70,7 @@ def test_get_metadata_path() -> None:
         get_metadata_path(out_dir.joinpath("missing-dataset.tif"))
 
 
-def test_find_any_metatadata_suffix() -> None:
+def test_find_any_metadata_suffix() -> None:
     files = write_files(
         {
             "directory_dataset": {

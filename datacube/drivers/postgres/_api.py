@@ -772,7 +772,7 @@ class PostgresDbAPI:
                 fields.append(type_cast(PgField, f).alchemy_expression)
 
         if time_field is None:
-            raise Exception("No timme field in duplicates query")
+            raise Exception("No time field in duplicates query")
 
         candidates_table = (
             select(DATASET.c.id, time_field.label("time"), *fields)
