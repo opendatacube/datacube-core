@@ -361,7 +361,7 @@ class VirtualProduct(Mapping):
 class Product(VirtualProduct):  # type: ignore[no-redef]
     """An existing datacube product."""
 
-    # TODO: We have ODC model Products throughout this source file as typehints.  Are the Product typehints in this
+    # TODO: We have ODC model Products throughout this source file as type hints.  Are the Product type hints in this
     #       module after this definition this class or the normal Product model class?
     #       Either this class should be renamed or Product imported as e.g. OdcProduct
 
@@ -1165,7 +1165,7 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
             dependencies.append(subset_band.data)
             # get the input dask array for the function `reproject_array`
             band_key = next(iter(flatten(subset_band.data.__dask_keys__())))
-            # generate a new layer of dask graph with reroject
+            # generate a new layer of dask graph with reproject
             new_layer[(dask_name,) + tile_index] = (
                 reproject_array,
                 band_key,

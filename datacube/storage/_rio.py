@@ -240,7 +240,7 @@ def _build_hdf_uri(url_str: str, fmt: str, layer: str) -> str:
 
 def _url2rasterio(url_str: str, fmt: str, layer: str | None) -> str:
     """
-    turn URL into a string that could be passed to raterio.open
+    Turn URL into a string that could be passed to rasterio.open
     """
     if _is_hdf(fmt):
         if layer is None:

@@ -67,7 +67,7 @@ def test_gridspec() -> None:
     assert (gs == {}) is False
 
 
-def test_gridspec_upperleft() -> None:
+def test_gridspec_upper_left() -> None:
     """Test to ensure grid indexes can be counted correctly from bottom left or top left"""
     tile_bbox = BoundingBox(
         left=1934400.0,

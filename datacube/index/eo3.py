@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-# TODO: typehints need attention
+# TODO: type hints need attention
 """Tools for working with EO3 metadata"""
 
 from collections.abc import Iterable, Mapping

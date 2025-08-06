@@ -538,7 +538,7 @@ def test_filter_types_by_fields(index: Index, wo_eo3_product) -> None:
 
     res = list(
         index.metadata_types.get_with_fields(
-            ["platform", "instrument", "region_code", "favorite_icecream"]
+            ["platform", "instrument", "region_code", "favourite_icecream"]
         )
     )
     assert len(res) == 0
@@ -550,7 +550,7 @@ def test_filter_types_by_fields(index: Index, wo_eo3_product) -> None:
 
     res = list(
         index.products.get_with_fields(
-            ["platform", "instrument", "region_code", "favorite_icecream"]
+            ["platform", "instrument", "region_code", "favourite_icecream"]
         )
     )
     assert len(res) == 0

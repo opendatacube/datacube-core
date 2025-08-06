@@ -55,7 +55,7 @@ class AbstractMetadataTypeResource(ABC):
         """
         Add a metadata type to the index.
 
-        :param metadata_type: Unpersisted Metadatatype model
+        :param metadata_type: Unpersisted MetadataType model
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
@@ -64,12 +64,12 @@ class AbstractMetadataTypeResource(ABC):
 
             raise NotImplementedError if set to True, and this behaviour is not applicable
             for the implementing driver.
-        :return: Persisted Metadatatype model.
+        :return: Persisted MetadataType model.
         """
 
     def _add_batch(self, batch_types: Iterable[MetadataType]) -> BatchStatus:
         """
-        Add a single "batch" of mdts.
+        Add a single "batch" of MetadataTypes.
 
         Default implementation is simple loop of add
 

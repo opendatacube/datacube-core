@@ -102,11 +102,12 @@ def warp_affine(
     **kwargs,
 ) -> np.ndarray:
     """
-    Perform Affine warp using best available backend (GDAL via rasterio is the only one so far).
+    Perform Affine warp using the best available backend (GDAL via rasterio is
+    the only one so far).
 
     :param        src: image as ndarray
     :param        dst: image as ndarray
-    :param          A: Affine transformm, maps from dst_coords to src_coords
+    :param          A: Affine transform, maps from dst_coords to src_coords
     :param resampling: str resampling strategy
     :param src_nodata: Value representing "no data" in the source image
     :param dst_nodata: Value to represent "no data" in the destination image
