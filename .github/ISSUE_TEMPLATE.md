@@ -13,10 +13,10 @@
 ### Environment information
 
 * Which ``datacube --version`` are you using?
-* What datacube deployment/enviornment are you running against?
+* What datacube deployment/environment are you running against?
 
 
 > **Note:** Stale issues will be automatically closed after a period of six months with no activity. 
-> To ensure critical issues are not closed, tag them with the Github `pinned` tag.
+> To ensure critical issues are not closed, tag them with the GitHub `pinned` tag.
 > If you are a community member and not a maintainer please escalate this issue to maintainers via
 > [GIS StackExchange](https://gis.stackexchange.com/questions/tagged/open-data-cube) or [Discord](https://discord.com/invite/4hhBQVas5U).

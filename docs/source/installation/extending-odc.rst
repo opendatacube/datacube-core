@@ -212,7 +212,7 @@ the ``index_driver`` to ``memory`` in the configuration file.
 
 The memory index driver may be useful:
 
-1. for ODC use cases where there is no need for the index to be re-used beyond the current session;
+1. for ODC use cases where there is no need for the index to be reused beyond the current session;
 2. for testing scenarios where no index persistence is required; or
 3. as an example/template for developing other index drivers.
 

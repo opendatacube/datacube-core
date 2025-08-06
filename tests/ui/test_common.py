@@ -81,8 +81,8 @@ def test_find_any_metadata_suffix() -> None:
             "file_dataset.tif.agdc-md.yaml": "",
             "dataset_metadata.YAML": "",
             "no_metadata.tif": "",
-            "ambigous.yml": "",
-            "ambigous.yaml": "",
+            "ambiguous.yml": "",
+            "ambiguous.yaml": "",
         }
     )
 
@@ -111,7 +111,7 @@ def test_find_any_metadata_suffix() -> None:
     assert path is None
 
     with pytest.raises(ValueError):
-        _find_any_metadata_suffix(files.joinpath("ambigous"))
+        _find_any_metadata_suffix(files.joinpath("ambiguous"))
 
 
 def test_ui_path_doc_stream(httpserver) -> None:
