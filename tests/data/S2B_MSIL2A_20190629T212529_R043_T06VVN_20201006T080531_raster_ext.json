@@ -571,7 +571,7 @@
     "SCL": {
       "href": "https://sentinel2l2a01.blob.core.windows.net/sentinel2-l2/06/V/VN/2019/06/29/S2B_MSIL2A_20190629T212529_N0212_R043_T06VVN_20201006T080531.SAFE/GRANULE/L2A_T06VVN_A012081_20190629T212530/IMG_DATA/R20m/T06VVN_20190629T212529_SCL_20m.tif",
       "type": "image/tiff; application=geotiff; profile=cloud-optimized",
-      "title": "Scene classfication map (SCL)",
+      "title": "Scene classification map (SCL)",
       "gsd": 20.0,
       "proj:bbox": [
         399960.0,

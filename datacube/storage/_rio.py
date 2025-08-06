@@ -193,7 +193,7 @@ class RasterDatasetDataSource(RasterioDataSource):
             return self._part + 1  # Convert to rasterio 1-based indexing
 
         if src is None:
-            # File wasnt' open, could be unstacked file in a new format, or
+            # File wasn't open, could be unstacked file in a new format, or
             # stacked/unstacked in old. We assume caller knows what to do
             # (maybe based on some side-channel information), so just report
             # undefined.

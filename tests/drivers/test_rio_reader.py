@@ -145,7 +145,7 @@ def test_rd_internals_uri() -> None:
 
 
 def test_rio_driver_fail_to_open() -> None:
-    nosuch_uri = "file:///this-file-hopefully/doesnot/exist-4718193.tiff"
+    nosuch_uri = "file:///this-file-hopefully/does-not/exist-4718193.tiff"
     rde = RDEntry()
     rdr = rde.new_instance({})
 
@@ -193,7 +193,7 @@ def test_rio_driver_open(data_folder) -> None:
         "b1", base, path="zeros_no_geo_int16_7x3.tif", format=GeoTIFF, nodata=None
     )
 
-    # First verify that missing overrides in the band doesn't cause issues
+    # First verify that missing overrides in the band don't cause issues
     assert bi.crs is None
     assert bi.transform is None
     assert bi.nodata is None

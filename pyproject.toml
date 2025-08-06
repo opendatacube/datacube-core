@@ -240,3 +240,9 @@ enable_error_code = ['explicit-override']
 ignore_missing_imports = true
 warn_redundant_casts = true
 warn_unused_ignores = true
+
+[tool.codespell]
+ignore-words-list = 'nd,dout,nempty'
+skip = "uv.lock,./build"
+# Ignore base64 encoded strings
+ignore-regex = '[A-Za-z0-9+/]{100,}'

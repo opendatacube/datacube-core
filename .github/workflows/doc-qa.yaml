@@ -26,9 +26,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: igsekor/pyspelling-any@44278deea34ea69d8f0d5179ac409c140b0a2f5a # v1.0.5
-        name: Spellcheck
-
   doctor-rst:
     timeout-minutes: 15
     name: Lint (DOCtor-RST)
