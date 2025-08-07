@@ -36,7 +36,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 FROM base AS builder
 
-ARG UV=https://github.com/astral-sh/uv/releases/download/0.7.21/uv-x86_64-unknown-linux-gnu.tar.gz
+ARG UV=https://github.com/astral-sh/uv/releases/download/0.8.6/uv-x86_64-unknown-linux-gnu.tar.gz
 
 ENV UV_COMPILE_BYTECODE=0 \
     UV_PROJECT_ENVIRONMENT=/app \
@@ -45,7 +45,7 @@ ENV UV_COMPILE_BYTECODE=0 \
 
 WORKDIR /build
 
-ADD --checksum=sha256:ca3e8898adfce5fcc891d393a079013fa4bd0d9636cef11aded8a7485bcba312 --chown=root:root --chmod=644 --link $UV uv.tar.gz
+ADD --checksum=sha256:5429c9b96cab65198c2e5bfe83e933329aa16303a0369d5beedc71785a4a2f36 --chown=root:root --chmod=644 --link $UV uv.tar.gz
 
 RUN tar xf uv.tar.gz -C /usr/local/bin --strip-components=1 --no-same-owner
 
