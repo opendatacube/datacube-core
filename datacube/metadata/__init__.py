@@ -7,8 +7,10 @@ Datacube metadata generation from STAC.
 """
 
 from ._eo3converter import infer_dc_product, stac2ds
+from ._stacconverter import ds2stac
 
 __all__ = (
+    "ds2stac",
     "infer_dc_product",
     "stac2ds",
 )

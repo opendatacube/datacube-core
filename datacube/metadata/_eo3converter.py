@@ -11,10 +11,11 @@ Utilities for translating STAC Items to EO3 Datasets.
 import dataclasses
 import uuid
 from collections.abc import Iterable, Iterator, Sequence
+from datetime import datetime
 from functools import singledispatch
 from typing import Any
 
-from odc.geo import CRS
+from odc.geo import CRS, Geometry
 from odc.geo.geobox import GeoBox
 from odc.loader.types import (  # TODO: after loader 0.6.0 - add RasterSource
     BandKey,
@@ -34,7 +35,6 @@ from odc.stac.model import (
     RasterCollectionMetadata,
 )
 from pystac import Collection, Item
-from toolz import dicttoolz
 
 from datacube.index.abstract import default_metadata_type_docs
 from datacube.index.eo3 import prep_eo3
@@ -57,6 +57,7 @@ STAC_TO_EO3_RENAMES = {
     "view:azimuth": "eo:azimuth",
     "view:sun_azimuth": "eo:sun_azimuth",
     "view:sun_elevation": "eo:sun_elevation",
+    "created": "odc:processing_datetime",
 }
 
 (_eo3,) = (
@@ -160,12 +161,12 @@ def _compute_uuid(
 
 
 def _to_grid(gbox: GeoBox) -> dict[str, Any]:
-    return {"shape": gbox.shape.yx, "transform": gbox.transform[:6]}  # type: ignore[index]
+    return {"shape": list(gbox.shape.yx), "transform": list(gbox.transform)}  # type: ignore[index]
 
 
 def _to_eo3_properties(properties: dict[str, Any]) -> dict[str, Any]:
     """
-    Convert EO3 properties dictionary to the Stac equivalent.
+    Convert STAC properties dictionary to the EO3 equivalent.
     """
 
     def _to_eo3_type(key: str, value):
@@ -174,6 +175,10 @@ def _to_eo3_properties(properties: dict[str, Any]) -> dict[str, Any]:
                 return "_".join([i.upper() for i in value])
             else:
                 return None
+        elif key == "created" or "datetime" in key:
+            if isinstance(value, str):
+                return datetime.fromisoformat(value)
+            return value
         else:
             return value
 
@@ -181,16 +186,17 @@ def _to_eo3_properties(properties: dict[str, Any]) -> dict[str, Any]:
         STAC_TO_EO3_RENAMES.get(key, key): _to_eo3_type(key, val)
         for key, val in properties.items()
     }
-    creation_time = (
-        properties.get("odc:processing_datetime")
-        or properties.get("created")
-        or properties.get("datetime")
-    )
-    if prop.get("odc:processing_datetime") is None and creation_time:
-        prop["odc:processing_datetime"] = creation_time
+
+    if prop.get("odc:processing_datetime") is None:
+        # default to datetime value if no created
+        prop["odc:processing_datetime"] = properties.get("datetime")
 
     if prop.get("odc:file_format") is None:
         prop["odc:file_format"] = "GeoTIFF"
+
+    for key in list(prop.keys()):
+        if key.startswith("proj:"):
+            prop.pop(key)
 
     return prop
 
@@ -200,6 +206,7 @@ def _to_dataset(
     properties: dict[str, Any],
     ds_uuid: uuid.UUID,
     product: Product,
+    geometry,
 ) -> Dataset:
     # pylint: disable=too-many-locals
 
@@ -209,13 +216,20 @@ def _to_dataset(
     measurements: dict[str, dict[str, Any]] = {}
     crs: CRS | None = None
 
+    for key in ["proj:code", "proj:epsg", "proj:wkt2"]:
+        if key in properties:
+            crs = CRS(properties.get(key))
+
     for band_key, src in item.bands.items():
         name, idx = band_key
 
         m: dict[str, Any] = {"path": src.uri}
         if idx > 1:
             m["band"] = idx
-        measurements[name] = m
+        try:
+            measurements[product.canonical_measurement(name)] = m
+        except ValueError:
+            measurements[name] = m
 
         if not md.has_proj:
             continue
@@ -245,12 +259,13 @@ def _to_dataset(
 
         gbox = mk_1x1_geobox(item.geometry)
         grids["default"] = _to_grid(gbox)
-        crs = gbox.crs
+        crs = gbox.crs  # should this replace item proj:code if it exists?
 
     if crs is None:
         crs = EPSG4326
 
-    lineage = properties.pop("odc:lineage", {})
+    # lineage = properties.pop("odc:lineage", {})
+    geom = Geometry(geometry, 4326).to_crs(crs)
 
     ds_doc = {
         "$schema": "https://schemas.opendatacube.org/dataset",
@@ -258,15 +273,18 @@ def _to_dataset(
         "product": {"name": product.name.lower()},
         "crs": str(crs),
         "grids": grids,
-        "measurements": dicttoolz.keymap(
-            lambda k: product.canonical_measurement(k), measurements
-        ),
+        "geometry": geom.json,
+        "measurements": measurements,
         "properties": _to_eo3_properties(properties),
         "accessories": item.accessories,
-        "lineage": lineage,
+        "lineage": {},  # TODO: properly handling lineage requires an Index
     }
 
-    # Note: this bypasses consistency and lineage checks
+    title = ds_doc["properties"].pop("title", None)
+    if title is not None:
+        ds_doc["label"] = title
+
+    # TODO: this need to use Doc2Ds for consistency checks and lineage handling
     return Dataset(product, prep_eo3(ds_doc), uri=item.href)
 
 
@@ -289,7 +307,7 @@ def _item_to_ds(
     )
     _item = parse_item(item, md)
 
-    return _to_dataset(_item, item.properties, ds_uuid, product)
+    return _to_dataset(_item, item.properties, ds_uuid, product, item.geometry)
 
 
 def stac2ds(
