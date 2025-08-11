@@ -190,6 +190,7 @@ select = [
     "FURB", # refurb
     "I",  # isort
     "N",  # pep8-naming
+    "RET", # flake8-ret
     "RUF", # Ruff-specific rules
     "SIM", # flake8-simplify
     "UP", # pyupgrade
