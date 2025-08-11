@@ -90,7 +90,7 @@ def test_search_dataset_range_eo3(
     # Less Than
     datasets = list(
         index.datasets.search(
-            product=ls8_eo3_dataset.product.name, cloud_cover=Range(None, 50.0)
+            product=ls8_eo3_dataset.product.name, cloud_cover=Range(0.0, 50.0)
         )
     )
     assert len(datasets) == 2
@@ -101,7 +101,7 @@ def test_search_dataset_range_eo3(
     # Greater than
     datasets = list(
         index.datasets.search(
-            product=ls8_eo3_dataset.product.name, cloud_cover=Range(50.0, None)
+            product=ls8_eo3_dataset.product.name, cloud_cover=Range(50.0, 100.0)
         )
     )
     assert len(datasets) == 2

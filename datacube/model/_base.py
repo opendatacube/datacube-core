@@ -3,13 +3,38 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import datetime
+import sys
 from collections import namedtuple
 from collections.abc import Iterable
-from typing import TypeAlias
+from typing import Generic, NamedTuple, Protocol, TypeAlias, TypeVar
 
 from odc.geo import Geometry
 
-Range = namedtuple("Range", ("begin", "end"))
+_T_contra = TypeVar("_T_contra", contravariant=True)
+
+
+class Orderable(Protocol[_T_contra]):
+    def __lt__(self, other: _T_contra) -> bool: ...
+    def __gt__(self, other: _T_contra) -> bool: ...
+
+
+OrderedT = TypeVar("OrderedT", bound=Orderable)
+
+if sys.version_info < (3, 11):
+    # NamedTuples with multiple inheritance are not supported in Python 3.10.
+    Range = namedtuple("Range", ("begin", "end"))
+else:
+
+    class Range(NamedTuple, Generic[OrderedT]):
+        """
+        A named tuple representing a range.
+
+        :param begin: start of the range.
+        :param end: end of the range.
+        """
+
+        begin: OrderedT
+        end: OrderedT
 
 
 def ranges_overlap(ra: Range, rb: Range) -> bool:
