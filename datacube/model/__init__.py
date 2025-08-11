@@ -1188,10 +1188,9 @@ class GridSpec:
         res_y, res_x = self.resolution
         y, x = self.tile_coords(tile_index)
         h, w = self.tile_resolution
-        geobox = GeoBox(
+        return GeoBox(
             crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), shape=wh_(w, h)
         )
-        return geobox
 
     def tiles(
         self, bounds: BoundingBox, geobox_cache: dict | None = None
@@ -1437,8 +1436,7 @@ class ExtraDimensions:
         if dim not in self._dim_slice:
             raise ValueError(f"Dimension {dim} not found.")
 
-        dim_slice = self._dim_slice[dim]
-        return dim_slice
+        return self._dim_slice[dim]
 
     def index_of(self, dim: str, value: Any) -> int:
         """Find index for value in the dimension dim

@@ -569,10 +569,9 @@ class LineageRelations:
                 children[classifier].append(subtree)
             else:
                 children[classifier] = [subtree]
-        tree = LineageTree(
+        return LineageTree(
             dataset_id=root,
             direction=direction,
             children=children,
             home=self._homes.get(root),
         )
-        return tree

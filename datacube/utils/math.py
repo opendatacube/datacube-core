@@ -41,8 +41,7 @@ def unsqueeze_data_array(
 def unsqueeze_dataset(
     ds: xr.Dataset, dim: str, coord: int = 0, pos: int = 0
 ) -> xr.Dataset:
-    ds = ds.map(unsqueeze_data_array, dim=dim, pos=pos, keep_attrs=True, coord=coord)
-    return ds
+    return ds.map(unsqueeze_data_array, dim=dim, pos=pos, keep_attrs=True, coord=coord)
 
 
 @deprecat(

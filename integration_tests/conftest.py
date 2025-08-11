@@ -898,8 +898,7 @@ def example_ls5_dataset_paths(tmpdir, geotiffs: list) -> dict:
     :return: Dict of directories containing each observation,
       indexed by dataset UUID.
     """
-    dataset_dirs = _make_ls5_scene_datasets(geotiffs, tmpdir)
-    return dataset_dirs
+    return _make_ls5_scene_datasets(geotiffs, tmpdir)
 
 
 @pytest.fixture

@@ -525,7 +525,7 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
         else:
             geobox = grouped.geobox
 
-        result = Datacube.load_data(
+        return Datacube.load_data(
             grouped.box,
             geobox,
             list(measurement_dicts.values()),
@@ -534,8 +534,6 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
             skip_broken_datasets=merged.get("skip_broken_datasets", False),
             resampling=merged.get("resampling", "nearest"),
         )
-
-        return result
 
 
 class Transform(VirtualProduct):
@@ -716,8 +714,7 @@ class Aggregate(VirtualProduct):
             data = self._input.fetch(value, **load_settings)
             result = self._statistic.compute(data)
             result.coords[dim] = coords[dim]
-            result = result.drop_indexes(dim, errors="ignore")
-            return result
+            return result.drop_indexes(dim, errors="ignore")
 
         groups = list(xr_map(grouped.box, statistic))
         result = xarray.concat(groups, dim=dim).assign_attrs(

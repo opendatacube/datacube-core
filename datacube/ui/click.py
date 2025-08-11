@@ -408,8 +408,7 @@ def parsed_search_expressions(f):
                 "Invalid expression. Please refer to command documentation.", e
             )
 
-    f = click.argument("expressions", callback=my_parse, nargs=-1)(f)
-    return f
+    return click.argument("expressions", callback=my_parse, nargs=-1)(f)
 
 
 def print_help_msg(command: Command) -> None:

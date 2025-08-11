@@ -122,8 +122,7 @@ def infer_dc_product_from_item(
     :param cfg: Dictionary of configuration, see below
     """
     md = extract_collection_metadata(item, cfg)
-    product = _to_product(md)
-    return product
+    return _to_product(md)
 
 
 def _compute_uuid(

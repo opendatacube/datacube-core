@@ -229,8 +229,7 @@ def _native_load_1(
             else:
                 mm.update(om)
 
-    xx = Datacube.load_data(sources, load_geobox, mm, **kw)
-    return xx
+    return Datacube.load_data(sources, load_geobox, mm, **kw)
 
 
 def native_load(

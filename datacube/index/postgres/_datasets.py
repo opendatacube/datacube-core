@@ -610,8 +610,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :return: True if one was removed
         """
         with self._db_connection() as connection:
-            was_removed = connection.remove_location(id_, uri)
-            return was_removed
+            return connection.remove_location(id_, uri)
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
@@ -630,8 +629,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :return: True if location was able to be archived
         """
         with self._db_connection() as connection:
-            was_archived = connection.archive_location(id_, uri)
-            return was_archived
+            return connection.archive_location(id_, uri)
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
@@ -650,8 +648,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :return: True if location was able to be restored
         """
         with self._db_connection() as connection:
-            was_restored = connection.restore_location(id_, uri)
-            return was_restored
+            return connection.restore_location(id_, uri)
 
     def _make(self, dataset_res, full_info: bool = False, product=None) -> Dataset:
         """

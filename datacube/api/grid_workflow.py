@@ -455,7 +455,7 @@ class GridWorkflow:
         """
         measurement_dicts = tile.product.lookup_measurements(measurements)
 
-        dataset = Datacube.load_data(
+        return Datacube.load_data(
             tile.sources,
             tile.geobox,
             measurement_dicts,
@@ -464,8 +464,6 @@ class GridWorkflow:
             fuse_func=fuse_func,
             skip_broken_datasets=skip_broken_datasets,
         )
-
-        return dataset
 
     def update_tile_lineage(self, tile: Tile):
         for i in range(tile.sources.size):
