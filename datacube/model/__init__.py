@@ -1073,7 +1073,12 @@ class GridSpec:
     """
     Definition for a regular spatial grid
 
-        >>> gs = GridSpec(crs=CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(-50.05, 139.95))
+        >>> gs = GridSpec(
+        ...     crs=CRS("EPSG:4326"),
+        ...     tile_size=(1, 1),
+        ...     resolution=(-0.1, 0.1),
+        ...     origin=(-50.05, 139.95),
+        ... )
         >>> gs.tile_resolution
         (10, 10)
         >>> list(gs.tiles(BoundingBox(140, -50, 141.5, -48.5)))

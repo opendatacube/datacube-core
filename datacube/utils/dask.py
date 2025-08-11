@@ -182,8 +182,7 @@ def compute_tasks(
 
     .. code-block:: python
 
-        (client.compute(task).result()
-          for task in tasks)
+        (client.compute(task).result() for task in tasks)
 
     but with up to ``max_in_flight`` tasks being processed at the same time.
     Input/Output order is preserved, so there is a possibility of head of

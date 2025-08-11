@@ -738,18 +738,18 @@ def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
 
         {
             # Field name:
-            'lat': {
+            "lat": {
                 # Field type & properties.
-                'type': 'float-range',
-                'min_offset': [
+                "type": "float-range",
+                "min_offset": [
                     # Offsets within a dataset document for this field.
-                    ['extent', 'coord', 'ul', 'lat'],
-                    ['extent', 'coord', 'll', 'lat']
+                    ["extent", "coord", "ul", "lat"],
+                    ["extent", "coord", "ll", "lat"],
                 ],
-                'max_offset': [
-                    ['extent', 'coord', 'ur', 'lat'],
-                    ['extent', 'coord', 'lr', 'lat']
-                ]
+                "max_offset": [
+                    ["extent", "coord", "ur", "lat"],
+                    ["extent", "coord", "lr", "lat"],
+                ],
             }
         }
 

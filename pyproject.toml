@@ -175,6 +175,9 @@ extend-exclude = [
     "docs/source/conf.py",
 ]
 
+[tool.ruff.format]
+docstring-code-format = true # Reformat code in doc strings.
+
 [tool.ruff.lint]
 select = [
     "A",  # Don't shadow built-ins
@@ -218,7 +221,6 @@ extend-ignore-names = [
 "datacube/drivers/postgis/_schema.py" = ["E711"]
 "datacube/drivers/postgres/_api.py" = ["E711"]
 "datacube/drivers/postgres/_schema.py" = ["E711"]
-"datacube/utils/cog.py" = ["SIM117"] # Fixed in separate PR.
 
 [tool.ruff.lint.pycodestyle]
 max-line-length = 120

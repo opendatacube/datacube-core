@@ -22,11 +22,11 @@ def contains_all(d_: dict, *keys) -> bool:
     """
     Does the dictionary have values for all of the given keys?
 
-    >>> contains_all({'a': 4}, 'a')
+    >>> contains_all({"a": 4}, "a")
     True
-    >>> contains_all({'a': 4, 'b': 5}, 'a', 'b')
+    >>> contains_all({"a": 4, "b": 5}, "a", "b")
     True
-    >>> contains_all({'b': 5}, 'a')
+    >>> contains_all({"b": 5}, "a")
     False
     """
     return all(d_.get(key) for key in keys)
