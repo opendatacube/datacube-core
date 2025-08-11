@@ -315,10 +315,9 @@ class DateDocField(SimpleDocField):
         if isinstance(value, datetime):
             return tz_aware(value)
         # SQLAlchemy expression or string are parsed in pg as dates.
-        elif isinstance(value, ColumnElement | str):
+        if isinstance(value, ColumnElement | str):
             return func.agdc.common_timestamp(value)
-        else:
-            raise ValueError(f"Value not readable as date: {value!r}")
+        raise ValueError(f"Value not readable as date: {value!r}")
 
     @override
     def between(self, low, high):
@@ -495,11 +494,10 @@ class DateRangeDocField(RangeDocField):
             return RangeBetweenExpression(
                 self, tz_aware(low), tz_aware(high), _range_class=postgres.Range
             )
-        else:
-            raise ValueError(
-                "Unknown comparison type for date range: "
-                f"expecting datetimes, got: ({low!r}, {high!r})"
-            )
+        raise ValueError(
+            "Unknown comparison type for date range: "
+            f"expecting datetimes, got: ({low!r}, {high!r})"
+        )
 
     @property
     def expression_with_leniency(self):

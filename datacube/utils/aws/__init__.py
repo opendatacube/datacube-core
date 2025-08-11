@@ -50,8 +50,7 @@ def _fetch_text(url: str, timeout: float = 0.1) -> str | None:
         with urlopen(url, timeout=timeout) as resp:
             if 200 <= resp.getcode() < 300:
                 return resp.read().decode("utf8")
-            else:
-                return None
+            return None
     except OSError:
         return None
 

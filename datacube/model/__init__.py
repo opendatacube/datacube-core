@@ -408,7 +408,7 @@ class Dataset:
         geo_ref_points = projection.get("geo_ref_points")
         if valid_data:
             return Geometry(valid_data, crs=crs)
-        elif geo_ref_points:
+        if geo_ref_points:
             return polygon(
                 [
                     xytuple(geo_ref_points[key])

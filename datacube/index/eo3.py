@@ -257,8 +257,7 @@ def prep_eo3(
                 if len(uuids) == 1:
                     if isinstance(uuids[0], dict):
                         return {name: uuids}
-                    else:
-                        return {name: {"id": stringify(uuids[0])}}
+                    return {name: {"id": stringify(uuids[0])}}
 
                 out: dict[str, Any] = {}
                 for idx, uuid in enumerate(uuids, start=1):

@@ -206,17 +206,16 @@ def mk_sample_product(
     def mk_measurement(m):
         if isinstance(m, str):
             return dict(name=m, **common)
-        elif isinstance(m, tuple):
+        if isinstance(m, tuple):
             name, dtype, nodata = m
             m = common.copy()
             m.update(name=name, dtype=dtype, nodata=nodata)
             return m
-        elif isinstance(m, dict):
+        if isinstance(m, dict):
             m_merged = common.copy()
             m_merged.update(m)
             return m_merged
-        else:
-            raise ValueError("Only support str|dict|(name, dtype, nodata)")
+        raise ValueError("Only support str|dict|(name, dtype, nodata)")
 
     measurements = [mk_measurement(m) for m in measurements]
 
@@ -531,12 +530,11 @@ def sanitise_doc(d: str | Mapping | list) -> str | float | dict | list:
         if d == "NaN":
             return math.nan
         return d
-    elif isinstance(d, dict | Mapping):
+    if isinstance(d, dict | Mapping):
         return {k: sanitise_doc(v) for k, v in d.items()}
-    elif isinstance(d, list):
+    if isinstance(d, list):
         return [sanitise_doc(i) for i in d]
-    else:
-        return d
+    return d
 
 
 @contextlib.contextmanager

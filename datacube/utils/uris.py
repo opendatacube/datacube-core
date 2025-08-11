@@ -112,8 +112,7 @@ def get_part_from_uri(uri: str) -> int | None:
 def as_url(maybe_uri: str) -> str:
     if is_url(maybe_uri):
         return maybe_uri
-    else:
-        return pathlib.Path(maybe_uri).absolute().as_uri()
+    return pathlib.Path(maybe_uri).absolute().as_uri()
 
 
 def default_base_dir() -> pathlib.Path:
@@ -199,8 +198,7 @@ def uri_resolve(base: str, path: str | None = None) -> str:
 
     if is_vsipath(base):
         return vsi_join(base, path)
-    else:
-        return urljoin(base, path)
+    return urljoin(base, path)
 
 
 @deprecat(

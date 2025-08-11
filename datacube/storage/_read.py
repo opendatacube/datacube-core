@@ -93,9 +93,8 @@ def read_time_slice(
             if w is None:
                 w = ()
             return (extra_dim_index,) + w, shape
-        else:
-            # 2D read window
-            return w, shape
+        # 2D read window
+        return w, shape
 
     if rr.paste_ok:
         A = rr.transform.linear

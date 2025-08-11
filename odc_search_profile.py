@@ -70,12 +70,11 @@ def test_offset_geom(dc):
                 crs=CRS("epsg:4326"),
             ),
         )
-    else:
-        return dc.index.datasets.search(
-            product="ga_ls8c_ard_3",
-            lat=Range(-30.0, -25.0),
-            lon=Range(140.0, 145.0),
-        )
+    return dc.index.datasets.search(
+        product="ga_ls8c_ard_3",
+        lat=Range(-30.0, -25.0),
+        lon=Range(140.0, 145.0),
+    )
 
 
 def test_temporal_search(dc):

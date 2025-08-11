@@ -1035,9 +1035,9 @@ def multigeom(geoms: Iterable[Geometry]) -> Geometry:
     src_type = src_types.pop()
     if src_type == "Polygon":
         return Geometry(geometry.MultiPolygon(raw_geoms), crs)
-    elif src_type == "Point":
+    if src_type == "Point":
         return Geometry(geometry.MultiPoint(raw_geoms), crs)
-    elif src_type == "LineString":
+    if src_type == "LineString":
         return Geometry(geometry.MultiLineString(raw_geoms), crs)
 
     raise ValueError("Only understand Polygon|LineString|Point")

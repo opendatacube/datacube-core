@@ -511,11 +511,10 @@ class PostgresDbAPI:
                 if known_fields.get(o.lower()) is not None:
                     return known_fields[o.lower()].alchemy_expression
                 raise ValueError(f"Cannot order by unknown field {o}")
-            elif isinstance(o, PgField):
+            if isinstance(o, PgField):
                 return o.alchemy_expression
-            else:
-                # assume func, clause, or other expression, and leave as-is
-                return o
+            # assume func, clause, or other expression, and leave as-is
+            return o
 
         order_by = [] if order_by is None else [_ob_exprs(o) for o in order_by]
 

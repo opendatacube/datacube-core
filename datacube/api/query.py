@@ -279,8 +279,7 @@ def _value_to_range(
     if isinstance(value, str | float | int):
         value = float(value)
         return value, value
-    else:
-        return float(value[0]), float(value[-1])
+    return float(value[0]), float(value[-1])
 
 
 def _values_to_search(**kwargs) -> dict:

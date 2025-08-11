@@ -195,10 +195,9 @@ class ProductResource(AbstractProductResource):
         def listify(v):
             if isinstance(v, tuple):
                 return []
-            elif isinstance(v, list):
+            if isinstance(v, list):
                 return v
-            else:
-                return [v]
+            return [v]
 
         for prod in self.get_all():
             unmatched = query.copy()

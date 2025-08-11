@@ -78,8 +78,7 @@ class PgField(Field):
             return aliased(  # type: ignore[return-value]
                 search_table, name=f"{search_table.__tablename__}-{self.name}"
             )
-        else:
-            return self.select_alchemy_table
+        return self.select_alchemy_table
 
     @cached_property
     def dataset_join_args(self) -> DatasetJoinArgs:
@@ -91,8 +90,7 @@ class PgField(Field):
                     self.search_index_table.search_key == self.name,
                 ),
             )
-        else:
-            return (self.search_index_table,)
+        return (self.search_index_table,)
 
     @property
     def alchemy_expression(self) -> ColumnExpressionArgument:
@@ -106,8 +104,7 @@ class PgField(Field):
     def search_alchemy_expression(self) -> ColumnExpressionArgument:
         if self.indexed:
             return self.search_index_table.search_val
-        else:
-            return self.alchemy_expression
+        return self.alchemy_expression
 
     @property
     def sql_expression(self):
@@ -405,12 +402,11 @@ class DateDocField(SimpleDocField):
         """
         if isinstance(value, datetime | str):
             return self.normalise_value(value)
-        elif isinstance(value, ColumnElement):
+        if isinstance(value, ColumnElement):
             # SQLAlchemy expression or string are parsed in pg as dates.
             # NB: Do not cast here - casting here breaks expected behaviour in other timezones
             return value
-        else:
-            raise ValueError(f"Value not readable as date: {value!r}")
+        raise ValueError(f"Value not readable as date: {value!r}")
 
     @override
     def normalise_value(self, value):
@@ -594,14 +590,13 @@ class DateRangeDocField(RangeDocField):
     def normalise_value(self, value):
         if isinstance(value, datetime):
             return tz_as_utc(value)
-        elif isinstance(value, PgRange):
+        if isinstance(value, PgRange):
             return PgRange(
                 lower=tz_as_utc(value.lower),
                 upper=tz_as_utc(value.upper),
                 bounds=value.bounds,
             )
-        else:
-            return tuple(tz_as_utc(v) for v in value)
+        return tuple(tz_as_utc(v) for v in value)
 
     @override
     def between(self, low, high) -> Expression:
@@ -615,11 +610,10 @@ class DateRangeDocField(RangeDocField):
                 tz_as_utc(high).astimezone(timezone.utc),
                 _range_class=PgRange,
             )
-        else:
-            raise ValueError(
-                "Unknown comparison type for date range: "
-                f"expecting datetimes, got: ({low!r}, {high!r})"
-            )
+        raise ValueError(
+            "Unknown comparison type for date range: "
+            f"expecting datetimes, got: ({low!r}, {high!r})"
+        )
 
     @property
     def expression_with_leniency(self):

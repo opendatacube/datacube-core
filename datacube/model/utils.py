@@ -382,8 +382,7 @@ def remap_lineage_doc(root: dict[str, Any] | SimpleDocNav, mk_node, **kwargs):
     except BadMatch as e:
         if str(root.id) not in str(e):
             raise BadMatch(f"Error loading lineage dataset: {e}") from None
-        else:
-            raise
+        raise
 
 
 def dedup_lineage(root: dict | SimpleDocNav):

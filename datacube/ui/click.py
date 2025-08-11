@@ -349,12 +349,11 @@ def handle_exception(msg: str, e: Exception) -> None:
     ctx = click.get_current_context()
     if ctx.obj["verbosity"] >= 1:
         raise e
+    if "%s" in msg:
+        click.echo(msg % e, err=True)
     else:
-        if "%s" in msg:
-            click.echo(msg % e, err=True)
-        else:
-            click.echo(msg, err=True)
-        ctx.exit(1)
+        click.echo(msg, err=True)
+    ctx.exit(1)
 
 
 def parsed_search_expressions(f):

@@ -1082,16 +1082,15 @@ class Datacube:
                 extra_dims=extra_dims,
                 patch_url=patch_url,
             )
-        else:
-            return Datacube._xr_load(
-                sources,
-                geobox,
-                measurements,
-                skip_broken_datasets=skip_broken_datasets,
-                progress_cbk=progress_cbk,
-                extra_dims=extra_dims,
-                patch_url=patch_url,
-            )
+        return Datacube._xr_load(
+            sources,
+            geobox,
+            measurements,
+            skip_broken_datasets=skip_broken_datasets,
+            progress_cbk=progress_cbk,
+            extra_dims=extra_dims,
+            patch_url=patch_url,
+        )
 
     @override
     def __str__(self) -> str:
@@ -1354,8 +1353,7 @@ def _calculate_chunk_sizes(
 
     if extra_dim_chunks:
         return irr_chunks, extra_dim_chunks, grid_chunks
-    else:
-        return irr_chunks, grid_chunks
+    return irr_chunks, grid_chunks
 
 
 def _tokenize_dataset(dataset: Dataset) -> str:

@@ -86,15 +86,14 @@ def include_name(
 
         # Ignore dynamically generated spatial index tables
         return not is_spindex_table_name(name)
-    elif type_ == "schema":
+    if type_ == "schema":
         # Monitor default and odc schema
         return name is None or name == SCHEMA_NAME
-    elif type_ == "column":
+    if type_ == "column":
         # Include all columns
         return True
-    else:
-        # Include any constraints, indexes, etc, that made it this far.
-        return True
+    # Include any constraints, indexes, etc, that made it this far.
+    return True
 
 
 def get_odc_env() -> ODCEnvironment:

@@ -833,22 +833,21 @@ class Collate(VirtualProduct):
             if any(x == 0 for x in r.box.shape):
                 # empty raster
                 return None
-            else:
-                result = child.fetch(r, **load_settings)
-                name = self.get("index_measurement_name")
+            result = child.fetch(r, **load_settings)
+            name = self.get("index_measurement_name")
 
-                if name is None:
-                    return result
-
-                # implication for dask?
-                measurement = Measurement(name=name, dtype="int8", nodata=-1, units="1")
-                shape = select_unique([result[band].shape for band in result.data_vars])
-                array = numpy.full(shape, source_index, dtype=measurement.dtype)
-                first = result[next(iter(result.data_vars))]
-                result[name] = xarray.DataArray(
-                    array, dims=first.dims, coords=first.coords, name=name
-                ).assign_attrs(units=measurement.units, nodata=measurement.nodata)
+            if name is None:
                 return result
+
+            # implication for dask?
+            measurement = Measurement(name=name, dtype="int8", nodata=-1, units="1")
+            shape = select_unique([result[band].shape for band in result.data_vars])
+            array = numpy.full(shape, source_index, dtype=measurement.dtype)
+            first = result[next(iter(result.data_vars))]
+            result[name] = xarray.DataArray(
+                array, dims=first.dims, coords=first.coords, name=name
+            ).assign_attrs(units=measurement.units, nodata=measurement.nodata)
+            return result
 
         groups = [
             fetch_child(

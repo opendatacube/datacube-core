@@ -192,8 +192,7 @@ def netcdf_extract_string(chars) -> str:
     chars = netCDF4.chartostring(chars)
     if chars.dtype.kind == "U":
         return str(chars)
-    else:
-        return str(numpy.char.decode(chars))
+    return str(numpy.char.decode(chars))
 
 
 def read_strings_from_netcdf(path: str | PathLike[str], variable) -> Generator[str]:
@@ -308,20 +307,19 @@ def documents_equal(d1: str | float | list | dict, d2) -> bool:
         return False
     if isinstance(d1, str):
         return d1 == d2
-    elif isinstance(d1, dict):
+    if isinstance(d1, dict):
         if set(d1.keys()) != set(d2.keys()):
             return False
         return all(documents_equal(d1[k], d2[k]) for k in d1)
-    elif isinstance(d1, list):
+    if isinstance(d1, list):
         if len(d1) != len(d2):
             return False
         return all(documents_equal(d1[i], d2[i]) for i in range(len(d1)))
-    elif isinstance(d1, float):
+    if isinstance(d1, float):
         if math.isnan(d1) and math.isnan(d2):
             return True
         return math.isclose(d1, d2, abs_tol=1e-10)
-    else:
-        return d1 == d2
+    return d1 == d2
 
 
 def transform_object_tree(f, o, key_transform=lambda k: k):
@@ -503,10 +501,9 @@ class DocReader:
     def __getattr__(self, name: str):
         if name in self.fields:
             return self.fields[name]
-        else:
-            raise AttributeError(
-                f"Unknown field {name!r}. Expected one of {list(self.fields.keys())!r}"
-            )
+        raise AttributeError(
+            f"Unknown field {name!r}. Expected one of {list(self.fields.keys())!r}"
+        )
 
     @override
     def __setattr__(self, name: str, val) -> None:

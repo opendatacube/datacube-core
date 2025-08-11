@@ -312,8 +312,7 @@ def netcdfy_data(
         return data.view("S1").reshape(data.shape + (-1,))
     if data.dtype.kind == "M":
         return data.astype("<M8[s]").astype("double")
-    else:
-        return data
+    return data
 
 
 def flag_mask_meanings(flags_def) -> tuple[numpy.ndarray, numpy.ndarray, str]:

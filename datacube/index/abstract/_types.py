@@ -45,8 +45,7 @@ def dsid_to_uuid(dsid: DSID) -> UUID:
     """
     if isinstance(dsid, UUID):
         return dsid
-    else:
-        return UUID(dsid)
+    return UUID(dsid)
 
 
 class DatasetTuple(NamedTuple):

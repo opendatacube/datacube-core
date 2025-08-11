@@ -328,8 +328,7 @@ class PostgresURLPartHandler(ODCOptionHandler):
         if self.urlpart == "path" and part.startswith("/"):
             # Remove leading slash
             return str(part)[1:]
-        else:
-            return part
+        return part
 
     @override
     def get_val_from_environment(self) -> str | None:
