@@ -163,7 +163,7 @@ def _write_cog(
             block = (
                 pix[win.toslices()]
                 if pix.ndim == 2
-                else pix[(slice(None),) + win.toslices()]
+                else pix[(slice(None), *win.toslices())]
             )
 
             dst.write(block, indexes=band, window=win)

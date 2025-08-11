@@ -287,7 +287,7 @@ def _values_to_search(**kwargs) -> dict:
     for key, value in kwargs.items():
         if key.lower() in ("time", "t"):
             search["time"] = _time_to_search_dims(value)
-        elif key not in ["latitude", "lat", "y"] + ["longitude", "lon", "x"]:
+        elif key not in ["latitude", "lat", "y", "longitude", "lon", "x"]:
             # If it's not a string, but is a sequence of length 2, then it's a Range
             if (
                 not isinstance(value, str)

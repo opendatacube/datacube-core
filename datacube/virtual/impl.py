@@ -1146,11 +1146,11 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
         reproject_roi = compute_reproject_roi(band.geobox, sub_geobox, padding=1)
 
         # find the chunk from the input array with the slice index
-        subset_band = band[(...,) + reproject_roi.roi_src].chunk(-1)
+        subset_band = band[(..., *reproject_roi.roi_src)].chunk(-1)
 
         if min(subset_band.shape) == 0:
             # pad the empty chunk
-            new_layer[(dask_name,) + tile_index] = (
+            new_layer[(dask_name, *tile_index)] = (
                 numpy.full,
                 sub_geobox.shape,
                 band.nodata,
@@ -1162,7 +1162,7 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
             # get the input dask array for the function `reproject_array`
             band_key = next(iter(flatten(subset_band.data.__dask_keys__())))
             # generate a new layer of dask graph with reproject
-            new_layer[(dask_name,) + tile_index] = (
+            new_layer[(dask_name, *tile_index)] = (
                 reproject_array,
                 band_key,
                 band.nodata,

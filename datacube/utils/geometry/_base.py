@@ -956,7 +956,7 @@ def polygon(outer, crs: MaybeCRS, *inners) -> Geometry:
 
     :param outer: list of 2d x,y coordinate tuples
     """
-    return Geometry({"type": "Polygon", "coordinates": (outer,) + inners}, crs=crs)
+    return Geometry({"type": "Polygon", "coordinates": (outer, *inners)}, crs=crs)
 
 
 def multipolygon(coords: list[list[CoordList]], crs: MaybeCRS) -> Geometry:

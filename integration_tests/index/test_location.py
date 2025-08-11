@@ -20,7 +20,7 @@ def test_legacy_location_behaviour(index: Index, ls8_eo3_dataset) -> None:
         update = Dataset(  # Test of deprecated behaviour
             ls8_eo3_dataset.product,
             ls8_eo3_dataset.metadata_doc,
-            uris=locations + ["file:/tmp/foo"],
+            uris=[*locations, "file:/tmp/foo"],
         )
         index.datasets.update(update)
         locations = index.datasets.get_locations(
@@ -87,7 +87,7 @@ def test_postgis_no_multiple_locations(index: Index, ls8_eo3_dataset) -> None:
         update = Dataset(
             ls8_eo3_dataset.product,
             ls8_eo3_dataset.metadata_doc,
-            uris=locations + ["file:/tmp/foo"],
+            uris=[*locations, "file:/tmp/foo"],
         )
         with pytest.raises(ValueError):
             index.datasets.update(update)

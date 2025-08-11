@@ -52,7 +52,7 @@ def generate_help_text(command, prefix):
     if isinstance(command, click.core.MultiCommand):
         for c in command.list_commands(ctx):
             c = command.resolve_command(ctx, [c])[1]
-            block.append(generate_help_text(c, prefix + [c.name]))
+            block.append(generate_help_text(c, [*prefix, c.name]))
 
     return block
 

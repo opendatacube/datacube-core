@@ -92,7 +92,7 @@ def read_time_slice(
         if extra_dim_index is not None:
             if w is None:
                 w = ()
-            return (extra_dim_index,) + w, shape
+            return (extra_dim_index, *w), shape
         # 2D read window
         return w, shape
 

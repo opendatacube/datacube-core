@@ -444,7 +444,7 @@ class PostgresDbAPI:
         )
 
         # join the adjacency list with datasets table
-        select_fields = _DATASET_SELECT_FIELDS + (aggd.c.sources, aggd.c.classes)
+        select_fields = (*_DATASET_SELECT_FIELDS, aggd.c.sources, aggd.c.classes)
         query = select(*select_fields).select_from(
             aggd.join(DATASET, DATASET.c.id == aggd.c.dataset_ref)
         )

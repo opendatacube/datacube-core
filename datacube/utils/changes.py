@@ -93,13 +93,13 @@ def get_doc_changes(
                 get_doc_changes(
                     original.get(key, MISSING),
                     new.get(key, MISSING),
-                    base_prefix + (key,),
+                    (*base_prefix, key),
                 )
             )
     elif isinstance(original, list) and isinstance(new, list):
         for idx, (orig_item, new_item) in enumerate(zip_longest(original, new)):
             changed_fields.extend(
-                get_doc_changes(orig_item, new_item, base_prefix + (idx,))
+                get_doc_changes(orig_item, new_item, (*base_prefix, idx))
             )
     elif isinstance(original, tuple) or isinstance(new, tuple):
         if not numpy.array_equal(

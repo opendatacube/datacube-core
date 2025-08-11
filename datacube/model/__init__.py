@@ -797,7 +797,7 @@ class Product:
             else self.grid_spec.dimensions
         )
 
-        return ("time",) + spatial_dims
+        return ("time", *spatial_dims)
 
     @property
     def extra_dimensions(self) -> ExtraDimensions:

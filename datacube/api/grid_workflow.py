@@ -351,7 +351,7 @@ class GridWorkflow:
             sources = Datacube.group_datasets(dss, group_by)
             coord = sources[sources.dims[0]]
             for i in range(coord.size):
-                tile_index = cell_index + (coord.values[i],)
+                tile_index = (*cell_index, coord.values[i])
                 tiles[tile_index] = Tile(sources[i : i + 1], geobox)
 
         return tiles

@@ -122,7 +122,7 @@ def create_variable(
         new_dim_name = name + "_nchar"
         nco.createDimension(new_dim_name, size=var.dtype.itemsize)
 
-        dims = tuple(var.dims) + (new_dim_name,)
+        dims = (*tuple(var.dims), new_dim_name)
         datatype = numpy.dtype("S1")
     else:
         dims = var.dims
@@ -309,7 +309,7 @@ def netcdfy_data(
 ) -> np.ndarray[tuple[Any, ...], np.dtype[Any]]:
     # NetCDF/CF Conventions only seem to allow storing ascii, not unicode
     if data.dtype.kind == "S" and data.dtype.itemsize > 1:
-        return data.view("S1").reshape(data.shape + (-1,))
+        return data.view("S1").reshape((*data.shape, -1))
     if data.dtype.kind == "M":
         return data.astype("<M8[s]").astype("double")
     return data
