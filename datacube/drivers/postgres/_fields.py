@@ -20,7 +20,7 @@ from typing_extensions import override
 
 from datacube import utils
 from datacube.model import Range
-from datacube.model.fields import Expression, Field
+from datacube.model.fields import _AVAILABLE_TYPES, Expression, Field
 from datacube.utils import get_doc_offset
 from datacube.utils.changes import Offset
 from datacube.utils.dates import tz_aware
@@ -239,7 +239,7 @@ class SimpleDocField(PgDocField):
 
 
 class IntDocField(SimpleDocField):
-    type_name = "integer"
+    type_name: _AVAILABLE_TYPES = "integer"
 
     @override
     def value_to_alchemy(self, value):
@@ -255,7 +255,7 @@ class IntDocField(SimpleDocField):
 
 
 class BoolDocField(SimpleDocField):
-    type_name = "boolean"
+    type_name: _AVAILABLE_TYPES = "boolean"
 
     @override
     def value_to_alchemy(self, value):
@@ -271,7 +271,7 @@ class BoolDocField(SimpleDocField):
 
 
 class NumericDocField(SimpleDocField):
-    type_name = "numeric"
+    type_name: _AVAILABLE_TYPES = "numeric"
 
     @override
     def value_to_alchemy(self, value):
@@ -287,7 +287,7 @@ class NumericDocField(SimpleDocField):
 
 
 class DoubleDocField(SimpleDocField):
-    type_name = "double"
+    type_name: _AVAILABLE_TYPES = "double"
 
     @override
     def value_to_alchemy(self, value):
@@ -303,7 +303,7 @@ class DoubleDocField(SimpleDocField):
 
 
 class DateDocField(SimpleDocField):
-    type_name = "datetime"
+    type_name: _AVAILABLE_TYPES = "datetime"
 
     @override
     def value_to_alchemy(
@@ -411,7 +411,7 @@ class RangeDocField(PgDocField):
 
 class NumericRangeDocField(RangeDocField):
     FIELD_CLASS = NumericDocField
-    type_name = "numeric-range"
+    type_name: _AVAILABLE_TYPES = "numeric-range"
 
     @override
     def value_to_alchemy(self, value):
@@ -431,7 +431,7 @@ class NumericRangeDocField(RangeDocField):
 
 class IntRangeDocField(RangeDocField):
     FIELD_CLASS = IntDocField
-    type_name = "integer-range"
+    type_name: _AVAILABLE_TYPES = "integer-range"
 
     @override
     def value_to_alchemy(self, value):
@@ -451,7 +451,7 @@ class IntRangeDocField(RangeDocField):
 
 class DoubleRangeDocField(RangeDocField):
     FIELD_CLASS = DoubleDocField
-    type_name = "double-range"
+    type_name: _AVAILABLE_TYPES = "double-range"
 
     @override
     def value_to_alchemy(self, value):
@@ -473,7 +473,7 @@ class DoubleRangeDocField(RangeDocField):
 
 class DateRangeDocField(RangeDocField):
     FIELD_CLASS = DateDocField
-    type_name = "datetime-range"
+    type_name: _AVAILABLE_TYPES = "datetime-range"
 
     @override
     def value_to_alchemy(self, value):
