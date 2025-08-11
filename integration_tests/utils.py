@@ -59,7 +59,7 @@ def assert_click_command(command, args) -> None:
 
 def limit_num_measurements(dataset_type):
     if "measurements" not in dataset_type:
-        return
+        return None
     measurements = dataset_type["measurements"]
     if len(measurements) > TEST_STORAGE_NUM_MEASUREMENTS:
         dataset_type["measurements"] = measurements[:TEST_STORAGE_NUM_MEASUREMENTS]

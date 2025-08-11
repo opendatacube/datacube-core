@@ -293,7 +293,7 @@ def pass_index(app_name: str | None = None, expect_initialised: bool = True):
                 _LOG.debug("Connected to datacube index: %s", index)
             except (OperationalError, ProgrammingError, ConfigException) as e:
                 handle_exception("Error Connecting to database: %s", e)
-                return
+                return None
 
             try:
                 return f(index, *args, **kwargs)
