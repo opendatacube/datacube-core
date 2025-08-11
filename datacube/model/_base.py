@@ -10,6 +10,7 @@ from typing import Generic, NamedTuple, Protocol, TypeAlias, TypeVar
 
 from odc.geo import Geometry
 
+T = TypeVar("T")
 _T_contra = TypeVar("_T_contra", contravariant=True)
 
 
@@ -23,6 +24,7 @@ OrderedT = TypeVar("OrderedT", bound=Orderable)
 if sys.version_info < (3, 11):
     # NamedTuples with multiple inheritance are not supported in Python 3.10.
     Range = namedtuple("Range", ("begin", "end"))
+    Not = namedtuple("Not", "value")
 else:
 
     class Range(NamedTuple, Generic[OrderedT]):
@@ -35,6 +37,15 @@ else:
 
         begin: OrderedT
         end: OrderedT
+
+    class Not(NamedTuple, Generic[T]):
+        """
+        A named tuple representing negated value.
+
+        :param value: The value to be negated.
+        """
+
+        value: T
 
 
 def ranges_overlap(ra: Range, rb: Range) -> bool:
@@ -50,7 +61,6 @@ def ranges_overlap(ra: Range, rb: Range) -> bool:
     return rb.end > ra.begin
 
 
-Not = namedtuple("Not", "value")
 QueryField: TypeAlias = (
     str | float | int | Range | datetime.datetime | Iterable[str | Geometry] | Not
 )
