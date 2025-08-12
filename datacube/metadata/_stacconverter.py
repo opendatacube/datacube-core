@@ -176,13 +176,13 @@ def _stac_links(
 
 def _as_stac_instruments(value: str):
     """
-    >>> _as_stac_instruments('TM')
+    >>> _as_stac_instruments("TM")
     ['tm']
-    >>> _as_stac_instruments('OLI')
+    >>> _as_stac_instruments("OLI")
     ['oli']
-    >>> _as_stac_instruments('ETM+')
+    >>> _as_stac_instruments("ETM+")
     ['etm']
-    >>> _as_stac_instruments('OLI_TIRS')
+    >>> _as_stac_instruments("OLI_TIRS")
     ['oli', 'tirs']
     """
     return [i.strip("+-").lower() for i in value.split("_")]
