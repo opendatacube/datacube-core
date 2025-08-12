@@ -216,7 +216,9 @@ class Query:
         """
 
 
-def _extract_time_from_ds(ds: Dataset) -> datetime.datetime:
+def _extract_time_from_ds(ds: Dataset) -> datetime.datetime | None:
+    if ds.center_time is None:
+        return None
     return normalise_dt(ds.center_time)
 
 
@@ -363,6 +365,10 @@ def solar_day(dataset: Dataset, longitude: float | None = None) -> np.datetime64
     :param longitude: If supplied correct timestamp for this longitude,
                       rather than mid-point of the Dataset's footprint
     """
+    if dataset.center_time is None:
+        raise ValueError(
+            f"Cannot compute solar_day: dataset '{dataset.id}' is missing center time"
+        )
     utc = dataset.center_time.astimezone(datetime.timezone.utc)
 
     if longitude is None:
