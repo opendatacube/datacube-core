@@ -63,7 +63,17 @@ __all__ = [
 import contextlib
 
 from deprecat import deprecat
-from odc.geo import CRS, BoundingBox, Geometry, Resolution, res_, resyx_, wh_, yx_
+from odc.geo import (
+    CRS,
+    BoundingBox,
+    Geometry,
+    Resolution,
+    SomeShape,
+    res_,
+    resyx_,
+    wh_,
+    yx_,
+)
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
 from odc.geo.gridspec import GridSpec as GeoGridSpec
@@ -1022,7 +1032,7 @@ class Product:
 
         if self.grid_spec is not None:
             if isinstance(self.grid_spec, GeoGridSpec):
-                tile_shape = self.grid_spec.tile_shape
+                tile_shape: SomeShape = self.grid_spec.tile_shape
             else:
                 tile_shape = self.grid_spec.tile_resolution
             row.update(
