@@ -108,9 +108,10 @@ def native_geobox(ds: Dataset, measurements=None, basis: str | None = None) -> G
     """
     with suppress_deprecations():
         gs = ds.product.grid_spec
-        if gs is not None:
+        bounds = ds.bounds
+        if gs is not None and bounds is not None:
             # Dataset is from ingested product, figure out GeoBox of the tile this dataset covers
-            bb = [gbox for _, gbox in gs.tiles(ds.bounds)]
+            bb = [gbox for _, gbox in gs.tiles(bounds)]
             if len(bb) != 1:
                 # Ingested product but dataset overlaps several/none tiles -- no good
                 raise ValueError("Broken GridSpec detected")
