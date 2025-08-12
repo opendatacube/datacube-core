@@ -29,6 +29,7 @@ if typing.TYPE_CHECKING:
     from odc.geo.geobox import GeoBox
 
     from datacube.index import Index
+    from datacube.model import GridSpec as OldGridSpec
     from datacube.model import Product
 
 
@@ -167,7 +168,7 @@ class GridWorkflow:
     def __init__(
         self,
         index: Index,
-        grid_spec: GridSpec | None = None,
+        grid_spec: GridSpec | OldGridSpec | None = None,
         product: Product | str | None = None,
     ):
         """
@@ -183,7 +184,7 @@ class GridWorkflow:
 
         # If available, use the provided grid_spec
         if grid_spec is not None:
-            self.grid_spec: GridSpec = grid_spec
+            self.grid_spec = grid_spec
         else:
             # Otherwise, attempt to get the grid_spec by the provided product
             # which may or may not have one.
