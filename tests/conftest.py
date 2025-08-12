@@ -476,6 +476,7 @@ def ds_legacy_sources(eo3_product, odc_dataset_doc):
     )
 
 
+@pytest.fixture
 def ds_ext_lineage(eo3_product, odc_dataset_doc):
     ds = Dataset(
         eo3_product,

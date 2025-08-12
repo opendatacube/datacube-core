@@ -5,6 +5,7 @@
 # pylint: disable=unused-argument,unused-variable,missing-module-docstring,wrong-import-position,import-error
 # pylint: disable=redefined-outer-name,protected-access,import-outside-toplevel
 
+import os
 import uuid
 from typing import Any
 
@@ -229,7 +230,7 @@ def test_issue_n6(usgs_landsat_stac_v1: pystac.Item) -> None:
 
 def test_partial_proj(partial_proj_stac: pystac.Item) -> None:
     (ds,) = list(stac2ds([partial_proj_stac]))
-    assert ds.metadata_doc["grids"]["default"]["shape"] == (1, 1)
+    assert ds.metadata_doc["grids"]["default"]["shape"] == [1, 1]
 
 
 def test_noassets_case(no_bands_stac: Any) -> None:
@@ -287,7 +288,9 @@ def test_ds2stac(eo3_dataset: Dataset):
     assert output_stac["links"] == [
         {
             "rel": "self",
-            "href": eo3_dataset.uri.replace("odc-metadata.yaml", "stac-item.json"),
+            "href": os.path.abspath(eo3_dataset.uri).replace(
+                "odc-metadata.yaml", "stac-item.json"
+            ),
             "type": "application/json",
         },
         {
