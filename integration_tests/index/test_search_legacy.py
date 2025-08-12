@@ -569,7 +569,7 @@ def test_search_returning(
     my_username = index.url_parts.username
     if not my_username:
         my_username = _DEFAULT_DB_USER
-
+    assert my_username is not None
     # Mixture of document and native fields
     results = list(
         index.datasets.search_returning(

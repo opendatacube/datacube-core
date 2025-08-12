@@ -63,8 +63,11 @@ def test_group_datasets_by_time() -> None:
     ds2 = mk_sample_dataset(bands, timestamp="2019-01-01T23:24:00")
     # Same "time" but in a different timezone, and actually later
     ds3 = mk_sample_dataset(bands, timestamp="2019-01-01T23:24:00-1")
+    assert ds1.center_time is not None
     assert ds1.center_time.tzinfo is not None
+    assert ds2.center_time is not None
     assert ds2.center_time.tzinfo is None
+    assert ds3.center_time is not None
     assert ds3.center_time.tzinfo is not None
 
     # FIXME: GroupBy expected.
