@@ -479,7 +479,7 @@ class DocReader:
     def __init__(
         self,
         type_definition: dict[str, list[str]],
-        search_fields,
+        search_fields: Mapping[str, Field],
         doc: Mapping[str, Field],
     ) -> None:
         self.__dict__["_doc"] = doc
