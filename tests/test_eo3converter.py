@@ -178,7 +178,7 @@ def test_item_to_ds_no_proj(sentinel_stac_ms: pystac.Item) -> None:
     assert item.geometry is not None
     geom = Geometry(item.geometry, "EPSG:4326")
     ds = _item_to_ds(item, product, STAC_CFG)
-    assert ds.crs == "EPSG:4326"
+    assert ds.crs == "EPSG:32606"
     assert ds.extent is not None
     assert ds.extent.contains(geom)
     assert native_geobox(ds).shape == (1, 1)
@@ -322,3 +322,11 @@ def test_roundtrip(eo3_dataset: Dataset, eo3_product: Product):
     assert to_eo3.grids["default"] == eo3_dataset.grids["default"]
     # there's no way to conserve grid names when converting to stac, but values should still be the same
     assert to_eo3.grids["g15"] == eo3_dataset.grids["panchromatic"]
+    assert to_eo3.crs == eo3_dataset.crs
+    assert to_eo3.extent.area == pytest.approx(eo3_dataset.extent.area, abs=0.001)
+    assert all(
+        x == pytest.approx(y)
+        for x, y in zip(
+            rt_doc["geometry"]["coordinates"][0], orig_doc["geometry"]["coordinates"][0]
+        )
+    )

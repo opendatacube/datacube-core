@@ -259,7 +259,8 @@ def _to_dataset(
 
         gbox = mk_1x1_geobox(item.geometry)
         grids["default"] = _to_grid(gbox)
-        crs = gbox.crs  # should this replace item proj:code if it exists?
+        if crs is None:
+            crs = gbox.crs
 
     if crs is None:
         crs = EPSG4326
