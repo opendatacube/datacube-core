@@ -9,12 +9,12 @@ Module
 import datetime
 import warnings
 from collections import namedtuple
+from datetime import timezone
 from typing import Any
 
 import pytest
 import yaml
 from antimeridian import FixWindingWarning
-from dateutil.tz import UTC
 
 import datacube.scripts.cli_app
 import datacube.scripts.search_tool
@@ -572,7 +572,7 @@ def test_search_returning_eo3(
     assert format_ == "GeoTIFF"
 
     # It's always UTC in the document
-    expected_time = creation_time.astimezone(UTC).replace(tzinfo=None)
+    expected_time = creation_time.astimezone(timezone.utc).replace(tzinfo=None)
     assert expected_time.isoformat() == ls8_eo3_dataset.metadata.creation_dt
     assert label == ls8_eo3_dataset.metadata.label
 
@@ -932,8 +932,8 @@ def test_count_time_groups(index: Index, ls8_eo3_dataset: Dataset) -> None:
             "1 day",
             product=ls8_eo3_dataset.product.name,
             time=Range(
-                datetime.datetime(2016, 5, 11, tzinfo=UTC),
-                datetime.datetime(2016, 5, 13, tzinfo=UTC),
+                datetime.datetime(2016, 5, 11, tzinfo=timezone.utc),
+                datetime.datetime(2016, 5, 13, tzinfo=timezone.utc),
             ),
         )
     )
@@ -942,15 +942,15 @@ def test_count_time_groups(index: Index, ls8_eo3_dataset: Dataset) -> None:
     assert timeline == [
         (
             Range(
-                datetime.datetime(2016, 5, 11, tzinfo=UTC),
-                datetime.datetime(2016, 5, 12, tzinfo=UTC),
+                datetime.datetime(2016, 5, 11, tzinfo=timezone.utc),
+                datetime.datetime(2016, 5, 12, tzinfo=timezone.utc),
             ),
             0,
         ),
         (
             Range(
-                datetime.datetime(2016, 5, 12, tzinfo=UTC),
-                datetime.datetime(2016, 5, 13, tzinfo=UTC),
+                datetime.datetime(2016, 5, 12, tzinfo=timezone.utc),
+                datetime.datetime(2016, 5, 13, tzinfo=timezone.utc),
             ),
             1,
         ),

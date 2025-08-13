@@ -2,9 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from datetime import datetime
-
-from dateutil.tz import UTC
+from datetime import datetime, timezone
 
 from datacube.model import Range
 from datacube.ui import parse_expressions
@@ -81,15 +79,15 @@ def test_parse_uri_expression() -> None:
 def test_parse_dates() -> None:
     assert parse_expressions("time in 2014-03-02") == {
         "time": Range(
-            begin=datetime(2014, 3, 2, 0, 0, tzinfo=UTC),
-            end=datetime(2014, 3, 2, 23, 59, 59, 999999, tzinfo=UTC),
+            begin=datetime(2014, 3, 2, 0, 0, tzinfo=timezone.utc),
+            end=datetime(2014, 3, 2, 23, 59, 59, 999999, tzinfo=timezone.utc),
         )
     }
 
     assert parse_expressions("time in 2014-3-2") == {
         "time": Range(
-            begin=datetime(2014, 3, 2, 0, 0, tzinfo=UTC),
-            end=datetime(2014, 3, 2, 23, 59, 59, 999999, tzinfo=UTC),
+            begin=datetime(2014, 3, 2, 0, 0, tzinfo=timezone.utc),
+            end=datetime(2014, 3, 2, 23, 59, 59, 999999, tzinfo=timezone.utc),
         )
     }
 
@@ -98,8 +96,8 @@ def test_parse_dates() -> None:
     # for backwards compatibility.
     march_2014 = {
         "time": Range(
-            begin=datetime(2014, 3, 1, 0, 0, tzinfo=UTC),
-            end=datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=UTC),
+            begin=datetime(2014, 3, 1, 0, 0, tzinfo=timezone.utc),
+            end=datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=timezone.utc),
         )
     }
     assert parse_expressions("time in 2014-03") == march_2014
@@ -107,8 +105,8 @@ def test_parse_dates() -> None:
 
     implied_feb_march_2014 = {
         "time": Range(
-            begin=datetime(2014, 2, 1, 0, 0, tzinfo=UTC),
-            end=datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=UTC),
+            begin=datetime(2014, 2, 1, 0, 0, tzinfo=timezone.utc),
+            end=datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=timezone.utc),
         )
     }
     assert parse_expressions("time in [2014-02, 2014-03]") == implied_feb_march_2014
@@ -117,8 +115,8 @@ def test_parse_dates() -> None:
 def test_parse_date_ranges() -> None:
     eighth_march_2014 = {
         "time": Range(
-            datetime(2014, 3, 8, tzinfo=UTC),
-            datetime(2014, 3, 8, 23, 59, 59, 999999, tzinfo=UTC),
+            datetime(2014, 3, 8, tzinfo=timezone.utc),
+            datetime(2014, 3, 8, 23, 59, 59, 999999, tzinfo=timezone.utc),
         )
     }
     assert parse_expressions("time in 2014-03-08") == eighth_march_2014
@@ -126,8 +124,8 @@ def test_parse_date_ranges() -> None:
 
     march_2014 = {
         "time": Range(
-            datetime(2014, 3, 1, tzinfo=UTC),
-            datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=UTC),
+            datetime(2014, 3, 1, tzinfo=timezone.utc),
+            datetime(2014, 3, 31, 23, 59, 59, 999999, tzinfo=timezone.utc),
         )
     }
     assert parse_expressions("time in 2014-03") == march_2014
@@ -135,8 +133,8 @@ def test_parse_date_ranges() -> None:
     # Leap year, 28 days
     feb_2014 = {
         "time": Range(
-            datetime(2014, 2, 1, tzinfo=UTC),
-            datetime(2014, 2, 28, 23, 59, 59, 999999, tzinfo=UTC),
+            datetime(2014, 2, 1, tzinfo=timezone.utc),
+            datetime(2014, 2, 28, 23, 59, 59, 999999, tzinfo=timezone.utc),
         )
     }
     assert parse_expressions("time in 2014-02") == feb_2014
@@ -145,8 +143,8 @@ def test_parse_date_ranges() -> None:
     # Entire year
     year_2014 = {
         "time": Range(
-            datetime(2014, 1, 1, tzinfo=UTC),
-            datetime(2014, 12, 31, 23, 59, 59, 999999, tzinfo=UTC),
+            datetime(2014, 1, 1, tzinfo=timezone.utc),
+            datetime(2014, 12, 31, 23, 59, 59, 999999, tzinfo=timezone.utc),
         )
     }
     assert parse_expressions("time in 2014") == year_2014
