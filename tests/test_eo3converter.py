@@ -171,6 +171,7 @@ def test_item_to_ds_no_proj(sentinel_stac_ms: pystac.Item) -> None:
     item0 = sentinel_stac_ms
     item = item0.clone()
     item.stac_extensions.remove(ProjectionExtension.get_schema_uri())
+    del item.properties["proj:code"]
     assert has_proj_ext(item) is False
 
     product = infer_dc_product(item, STAC_CFG)
@@ -178,7 +179,7 @@ def test_item_to_ds_no_proj(sentinel_stac_ms: pystac.Item) -> None:
     assert item.geometry is not None
     geom = Geometry(item.geometry, "EPSG:4326")
     ds = _item_to_ds(item, product, STAC_CFG)
-    assert ds.crs == "EPSG:32606"
+    assert ds.crs == "EPSG:4326"
     assert ds.extent is not None
     assert ds.extent.contains(geom)
     assert native_geobox(ds).shape == (1, 1)

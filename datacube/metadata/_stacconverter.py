@@ -6,6 +6,7 @@ import datetime
 import math
 import mimetypes
 import warnings
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
@@ -41,7 +42,7 @@ def _lineage_fields(dataset: Dataset) -> dict:
     """
     if dataset.sources:
         lineage_dict = {key: [str(ds.id)] for key, ds in dataset.sources.items()}
-    elif dataset.source_tree:
+    elif dataset.source_tree and dataset.source_tree.children:
         lineage_dict = {
             key: [str(child.dataset_id) for child in children]
             for key, children in dataset.source_tree.children.items()
@@ -106,7 +107,7 @@ def _asset_title_fields(asset_name: str) -> str | None:
         return None
 
 
-def _uri_resolve(location: str, path: str):
+def _uri_resolve(location: str | None, path: str):
     # ODC's method doesn't support empty locations. Fall back to the path alone.
     if not location:
         return path
@@ -119,7 +120,7 @@ def _stac_links(
     stac_url: str | None,
     self_url: str | None,
     collection_url: str | None,
-) -> list[Link]:
+) -> Generator[Any, Any, Any]:
     """
     Add links for ODC product into a STAC Item
     """
@@ -261,7 +262,7 @@ def ds2stac(
         if str(dataset.crs).startswith("EPSG"):
             proj.apply(epsg=dataset.crs.epsg, **_proj_fields(dataset.grids))
         else:
-            proj.apply(wkt=dataset.crs.wkt, **_proj_fields(dataset.grids))
+            proj.apply(wkt2=dataset.crs.wkt, **_proj_fields(dataset.grids))
 
     # To pass validation, only add 'view' extension when we're using it somewhere.
     if any(k.startswith("view:") for k in properties):
@@ -285,13 +286,12 @@ def ds2stac(
         band = Band.create(name)
         eo.apply(bands=[band])
 
-        if dataset._gs:
+        if dataset.crs:
             proj_fields = _proj_fields(
                 dataset.grids, measurement.get("grid", "default")
             )
             if proj_fields is not None:
                 proj = ProjectionExtension.ext(asset)
-                # Not sure how this handles None for an EPSG code
                 proj.apply(
                     shape=proj_fields["shape"],
                     transform=proj_fields["transform"],
