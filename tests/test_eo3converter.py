@@ -281,6 +281,7 @@ def test_accessories(sentinel_stac_ms: pystac.Item) -> None:
 
 
 def test_ds2stac(eo3_dataset: Dataset):
+    assert eo3_dataset.uri is not None
     output_stac = ds2stac(eo3_dataset).to_dict()
     assert output_stac["properties"]["instruments"] == ["oli", "tirs"]
     assert set(output_stac["assets"].keys()) == set(

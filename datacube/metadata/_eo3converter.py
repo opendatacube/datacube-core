@@ -161,7 +161,7 @@ def _compute_uuid(
 
 
 def _to_grid(gbox: GeoBox) -> dict[str, Any]:
-    return {"shape": list(gbox.shape.yx), "transform": list(gbox.transform[:])}
+    return {"shape": list(gbox.shape.yx), "transform": list(gbox.transform[:])}  # type: ignore[index]
 
 
 def _to_eo3_properties(properties: dict[str, Any]) -> dict[str, Any]:
@@ -406,5 +406,5 @@ def infer_dc_product_from_collection(
     # unless configured to ignore projection info assume that it will be present
     ignore_proj = cfg.get(product.name, {}).get("ignore_proj", False)
     if not ignore_proj:
-        product._stac = dataclasses.replace(product._stac, has_proj=True)
+        product._stac = dataclasses.replace(product._stac, has_proj=True)  # type: ignore[type-var]
     return product
