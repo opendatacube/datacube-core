@@ -6,7 +6,7 @@ Introduction
 ============
 
 In this tutorial we will use Python libraries to find and load Land Use and Land Cover data from the freely available `Impact Observatory Annual Land Use Land Cover <https://planetarycomputer.microsoft.com/dataset/io-lulc-annual-v02>`_ product.
-After loading the data, we will export each year of data as a  Cloud Optimised GeoTIFF.
+After loading the data, we will export each year of data as a Cloud Optimised GeoTIFF.
 This will allow you to further view or work with the data in GIS software and other tools.
 
 During the tutorial, we will:
@@ -44,7 +44,7 @@ The tutorial environment may take a few minutes to start.
  :alt: A view of a Jupyter notebook environment showing that the tutorial.ipynb file is loaded. The file is open with the header "odc-stac tutorial".
  :align: center
 
-| We also recommend that you open the file browser by clicking the folder icon on the left-hand menu bar (circled in red in the image above). This will allow you to see the output files at the end of the tutorial.
+| We also recommend that you open the file browser by clicking the folder icon on the left-hand menu bar (circled in red in the top-left of the image above). This will allow you to see the output files at the end of the tutorial.
 
 .. note::
    For this tutorial, we believe you will learn more if you type the code yourself, rather than using copy-paste.
