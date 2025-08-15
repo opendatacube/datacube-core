@@ -16,6 +16,7 @@ from textwrap import dedent
 from typing import Literal
 
 import click
+from click import Command
 from lark.exceptions import UnexpectedEOF
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from typing_extensions import override
@@ -23,7 +24,7 @@ from typing_extensions import override
 from datacube import __version__
 from datacube.api.core import Datacube
 from datacube.cfg import ConfigException, ODCConfig, ODCEnvironment
-from datacube.index import index_connect
+from datacube.index import Index, index_connect
 from datacube.ui.expression import parse_expressions
 
 _LOG_FORMAT_STRING = "%(asctime)s %(process)d %(name)s %(levelname)s %(message)s"
@@ -45,10 +46,7 @@ def _print_version(ctx, param, value) -> None:
 
 def compose(*functions):
     """
-    >>> compose(
-    ...     lambda x: x+1,
-    ...     lambda y: y+2
-    ... )(1)
+    >>> compose(lambda x: x + 1, lambda y: y + 2)(1)
     4
     """
 
@@ -322,7 +320,7 @@ def pass_datacube(app_name: str | None = None, expect_initialised: bool = True):
 
     def decorate(f):
         @pass_index(app_name=app_name, expect_initialised=expect_initialised)
-        def with_datacube(index, *args, **kwargs):
+        def with_datacube(index: Index, *args, **kwargs):
             return f(Datacube(index=index), *args, **kwargs)
 
         return functools.update_wrapper(with_datacube, f)
@@ -335,7 +333,7 @@ def parse_endpoint(value) -> tuple[str, int]:
     return ip, int(port)
 
 
-def handle_exception(msg, e) -> None:
+def handle_exception(msg: str, e: Exception) -> None:
     """
     Exit following an exception in a CLI app
 
@@ -414,7 +412,7 @@ def parsed_search_expressions(f):
     return f
 
 
-def print_help_msg(command) -> None:
+def print_help_msg(command: Command) -> None:
     with click.Context(command) as ctx:
         click.echo(command.get_help(ctx))
 

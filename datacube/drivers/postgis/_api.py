@@ -1250,7 +1250,7 @@ class PostgisDbAPI:
         Delete the home value for the specified IDs
 
         :param ids: The IDs to delete home for
-        :return: The number of hone records deleted from the databes
+        :return: The number of home records deleted from the database.
         """
         res = self._connection.execute(
             delete(DatasetHome).where(DatasetHome.dataset_ref.in_(ids))

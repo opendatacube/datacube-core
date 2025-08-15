@@ -28,7 +28,7 @@ Typically a small spatial region and time range are chosen by the user,
 and all of the returned Data is expected to fit into RAM.
 
 One database query maps to one :class:`xarray.Dataset` which is
-processed/displayed/analyzed by custom user code. This happens as a two
+processed/displayed/analysed by custom user code. This happens as a two
 step process:
 
 1. Build a Virtual Storage Resource (VSR) – a description of what data

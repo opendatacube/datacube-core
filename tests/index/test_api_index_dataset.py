@@ -6,10 +6,13 @@ import datetime
 from collections import namedtuple
 from contextlib import contextmanager
 from copy import deepcopy
+from typing import cast
 from uuid import UUID
 
+from datacube.drivers.postgres import PostgresDb
 from datacube.index.exceptions import DuplicateRecordError
 from datacube.index.postgres._datasets import DatasetResource
+from datacube.index.postgres.index import Index
 from datacube.model import Dataset, MetadataType, Product
 
 _nbar_uuid = UUID("f2f12372-8366-11e5-817e-1040f381a756")
@@ -120,8 +123,7 @@ _EXAMPLE_METADATA_TYPE = MetadataType(
             "measurements": ["image", "bands"],
             "sources": ["lineage", "source_datasets"],
         },
-    },
-    dataset_search_fields={},
+    }
 )
 
 _EXAMPLE_PRODUCT = Product(
@@ -227,7 +229,7 @@ class MockIndex:
 def test_index_dataset() -> None:
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
-    datasets = DatasetResource(mock_db, mock_index)
+    datasets = DatasetResource(cast(PostgresDb, mock_db), cast(Index, mock_index))
     datasets.add(_EXAMPLE_NBAR_DATASET)
 
     ids = {d.id for d in mock_db.dataset.values()}
@@ -253,7 +255,7 @@ def test_index_dataset() -> None:
 def test_index_already_ingested_source_dataset() -> None:
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
-    datasets = DatasetResource(mock_db, mock_index)
+    datasets = DatasetResource(cast(PostgresDb, mock_db), cast(Index, mock_index))
     datasets.add(_EXAMPLE_NBAR_DATASET.sources["ortho"])
 
     assert len(mock_db.dataset) == 2
@@ -267,7 +269,7 @@ def test_index_already_ingested_source_dataset() -> None:
 def test_index_two_levels_already_ingested() -> None:
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
-    datasets = DatasetResource(mock_db, mock_index)
+    datasets = DatasetResource(cast(PostgresDb, mock_db), cast(Index, mock_index))
     datasets.add(
         _EXAMPLE_NBAR_DATASET.sources["ortho"].sources["satellite_telemetry_data"]
     )

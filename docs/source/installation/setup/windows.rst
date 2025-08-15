@@ -40,7 +40,7 @@ Install required python packages and create an ``odc`` conda environment.
 
 Python::
 
-   conda create --name odc_env python=3.8 datacube
+   conda create --name odc_env python=3.12 datacube
 
 Activate ``odc`` python environment::
 
@@ -95,4 +95,4 @@ Build the documentation::
    cd datacube-core/docs
    pip install -r requirements.txt
    make html
-   open _build/html/index.html
+   open build/html/index.html

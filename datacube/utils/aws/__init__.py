@@ -19,6 +19,7 @@ from botocore.client import BaseClient
 from botocore.config import Config
 from botocore.credentials import Credentials, ReadOnlyCredentials
 from botocore.session import Session
+from odc.loader._rio import configure_s3_access as rio_configure_s3_access
 from sqlalchemy.engine.url import URL
 
 from datacube.utils.generic import thread_local_cache
@@ -479,6 +480,7 @@ def configure_s3_access(
     requester_pays: bool = False,
     cloud_defaults: bool = True,
     client=None,
+    driver: str | None = None,
     **gdal_opts,
 ) -> Credentials | None:
     """Credentialize for S3 bucket access or configure public access.
@@ -508,6 +510,18 @@ def configure_s3_access(
 
     :returns: credentials object or ``None`` if ``aws_unsigned=True``
     """
+    if driver == "rio":
+        # rio driver has a different approach to RIO configuration.
+        # The approaches may be reconcilable in future, but probably not worth the effort.
+        return rio_configure_s3_access(
+            profile=profile,
+            region_name=region_name,
+            aws_unsigned=aws_unsigned,
+            requester_pays=requester_pays,
+            cloud_defaults=cloud_defaults,
+            **gdal_opts,
+        )
+
     from ..rio import set_default_rio_config
 
     aws, creds = get_aws_settings(

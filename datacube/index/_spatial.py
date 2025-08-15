@@ -56,7 +56,7 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
     else:
         # Old lat/lon--style spatial query (or no spatial query)
         # TODO: latitude/longitude/x/y aliases for lat/lon
-        #       Also some stuff is precalced at the api.core.Datacube level.
+        #       Also some stuff is precalculated at the api.core.Datacube level.
         #       THAT needs to offload to index driver when it can.
         lon = lat = None
         for coord in H_SPATIAL_KEYS:

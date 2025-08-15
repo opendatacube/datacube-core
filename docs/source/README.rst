@@ -60,7 +60,7 @@ Requires a Unix like system that includes ``make``.
 
 .. code-block:: bash
 
-   sphinx-autobuild . _build/html
+   sphinx-autobuild . build/html
 
 #. Open a browser and navigate to the URL provided by the autobuild
 

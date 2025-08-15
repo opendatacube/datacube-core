@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-# TODO: typehints need attention
+# TODO: type hints need attention
 """Tools for working with EO3 metadata"""
 
 from collections.abc import Iterable, Mapping
@@ -30,9 +30,7 @@ class EO3Grid:
             raise ValueError("Each grid must have a shape")
         if len(shape) != 2:
             raise ValueError("Grid shape must be two dimensional")
-        self.shape: tuple[int, int] = cast(
-            tuple[int, int], tuple(int(x) for x in shape)
-        )
+        self.shape = cast(tuple[int, int], tuple(int(x) for x in shape))
         xform = grid.get("transform")
         if xform is None:
             raise ValueError("Each grid must have a transform")

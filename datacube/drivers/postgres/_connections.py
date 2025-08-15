@@ -165,13 +165,13 @@ class PostgresDb:
     @classmethod
     def _expand_app_name(cls, application_name: str | None) -> str:
         """
-        >>> PostgresDb._expand_app_name(None) #doctest: +ELLIPSIS
+        >>> PostgresDb._expand_app_name(None)  # doctest: +ELLIPSIS
         'odc-...'
-        >>> PostgresDb._expand_app_name('') #doctest: +ELLIPSIS
+        >>> PostgresDb._expand_app_name("")  # doctest: +ELLIPSIS
         'odc-...'
-        >>> PostgresDb._expand_app_name('cli') #doctest: +ELLIPSIS
+        >>> PostgresDb._expand_app_name("cli")  # doctest: +ELLIPSIS
         'cli odc-...'
-        >>> PostgresDb._expand_app_name('a b.c/d')
+        >>> PostgresDb._expand_app_name("a b.c/d")
         'a-b-c-d odc-...'
         >>> PostgresDb._expand_app_name(5)
         Traceback (most recent call last):

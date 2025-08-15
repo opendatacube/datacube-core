@@ -377,7 +377,7 @@ class Doc2Dataset:
     Once constructed, call with a dictionary object and location URI, eg::
 
         resolver = Doc2Dataset(index)
-        dataset = resolver(dataset_dictionary, 'file:///tmp/test-dataset.json')
+        dataset = resolver(dataset_dictionary, "file:///tmp/test-dataset.json")
         index.dataset.add(dataset)
 
 

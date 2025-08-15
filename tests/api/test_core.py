@@ -39,7 +39,8 @@ def test_grouping_datasets() -> None:
     ]
 
     group_by = GroupBy(group_func, dimension, units, sort_key=group_func)
-    grouped = Datacube.group_datasets(datasets, group_by)
+    # FIXME: Dataset expected.
+    grouped = Datacube.group_datasets(datasets, group_by)  # type: ignore[arg-type]
     dss = grouped.isel(time=0).values[()]
     assert isinstance(dss, tuple)
     assert len(dss) == 2
@@ -51,7 +52,8 @@ def test_grouping_datasets() -> None:
     assert [ds.value for ds in dss] == ["bar"]
 
     assert str(grouped.time.dtype) == "datetime64[ns]"
-    assert grouped.loc["2016-01-01":"2016-01-15"]
+    # FIXME: Illegal slice index.
+    assert grouped.loc["2016-01-01":"2016-01-15"]  # type: ignore[misc]
 
 
 def test_group_datasets_by_time() -> None:
@@ -65,7 +67,8 @@ def test_group_datasets_by_time() -> None:
     assert ds2.center_time.tzinfo is None
     assert ds3.center_time.tzinfo is not None
 
-    xx = Datacube.group_datasets([ds1, ds2, ds3], "time")
+    # FIXME: GroupBy expected.
+    xx = Datacube.group_datasets([ds1, ds2, ds3], "time")  # type: ignore[arg-type]
     assert xx.time.shape == (2,)
     assert len(xx.data[0]) == 2
     assert len(xx.data[1]) == 1
@@ -77,12 +80,12 @@ def test_grouped_datasets_should_be_in_consistent_order() -> None:
         {"time": datetime.datetime(2016, 1, 1, 0, 2), "value": "flim"},
         {"time": datetime.datetime(2016, 2, 1, 0, 1), "value": "bar"},
     ]
-
-    grouped = _group_datasets_by_date(datasets)
+    # FIXME: GroupBy expected.
+    grouped = _group_datasets_by_date(datasets)  # type: ignore[arg-type]
 
     # Swap the two elements which get grouped together
     datasets[0], datasets[1] = datasets[1], datasets[0]
-    grouped_2 = _group_datasets_by_date(datasets)
+    grouped_2 = _group_datasets_by_date(datasets)  # type: ignore[arg-type]
 
     assert len(grouped) == len(grouped_2) == 2
     assert all(grouped.values == grouped_2.values)

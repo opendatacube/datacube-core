@@ -16,13 +16,14 @@ Four types of expressions are available:
 Where DATE or DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
 and START, END are either numbers or dates.
 """
-# flake8: noqa
 
-from lark import Lark, v_args, Transformer
+from datetime import datetime
+from typing import Any
+
+from lark import Lark, Transformer, v_args
 
 from datacube.api.query import _time_to_search_dims
 from datacube.model import Range
-
 
 search_grammar = r"""
     start: expression*
@@ -88,23 +89,23 @@ def identity(x):
 @v_args(inline=True)
 class TreeToSearchExprs(Transformer):
     # Convert the expressions
-    def equals_expr(self, field, value):
+    def equals_expr(self, field, value) -> dict[str, Any]:
         return {str(field): value}
 
-    def field_in_expr(self, field, lower, upper):
+    def field_in_expr(self, field, lower, upper) -> dict[str, Range]:
         return {str(field): Range(lower, upper)}
 
-    def time_in_expr(self, time_field, date_range):
+    def time_in_expr(self, time_field, date_range) -> dict[str, datetime]:
         return {str(time_field): date_range}
 
-    def time_gt_expr(self, time_field, date_gt):
+    def time_gt_expr(self, time_field, date_gt) -> dict[str, datetime]:
         return {str(time_field): date_gt}
 
-    def time_lt_expr(self, time_field, date_lt):
+    def time_lt_expr(self, time_field, date_lt) -> dict[str, datetime]:
         return {str(time_field): date_lt}
 
     # Convert the literals
-    def string(self, val):
+    def string(self, val) -> str:
         return str(val[1:-1])
 
     simple_string = url_string = field = time = str
@@ -112,19 +113,19 @@ class TreeToSearchExprs(Transformer):
     integer = int
     value = identity
 
-    def single_date(self, date):
+    def single_date(self, date) -> datetime | Range:
         return _time_to_search_dims(date)
 
-    def date_pair(self, start, end):
+    def date_pair(self, start, end) -> datetime | Range:
         return _time_to_search_dims((start, end))
 
-    def range_lower_bound(self, date):
+    def range_lower_bound(self, date) -> datetime | Range:
         return _time_to_search_dims((date, None))
 
-    def range_upper_bound(self, date):
+    def range_upper_bound(self, date) -> datetime | Range:
         return _time_to_search_dims((None, date))
 
-    def date(self, y, m=None, d=None) -> str:
+    def date(self, y: str | None, m: str | None = None, d: str | None = None) -> str:
         return "-".join(x for x in [y, m, d] if x is not None)
 
     # Merge everything into a single dict

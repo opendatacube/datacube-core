@@ -1,21 +1,20 @@
 # Minimal makefile for Sphinx documentation
 #
 
-# You can set these variables from the command line.
-SPHINXOPTS    = -j auto
-SPHINXBUILD   = sphinx-build
-SPHINXPROJ    = OpenDataCubeDocs
-SOURCEDIR     = .
-BUILDDIR      = _build
+# You can set these variables from the command line, and also
+# from the environment for the first two.
+SPHINXOPTS    ?= -j auto
+SPHINXBUILD   ?= sphinx-build
+SOURCEDIR     = source
+BUILDDIR      = build
 
 # Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
+.PHONY: help Makefile clean plantuml_diags
 
-.PHONY: help Makefile livehtml clean plantuml_diags
-
-PLANTUML_FILES = $(shell find . -type f -name '*.plantuml')
+PLANTUML_FILES := $(shell find source/diagrams -type f -name '*.plantuml')
 SVG_FILES = $(PLANTUML_FILES:.plantuml=.svg)
 
 plantuml_diags: $(SVG_FILES)
@@ -30,13 +29,8 @@ plantuml_diags: $(SVG_FILES)
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%:: Makefile
+%: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-livehtml:
-#	sphinx-autobuild -b html --host 0.0.0.0 --port 8123 --watch "../datacube" --re-ignore "dev/api/generate/.*\.rst" $(SPHINXOPTS) . $(BUILDDIR)/html
-	sphinx-autobuild -b html --host 0.0.0.0 --port 8123 --watch "../datacube" --ignore build/ --ignore dev/api/generate $(SPHINXOPTS) . $(BUILDDIR)/html
-
 clean:
-	rm -rf _build/
-	find . -type d -name generate -exec rm -rf {} +
+	rm -rf build/

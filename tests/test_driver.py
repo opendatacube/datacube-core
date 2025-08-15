@@ -121,7 +121,7 @@ def test_reader_cache_throws_on_missing_fallback() -> None:
     assert rdrs is not None
 
     with pytest.raises(KeyError):
-        rdrs("file", "aint-such-format")
+        rdrs("file", "no-such-format")
 
 
 def test_driver_singleton() -> None:

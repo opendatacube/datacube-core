@@ -14,9 +14,10 @@ import json
 import logging
 import math
 from collections import OrderedDict
-from collections.abc import Generator, Iterator, Mapping
+from collections.abc import Callable, Generator, Mapping
 from contextlib import contextmanager
 from copy import deepcopy
+from io import TextIOWrapper
 from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -70,7 +71,7 @@ _PROTOCOL_OPENERS = {
 }
 
 
-def load_from_yaml(handle, parse_dates: bool = False) -> Iterator:
+def load_from_yaml(handle: TextIOWrapper, parse_dates: bool = False) -> Generator[dict]:
     loader = SafeLoader if parse_dates else NoDatesSafeLoader
     yield from yaml.load_all(handle, Loader=loader)
 
@@ -80,23 +81,25 @@ def parse_yaml(doc: str) -> Mapping[str, Any]:
     return yaml.load(doc, Loader=SafeLoader)
 
 
-def load_from_json(handle):
+def load_from_json(handle) -> Generator[dict]:
     yield json.load(handle)
 
 
-def load_from_netcdf(path):
+def load_from_netcdf(path: Path) -> Generator[dict]:
     for doc in read_strings_from_netcdf(path, variable="dataset"):
         yield yaml.load(doc, Loader=NoDatesSafeLoader)
 
 
-_PARSERS = {
+_PARSERS: dict[
+    str, Callable[[str], Generator[dict]] | Callable[[TextIOWrapper], Generator[dict]]
+] = {
     ".yaml": load_from_yaml,
     ".yml": load_from_yaml,
     ".json": load_from_json,
 }
 
 
-def load_documents(path):
+def load_documents(path: str) -> Generator[dict]:
     """
     Load document/s from the specified path.
 
@@ -115,8 +118,9 @@ def load_documents(path):
     compressed = url[-3:] == ".gz"
 
     if scheme == "file" and path[-3:] == ".nc":
-        path = uri_to_local_path(url)
-        yield from load_from_netcdf(path)
+        local_path = uri_to_local_path(url)
+        assert local_path is not None
+        yield from load_from_netcdf(local_path)
     else:
         with _PROTOCOL_OPENERS[scheme](url) as fh:
             if compressed:
@@ -144,7 +148,7 @@ def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:
     :param paths: input Paths or URIs
     """
 
-    def process_file(path):
+    def process_file(path: str) -> Generator[tuple[str, dict]]:
         docs = load_documents(path)
 
         if not uri:
@@ -165,15 +169,15 @@ def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:
                 enumerate(docs), if_one=add_uri_no_part, if_many=add_uri_with_part
             )
 
-    for path in paths:
+    for p in paths:
         try:
-            yield from process_file(path)
+            yield from process_file(p)
         except InvalidDocException as e:
             raise e
         except (yaml.YAMLError, ValueError) as e:
-            raise InvalidDocException(f"Failed to load {path}: {e}") from None
+            raise InvalidDocException(f"Failed to load {p}: {e}") from None
         except Exception as e:
-            raise InvalidDocException(f"Failed to load {path}: {e}") from None
+            raise InvalidDocException(f"Failed to load {p}: {e}") from None
 
 
 def netcdf_extract_string(chars) -> str:
@@ -192,9 +196,9 @@ def netcdf_extract_string(chars) -> str:
         return str(numpy.char.decode(chars))
 
 
-def read_strings_from_netcdf(path, variable):
+def read_strings_from_netcdf(path: str | PathLike[str], variable) -> Generator[str]:
     """
-    Load all of the string encoded data from a variable in a NetCDF file.
+    Load all the string encoded data from a variable in a NetCDF file.
 
     By 'string', the CF conventions mean ascii.
 

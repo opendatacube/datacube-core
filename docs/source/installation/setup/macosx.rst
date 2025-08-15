@@ -1,12 +1,13 @@
+Mac OSX Developer Setup
+***********************
 
-Ubuntu Developer Setup
-**********************
+**Under construction**
 
-Base OS: Ubuntu 20.04 LTS
+Base OS: Mac OSX
 
 This guide will setup an ODC core development environment and includes:
 
- - Mambaforge using conda environments to isolate the odc development environment
+ - Anaconda python using conda environments to isolate the odc development environment
  - installation of required software and useful developer manuals for those libraries
  - Postgres database installation with a local user configuration
  - Integration tests to confirm both successful development setup and for ongoing testing
@@ -16,34 +17,12 @@ This guide will setup an ODC core development environment and includes:
 Required software
 =================
 
-GDAL, HDF5, and netCDF4::
+Postgres:
 
-    sudo apt-get install libgdal-dev libhdf5-serial-dev libnetcdf-dev
+    Download and install the `EnterpriseDB distribution <https://www.enterprisedb.com/downloads/postgres-postgresql-downloads>`_
 
-Install the latest Postgres version `available <https://packages.ubuntu.com/search?keywords=postgresql>`_ for your
-Ubuntu distribution, and the corresponding version of PostGIS, eg::
-
-    sudo apt-get install postgresql-16-postgis-3
-
-Ubuntu's official repositories usually ship older versions of Postgres. You can alternatively get the most recent version from
-`the official PostgreSQL repository <https://wiki.postgresql.org/wiki/Apt>`_.
-
-Optional packages (useful utilities, docs)::
-
-    sudo apt-get install libhdf5-doc netcdf-doc libgdal-doc
-    sudo apt-get install hdf5-tools netcdf-bin gdal-bin pgadmin3
 
 .. include:: common_install.rst
-
-
-If createdb or psql cannot connect to server, check which postgresql installation is being run::
-
-    which psql
-
-If it is running the mambaforge installation, you may need to run the global installation::
-
-    /usr/bin/psql -d pgintegration
-    /usr/bin/psql -d pgisintegration
 
 
 You can now specify the database user and password for ODC integration testing. To do this::
@@ -53,18 +32,19 @@ You can now specify the database user and password for ODC integration testing. 
 Then edit the ``~/.datacube_integration.conf`` with a text editor and add the following lines, replacing ``<foo>`` with your username and ``<foobar>`` with the database user password you set above (not the postgres one, your ``<foo>`` one)::
 
     [datacube]
-    db_hostname: /var/run/postgresql
+    db_hostname: localhost
     db_database: pgintegration
     index_driver: default
     db_username: <foo>
     db_password: <foobar>
 
     [experimental]
-    db_hostname: /var/run/postgresql
+    db_hostname: localhost
     db_database: pgisintegration
     index_driver: postgis
     db_username: <foo>
     db_password: <foobar>
+
 
 Verify it all works
 ===================
@@ -72,7 +52,7 @@ Verify it all works
 Install additional test dependencies::
 
     cd datacube-core
-    pip install --upgrade -e '.[test]'
+    pip install --upgrade -e '.[dev]'
 
 Run the integration tests::
 
@@ -89,4 +69,4 @@ Build the documentation::
     sudo apt install pandoc
     make html
 
-Then open :file:`_build/html/index.html` in your browser to view the Documentation.
+Then open :file:`build/html/index.html` in your browser to view the Documentation.

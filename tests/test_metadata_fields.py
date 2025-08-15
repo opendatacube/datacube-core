@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 import decimal
+import sys
 from textwrap import dedent
 
 import pytest
@@ -52,6 +53,7 @@ dataset:
 """)
 
 SAMPLE_DOC = yaml.safe_load("""---
+id: usually_a_uuid_str
 x_string_path: some_string
 x_double_path: 6.283185307179586
 x_integer_path: 4466778
@@ -143,8 +145,15 @@ def test_get_dataset_range_fields() -> None:
     assert xx["ab"].extract({}) is None
 
     # partially missing Range
-    assert xx["ab"].extract({"a": 3}) == Range(3, None)
-    assert xx["ab"].extract({"b": 4}) == Range(None, 4)
+    if sys.version_info < (3, 11):
+        first_answer = Range(3, None)
+        second_answer = Range(None, 4)
+    else:
+        # Need type ignores with Python 3.11+ since Range is typed.
+        first_answer = Range(3, None)  # type: ignore[type-var]
+        second_answer = Range(None, 4)  # type: ignore[type-var]
+    assert xx["ab"].extract({"a": 3}) == first_answer
+    assert xx["ab"].extract({"b": 4}) == second_answer
 
     # float-range conversion
     assert xx["float_range"].type_name == "numeric-range"

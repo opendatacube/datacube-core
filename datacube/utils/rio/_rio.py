@@ -10,8 +10,10 @@ from typing import Literal
 
 import rasterio
 import rasterio.env
+from deprecat import deprecat
 from rasterio.session import AWSSession, DummySession
 
+from datacube.migration import ODC2DeprecationWarning
 from datacube.utils.generic import thread_local_cache
 
 _CFG_LOCK = threading.Lock()
@@ -156,6 +158,11 @@ def set_default_rio_config(aws=None, cloud_defaults: bool = False, **kwargs) -> 
         )
 
 
+@deprecat(
+    reason="This method is deprecated. Use datacube.utils.aws.configure_s3_access instead.",
+    version="1.9.7",
+    category=ODC2DeprecationWarning,
+)
 def configure_s3_access(
     profile: str | None = None,
     region_name: str = "auto",

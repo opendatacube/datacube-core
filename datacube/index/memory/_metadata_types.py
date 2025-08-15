@@ -155,8 +155,9 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
 
     @staticmethod
     def _make(definition: Mapping[str, Any], id_=None) -> MetadataType:
+        # Note this is an index-specific implementation of get_dataset_fields, not the default
         return MetadataType(
-            definition, dataset_search_fields=get_dataset_fields(definition), id_=id_
+            definition, search_field_extractor=get_dataset_fields, id_=id_
         )
 
     @staticmethod

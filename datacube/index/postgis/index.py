@@ -273,9 +273,7 @@ class PostgisIndexDriver(AbstractIndexDriver):
         """
         # TODO: Validate metadata is ODCv2 compliant - e.g. either non-raster or EO3.
         MetadataType.validate(definition)  # type: ignore
-        return MetadataType(
-            definition, dataset_search_fields=Index.get_dataset_fields(definition)
-        )
+        return MetadataType(definition, search_field_extractor=Index.get_dataset_fields)
 
     @staticmethod
     @override

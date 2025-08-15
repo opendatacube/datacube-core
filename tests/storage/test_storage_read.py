@@ -46,15 +46,15 @@ def test_read_paste(nearest_resampling, tmpdir) -> None:
     xx = mk_test_image(128, 64, nodata=None)
     assert (xx != -999).all()
 
-    mm = write_gtiff(pp / "tst-read-paste-128x64-int16.tif", xx, nodata=None)
+    mm = write_gtiff(pp / "tst-read-paste-128x64-int16.tif", xx, nodata=-999)
 
     def _read(
         geobox,
         resampling=nearest_resampling,
-        fallback_nodata=-999,
-        dst_nodata=-999,
+        fallback_nodata: int | float | None = -999,
+        dst_nodata: int | float | None = -999,
         check_paste=False,
-    ):
+    ) -> tuple[np.ndarray, tuple[slice, slice]]:
         with RasterFileDataSource(mm.path, 1, nodata=fallback_nodata).open() as rdr:
             if check_paste:
                 # check that we are using paste
@@ -194,7 +194,7 @@ def test_read_paste_v2(nearest_resampling, tmpdir) -> None:
     xx = mk_test_image(128, 64, nodata=None)
     assert (xx != -999).all()
 
-    mm = write_gtiff(pp / "tst-read-paste-128x64-int16.tif", xx, nodata=None)
+    mm = write_gtiff(pp / "tst-read-paste-128x64-int16.tif", xx, nodata=-999)
 
     def _read(
         geobox,

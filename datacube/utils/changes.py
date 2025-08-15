@@ -181,7 +181,7 @@ def classify_changes(
 
     :param changes: result of get_doc_changes
     :param allowed_changes: mapping from key to change policy (subset, superset, any)
-    :return: good_changes, bad_chages
+    :return: good_changes, bad_changes
     """
     allowed_changes_index = dict(allowed_changes)
 

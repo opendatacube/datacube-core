@@ -5,12 +5,13 @@
 
 import pytest
 
+from datacube.index import Index
 from datacube.model import Dataset
 from datacube.testutils import suppress_deprecations
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
-def test_legacy_location_behaviour(index, ls8_eo3_dataset) -> None:
+def test_legacy_location_behaviour(index: Index, ls8_eo3_dataset) -> None:
     with suppress_deprecations():
         locations = index.datasets.get_locations(
             ls8_eo3_dataset.id
@@ -76,7 +77,7 @@ def test_legacy_location_behaviour(index, ls8_eo3_dataset) -> None:
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
-def test_postgis_no_multiple_locations(index, ls8_eo3_dataset) -> None:
+def test_postgis_no_multiple_locations(index: Index, ls8_eo3_dataset) -> None:
     with suppress_deprecations():
         locations = index.datasets.get_locations(
             ls8_eo3_dataset.id
@@ -97,6 +98,7 @@ def test_postgis_no_multiple_locations(index, ls8_eo3_dataset) -> None:
 
         index.datasets.remove_location(ls8_eo3_dataset.id, ls8_eo3_dataset.uri)
     ls8_eo3_dataset = index.datasets.get(ls8_eo3_dataset.id)
+    assert ls8_eo3_dataset is not None
     assert ls8_eo3_dataset.uri is None
     assert index.datasets.get_location(ls8_eo3_dataset.id) is None
 

@@ -93,7 +93,7 @@ def install_added_column(connection) -> None:
 
 def schema_qualified(name: str) -> str:
     """
-    >>> schema_qualified('dataset')
+    >>> schema_qualified("dataset")
     'agdc.dataset'
     """
     return f"{SCHEMA_NAME}.{name}"
@@ -311,9 +311,9 @@ def to_pg_role(role: str) -> str:
 
     Why are we even doing this? Can't we use the same names internally and externally?
 
-    >>> to_pg_role('ingest')
+    >>> to_pg_role("ingest")
     'agdc_ingest'
-    >>> to_pg_role('fake')
+    >>> to_pg_role("fake")
     Traceback (most recent call last):
     ...
     ValueError: Unknown role 'fake'. Expected one of ...
@@ -330,9 +330,9 @@ def from_pg_role(pg_role):
     """
     Convert a PostgreSQL role name back to an ODC name.
 
-    >>> from_pg_role('agdc_admin')
+    >>> from_pg_role("agdc_admin")
     'admin'
-    >>> from_pg_role('fake')
+    >>> from_pg_role("fake")
     Traceback (most recent call last):
     ...
     ValueError: Not a pg role: 'fake'. Expected one of ...

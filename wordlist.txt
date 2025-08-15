@@ -40,6 +40,7 @@ autoclass
 autoconf
 autodocs
 autofunction
+autogenerate
 automake
 automethod
 automodule
@@ -90,6 +91,7 @@ cmake
 cmd
 codebase
 codecov
+codeql
 cogeo
 COGs
 combinator
@@ -161,6 +163,7 @@ distutils
 Dockerfile
 Dockerhub
 DockerHub
+dockerignore
 DocReader
 docstrings
 dropdb
@@ -220,6 +223,7 @@ GeoBox
 geobox
 GeoBoxes
 GeoboxTiles
+geoextensions
 GEOGCS
 GeoJSON
 geojson
@@ -569,6 +573,7 @@ swissdatacube
 TCP
 Terria
 TerriaJS
+testutils
 th
 TIF
 tif
@@ -584,6 +589,7 @@ ToFloat
 toml
 trivy
 txt
+typecheck
 typechecking
 typehints
 ubuntu
@@ -597,6 +603,7 @@ unarchived
 unary
 Uncomment
 undeprecate
+unnest
 ur
 URI
 uri

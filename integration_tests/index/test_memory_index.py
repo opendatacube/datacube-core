@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import pytest
 
+import datacube.index.memory.index
 from datacube import Datacube
 from datacube.cfg import ODCEnvironment
 from datacube.model import Range
@@ -42,6 +43,7 @@ def test_mem_user_resource(mem_index_fresh: Datacube) -> None:
     assert ("odc_user", "test_user_1", "Test1") in users
     assert ("agdc_user", "test_user_2", "Test2") in users
     # Test create_user errors
+
     with pytest.raises(ValueError) as e:
         mem_index_fresh.index.users.create_user(
             "test_user_2", "password123", "agdc_user", "Test2"
@@ -84,6 +86,7 @@ def test_mem_user_resource(mem_index_fresh: Datacube) -> None:
 
 
 def test_mem_metadatatype_resource(mem_index_fresh: Datacube) -> None:
+    assert isinstance(mem_index_fresh.index, datacube.index.memory.index.Index)
     assert len(mem_index_fresh.index.metadata_types.by_id) == len(
         mem_index_fresh.index.metadata_types.by_name
     )
@@ -93,9 +96,10 @@ def test_mem_metadatatype_resource(mem_index_fresh: Datacube) -> None:
     eo3 = mem_index_fresh.index.metadata_types.get_by_name("eo3")
     assert eo3 is not None and eo3.name == "eo3"
     # Verify we cannot mess with the cache
-    eo3.definition["description"] = "foo"
+    eo3.definition["description"] = "foo"  # type: ignore[index]
     eo3.definition["dataset"]["measurements"] = ["over_here", "measurements"]
     eo3_fresh = mem_index_fresh.index.metadata_types.get_by_name("eo3")
+    assert eo3_fresh is not None
     assert eo3.description != eo3_fresh.description
     assert (
         eo3.definition["dataset"]["measurements"]
@@ -105,9 +109,10 @@ def test_mem_metadatatype_resource(mem_index_fresh: Datacube) -> None:
     with pytest.raises(ValueError):
         mem_index_fresh.index.metadata_types.update(eo3)
     # Updating descriptions is safe.
-    eo3_fresh.definition["description"] = "New description"
+    eo3_fresh.definition["description"] = "New description"  # type: ignore[index]
     mem_index_fresh.index.metadata_types.update(eo3_fresh)
     eo3_fresher = mem_index_fresh.index.metadata_types.get_by_name("eo3")
+    assert eo3_fresher is not None
     assert eo3_fresher.description == eo3_fresh.description
     # Check get_with_fields
     platform_mdts = list(
@@ -136,7 +141,9 @@ def test_mem_product_resource(
     extended_eo3_product_doc,
     base_eo3_product_doc,
 ) -> None:
+    assert isinstance(mem_index_fresh.index, datacube.index.memory.index.Index)
     eo3 = mem_index_fresh.index.metadata_types.get_by_name("eo3")
+    assert eo3 is not None
     # Test Empty index works as expected:
     assert (
         list(mem_index_fresh.index.products.get_with_fields(("measurements", "extent")))
@@ -149,7 +156,9 @@ def test_mem_product_resource(
     wo_prod = mem_index_fresh.index.products.add_document(base_eo3_product_doc)
     assert wo_prod is not None
     assert wo_prod.name == "ga_ls_wo_3"
-    assert mem_index_fresh.index.products.get_by_name("ga_ls_wo_3").name == "ga_ls_wo_3"
+    p = mem_index_fresh.index.products.get_by_name("ga_ls_wo_3")
+    assert p is not None
+    assert p.name == "ga_ls_wo_3"
     # Attempt to add a product without a metadata type
     with pytest.raises(InvalidDocException):
         ls8_prod = mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
@@ -160,16 +169,17 @@ def test_mem_product_resource(
     mem_index_fresh.index.metadata_types.add(eo3ext)
     # Add an extended eo3 product doc
     ls8_prod = mem_index_fresh.index.products.add_document(extended_eo3_product_doc)
+    assert ls8_prod is not None
     assert ls8_prod.name == "ga_ls8c_ard_3"
-    assert (
-        mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3").name
-        == "ga_ls8c_ard_3"
-    )
+    p = mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3")
+    assert p is not None
+    assert p.name == "ga_ls8c_ard_3"
     assert list(mem_index_fresh.index.products.get_with_types([eo3ext])) == [ls8_prod]
     # Verify we cannot mess with the cache
-    ls8_prod.definition["description"] = "foo"
+    ls8_prod.definition["description"] = "foo"  # type: ignore[index]
     ls8_prod.definition["measurements"][0]["name"] = "blueish"
     ls8_fresh = mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3")
+    assert ls8_fresh is not None
     assert ls8_prod.description != ls8_fresh.description
     assert (
         ls8_prod.definition["measurements"][0]["name"]
@@ -179,9 +189,10 @@ def test_mem_product_resource(
     with pytest.raises(ValueError):
         mem_index_fresh.index.products.update(ls8_prod)
     # Updating descriptions is safe.
-    ls8_fresh.definition["description"] = "New description"
+    ls8_fresh.definition["description"] = "New description"  # type: ignore[index]
     mem_index_fresh.index.products.update(ls8_fresh)
     ls8_fresher = mem_index_fresh.index.products.get_by_name("ga_ls8c_ard_3")
+    assert ls8_fresher is not None
     assert ls8_fresher.description == ls8_fresh.description
     # Test get_with_fields
     assert (
@@ -271,6 +282,7 @@ def test_mem_dataset_add_eo3(
 
     ds, err = resolver(doc_ls8, loc_ls8)
     assert err is None
+    assert ds is not None
     dc.index.datasets.add(ds)
     assert dc.index.datasets.has(doc_ls8["id"])
     ls8_ds = dc.index.datasets.get(doc_ls8["id"], include_sources=True)
@@ -280,6 +292,7 @@ def test_mem_dataset_add_eo3(
         datasets_with_unembedded_lineage_doc[1][1],
     )
     assert err is None
+    assert ds is not None
     dc.index.datasets.add(ds)
     assert list(dc.index.datasets.bulk_has((doc_ls8["id"], doc_wo["id"]))) == [
         True,
@@ -437,6 +450,7 @@ def test_mem_ds_updates(mem_eo3_data: tuple) -> None:
 
 
 def test_mem_ds_expand_periods(mem_index_fresh: Datacube) -> None:
+    assert isinstance(mem_index_fresh.index, datacube.index.memory.index.Index)
     periods = list(
         mem_index_fresh.index.datasets._expand_period(
             "1 day",
@@ -858,6 +872,7 @@ def test_mem_ds_count_product_through_time(mem_eo3_data: tuple) -> None:
 
 # Tests adapted from test_dataset_add
 def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube) -> None:
+    assert isinstance(mem_index_fresh.index, datacube.index.memory.index.Index)
     idx = mem_index_fresh.index
     # Make sure index is empty
     assert list(idx.products.get_all()) == []
@@ -873,6 +888,7 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube) -> N
     for _, ds_doc in read_documents(dataset_add_configs.datasets):
         ds, err = resolver(ds_doc, "file:///fake_uri")
         assert err is None
+        assert ds is not None
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
     for _, ds_doc in read_documents(dataset_add_configs.datasets_bad1):
@@ -880,11 +896,13 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube) -> N
         if err is not None:
             ds_bad_ids.add(ds_doc["id"])
             continue
+        assert ds is not None
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
     for _, ds_doc in read_documents(dataset_add_configs.datasets_eo3):
         ds, err = resolver(ds_doc, "file:///fake_eo3_uri")
         assert err is None
+        assert ds is not None
         ds_ids.add(ds.id)
         idx.datasets.add(ds)
 
@@ -899,10 +917,16 @@ def test_memory_dataset_add(dataset_add_configs, mem_index_fresh: Datacube) -> N
     ds_ = SimpleDocNav(gen_dataset_test_dag(1, force_tree=True))
     assert ds_.id in ds_ids
     ds_from_idx = idx.datasets.get(ds_.id, include_sources=True)
+    assert ds_from_idx is not None
+    assert ds_from_idx.sources is not None
     assert ds_from_idx.sources["ab"].id == ds_.sources["ab"].id
-    assert (
-        ds_from_idx.sources["ac"].sources["cd"].id == ds_.sources["ac"].sources["cd"].id
-    )
+    p1 = ds_from_idx.sources["ac"]
+    assert p1 is not None
+    assert p1.sources is not None
+    p2 = ds_.sources["ac"]
+    assert p2 is not None
+    assert p2.sources is not None
+    assert p1.sources["cd"].id == p2.sources["cd"].id
 
 
 def test_mem_transactions(mem_index_fresh: Datacube) -> None:
@@ -964,7 +988,9 @@ def test_default_clone_bulk_ops_multiloc(
         assert mem_index_fresh.index.datasets.has(wo_eo3_dataset.id)
         assert mem_index_fresh.index.datasets.has(ls8_eo3_dataset.id)
         assert mem_index_fresh.index.datasets.has(ls8_eo3_dataset4.id)
-        assert len(mem_index_fresh.index.datasets.get(ls8_eo3_dataset.id)._uris) == 2
+        d = mem_index_fresh.index.datasets.get(ls8_eo3_dataset.id)
+        assert d is not None
+        assert len(d._uris) == 2
 
 
 @pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")

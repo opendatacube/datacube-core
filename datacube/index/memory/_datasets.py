@@ -7,10 +7,10 @@ import logging
 import re
 import warnings
 from collections import namedtuple
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
 from itertools import chain
 from time import monotonic
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 from uuid import UUID
 
 from deprecat import deprecat
@@ -206,7 +206,7 @@ class DatasetResource(AbstractDatasetResource):
         self,
         dataset: Dataset,
         updates_allowed: Mapping[Offset, AllowPolicy] | None = None,
-    ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
+    ) -> tuple[bool, list[Change], list[Change]]:
         # Current exactly the same as postgres implementation.  Could be pushed up to base class?
         existing = self.get(dataset.id, include_sources=dataset.sources is not None)
         if not existing:
@@ -707,7 +707,7 @@ class DatasetResource(AbstractDatasetResource):
         archived: bool | None = False,
         order_by: Iterable[Any] | None = None,
         **query: QueryField,
-    ) -> Iterable[tuple]:
+    ) -> Generator[NamedTuple]:
         if "geopolygon" in query:
             raise NotImplementedError(
                 "Spatial search index API not supported by this index."

@@ -3,7 +3,6 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import warnings
-from collections import OrderedDict
 from copy import deepcopy
 from datetime import datetime
 from unittest import mock
@@ -63,7 +62,6 @@ def example_metadata_type():
                 "sources": ["lineage", "source_datasets"],
             },
         },
-        dataset_search_fields={},
     )
 
 
@@ -245,12 +243,7 @@ def load_data(*args, **kwargs):
     sources, geobox, measurements = args
 
     # this returns nodata bands which are good enough for this test
-    result = Datacube.create_storage(
-        OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-        geobox,
-        measurements,
-    )
-    return result
+    return Datacube.create_storage(sources.coords, geobox, measurements)
 
 
 def group_datasets(*args, **kwargs):

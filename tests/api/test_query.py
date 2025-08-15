@@ -285,13 +285,15 @@ def test_solar_day() -> None:
         metadata=_s(lon=Range(begin=150.415, end=152.975)),
     )
 
-    assert solar_day(ds) == np.datetime64("1987-05-23", "D")
-    assert solar_day(ds, longitude=0) == np.datetime64("1987-05-22", "D")
+    # FIXME: Dataset expected.
+    assert solar_day(ds) == np.datetime64("1987-05-23", "D")  # type: ignore[arg-type]
+    assert solar_day(ds, longitude=0) == np.datetime64("1987-05-22", "D")  # type: ignore[arg-type]
 
     ds.metadata = _s()
 
     with pytest.raises(ValueError) as e:
-        solar_day(ds)
+        # FIXME: Dataset expected.
+        solar_day(ds)  # type: ignore[arg-type]
 
     assert "Cannot compute solar_day: dataset is missing spatial info" in str(e.value)
 
@@ -300,8 +302,9 @@ def test_solar_day() -> None:
         center_time=parse_time("1997-05-22 22:07:44.2270250-7:00"),
         metadata=_s(lon=Range(begin=-136.615, end=-134.325)),
     )
-    assert solar_day(ds) == np.datetime64("1997-05-22", "D")
-    assert solar_day(ds, longitude=0) == np.datetime64("1997-05-23", "D")
+    # FIXME: Dataset expected.
+    assert solar_day(ds) == np.datetime64("1997-05-22", "D")  # type: ignore[arg-type]
+    assert solar_day(ds, longitude=0) == np.datetime64("1997-05-23", "D")  # type: ignore[arg-type]
 
 
 def test_solar_offset() -> None:
@@ -329,11 +332,13 @@ def test_solar_offset() -> None:
         center_time=parse_time("1987-05-22 23:07:44.2270250Z"),
         metadata=_s(lon=Range(begin=150.415, end=152.975)),
     )
-    assert solar_offset(ds) == timedelta(hours=10)
+    # FIXME: Geometry | Dataset expected.
+    assert solar_offset(ds) == timedelta(hours=10)  # type: ignore[arg-type]
     ds.metadata = _s()
 
     with pytest.raises(ValueError):
-        solar_offset(ds)
+        # FIXME: Geometry | Dataset expected.
+        solar_offset(ds)  # type: ignore[arg-type]
 
 
 def test_dateline_query_building() -> None:

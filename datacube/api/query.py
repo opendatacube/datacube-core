@@ -11,7 +11,7 @@ import datetime
 import logging
 import math
 import warnings
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from typing import TYPE_CHECKING, Any, Union
 
 import numpy as np
@@ -86,7 +86,7 @@ class Query:
     def __init__(
         self,
         index: Index | None = None,
-        product: str | None = None,
+        product: str | Sequence[str] | None = None,
         geopolygon=None,
         like: GeoBox | xarray.Dataset | xarray.DataArray | None = None,
         **search_terms,

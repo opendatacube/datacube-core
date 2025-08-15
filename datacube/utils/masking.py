@@ -85,11 +85,13 @@ def make_mask(variable: Dataset | DataArray, **flags):
 
     For example:
 
-    >>> make_mask(pqa, cloud_acca=False, cloud_fmask=False, land_obs=True) # doctest: +SKIP
+    >>> make_mask(
+    ...     pqa, cloud_acca=False, cloud_fmask=False, land_obs=True
+    ... )  # doctest: +SKIP
 
     OR
 
-    >>> make_mask(pqa, **GOOD_PIXEL_FLAGS) # doctest: +SKIP
+    >>> make_mask(pqa, **GOOD_PIXEL_FLAGS)  # doctest: +SKIP
 
     where `GOOD_PIXEL_FLAGS` is a dict of flag_name to True/False
 

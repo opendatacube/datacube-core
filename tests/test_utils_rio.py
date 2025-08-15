@@ -9,10 +9,10 @@ import moto
 import pytest
 
 from datacube.testutils import write_files
+from datacube.utils.aws import configure_s3_access
 from datacube.utils.rio import (
     activate_from_config,
     activate_rio_env,
-    configure_s3_access,
     deactivate_rio_env,
     get_rio_env,
     set_default_rio_config,
@@ -154,6 +154,7 @@ def test_rio_configure_aws_access(monkeypatch, without_aws_env, dask_client) -> 
     monkeypatch.setenv("AWS_DEFAULT_REGION", "fake-region")
 
     creds = configure_s3_access()
+    assert creds is not None
     cc = creds.get_frozen_credentials()
     assert cc.access_key == "fake-key-id"
     assert cc.secret_key == "fake-secret"
@@ -177,6 +178,7 @@ def test_rio_configure_aws_access(monkeypatch, without_aws_env, dask_client) -> 
     client = dask_client
 
     creds = configure_s3_access(client=client)
+    assert creds is not None
     cc = creds.get_frozen_credentials()
     assert cc.access_key == "fake-key-id"
     assert cc.secret_key == "fake-secret"

@@ -6,10 +6,11 @@
 Module
 """
 
+from datacube.index import Index
 from datacube.ui.task_app import task_app, wrap_task
 
 
-def make_test_config(index, config, **kwargs):
+def make_test_config(index: Index, config, **kwargs):
     assert index == "Fake Index"
     assert "config_arg" in kwargs
 
@@ -18,7 +19,7 @@ def make_test_config(index, config, **kwargs):
     return config
 
 
-def make_test_tasks(index, config, **kwargs):
+def make_test_tasks(index: Index, config, **kwargs):
     assert index == "Fake Index"
     assert "task_arg" in kwargs
 
@@ -28,7 +29,7 @@ def make_test_tasks(index, config, **kwargs):
 
 
 @task_app(make_config=make_test_config, make_tasks=make_test_tasks)
-def my_test_app(index, config, tasks, **kwargs) -> None:
+def my_test_app(index: Index, config, tasks, **kwargs) -> None:
     assert index == "Fake Index"
     assert config["some_item"] == "make_test_config"
     assert "app_arg" in kwargs

@@ -14,7 +14,7 @@ import warnings
 from collections.abc import Sequence
 from os import PathLike
 from threading import Lock
-from typing import Any, TypeAlias, cast
+from typing import Any, TypeAlias
 
 from ..migration import ODC2DeprecationWarning
 from .cfg import find_config, parse_text
@@ -109,7 +109,7 @@ class ODCConfig:
                      Used as is - environment variable overrides are NOT applied.
         """
         # Cannot supply both text AND paths.
-        args_supplied: int = sum(int(bool(x)) for x in (paths, raw_dict, text))
+        args_supplied = sum(int(bool(x)) for x in (paths, raw_dict, text))
         if args_supplied > 1:
             raise ConfigException(
                 "Can only supply one of configuration path(s), raw dictionary, "
@@ -120,18 +120,19 @@ class ODCConfig:
         self.allow_envvar_overrides = not text and not raw_dict
 
         if not raw_dict and not text:
-            # No explicit config passed in.  Check for ODC_CONFIG environment variables
-            if os.environ.get("ODC_CONFIG"):
-                text = os.environ["ODC_CONFIG"]
-            else:
-                # Read config text from config file
-                text = find_config(paths, default_cb=self._set_default)
+            # No explicit config passed in.
+            val = os.environ.get("ODC_CONFIG")
+            # Read config from file unless ODC_CONFIG is defined.
+            text = (
+                find_config(paths, default_cb=self._set_default) if val is None else val
+            )
 
         self.raw_text = text
         if raw_dict is not None:
             self.raw_config = raw_dict
         else:
-            self.raw_config = parse_text(cast(str, self.raw_text))
+            assert self.raw_text is not None
+            self.raw_config = parse_text(self.raw_text)
 
         self._aliases: dict[str, str] = {}
         self.known_environments: dict[str, ODCEnvironment] = {

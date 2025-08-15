@@ -6,6 +6,7 @@ from uuid import uuid4 as random_uuid
 
 import pytest
 
+from datacube.index import Index
 from datacube.model import InconsistentLineageException, LineageDirection, LineageTree
 from datacube.model.lineage import LineageRelations
 
@@ -36,7 +37,7 @@ def test_lineage_home_api(index) -> None:
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
-def test_lineage_merge(index, src_lineage_tree, compatible_derived_tree) -> None:
+def test_lineage_merge(index: Index, src_lineage_tree, compatible_derived_tree) -> None:
     stree, ids = src_lineage_tree
     dtree, ids = compatible_derived_tree
 
@@ -46,12 +47,13 @@ def test_lineage_merge(index, src_lineage_tree, compatible_derived_tree) -> None
     src_tree = index.lineage.get_source_tree(ids["root"])
     assert src_tree.dataset_id == ids["root"]
     assert src_tree.direction == LineageDirection.SOURCES
+    assert src_tree.children is not None
     for ard_subtree in src_tree.children["ard"]:
         assert ard_subtree.dataset_id in (ids["ard1"], ids["ard2"])
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
-def test_lineage_tree_index_api_simple(index, src_lineage_tree) -> None:
+def test_lineage_tree_index_api_simple(index: Index, src_lineage_tree) -> None:
     tree, ids = src_lineage_tree
     # Test api responses for lineage not in database:
     src_tree = index.lineage.get_source_tree(ids["root"])
@@ -63,20 +65,25 @@ def test_lineage_tree_index_api_simple(index, src_lineage_tree) -> None:
     src_tree = index.lineage.get_source_tree(ids["root"])
     assert src_tree.dataset_id == ids["root"]
     assert src_tree.direction == LineageDirection.SOURCES
+    assert src_tree.children is not None
     for ard_subtree in src_tree.children["ard"]:
         assert ard_subtree.dataset_id in (ids["ard1"], ids["ard2"])
         assert not ard_subtree.children
     # Add the test tree to depth 2
     index.lineage.add(tree, max_depth=2)
     src_tree = index.lineage.get_source_tree(ids["root"])
+    assert src_tree.children is not None
     for ard_subtree in src_tree.children["ard"]:
+        assert ard_subtree.children is not None
         assert "l1" in ard_subtree.children
         assert not ard_subtree.children["atmos_corr"][0].children
     # Add full test tree
     index.lineage.add(tree, max_depth=0)
     src_tree = index.lineage.get_source_tree(ids["root"])
     seen = False
+    assert src_tree.children is not None
     for ard_subtree in src_tree.children["ard"]:
+        assert ard_subtree.children is not None
         assert "l1" in ard_subtree.children
         assert "atmos_corr" in ard_subtree.children
         if ard_subtree.children["atmos_corr"][0].children:
@@ -85,7 +92,9 @@ def test_lineage_tree_index_api_simple(index, src_lineage_tree) -> None:
     assert seen
     # And test reversing the tree
     der_tree = index.lineage.get_derived_tree(ids["atmos_parent"])
-    assert der_tree.find_subtree(ids["root"]).dataset_id == ids["root"]
+    subtree = der_tree.find_subtree(ids["root"])
+    assert subtree is not None
+    assert subtree.dataset_id == ids["root"]
     # Test Lineage removal - sourcewards
     index.lineage.remove(ids["root"], LineageDirection.SOURCES, max_depth=2)
     src_tree = index.lineage.get_source_tree(ids["root"])
@@ -103,7 +112,7 @@ def test_lineage_tree_index_api_simple(index, src_lineage_tree) -> None:
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
 def test_lineage_tree_index_api_consistent(
-    index, src_lineage_tree, compatible_derived_tree
+    index: Index, src_lineage_tree, compatible_derived_tree
 ) -> None:
     tree1, ids = src_lineage_tree
     tree2, ids = compatible_derived_tree
@@ -116,12 +125,15 @@ def test_lineage_tree_index_api_consistent(
     tree2a = index.lineage.get_source_tree(ids["root"])
     assert tree2a.home == "extensions"
     tree2b = tree2a.find_subtree(ids["atmos"])
+    assert tree2b is not None
     tree2c = tree2b.find_subtree(ids["atmos_grandparent"])
     assert tree2c
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
-def test_lineage_tree_index_api_inconsistent_homes(index, src_lineage_tree) -> None:
+def test_lineage_tree_index_api_inconsistent_homes(
+    index: Index, src_lineage_tree
+) -> None:
     tree, ids = src_lineage_tree
     home_update = LineageTree(
         dataset_id=ids["ard1"],
@@ -146,43 +158,58 @@ def test_lineage_tree_index_api_inconsistent_homes(index, src_lineage_tree) -> N
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis",))
-def test_get_extensions(index, dataset_with_external_lineage) -> None:
+def test_get_extensions(index: Index, dataset_with_external_lineage) -> None:
     dataset, src_lineage_tree, derived_lineage_tree, ids = dataset_with_external_lineage
 
     ds = index.datasets.get(ids["root"])
+    assert ds is not None
     assert ds.source_tree is None
     assert ds.derived_tree is None
 
     ds = index.datasets.get(ids["root"], include_sources=True)
+    assert ds is not None
     assert ds.source_tree is not None
     assert ds.derived_tree is None
+    assert ds.source_tree.children is not None
     assert ds.source_tree.children["ard"][0].children
 
     ds = index.datasets.get(ids["root"], include_sources=True, max_depth=1)
+    assert ds is not None
     assert ds.source_tree is not None
     assert ds.derived_tree is None
+    assert ds.source_tree.children is not None
     assert not ds.source_tree.children["ard"][0].children
 
     ds = index.datasets.get(ids["root"], include_deriveds=True)
+    assert ds is not None
     assert ds.source_tree is None
     assert ds.derived_tree is not None
+    assert ds.derived_tree.children is not None
     assert ds.derived_tree.children["dra"][0].children
 
     ds = index.datasets.get(ids["root"], include_deriveds=True, max_depth=1)
+    assert ds is not None
     assert ds.source_tree is None
     assert ds.derived_tree is not None
+    assert ds.derived_tree.children is not None
     assert not ds.derived_tree.children["dra"][0].children
 
     ds = index.datasets.get(ids["root"], include_sources=True, include_deriveds=True)
+    assert ds is not None
     assert ds.source_tree is not None
     assert ds.derived_tree is not None
+    assert ds.source_tree.children is not None
     assert ds.source_tree.children["ard"][0].children
+    assert ds.derived_tree.children is not None
     assert ds.derived_tree.children["dra"][0].children
 
     ds = index.datasets.get(
         ids["root"], include_sources=True, include_deriveds=True, max_depth=1
     )
+    assert ds is not None
     assert ds.source_tree is not None
     assert ds.derived_tree is not None
+    assert ds.source_tree.children is not None
     assert not ds.source_tree.children["ard"][0].children
+    assert ds.derived_tree.children is not None
     assert not ds.derived_tree.children["dra"][0].children

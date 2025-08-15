@@ -84,7 +84,7 @@ def test_progress_cbk() -> None:
         output_data,
         mk_gbox(shape, crs=crs),
         dst_nodata=no_data,
-        progress_cbk=lambda *a: _cbk(*a, cbk_args),
+        progress_cbk=lambda a, b: _cbk(a, b, cbk_args),
     )
 
     assert cbk_args == [(1, 1)]
@@ -95,7 +95,7 @@ def test_progress_cbk() -> None:
         output_data,
         mk_gbox(shape, crs=crs),
         dst_nodata=no_data,
-        progress_cbk=lambda *a: _cbk(*a, cbk_args),
+        progress_cbk=lambda a, b: _cbk(a, b, cbk_args),
     )
 
     assert cbk_args == [(1, 2), (2, 2)]
@@ -661,7 +661,6 @@ _EXAMPLE_METADATA_TYPE = MetadataType(
             "format": ["format", "name"],
         },
     },
-    dataset_search_fields={},
 )
 
 _EXAMPLE_PRODUCT = Product(
@@ -771,7 +770,7 @@ def test_rasterio_nodata(tmpdir) -> None:
 
     # fallback nodata is outside source range so it shouldn't be used
     yy = dc_read(
-        mm.path, geobox=mm.geobox, fallback_nodata=-1, dst_nodata=-999, dtype="int16"
+        mm.path, geobox=mm.geobox, fallback_nodata=-1, dst_nodata=0, dtype="int16"
     )
     np.testing.assert_array_equal(xx.astype("int16"), yy)
 

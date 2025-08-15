@@ -55,8 +55,7 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["setuptools>=69", "setuptools_scm[toml]>=3.4"]
-# v61 Add support for pyproject.toml, and include-package-data defaults to try when using pyproject.toml
+requires = ["setuptools>=69", "setuptools_scm[toml]>=8"]
 # v69 includes py.typed files by default
 build-backend = "setuptools.build_meta"
 
@@ -170,7 +169,14 @@ filterwarnings = [
 ]
 
 [tool.ruff]
-extend-exclude = ["datacube/drivers/postgis/alembic/versions"]
+extend-exclude = [
+    "datacube/_version.py",
+    "datacube/drivers/postgis/alembic/versions",
+    "docs/source/conf.py",
+]
+
+[tool.ruff.format]
+docstring-code-format = true # Reformat code in doc strings.
 
 [tool.ruff.lint]
 select = [
@@ -210,14 +216,11 @@ extend-ignore-names = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Generated file, exclude from linting.
-"datacube/_version.py" = ["I", "UP"]
 # SQLAlchemy has overloaded ==, so use that (or is_) to compare with None.
 "datacube/drivers/postgis/_api.py" = ["E711"]
 "datacube/drivers/postgis/_schema.py" = ["E711"]
 "datacube/drivers/postgres/_api.py" = ["E711"]
 "datacube/drivers/postgres/_schema.py" = ["E711"]
-"datacube/utils/cog.py" = ["SIM117"] # Fixed in separate PR.
 
 [tool.ruff.lint.pycodestyle]
 max-line-length = 120
@@ -228,7 +231,7 @@ include = ['datacube*']
 
 [tool.setuptools_scm]
 write_to = 'datacube/_version.py'
-fallback_version = "1.9.6.dev0"
+fallback_version = "1.9.7.dev0"
 
 [tool.mypy]
 python_version = '3.10'

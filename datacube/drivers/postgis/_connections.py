@@ -177,13 +177,13 @@ class PostGisDb:
     @classmethod
     def _expand_app_name(cls, application_name: str | None) -> str:
         """
-        >>> PostGisDb._expand_app_name(None) #doctest: +ELLIPSIS
+        >>> PostGisDb._expand_app_name(None)  # doctest: +ELLIPSIS
         'odc-...'
-        >>> PostGisDb._expand_app_name('') #doctest: +ELLIPSIS
+        >>> PostGisDb._expand_app_name("")  # doctest: +ELLIPSIS
         'odc-...'
-        >>> PostGisDb._expand_app_name('cli') #doctest: +ELLIPSIS
+        >>> PostGisDb._expand_app_name("cli")  # doctest: +ELLIPSIS
         'cli odc-...'
-        >>> PostGisDb._expand_app_name('a b.c/d')
+        >>> PostGisDb._expand_app_name("a b.c/d")
         'a-b-c-d odc-...'
         >>> PostGisDb._expand_app_name(5)
         Traceback (most recent call last):

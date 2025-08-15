@@ -15,13 +15,16 @@ from pathlib import Path
 import click
 import pandas as pd
 
+from datacube.index import Index
 from datacube.ui import click as dc_ui
 from datacube.utils import read_documents
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def load_config(index, app_config_file, make_config, make_tasks, *args, **kwargs):
+def load_config(
+    index: Index, app_config_file, make_config, make_tasks, *args, **kwargs
+):
     app_config_path = Path(app_config_file)
     _, config = next(read_documents(app_config_path))
     config["app_config_file"] = app_config_path.name
@@ -181,8 +184,10 @@ def year_splitter(start: str, end: str) -> Generator[tuple[str, str]]:
     `year_splitter('1992', '1993')` returns:
 
     ::
-        [('1992-01-01 00:00:00', '1992-12-31 23:59:59.9999999'),
-         ('1993-01-01 00:00:00', '1993-12-31 23:59:59.9999999')]
+        [
+            ("1992-01-01 00:00:00", "1992-12-31 23:59:59.9999999"),
+            ("1993-01-01 00:00:00", "1993-12-31 23:59:59.9999999"),
+        ]
 
     :param start: start year
     :param end: end year

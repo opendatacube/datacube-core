@@ -12,6 +12,8 @@ import pytest
 import yaml
 from sqlalchemy import text
 
+import datacube.index.postgis.index
+import datacube.index.postgres.index
 from datacube.drivers.postgis._fields import (
     NumericRangeDocField as PgsNumericRangeDocField,
 )
@@ -61,7 +63,7 @@ _DATASET_METADATA = {
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
 def test_metadata_indexes_views_exist(
-    index, default_metadata_type: MetadataType
+    index: Index, default_metadata_type: MetadataType
 ) -> None:
     # Metadata indexes should no longer exist.
     assert not _object_exists(index, "dix_eo_platform")
@@ -71,7 +73,7 @@ def test_metadata_indexes_views_exist(
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
-def test_dataset_indexes_views_exist(index, ls5_telem_type: DatasetType) -> None:
+def test_dataset_indexes_views_exist(index: Index, ls5_telem_type: DatasetType) -> None:
     assert ls5_telem_type.name == "ls5_telem_test"
 
     # Ensure field indexes were created for the dataset type (following the naming conventions):
@@ -91,7 +93,7 @@ def test_dataset_indexes_views_exist(index, ls5_telem_type: DatasetType) -> None
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
-def test_dataset_composite_indexes_exist(index, ls5_telem_type) -> None:
+def test_dataset_composite_indexes_exist(index: Index, ls5_telem_type) -> None:
     # This type has fields named lat/lon/time, so composite indexes should now exist for them:
     # (following the naming conventions)
     assert _object_exists(index, "dix_ls5_telem_test_sat_path_sat_row_time")
@@ -155,7 +157,10 @@ def test_field_expression_unchanged(
     )
 
 
-def _object_exists(index, index_name) -> bool:
+def _object_exists(index: Index, index_name) -> bool:
+    assert isinstance(
+        index, datacube.index.postgres.index.Index | datacube.index.postgis.index.Index
+    )
     schema_name = "odc" if index._db.driver_name == "postgis" else "agdc"
     with index._active_connection() as connection:
         val = connection._connection.execute(
@@ -201,11 +206,14 @@ def test_update_dataset(
     # update with the same doc should do nothing
     index.datasets.update(dataset)
     updated = index.datasets.get(dataset.id)
+    assert updated is not None
     assert updated.local_uri == "file:///test/doc.yaml"
     assert updated.uri == "file:///test/doc.yaml"
 
     # update location
-    assert index.datasets.get(dataset.id).local_uri == "file:///test/doc.yaml"
+    d = index.datasets.get(dataset.id)
+    assert d is not None
+    assert d.local_uri == "file:///test/doc.yaml"
     update = Dataset(
         ls5_telem_type,
         example_ls5_nbar_metadata_doc,
@@ -214,7 +222,7 @@ def test_update_dataset(
     )
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
-
+    assert updated is not None
     # New locations are no longer appended on update.
     # They may be indexing the same dataset from a different location: we don't want to remove the original location.
     # Returns the most recently added
@@ -227,6 +235,7 @@ def test_update_dataset(
     update = Dataset(ls5_telem_type, doc, uri=updated.uri)
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
+    assert updated is not None
     assert updated.metadata_doc["test1"] == {"some": "thing"}
     assert updated.local_uri == "file:///test/doc2.yaml"
     assert len(updated._uris) == 1
@@ -242,6 +251,7 @@ def test_update_dataset(
         )
         index.datasets.update(update)
         updated = index.datasets.get(dataset.id)
+        assert updated is not None
         assert updated.metadata_doc["test1"] == {"some": "thing"}
         assert updated.metadata_doc["test2"] == {"some": "other thing"}
         assert updated.local_uri == "file:///test/doc3.yaml"
@@ -254,6 +264,7 @@ def test_update_dataset(
         with pytest.raises(ValueError):
             index.datasets.update(update)
         updated = index.datasets.get(dataset.id)
+        assert updated is not None
         assert updated.metadata_doc["test1"] == {"some": "thing"}
         assert updated.metadata_doc["test2"] == {"some": "other thing"}
         assert updated.metadata_doc["product_type"] == "nbar"
@@ -274,11 +285,10 @@ def test_update_product_type(
     # Update with a new description
     ls5_telem_doc["description"] = "New description"
     index.products.update_document(ls5_telem_doc)
+    p = index.products.get_by_name(ls5_telem_type.name)
+    assert p is not None
     # Ensure was updated
-    assert (
-        index.products.get_by_name(ls5_telem_type.name).definition["description"]
-        == "New description"
-    )
+    assert p.definition["description"] == "New description"
 
     # Remove some match rules (looser rules -- that match more datasets -- should be allowed)
     assert "format" in ls5_telem_doc["metadata"]
@@ -287,6 +297,7 @@ def test_update_product_type(
     index.products.update_document(ls5_telem_doc)
     # Ensure was updated
     updated_type = index.products.get_by_name(ls5_telem_type.name)
+    assert updated_type is not None
     assert updated_type.definition["metadata"] == ls5_telem_doc["metadata"]
 
     # Specifying metadata type definition (rather than name) should be allowed
@@ -301,6 +312,7 @@ def test_update_product_type(
     # Ensure was updated
     assert _object_exists(index, "dix_ls5_telem_test_product_type")
     updated_type = index.products.get_by_name(ls5_telem_type.name)
+    assert updated_type is not None
     assert updated_type.definition["metadata"] == ls5_telem_doc["metadata"]
 
     # But if we make metadata more restrictive we get an error:
@@ -311,11 +323,13 @@ def test_update_product_type(
         index.products.update_document(different_telemetry_type)
     # Check was not updated.
     updated_type = index.products.get_by_name(ls5_telem_type.name)
+    assert updated_type is not None
     assert "ga_label" not in updated_type.definition["metadata"]
 
     # But works when unsafe updates are allowed.
     index.products.update_document(different_telemetry_type, allow_unsafe_updates=True)
     updated_type = index.products.get_by_name(ls5_telem_type.name)
+    assert updated_type is not None
     assert updated_type.definition["metadata"]["ga_label"] == "something"
 
 
@@ -341,12 +355,13 @@ def test_product_update_cli(
             expect_success=expect_success,
         )
 
-    def get_current(index, product_doc):
+    def get_current(index: Index, product_doc: dict) -> str | float | dict | list:
         # It's calling out to a separate instance to update the product (through the cli),
         # so we need to clear our local index object's cache to get the updated one.
-        index.products.get_by_name_unsafe.cache_clear()
-
-        return sanitise_doc(index.products.get_by_name(product_doc["name"]).definition)
+        index.products.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
+        p = index.products.get_by_name(product_doc["name"])
+        assert p is not None
+        return sanitise_doc(p.definition)
 
     # Update an unchanged file, should be unchanged.
     file_path = tmpdir.join("unmodified-product.yaml")
@@ -398,7 +413,7 @@ def test_product_update_cli(
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
-def test_product_delete(index, ls8_eo3_product: Product) -> None:
+def test_product_delete(index: Index, ls8_eo3_product: Product) -> None:
     # test that postgres dynamic indexes and views are deleted
     assert index.products.get_by_name(ls8_eo3_product.name) is not None
     assert _object_exists(index, "dix_ga_ls8c_ard_3_region_code")
@@ -406,7 +421,7 @@ def test_product_delete(index, ls8_eo3_product: Product) -> None:
 
     index.products.delete([ls8_eo3_product])
 
-    index.products.get_by_name_unsafe.cache_clear()
+    index.products.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
     assert index.products.get_by_name(ls8_eo3_product.name) is None
     assert not _object_exists(index, "dix_ga_ls8c_ard_3_region_code")
     assert not _object_exists(index, "dv_ga_ls8c_ard_3_dataset")
@@ -434,7 +449,7 @@ def test_product_delete_cli(
     assert "ga_ls8c_ard_3 could not be deleted" in runner.output
     assert runner.exit_code == 0
 
-    index.products.get_by_name_unsafe.cache_clear()
+    index.products.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
     assert index.products.get_by_name("ga_ls8c_ard_3") is not None
     assert index.products.get_by_name("ga_ls_wo_3") is None
 
@@ -456,7 +471,7 @@ def test_product_delete_cli(
     )
     assert "No dataset found with id" in runner.output
 
-    index.products.get_by_name_unsafe.cache_clear()
+    index.products.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
     assert index.products.get_by_name("ga_ls8c_ard_3") is None
 
     # should be able to add product back now
@@ -469,7 +484,9 @@ def _to_yaml(ls5_telem_doc):
     return yaml.safe_dump(ls5_telem_doc, allow_unicode=True)
 
 
-def test_update_metadata_type(index: Index, default_metadata_type: list[dict]) -> None:
+def test_update_metadata_type(
+    index: Index, default_metadata_type: MetadataType
+) -> None:
     mt_doc = next(
         d
         for d in default_metadata_type_docs()
@@ -494,6 +511,7 @@ def test_update_metadata_type(index: Index, default_metadata_type: list[dict]) -
     index.metadata_types.update_document(mt_doc)
     # Ensure was updated
     updated_type = index.metadata_types.get_by_name(mt_doc["name"])
+    assert updated_type is not None
     assert "testfield" in updated_type.dataset_fields
 
     # But if we change an existing field type we get an error:
@@ -505,6 +523,7 @@ def test_update_metadata_type(index: Index, default_metadata_type: list[dict]) -
     # But works when unsafe updates are allowed.
     index.metadata_types.update_document(different_mt_doc, allow_unsafe_updates=True)
     updated_type = index.metadata_types.get_by_name(mt_doc["name"])
+    assert updated_type is not None
     assert isinstance(
         updated_type.dataset_fields["time"],
         PgrNumericRangeDocField | PgsNumericRangeDocField,
@@ -519,7 +538,7 @@ def test_filter_types_by_fields(index: Index, wo_eo3_product) -> None:
 
     res = list(
         index.metadata_types.get_with_fields(
-            ["platform", "instrument", "region_code", "favorite_icecream"]
+            ["platform", "instrument", "region_code", "favourite_icecream"]
         )
     )
     assert len(res) == 0
@@ -531,7 +550,7 @@ def test_filter_types_by_fields(index: Index, wo_eo3_product) -> None:
 
     res = list(
         index.products.get_with_fields(
-            ["platform", "instrument", "region_code", "favorite_icecream"]
+            ["platform", "instrument", "region_code", "favourite_icecream"]
         )
     )
     assert len(res) == 0
@@ -543,8 +562,6 @@ def test_filter_products_by_types(index: Index, wo_eo3_product) -> None:
 
 
 def test_filter_types_by_search(index: Index, wo_eo3_product, ls8_eo3_product) -> None:
-    assert index.products
-
     # No arguments, return all.
     res = set(index.products.search())
     assert res == {ls8_eo3_product, wo_eo3_product}
@@ -578,32 +595,20 @@ def test_filter_types_by_search(index: Index, wo_eo3_product, ls8_eo3_product) -
     assert "dataset_maturity" in q
 
     # Or expression test
-    res = list(
-        index.products.search(
-            product_family=["wo", "spam"],
-        )
-    )
+    res = list(index.products.search(product_family=["wo", "spam"]))
     assert res == [wo_eo3_product]
 
     # Not expression test
-    res = list(
-        index.products.search(
-            product_family=Not("wo"),
-        )
-    )
+    res = list(index.products.search(product_family=Not("wo")))
     assert res == [ls8_eo3_product]
 
     # Mismatching fields
-    res = list(
-        index.products.search(
-            product_family="spam",
-        )
-    )
+    res = list(index.products.search(product_family="spam"))
     assert res == []
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube",))
-def test_update_metadata_type_doc(index, ls5_telem_type) -> None:
+def test_update_metadata_type_doc(index: Index, ls5_telem_type) -> None:
     type_doc = copy.deepcopy(ls5_telem_type.metadata_type.definition)
     type_doc["dataset"]["search_fields"]["test_indexed"] = {
         "description": "indexed test field",

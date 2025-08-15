@@ -154,7 +154,8 @@ def test_null_dataset_resource(null_config: ODCEnvironment) -> None:
         assert dc.index.datasets.search(foo="bar", baz=12) == []
         assert dc.index.datasets.search_by_product(foo="bar", baz=12) == []
         assert (
-            dc.index.datasets.search_returning(["foo", "bar"], foo="bar", baz=12) == []
+            list(dc.index.datasets.search_returning(["foo", "bar"], foo="bar", baz=12))
+            == []
         )
         assert dc.index.datasets.count(foo="bar", baz=12) == 0
         assert dc.index.datasets.count_by_product(foo="bar", baz=12) == []

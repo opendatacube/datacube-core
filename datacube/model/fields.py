@@ -9,7 +9,7 @@ This allows extraction of fields of interest from dataset metadata document.
 
 import decimal
 from collections.abc import Callable, Mapping
-from typing import Any
+from typing import Any, Literal, TypeAlias, get_args
 
 import toolz
 from typing_extensions import override
@@ -19,7 +19,7 @@ from datacube.utils import parse_time
 from ._base import Range
 
 # Allowed values for field 'type' (specified in a metadata type document)
-_AVAILABLE_TYPE_NAMES = (
+_AVAILABLE_TYPES: TypeAlias = Literal[
     # Unrestricted type - handy for dynamically creating fields from offsets, e.g. for search_returning()
     "any",
     "numeric-range",
@@ -34,7 +34,8 @@ _AVAILABLE_TYPE_NAMES = (
     "datetime",
     # For backwards compatibility (alias for numeric-range)
     "float-range",
-)
+]
+_AVAILABLE_TYPE_NAMES: tuple[_AVAILABLE_TYPES, ...] = get_args(_AVAILABLE_TYPES)
 
 
 class Expression:
@@ -69,8 +70,7 @@ class Field:
 
     # type of field.
     # If type is not specified, the field is a string
-    # This should always be one of _AVAILABLE_TYPE_NAMES
-    type_name = "string"
+    type_name: _AVAILABLE_TYPES = "string"
 
     def __init__(self, name: str, description: str) -> None:
         self.name = name
@@ -80,9 +80,9 @@ class Field:
         # Does selecting this affect the output rows?
         # (eg. Does this join other tables that aren't 1:1 with datasets.)
         self.affects_row_selection = False
-
+        # FIXME: Remove assert in 2.0.
         assert self.type_name in _AVAILABLE_TYPE_NAMES, (
-            f"Invalid type name {self.type_name!r}"
+            f"Invalid type name {self.type_name}"
         )
 
     @override
@@ -112,7 +112,7 @@ class SimpleField(Field):
         self,
         offset: list[str | int],
         converter: type | Callable[[Any], Any],
-        type_name: str,
+        type_name: _AVAILABLE_TYPES,
         name: str = "",
         description: str = "",
     ) -> None:
@@ -141,7 +141,7 @@ class RangeField(Field):
         min_offset,
         max_offset,
         base_converter,
-        type_name: str,
+        type_name: _AVAILABLE_TYPES,
         name: str = "",
         description: str = "",
     ) -> None:
