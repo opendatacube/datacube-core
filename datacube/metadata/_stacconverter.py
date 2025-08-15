@@ -73,12 +73,12 @@ def _media_type(path: Path) -> str:
     """
     Add media type of the asset object
     """
-    mime_type = mimetypes.guess_type(path.name)[0]
     if path.suffix == ".sha1":
         return MediaType.TEXT
     elif path.suffix == ".yaml":
         return "text/yaml"
-    elif mime_type:
+    mime_type = mimetypes.guess_type(path.name)[0]
+    if mime_type:
         if mime_type == "image/tiff":
             return MediaType.COG
         else:
@@ -107,7 +107,7 @@ def _asset_title_fields(asset_name: str) -> str | None:
         return None
 
 
-def _uri_resolve(location: str | None, path: str):
+def _uri_resolve(location: str | None, path: str) -> str:
     # ODC's method doesn't support empty locations. Fall back to the path alone.
     if not location:
         return path
@@ -120,7 +120,7 @@ def _stac_links(
     stac_url: str | None,
     self_url: str | None,
     collection_url: str | None,
-) -> Generator[Any, Any, Any]:
+) -> Generator[Link, Any, Any]:
     """
     Add links for ODC product into a STAC Item
     """
@@ -172,10 +172,10 @@ def _stac_links(
         )
 
     if not collection_url and not stac_url:
-        warnings.warn("No collection provided for Stac Item.")
+        warnings.warn("No collection provided for STAC Item.")
 
 
-def _as_stac_instruments(value: str):
+def _as_stac_instruments(value: str) -> list[str]:
     """
     >>> _as_stac_instruments("TM")
     ['tm']

@@ -11,6 +11,7 @@ tests in this and sub packages.
 
 import os
 from pathlib import Path
+from typing import Any
 
 import pystac
 import pystac.collection
@@ -375,12 +376,12 @@ ODC_PRODUCT_FILE: str = "ard_ls8.odc-product.yaml"
 
 
 @pytest.fixture
-def partial_proj_stac():
+def partial_proj_stac() -> pystac.Item:
     return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(PARTIAL_PROJ_STAC)))
 
 
 @pytest.fixture
-def no_bands_stac(partial_proj_stac):
+def no_bands_stac(partial_proj_stac) -> pystac.Item:
     partial_proj_stac.assets.clear()
     return partial_proj_stac
 
@@ -393,64 +394,64 @@ def usgs_landsat_stac_v1():
 
 
 @pytest.fixture
-def sentinel_stac_ms():
+def sentinel_stac_ms() -> pystac.Item:
     return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_MS)))
 
 
 @pytest.fixture
-def sentinel_stac_ms_with_raster_ext():
+def sentinel_stac_ms_with_raster_ext() -> pystac.Item:
     return pystac.item.Item.from_file(
         str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_MS_RASTER_EXT))
     )
 
 
 @pytest.fixture
-def sentinel_stac_collection():
+def sentinel_stac_collection() -> pystac.Collection:
     return pystac.collection.Collection.from_file(
         str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_COLLECTION))
     )
 
 
 @pytest.fixture
-def s2_l2a_stac():
+def s2_l2a_stac() -> pystac.Item:
     return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(S2_L2A_STAC)))
 
 
 @pytest.fixture
-def s2_l2a_product(eo3_metadata):
+def s2_l2a_product(eo3_metadata) -> Product:
     filepath = TEST_DATA_FOLDER.joinpath(S2_L2A_PRODUCT)
     (_, doc), *_ = read_documents(filepath)
     return Product(eo3_metadata, doc)
 
 
 @pytest.fixture
-def eo3_metadata_type():
+def eo3_metadata_type() -> MetadataType:
     filepath = TEST_DATA_FOLDER.joinpath(ODC_METADATA_FILE)
     (_, doc), *_ = read_documents(filepath)
     return metadata_from_doc(doc)
 
 
 @pytest.fixture
-def eo3_product(eo3_metadata_type: MetadataType):
+def eo3_product(eo3_metadata_type: MetadataType) -> Product:
     filepath = TEST_DATA_FOLDER.joinpath(ODC_PRODUCT_FILE)
     (_, doc), *_ = read_documents(filepath)
     return Product(eo3_metadata_type, doc)
 
 
 @pytest.fixture
-def odc_dataset_doc():
+def odc_dataset_doc() -> dict[str, Any]:
     filepath = TEST_DATA_FOLDER.joinpath(ODC_DATASET_FILE)
     with open(str(filepath)) as f:
         return next(iter(load_from_yaml(f, parse_dates=True)))
 
 
 @pytest.fixture
-def eo3_dataset(eo3_product, odc_dataset_doc):
+def eo3_dataset(eo3_product, odc_dataset_doc) -> Dataset:
     return Dataset(eo3_product, prep_eo3(odc_dataset_doc), uri=ODC_DATASET_FILE)
 
 
 @pytest.fixture
-def ds_legacy_sources(eo3_product, odc_dataset_doc):
+def ds_legacy_sources(eo3_product, odc_dataset_doc) -> Dataset:
     sample_source_def = {
         "$schema": "https://schemas.opendatacube.org/dataset",
         "id": "b5f234fe-bba8-5483-9bc0-250360d429cf",
@@ -477,7 +478,7 @@ def ds_legacy_sources(eo3_product, odc_dataset_doc):
 
 
 @pytest.fixture
-def ds_ext_lineage(eo3_product, odc_dataset_doc):
+def ds_ext_lineage(eo3_product, odc_dataset_doc) -> Dataset:
     ds = Dataset(
         eo3_product,
         prep_eo3(odc_dataset_doc, remap_lineage=False),

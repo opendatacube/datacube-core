@@ -185,6 +185,7 @@ def _to_eo3_properties(properties: dict[str, Any]) -> dict[str, Any]:
     prop = {
         STAC_TO_EO3_RENAMES.get(key, key): _to_eo3_type(key, val)
         for key, val in properties.items()
+        if not key.startswith("proj:")
     }
 
     if prop.get("odc:processing_datetime") is None:
@@ -194,10 +195,6 @@ def _to_eo3_properties(properties: dict[str, Any]) -> dict[str, Any]:
     if prop.get("odc:file_format") is None:
         prop["odc:file_format"] = "GeoTIFF"
 
-    for key in list(prop.keys()):
-        if key.startswith("proj:"):
-            prop.pop(key)
-
     return prop
 
 
@@ -206,7 +203,7 @@ def _to_dataset(
     properties: dict[str, Any],
     ds_uuid: uuid.UUID,
     product: Product,
-    geometry,
+    geometry: dict[str, Any] | None,
 ) -> Dataset:
     # pylint: disable=too-many-locals
 
@@ -266,7 +263,6 @@ def _to_dataset(
         crs = EPSG4326
 
     # lineage = properties.pop("odc:lineage", {})
-    geom = Geometry(geometry, 4326).to_crs(crs)
 
     ds_doc = {
         "$schema": "https://schemas.opendatacube.org/dataset",
@@ -274,12 +270,14 @@ def _to_dataset(
         "product": {"name": product.name.lower()},
         "crs": str(crs),
         "grids": grids,
-        "geometry": geom.json,
         "measurements": measurements,
         "properties": _to_eo3_properties(properties),
         "accessories": item.accessories,
         "lineage": {},  # TODO: properly handling lineage requires an Index
     }
+
+    if geometry is not None:
+        ds_doc["geometry"] = Geometry(geometry, 4326).to_crs(crs).json
 
     title = ds_doc["properties"].pop("title", None)
     if title is not None:
