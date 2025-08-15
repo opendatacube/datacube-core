@@ -686,7 +686,7 @@ class Datacube:
         datasets: Iterable[Dataset], group_by: GroupBy
     ) -> xarray.DataArray:
         """
-        Group datasets along defined non-spatial dimensions (ie. time).
+        Group datasets along defined non-spatial dimensions (i.e. time).
 
         :param datasets: a list of datasets, typically from :meth:`find_datasets`
         :param group_by: Contains:
