@@ -12,7 +12,7 @@ import logging
 import math
 import warnings
 from collections.abc import Callable, Iterable, Sequence
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import numpy as np
 import pandas
@@ -223,7 +223,8 @@ def _extract_time_from_ds(ds: Dataset) -> datetime.datetime | None:
 
 
 def query_group_by(
-    group_by: str | GroupBy | None = "time", **kwargs: QueryField
+    group_by: Literal["time", "solar_day"] | GroupBy = "time",
+    **kwargs: QueryField,
 ) -> GroupBy:
     """
     Group by function for loading datasets

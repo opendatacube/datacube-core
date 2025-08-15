@@ -59,8 +59,7 @@ def test_new_xr_load(data_folder) -> None:
 
     ds = mk_sample_dataset([band_a, band_b], base)
 
-    # FIXME: GroupBy expected.
-    sources = Datacube.group_datasets([ds], "time")  # type: ignore[arg-type]
+    sources = Datacube.group_datasets([ds], "time")
 
     im, meta = rio_slurp(str(data_folder) + "/test.tif")
     measurements = [ds.product.measurements[n] for n in ("a", "b")]

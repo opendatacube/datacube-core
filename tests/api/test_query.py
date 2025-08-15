@@ -129,7 +129,7 @@ def test_query_kwargs(mock_index) -> None:
         )
 
     with pytest.raises(LookupError):
-        query_group_by(group_by="magic")
+        query_group_by(group_by="magic")  # type: ignore[arg-type]
 
     gb = query_group_by("time")
     assert isinstance(gb, GroupBy)
