@@ -33,7 +33,7 @@ This will allow you to keep the tutorial instructions open alongside the environ
 The tutorial environment may take a few minutes to start.
 
 .. image:: https://mybinder.org/badge_logo.svg
- :target: https://mybinder.org/v2/gh/opendatacube/tutorial-odc-stac/main?urlpath=%2Fdoc%2Ftree%2Ftutorial.ipynb
+ :target: https://mybinder.org/v2/gh/opendatacube/tutorials/main?urlpath=%2Fdoc%2Ftree%2Fodc-stac%2Ftutorial.ipynb
  :width: 240px
  :align: center
 
