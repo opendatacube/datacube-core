@@ -64,7 +64,6 @@ Build the documentation::
 
     pip install --upgrade -e '.' --group doc
     cd docs
-    pip install -r requirements.txt
     sudo apt install make
     sudo apt install pandoc
     make html

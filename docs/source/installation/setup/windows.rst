@@ -93,6 +93,5 @@ Run the integration tests::
 Build the documentation::
 
    cd datacube-core/docs
-   pip install -r requirements.txt
    make html
    open build/html/index.html

@@ -33,9 +33,6 @@ repos:
       hooks:
         # Ensure uv.lock is up-to-date if pyproject.toml has changed
         - id: uv-lock
-        # Compile requirements
-        - id: pip-compile
-          args: [--extra=s3, --group=doc, --output-file=docs/requirements.txt, pyproject.toml]
     - repo: https://github.com/Lucas-C/pre-commit-hooks
       rev: v1.5.5
       hooks:
