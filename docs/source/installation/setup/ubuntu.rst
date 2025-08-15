@@ -72,7 +72,7 @@ Verify it all works
 Install additional test dependencies::
 
     cd datacube-core
-    pip install --upgrade -e '.[dev]'
+    pip install --upgrade -e '.' --group dev
 
 Run the integration tests::
 
@@ -82,7 +82,7 @@ Note: if moto-based AWS-mock tests fail, you may need to unset all AWS environme
 
 Build the documentation::
 
-    pip install --upgrade -e '.[doc]'
+    pip install --upgrade -e '.' --group doc
     cd docs
     pip install -r requirements.txt
     sudo apt install make
