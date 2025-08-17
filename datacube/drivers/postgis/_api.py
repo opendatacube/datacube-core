@@ -303,12 +303,9 @@ class PostgisDbAPI:
         )
         return ret.rowcount > 0
 
-    def insert_dataset_bulk(self, values) -> tuple:
+    def insert_dataset_bulk(self, values: Sequence[dict[str, Any]]) -> tuple[int, int]:
         requested = len(values)
-        res = self._connection.execute(
-            insert(Dataset.__table__),  # type: ignore[arg-type]
-            values,
-        )
+        res = self._connection.execute(insert(Dataset).values(values))
         return res.rowcount, requested - res.rowcount
 
     def update_dataset(self, metadata_doc, dataset_id, product_id) -> bool:

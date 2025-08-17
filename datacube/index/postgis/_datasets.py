@@ -252,9 +252,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             batch.datasets.append(
                 {
                     "id": dsid,
-                    "product_ref": prod.id,
-                    "metadata": metadata_doc,
                     "metadata_type_ref": prod.metadata_type.id,
+                    "product_ref": prod.id,
+                    "metadata_doc": metadata_doc,
                     "uri_scheme": scheme,
                     "uri_body": body,
                 }
