@@ -292,11 +292,11 @@ class PostgisDbAPI:
             .scalar_subquery()
         )
         ret = self._connection.execute(
-            insert(Dataset.__table__)  # type: ignore[arg-type]
+            insert(Dataset)
             .values(
                 id=dataset_id,
                 product_ref=product_id,
-                metadata=metadata_doc,
+                metadata_doc=metadata_doc,
                 metadata_type_ref=metadata_subquery,
             )
             .on_conflict_do_nothing(index_elements=["id"])
@@ -313,11 +313,11 @@ class PostgisDbAPI:
         Update dataset
         """
         res = self._connection.execute(
-            update(Dataset.__table__)  # type: ignore[arg-type]
-            .returning(Dataset.__table__.c.id)
-            .where(Dataset.__table__.c.id == dataset_id)
-            .where(Dataset.__table__.c.product_ref == product_id)
-            .values(metadata=metadata_doc)
+            update(Dataset)
+            .returning(Dataset.id)
+            .where(Dataset.id == dataset_id)
+            .where(Dataset.product_ref == product_id)
+            .values(metadata_doc=metadata_doc)
         )
         return res.rowcount > 0
 
@@ -330,9 +330,9 @@ class PostgisDbAPI:
         scheme, body = split_uri(uri)
 
         r = self._connection.execute(
-            update(Dataset.__table__)  # type: ignore[arg-type]
+            update(Dataset)
             .returning(Dataset.uri)
-            .where(Dataset.__table__.c.id == dataset_id)
+            .where(Dataset.id == dataset_id)
             .values(uri_scheme=scheme, uri_body=body)
         )
 
@@ -456,18 +456,16 @@ class PostgisDbAPI:
 
     def archive_dataset(self, dataset_id) -> bool:
         r = self._connection.execute(
-            update(Dataset.__table__)  # type: ignore[arg-type]
-            .where(Dataset.__table__.c.id == dataset_id)
-            .where(Dataset.__table__.c.archived == None)
+            update(Dataset)
+            .where(Dataset.id == dataset_id)
+            .where(Dataset.archived == None)
             .values(archived=func.now())
         )
         return r.rowcount > 0
 
     def restore_dataset(self, dataset_id) -> bool:
         r = self._connection.execute(
-            update(Dataset.__table__)  # type: ignore[arg-type]
-            .where(Dataset.__table__.c.id == dataset_id)
-            .values(archived=None)
+            update(Dataset).where(Dataset.id == dataset_id).values(archived=None)
         )
         return r.rowcount > 0
 
@@ -1019,9 +1017,9 @@ class PostgisDbAPI:
 
     def insert_product(self, name: str, metadata, metadata_type_id, definition):
         res = self._connection.execute(
-            insert(Product.__table__).values(  # type: ignore[arg-type]
+            insert(Product).values(
                 name=name,
-                metadata=metadata,
+                metadata_doc=metadata,
                 metadata_type_ref=metadata_type_id,
                 definition=definition,
             )
@@ -1045,11 +1043,11 @@ class PostgisDbAPI:
         update_metadata_type: bool = False,
     ):
         res = self._connection.execute(
-            update(Product.__table__)  # type: ignore[arg-type]
-            .returning(Product.__table__.c.id)
-            .where(Product.__table__.c.name == name)
+            update(Product)
+            .returning(Product.id)
+            .where(Product.name == name)
             .values(
-                metadata=metadata,
+                metadata_doc=metadata,
                 metadata_type_ref=metadata_type_id,
                 definition=definition,
             )
@@ -1061,47 +1059,40 @@ class PostgisDbAPI:
                 raise RuntimeError("Must update metadata types in transaction")
 
             self._connection.execute(
-                update(Dataset.__table__)  # type: ignore[arg-type]
-                .where(Dataset.__table__.c.product_ref == prod_id)
-                .values(
-                    metadata_type_ref=metadata_type_id,
-                )
+                update(Dataset)
+                .where(Dataset.product_ref == prod_id)
+                .values(metadata_type_ref=metadata_type_id)
             )
 
         return prod_id
 
     def delete_product(self, name: str):
         res = self._connection.execute(
-            delete(Product.__table__)  # type: ignore[arg-type]
-            .returning(Product.__table__.c.id)
-            .where(Product.__table__.c.name == name)
+            delete(Product).returning(Product.id).where(Product.name == name)
         )
 
         return res.first()[0]
 
     def insert_metadata_type(self, name: str, definition):
         res = self._connection.execute(
-            insert(MetadataType.__table__).values(  # type: ignore[arg-type]
-                name=name, definition=definition
-            )
+            insert(MetadataType).values(name=name, definition=definition)
         )
         return res.inserted_primary_key[0]
 
     def insert_metadata_bulk(self, values) -> tuple:
         requested = len(values)
         res = self._connection.execute(
-            insert(
-                MetadataType.__table__  # type: ignore[arg-type]
-            ).on_conflict_do_nothing(index_elements=["id"]),
-            values,
+            insert(MetadataType)
+            .on_conflict_do_nothing(index_elements=["id"])
+            .values(values)
         )
         return res.rowcount, requested - res.rowcount
 
     def update_metadata_type(self, name: str, definition):
         res = self._connection.execute(
-            update(MetadataType.__table__)  # type: ignore[arg-type]
-            .returning(MetadataType.__table__.c.id)
-            .where(MetadataType.__table__.c.name == name)
+            update(MetadataType)
+            .returning(MetadataType.id)
+            .where(MetadataType.name == name)
             .values(name=name, definition=definition)
         )
         return res.first()[0]
@@ -1156,12 +1147,12 @@ class PostgisDbAPI:
         """
         scheme, body = split_uri(uri)
         res = self._connection.execute(
-            update(Dataset.__table__)  # type: ignore[arg-type]
+            update(Dataset)
             .where(
                 and_(
-                    Dataset.__table__.c.id == dataset_id,
-                    Dataset.__table__.c.uri_scheme == scheme,
-                    Dataset.__table__.c.uri_body == body,
+                    Dataset.id == dataset_id,
+                    Dataset.uri_scheme == scheme,
+                    Dataset.uri_body == body,
                 )
             )
             .values(uri_scheme=None, uri_body=None)
