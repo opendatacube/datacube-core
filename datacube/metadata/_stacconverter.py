@@ -12,7 +12,6 @@ from typing import Any
 from urllib.parse import urljoin
 
 from pystac import Asset, Item, Link, MediaType
-from pystac.errors import STACError
 from pystac.extensions.eo import Band, EOExtension
 from pystac.extensions.projection import ProjectionExtension
 from pystac.extensions.view import ViewExtension
@@ -226,14 +225,13 @@ def ds2stac(
     self_url: str | None = None,
     collection_url: str | None = None,
 ) -> Item:
-    if dataset.extent is not None:
-        wgs84_geometry = dataset.extent.to_crs("EPSG:4326", math.inf)
-
-        geometry = wgs84_geometry.json
-        bbox = wgs84_geometry.boundingbox.bbox
-    else:
+    if dataset.extent is None:
         geometry = None
         bbox = None
+    else:
+        wgs84_geometry = dataset.extent.to_crs("EPSG:4326", math.inf)
+        geometry = wgs84_geometry.json
+        bbox = wgs84_geometry.boundingbox.bbox
 
     properties = eo3_to_stac_properties(dataset, title=dataset.metadata.label)
     properties.update(_lineage_fields(dataset))
@@ -257,8 +255,7 @@ def ds2stac(
 
     if dataset.extent:
         proj = ProjectionExtension.ext(item, add_if_missing=True)
-        if dataset.crs is None:
-            raise STACError("Projection extension requires a crs.")
+        assert dataset.crs is not None  # for mypy - extent will be None if crs is None
         if str(dataset.crs).startswith("EPSG"):
             proj.apply(epsg=dataset.crs.epsg, **_proj_fields(dataset.grids))
         else:
