@@ -10,7 +10,7 @@ Includes sequence generation functions to be used by statistics apps
 """
 
 from collections.abc import Iterator
-from datetime import date, datetime, tzinfo
+from datetime import date, datetime, timezone, tzinfo
 
 import dateutil
 import dateutil.parser
@@ -18,7 +18,6 @@ import numpy as np
 import xarray as xr
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, MONTHLY, YEARLY, rrule
-from dateutil.tz import UTC
 
 FREQS: dict[str, int] = {"y": YEARLY, "m": MONTHLY, "d": DAILY}
 DURATIONS = {"y": "years", "m": "months", "d": "days"}
@@ -76,11 +75,11 @@ def normalise_dt(dt: str | datetime) -> datetime:
     if isinstance(dt, str):
         dt = parse_time(dt)
     if dt.tzinfo is not None:
-        dt = dt.astimezone(UTC).replace(tzinfo=None)
+        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
     return dt
 
 
-def tz_aware(dt: datetime, default: tzinfo = UTC) -> datetime:
+def tz_aware(dt: datetime, default: tzinfo = timezone.utc) -> datetime:
     """Ensure a datetime is timezone aware, defaulting to UTC or a user-selected default"""
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=default)
@@ -90,8 +89,8 @@ def tz_aware(dt: datetime, default: tzinfo = UTC) -> datetime:
 def tz_as_utc(dt: datetime) -> datetime:
     """Ensure a datetime has a UTC timezone"""
     if dt.tzinfo is None:
-        return dt.replace(tzinfo=UTC)
-    return dt.astimezone(UTC)
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 def mk_time_coord(

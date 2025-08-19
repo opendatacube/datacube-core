@@ -2,13 +2,12 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from datetime import datetime
+from datetime import datetime, timezone
 
 import numpy as np
 import pytest
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, MONTHLY, YEARLY
-from dateutil.tz import UTC
 
 from datacube.utils.dates import (
     mk_time_coord,
@@ -63,7 +62,7 @@ def test_tz_aware() -> None:
 
     dt_notz = parse_time("2020-11-15T15:11:56.23456")
     assert dt_notz.tzinfo is None
-    assert tz_aware(parse_time("2020-11-15T15:11:56.23456")).tzinfo == UTC
+    assert tz_aware(parse_time("2020-11-15T15:11:56.23456")).tzinfo == timezone.utc
     assert (
         tz_aware(parse_time("2020-11-15T15:11:56.23456"), default=dt_tz.tzinfo).tzinfo
         == dt_tz.tzinfo
