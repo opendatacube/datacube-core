@@ -5,7 +5,7 @@
 Python and packages
 ===================
 
-Python 3.8+ is required.
+Python 3.10+ is required.
 
 Conda environment setup
 -----------------------

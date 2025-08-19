@@ -23,7 +23,7 @@ Postgres:
 Python and packages
 ===================
 
-Python 3.8+ is required.
+Python 3.10+ is required.
 
 Anaconda Python
 ---------------
@@ -93,6 +93,5 @@ Run the integration tests::
 Build the documentation::
 
    cd datacube-core/docs
-   pip install -r requirements.txt
    make html
    open build/html/index.html

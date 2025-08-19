@@ -48,7 +48,9 @@ Requires a Unix like system that includes ``make``.
 
 .. code-block:: bash
 
-   pip install -r requirements.txt
+   cd ..
+   pip install -e . --group doc
+   cd docs
 
 #. Install sphinx-autobuild with pip
 
@@ -60,7 +62,8 @@ Requires a Unix like system that includes ``make``.
 
 .. code-block:: bash
 
-   sphinx-autobuild . build/html
+   cd source
+   sphinx-autobuild . ../build/html
 
 #. Open a browser and navigate to the URL provided by the autobuild
 

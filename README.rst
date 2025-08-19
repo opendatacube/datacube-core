@@ -83,7 +83,7 @@ Developer setup
 
 Install test dependencies using:
 
-   ``pip install --upgrade -e '.[dev]'``
+   ``pip install --upgrade -e '.' --group dev``
 
 If install for these fails, please lodge them as issues.
 
@@ -157,4 +157,4 @@ Build the python virtual environment:
     python3 -m venv "${pyenv}"
     source "${pyenv}/bin/activate"
     pip install -U pip wheel cython numpy
-    pip install -e '.[dev]'
+    pip install -e '.' --group dev
