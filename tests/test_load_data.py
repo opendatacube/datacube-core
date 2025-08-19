@@ -4,9 +4,11 @@
 # SPDX-License-Identifier: Apache-2.0
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import numpy as np
 import pytest
+from typing_extensions import Never
 from xarray import Dataset
 
 from datacube import Datacube
@@ -72,14 +74,14 @@ def test_load_data(tmpdir) -> None:
 
     custom_fuser_call_count = 0
 
-    def custom_fuser(dest, delta) -> None:
+    def custom_fuser(dest: np.ndarray[Any, Any], delta) -> None:
         nonlocal custom_fuser_call_count
         custom_fuser_call_count += 1
         dest[:] += delta
 
     progress_call_data = []
 
-    def progress_cbk(n, nt) -> None:
+    def progress_cbk(n: int, nt: int) -> None:
         progress_call_data.append((n, nt))
 
     ds_data = Datacube.load_data(
@@ -143,7 +145,7 @@ def test_load_data_with_url_mangling(tmpdir) -> None:
     actual_tmpdir = Path(str(tmpdir))
     recorded_tmpdir = Path(str(tmpdir / "not" / "actual" / "location"))
 
-    def url_mangler(raw):
+    def url_mangler(raw: str) -> str:
         actual_uri_root = actual_tmpdir.absolute().as_uri()
         recorded_uri_root = recorded_tmpdir.absolute().as_uri()
         return raw.replace(recorded_uri_root, actual_uri_root)
@@ -197,14 +199,14 @@ def test_load_data_with_url_mangling(tmpdir) -> None:
 
     custom_fuser_call_count = 0
 
-    def custom_fuser(dest, delta) -> None:
+    def custom_fuser(dest: np.ndarray[Any, Any], delta) -> None:
         nonlocal custom_fuser_call_count
         custom_fuser_call_count += 1
         dest[:] += delta
 
     progress_call_data = []
 
-    def progress_cbk(n, nt) -> None:
+    def progress_cbk(n: int, nt: int) -> None:
         progress_call_data.append((n, nt))
 
     ds_data = Datacube.load_data(
@@ -254,7 +256,7 @@ def test_load_data_cbk(tmpdir) -> None:
     sources = Datacube.group_datasets([ds, ds2], "time")  # type: ignore[arg-type]
     progress_call_data = []
 
-    def progress_cbk(n, nt) -> None:
+    def progress_cbk(n: int, nt: int) -> None:
         progress_call_data.append((n, nt))
 
     ds_data = Datacube.load_data(
@@ -265,11 +267,11 @@ def test_load_data_cbk(tmpdir) -> None:
     np.testing.assert_array_equal(aa, ds_data.aa.values[0])
     np.testing.assert_array_equal(aa, ds_data.bb.values[0])
 
-    def progress_cbk_fail_early(n, nt):
+    def progress_cbk_fail_early(n: int, nt: int) -> Never:
         progress_call_data.append((n, nt))
         raise TerminateCurrentLoad()
 
-    def progress_cbk_fail_early2(n, nt):
+    def progress_cbk_fail_early2(n: int, nt: int) -> None:
         progress_call_data.append((n, nt))
         if n > 1:
             raise KeyboardInterrupt()
