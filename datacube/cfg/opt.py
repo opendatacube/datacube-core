@@ -198,7 +198,7 @@ class IntOptionHandler(ODCOptionHandler):
             )
         if self.maxval is not None and ival > self.maxval:
             raise ConfigException(
-                f"Config option {self.name} must not be greater than {self.minval}"
+                f"Config option {self.name} must not be greater than {self.maxval}"
             )
         return ival
 
