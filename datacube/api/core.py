@@ -790,7 +790,7 @@ class Datacube:
         # 2D defaults
         # retrieve dims from coords if DataArray
         dims_default: tuple[Hashable, ...] = ()
-        if coords is not None:
+        if coords:
             coords_value = next(iter(coords.values()))
             if isinstance(coords_value, xarray.DataArray):
                 dims_default = coords_value.dims + geobox.dimensions
@@ -799,12 +799,12 @@ class Datacube:
             dims_default = (() if coords is None else coords.dims) + geobox.dimensions
 
         shape_default = (
-            ()
-            if coords is None
-            else tuple(c.size for k, c in coords.items() if k in dims_default)
+            tuple(c.size for k, c in coords.items() if k in dims_default)
+            if coords
+            else ()
         ) + geobox.shape
         coords_default: OrderedDict[str, xarray.DataArray] = OrderedDict()
-        if coords is not None:
+        if coords:
             coords_default.update([(str(k), v) for k, v in coords.items()])
         coords_default.update(
             [(str(k), v) for k, v in xr_coords(geobox, spatial_ref).items()]
