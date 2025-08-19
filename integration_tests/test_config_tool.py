@@ -12,16 +12,21 @@ from pathlib import Path
 
 import pytest
 
-EXAMPLE_DATASET_TYPE_DOCS = map(
-    str,
-    Path(__file__)
-    .parent.parent.joinpath("docs", "config_samples", "dataset_types")
-    .glob("**/*.yaml"),
+EXAMPLE_DATASET_TYPE_DOCS = list(
+    map(
+        str,
+        Path(__file__)
+        .parent.parent.joinpath("docs", "source", "config_samples", "dataset_types")
+        .glob("**/*.yaml"),
+    )
 )
-
+assert len(EXAMPLE_DATASET_TYPE_DOCS) > 0
 
 # Documents that shouldn't be accepted as mapping docs.
-INVALID_MAPPING_DOCS = map(str, Path(__file__).parent.parent.joinpath("docs").glob("*"))
+INVALID_MAPPING_DOCS = list(
+    map(str, Path(__file__).parent.parent.joinpath("docs").glob("*"))
+)
+assert len(INVALID_MAPPING_DOCS) > 0
 
 
 def _dataset_type_count(index):
