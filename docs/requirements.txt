@@ -12,7 +12,7 @@ alabaster==1.0.0
     # via sphinx
 alembic==1.16.4
     # via datacube (pyproject.toml)
-antimeridian==0.4.2
+antimeridian==0.4.3
     # via datacube (pyproject.toml)
 apeye==1.4.1
     # via sphinx-toolbox
@@ -42,9 +42,9 @@ beautifulsoup4==4.13.4
     #   sphinx-toolbox
 bleach==6.2.0
     # via nbconvert
-boto3==1.39.9
+boto3==1.40.7
     # via datacube (pyproject.toml)
-botocore==1.39.9
+botocore==1.40.7
     # via
     #   datacube (pyproject.toml)
     #   boto3
@@ -55,13 +55,13 @@ cachetools==6.1.0
     # via
     #   datacube (pyproject.toml)
     #   odc-geo
-certifi==2025.7.14
+certifi==2025.8.3
     # via
     #   pyproj
     #   rasterio
     #   requests
     #   sphinx-prompt
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
     # via requests
 click==8.2.1
     # via
@@ -101,7 +101,7 @@ dict2css==0.3.0.post1
     # via sphinx-toolbox
 distributed==2025.7.0
     # via datacube (pyproject.toml)
-docutils==0.21.2
+docutils==0.22
     # via
     #   nbsphinx
     #   pydata-sphinx-theme
@@ -129,7 +129,7 @@ fsspec==2025.7.0
     # via dask
 geoalchemy2==0.17.1
     # via datacube (pyproject.toml)
-greenlet==3.2.3
+greenlet==3.2.4
     # via sqlalchemy
 html5lib==1.1
     # via sphinx-toolbox
@@ -302,7 +302,7 @@ pyyaml==6.0.2
     #   datacube (pyproject.toml)
     #   dask
     #   distributed
-pyzmq==27.0.0
+pyzmq==27.0.1
     # via jupyter-client
 rasterio==1.4.3
     # via
@@ -321,7 +321,7 @@ requests==2.32.4
     #   cachecontrol
     #   sphinx
     #   sphinx-prompt
-rpds-py==0.26.0
+rpds-py==0.27.0
     # via
     #   jsonschema
     #   referencing
@@ -369,11 +369,11 @@ sphinx-click==6.0.0
     # via datacube (pyproject.toml:doc)
 sphinx-design==0.6.1
     # via datacube (pyproject.toml:doc)
-sphinx-jinja2-compat==0.3.0
+sphinx-jinja2-compat==0.4.1
     # via sphinx-toolbox
 sphinx-prompt==1.10.0
     # via sphinx-toolbox
-sphinx-tabs==3.4.5
+sphinx-tabs==3.4.7
     # via sphinx-toolbox
 sphinx-toolbox==4.0.0
     # via datacube (pyproject.toml:doc)
@@ -409,7 +409,7 @@ toolz==1.0.0
     #   distributed
     #   odc-stac
     #   partd
-tornado==6.5.1
+tornado==6.5.2
     # via
     #   distributed
     #   jupyter-client
