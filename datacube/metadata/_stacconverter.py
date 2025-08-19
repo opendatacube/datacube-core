@@ -2,7 +2,12 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import datetime
+"""
+EO3 -> STAC utilities.
+
+Utilities for translating EO3 Datasets to STAC Items.
+"""
+
 import math
 import mimetypes
 import warnings
@@ -15,24 +20,11 @@ from pystac import Asset, Item, Link, MediaType
 from pystac.extensions.eo import Band, EOExtension
 from pystac.extensions.projection import ProjectionExtension
 from pystac.extensions.view import ViewExtension
-from pystac.utils import datetime_to_str
 
 import datacube.utils.uris as dc_uris
 from datacube.model import Dataset
 
-EO3_TO_STAC_RENAMES = {
-    "dtr:end_datetime": "end_datetime",
-    "dtr:start_datetime": "start_datetime",
-    "eo:gsd": "gsd",
-    "eo:instrument": "instruments",
-    "eo:platform": "platform",
-    "eo:constellation": "constellation",
-    "eo:off_nadir": "view:off_nadir",
-    "eo:azimuth": "view:azimuth",
-    "eo:sun_azimuth": "view:sun_azimuth",
-    "eo:sun_elevation": "view:sun_elevation",
-    "odc:processing_datetime": "created",
-}
+from ._utils import eo3_to_stac_properties
 
 
 def _lineage_fields(dataset: Dataset) -> dict:
@@ -172,51 +164,6 @@ def _stac_links(
 
     if not collection_url and not stac_url:
         warnings.warn("No collection provided for STAC Item.")
-
-
-def _as_stac_instruments(value: str) -> list[str]:
-    """
-    >>> _as_stac_instruments("TM")
-    ['tm']
-    >>> _as_stac_instruments("OLI")
-    ['oli']
-    >>> _as_stac_instruments("ETM+")
-    ['etm']
-    >>> _as_stac_instruments("OLI_TIRS")
-    ['oli', 'tirs']
-    """
-    return [i.strip("+-").lower() for i in value.split("_")]
-
-
-def _convert_value_to_stac_type(key: str, value):
-    """
-    Convert return type as per STAC specification
-    """
-    # In STAC spec, "instruments" have [String] type
-    if key == "eo:instrument":
-        return _as_stac_instruments(value)
-    # Convert the non-default datetimes to a string
-    elif isinstance(value, datetime.datetime) and key != "datetime":
-        return datetime_to_str(value)
-    else:
-        return value
-
-
-def eo3_to_stac_properties(dataset: Dataset, title: str | None = None) -> dict:
-    """
-    Convert EO3 properties dictionary to the Stac equivalent.
-    """
-    # Put the title at the top for document readability.
-    properties = {"title": title} if title else {}
-
-    properties.update(
-        {
-            EO3_TO_STAC_RENAMES.get(key, key): _convert_value_to_stac_type(key, val)
-            for key, val in dataset.properties.items()
-        },
-    )
-
-    return properties
 
 
 def ds2stac(

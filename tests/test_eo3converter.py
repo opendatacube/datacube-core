@@ -11,6 +11,7 @@ from typing import Any
 
 import pystac
 import pytest
+from affine import Affine
 from odc.geo.geom import Geometry
 from odc.stac._mdtools import RasterCollectionMetadata, has_proj_ext, has_raster_ext
 from pystac.extensions.eo import EOExtension
@@ -231,7 +232,7 @@ def test_issue_n6(usgs_landsat_stac_v1: pystac.Item) -> None:
 
 def test_partial_proj(partial_proj_stac: pystac.Item) -> None:
     (ds,) = list(stac2ds([partial_proj_stac]))
-    assert ds.metadata_doc["grids"]["default"]["shape"] == [1, 1]
+    assert ds.metadata_doc["grids"]["default"]["shape"] == (1, 1)
 
 
 def test_noassets_case(no_bands_stac: Any) -> None:
@@ -304,6 +305,38 @@ def test_ds2stac(eo3_dataset: Dataset):
     ]
 
 
+def test_ds2stac_links(eo3_dataset: Dataset):
+    eo3_dataset.uri = None
+    output_stac = ds2stac(
+        eo3_dataset,
+        self_url="https://localhost/stac/eo3_dataset.json",
+        stac_url="https://localhost/",
+    ).to_dict()
+    assert output_stac["links"] == [
+        {
+            "rel": "self",
+            "href": "https://localhost/stac/eo3_dataset.json",
+            "type": "application/json",
+        },
+        {
+            "rel": "collection",
+            "href": f"https://localhost/stac/collections/{eo3_dataset.product.name}",
+        },
+        {
+            "title": "ODC Product Overview",
+            "rel": "product_overview",
+            "type": "text/html",
+            "href": f"https://localhost/product/{eo3_dataset.product.name}",
+        },
+        {
+            "title": "ODC Dataset Overview",
+            "rel": "alternative",
+            "type": "text/html",
+            "href": f"https://localhost/dataset/{eo3_dataset.id}",
+        },
+    ]
+
+
 def test_sources(ds_legacy_sources: Dataset, ds_ext_lineage: Dataset):
     assert ds2stac(ds_legacy_sources).to_dict()["properties"]["odc:lineage"] == {
         "level1": ["b5f234fe-bba8-5483-9bc0-250360d429cf"]
@@ -314,21 +347,41 @@ def test_sources(ds_legacy_sources: Dataset, ds_ext_lineage: Dataset):
 
 
 def test_roundtrip(eo3_dataset: Dataset, eo3_product: Product):
-    to_stac = ds2stac(eo3_dataset)
-    to_eo3 = _item_to_ds(to_stac, eo3_product)
-    orig_doc = eo3_dataset.metadata_doc
-    rt_doc = to_eo3.metadata_doc
+    original = eo3_dataset
+    roundtrip = _item_to_ds(ds2stac(eo3_dataset), eo3_product)
+    orig_doc = original.metadata_doc
+    rt_doc = roundtrip.metadata_doc
+
     assert set(rt_doc.keys()) == set(orig_doc.keys())
-    assert set(to_eo3.properties.keys()) == set(eo3_dataset.properties.keys())
-    assert len(to_eo3.grids) == 2
-    assert to_eo3.grids["default"] == eo3_dataset.grids["default"]
+    assert set(roundtrip.properties.keys()) == set(original.properties.keys())
+
+    assert len(roundtrip.grids) == 2
+    assert (
+        list(roundtrip.grids["default"]["shape"]) == original.grids["default"]["shape"]
+    )
+    # assert list(roundtrip.grids["default"]["transform"]) == original.grids["default"]["transform"][:6]
+    assert (
+        roundtrip.grids["default"]["transform"]
+        == Affine(*original.grids["default"]["transform"]).to_shapely()
+    )
     # there's no way to conserve grid names when converting to stac, but values should still be the same
-    assert to_eo3.grids["g15"] == eo3_dataset.grids["panchromatic"]
-    assert to_eo3.crs == eo3_dataset.crs
-    assert to_eo3.extent.area == pytest.approx(eo3_dataset.extent.area, abs=0.001)
+    assert (
+        list(roundtrip.grids["g15"]["shape"]) == original.grids["panchromatic"]["shape"]
+    )
+    assert (
+        roundtrip.grids["g15"]["transform"]
+        == Affine(*original.grids["panchromatic"]["transform"]).to_shapely()
+    )
+
+    assert roundtrip.crs == original.crs
+    assert roundtrip.extent.area == pytest.approx(original.extent.area, abs=0.001)
     assert all(
         x == pytest.approx(y)
         for x, y in zip(
             rt_doc["geometry"]["coordinates"][0], orig_doc["geometry"]["coordinates"][0]
         )
     )
+
+    assert set(roundtrip.measurements.keys()) == set(original.measurements.keys())
+    assert roundtrip.measurements["nbar_panchromatic"]["grid"] == "g15"
+    assert set(roundtrip.accessories.keys()) == set(original.accessories.keys())

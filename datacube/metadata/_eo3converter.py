@@ -11,7 +11,6 @@ Utilities for translating STAC Items to EO3 Datasets.
 import dataclasses
 import uuid
 from collections.abc import Iterable, Iterator, Sequence
-from datetime import datetime
 from functools import singledispatch
 from typing import Any
 
@@ -40,25 +39,11 @@ from datacube.index.abstract import default_metadata_type_docs
 from datacube.index.eo3 import prep_eo3
 from datacube.model import Dataset, Product, metadata_from_doc
 
+from ._utils import stac_to_eo3_properties
+
 # uuid.uuid5(uuid.NAMESPACE_URL, "https://stacspec.org")
 UUID_NAMESPACE_STAC = uuid.UUID("55d26088-a6d0-5c77-bf9a-3a7f3c6a6dab")
 
-# Mapping between EO3 field names and STAC properties object field names
-# EO3 metadata was defined before STAC 1.0, so we used some extensions
-# that are now part of the standard instead
-STAC_TO_EO3_RENAMES = {
-    "end_datetime": "dtr:end_datetime",
-    "start_datetime": "dtr:start_datetime",
-    "gsd": "eo:gsd",
-    "instruments": "eo:instrument",
-    "platform": "eo:platform",
-    "constellation": "eo:constellation",
-    "view:off_nadir": "eo:off_nadir",
-    "view:azimuth": "eo:azimuth",
-    "view:sun_azimuth": "eo:sun_azimuth",
-    "view:sun_elevation": "eo:sun_elevation",
-    "created": "odc:processing_datetime",
-}
 
 (_eo3,) = (
     metadata_from_doc(d) for d in default_metadata_type_docs() if d.get("name") == "eo3"
@@ -161,41 +146,7 @@ def _compute_uuid(
 
 
 def _to_grid(gbox: GeoBox) -> dict[str, Any]:
-    return {"shape": list(gbox.shape.yx), "transform": list(gbox.transform[:])}  # type: ignore[index]
-
-
-def _to_eo3_properties(properties: dict[str, Any]) -> dict[str, Any]:
-    """
-    Convert STAC properties dictionary to the EO3 equivalent.
-    """
-
-    def _to_eo3_type(key: str, value):
-        if key == "instruments":
-            if len(value) > 0:
-                return "_".join([i.upper() for i in value])
-            else:
-                return None
-        elif key == "created" or "datetime" in key:
-            if isinstance(value, str):
-                return datetime.fromisoformat(value)
-            return value
-        else:
-            return value
-
-    prop = {
-        STAC_TO_EO3_RENAMES.get(key, key): _to_eo3_type(key, val)
-        for key, val in properties.items()
-        if not key.startswith("proj:")
-    }
-
-    if prop.get("odc:processing_datetime") is None:
-        # default to datetime value if no created
-        prop["odc:processing_datetime"] = properties.get("datetime")
-
-    if prop.get("odc:file_format") is None:
-        prop["odc:file_format"] = "GeoTIFF"
-
-    return prop
+    return {"shape": gbox.shape.yx, "transform": gbox.transform.to_shapely()}
 
 
 def _to_dataset(
@@ -244,7 +195,7 @@ def _to_dataset(
             continue
         assert isinstance(gbox, GeoBox)
 
-        if crs is None:
+        if crs is None and grid_name == "default":
             crs = gbox.crs
 
         if grid_name not in grids:
@@ -271,7 +222,7 @@ def _to_dataset(
         "crs": str(crs),
         "grids": grids,
         "measurements": measurements,
-        "properties": _to_eo3_properties(properties),
+        "properties": stac_to_eo3_properties(properties),
         "accessories": item.accessories,
         "lineage": {},  # TODO: properly handling lineage requires an Index
     }
