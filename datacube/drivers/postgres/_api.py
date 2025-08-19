@@ -551,13 +551,13 @@ class PostgresDbAPI:
                 .order_by(*order_by)
                 .limit(limit)
             )
-        select_fields = select_columns + (
-            DATASET_SOURCE.c.source_dataset_ref,
-            literal(1).label("distance"),
-            DATASET_SOURCE.c.classifier.label("path"),
-        )
         base_query = (
-            select(*select_fields)
+            select(
+                *select_columns,
+                DATASET_SOURCE.c.source_dataset_ref,
+                literal(1).label("distance"),
+                DATASET_SOURCE.c.classifier.label("path"),
+            )
             .select_from(
                 from_expression.join(
                     DATASET_SOURCE, DATASET.c.id == DATASET_SOURCE.c.dataset_ref

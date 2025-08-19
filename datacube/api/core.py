@@ -583,7 +583,7 @@ class Datacube:
             # default to value from env var, which defaults to False
             skip_broken_datasets = self.index.environment["skip_broken_datasets"]
 
-        result = self.load_data(
+        return self.load_data(
             grouped,
             geobox,
             measurement_dicts,
@@ -596,8 +596,6 @@ class Datacube:
             patch_url=patch_url,
             driver=driver,
         )
-
-        return result
 
     def find_datasets(
         self,

@@ -605,8 +605,7 @@ class PostgisDbAPI:
         if spatialquery is not None:
             where_expr = and_(where_expr, spatialquery)
             query = query.join(SpatialIndex)
-        query = query.where(where_expr).order_by(*order_by).limit(limit)
-        return query
+        return query.where(where_expr).order_by(*order_by).limit(limit)
 
     def search_datasets(
         self,
@@ -1025,9 +1024,7 @@ class PostgisDbAPI:
             )
         )
 
-        type_id = res.inserted_primary_key[0]
-
-        return type_id
+        return res.inserted_primary_key[0]
 
     def insert_product_bulk(self, values) -> tuple:
         requested = len(values)

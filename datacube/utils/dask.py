@@ -118,14 +118,12 @@ def start_local_dask(
         mem_safety_margin=mem_safety_margin,
     )
 
-    client = Client(
+    return Client(
         n_workers=n_workers,
         threads_per_worker=threads_per_worker,
         memory_limit=memory_limit,
         **kw,
     )
-
-    return client
 
 
 def _randomize(prefix: str) -> str:

@@ -623,8 +623,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :returns bool: Was one removed?
         """
         with self._db_connection() as connection:
-            was_removed = connection.remove_location(id_, uri)
-            return was_removed
+            return connection.remove_location(id_, uri)
 
     @deprecat(
         reason="The PostGIS index does not support archived locations. "

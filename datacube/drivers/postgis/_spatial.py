@@ -223,8 +223,7 @@ def promote_to_multipolygon(geom: Geom) -> Geom:
         polycoords = [list(geom.geom.exterior.coords)]
         for interior in geom.geom.interiors:
             polycoords.append(list(interior.coords))
-        geom = multipolygon([polycoords], crs=geom.crs)
-        return geom
+        return multipolygon([polycoords], crs=geom.crs)
     else:
         raise ValueError(
             f"Cannot promote geometry type {geom.geom_type} to multi-polygon"

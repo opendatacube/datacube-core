@@ -558,9 +558,7 @@ def sample_document_files(data_folder):
         ("sample.json", 1),
     ]
 
-    files = [(str(os.path.join(data_folder, f)), num_docs) for f, num_docs in files]
-
-    return files
+    return [(str(os.path.join(data_folder, f)), num_docs) for f, num_docs in files]
 
 
 def test_jsonify() -> None:

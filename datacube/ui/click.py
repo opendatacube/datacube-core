@@ -293,7 +293,7 @@ def pass_index(app_name: str | None = None, expect_initialised: bool = True):
                 _LOG.debug("Connected to datacube index: %s", index)
             except (OperationalError, ProgrammingError, ConfigException) as e:
                 handle_exception("Error Connecting to database: %s", e)
-                return
+                return None
 
             try:
                 return f(index, *args, **kwargs)
@@ -408,8 +408,7 @@ def parsed_search_expressions(f):
                 "Invalid expression. Please refer to command documentation.", e
             )
 
-    f = click.argument("expressions", callback=my_parse, nargs=-1)(f)
-    return f
+    return click.argument("expressions", callback=my_parse, nargs=-1)(f)
 
 
 def print_help_msg(command: Command) -> None:

@@ -456,9 +456,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             assert isinstance(product, Product)
         assert product.id is not None  # for type checker
         with self._db_connection() as connection:
-            result = connection.temporal_extent_by_prod(product.id)
-
-        return result
+            return connection.temporal_extent_by_prod(product.id)
 
     @override
     def spatial_extent(

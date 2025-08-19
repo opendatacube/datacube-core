@@ -542,9 +542,7 @@ def fiscal_year(time):
 
     df = time["time"].to_series()
     years = df.apply(lambda x: numpy.datetime64(str(x.to_period("Q-JUN").qyear))).values
-    ds = ds.assign_coords({"time": years})
-
-    return ds
+    return ds.assign_coords({"time": years})
 
 
 def month(time):
