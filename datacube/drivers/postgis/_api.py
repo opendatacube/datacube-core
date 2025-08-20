@@ -103,10 +103,6 @@ def _dataset_fields() -> tuple:
     )
 
 
-def _dataset_bulk_select_fields() -> tuple:
-    return (Dataset.product_ref, Dataset.metadata_doc, Dataset.uri)
-
-
 def get_native_fields() -> dict[str, PgField]:
     # Native fields (hard-coded into the schema)
     fields: dict[str, PgField] = {
@@ -659,7 +655,7 @@ class PostgisDbAPI:
         if batch_size > 0 and not self.in_transaction:
             raise ValueError("Postgresql bulk reads must occur within a transaction.")
         query = (
-            select(*_dataset_bulk_select_fields())
+            select(Dataset.product_ref, Dataset.metadata_doc, Dataset.uri)
             .select_from(Dataset)
             .where(Dataset.archived.is_(None))
         )
