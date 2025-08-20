@@ -17,7 +17,7 @@ import datetime
 import json
 import logging
 import uuid
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Generator, Iterable, Sequence
 from typing import Any
 from typing import cast as type_cast
 
@@ -617,7 +617,7 @@ class PostgisDbAPI:
         geom: Geometry | None = None,
         archived: bool | None = False,
         order_by=None,
-    ) -> Iterator:
+    ) -> Generator:
         """
         :return: An iterable of tuples of decoded values
         """
@@ -709,7 +709,7 @@ class PostgisDbAPI:
 
     def get_duplicates(
         self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]
-    ) -> Iterable[dict[str, Any]]:
+    ) -> Generator[dict[str, Any]]:
         # TODO
         if "time" in [f.name for f in match_fields]:
             yield from self.get_duplicates_with_time(match_fields, expressions)
@@ -741,7 +741,7 @@ class PostgisDbAPI:
 
     def get_duplicates_with_time(
         self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]
-    ) -> Iterable[dict[str, Any]]:
+    ) -> Generator[dict[str, Any]]:
         fields = []
         for fld in match_fields:
             if fld.name == "time":
@@ -835,7 +835,7 @@ class PostgisDbAPI:
         period,
         time_field,
         expressions: Iterable[Expression],
-    ) -> Iterator[tuple[tuple[datetime.datetime, datetime.datetime], int]]:
+    ) -> Generator[tuple[tuple[datetime.datetime, datetime.datetime], int]]:
         results = self._connection.execute(
             self.count_datasets_through_time_query(
                 start, end, period, time_field, expressions
@@ -1095,7 +1095,7 @@ class PostgisDbAPI:
         return res.first()[0]
 
     @staticmethod
-    def _get_active_field_names(fields, metadata_doc) -> Iterator:
+    def _get_active_field_names(fields, metadata_doc) -> Generator:
         for field in fields.values():
             if field.can_extract:
                 try:
@@ -1125,7 +1125,7 @@ class PostgisDbAPI:
             select(MetadataType).order_by(MetadataType.name.asc())
         ).fetchall()
 
-    def get_all_metadata_type_defs(self) -> Iterator:
+    def get_all_metadata_type_defs(self) -> Generator:
         for r in self._connection.execute(
             select(MetadataType.definition).order_by(MetadataType.name.asc())
         ):
@@ -1160,7 +1160,7 @@ class PostgisDbAPI:
     def __repr__(self) -> str:
         return f"PostgresDb<connection={self._connection!r}>"
 
-    def list_users(self) -> Iterator:
+    def list_users(self) -> Generator:
         result = self._connection.execute(
             text("""
             select
@@ -1256,7 +1256,7 @@ class PostgisDbAPI:
 
     def get_all_relations(
         self, dsids: Iterable[uuid.UUID]
-    ) -> Iterable[LineageRelation]:
+    ) -> Generator[LineageRelation]:
         """
         Fetch all lineage relations in the database involving a set on dataset IDs.
 
