@@ -70,8 +70,7 @@ def test_group_datasets_by_time() -> None:
     assert ds3.center_time is not None
     assert ds3.center_time.tzinfo is not None
 
-    # FIXME: GroupBy expected.
-    xx = Datacube.group_datasets([ds1, ds2, ds3], "time")  # type: ignore[arg-type]
+    xx = Datacube.group_datasets([ds1, ds2, ds3], "time")
     assert xx.time.shape == (2,)
     assert len(xx.data[0]) == 2
     assert len(xx.data[1]) == 1
