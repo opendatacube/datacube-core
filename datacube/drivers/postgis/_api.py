@@ -356,7 +356,7 @@ class PostgisDbAPI:
         )
         return r.rowcount > 0
 
-    def insert_dataset_search_bulk(self, search_type: str, values):
+    def insert_dataset_search_bulk(self, search_type: str, values) -> int:
         search_table = search_field_index_map[search_type]
         r = self._connection.execute(insert(search_table).values(values))
         return r.rowcount
@@ -383,17 +383,19 @@ class PostgisDbAPI:
         )
         return r.rowcount > 0
 
-    def insert_dataset_spatial_bulk(self, crs, values):
+    def insert_dataset_spatial_bulk(self, crs, values) -> int:
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
         r = self._connection.execute(insert(SpatialIndex).values(values))
         return r.rowcount
 
-    def spatial_extent(self, ids, crs):
+    def spatial_extent(self, ids, crs: CRS) -> Geometry | None:
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
         if SpatialIndex is None:
             # Requested a CRS that has no spatial index, so use 4326 (which always has a spatial index)
             # and reproject to requested CRS.
-            return self.spatial_extent(ids, CRS("epsg:4326")).to_crs(crs)
+            rv = self.spatial_extent(ids, CRS("epsg:4326"))
+            assert rv is not None
+            return rv.to_crs(crs)
         query = (
             select(func.ST_AsGeoJSON(func.ST_Union(SpatialIndex.extent)))
             .select_from(SpatialIndex)
@@ -688,7 +690,7 @@ class PostgisDbAPI:
             stream_results=True, yield_per=batch_size
         ).execute(query)
 
-    def insert_lineage_bulk(self, values) -> tuple:
+    def insert_lineage_bulk(self, values) -> tuple[int, int]:
         """
         Insert bulk lineage records (e.g. for index cloning)
 
@@ -844,7 +846,7 @@ class PostgisDbAPI:
 
     def count_datasets_through_time_query(
         self, start, end, period, time_field, expressions
-    ):
+    ) -> Select:
         raw_expressions = self._alchemify_expressions(expressions)
 
         start_times = select(
@@ -978,8 +980,8 @@ class PostgisDbAPI:
         return verified
 
     @staticmethod
-    def _join_tables(expressions=None, fields=None):
-        join_args = set()
+    def _join_tables(expressions=None, fields=None) -> list:
+        join_args: set = set()
         if expressions:
             join_args.update(
                 expression.field.dataset_join_args for expression in expressions
@@ -1022,7 +1024,7 @@ class PostgisDbAPI:
 
         return res.inserted_primary_key[0]
 
-    def insert_product_bulk(self, values) -> tuple:
+    def insert_product_bulk(self, values) -> tuple[int, int]:
         requested = len(values)
         res = self._connection.execute(insert(Product), values)
         return res.rowcount, requested - res.rowcount
@@ -1072,7 +1074,7 @@ class PostgisDbAPI:
         )
         return res.inserted_primary_key[0]
 
-    def insert_metadata_bulk(self, values) -> tuple:
+    def insert_metadata_bulk(self, values) -> tuple[int, int]:
         requested = len(values)
         res = self._connection.execute(
             insert(MetadataType)
@@ -1226,7 +1228,7 @@ class PostgisDbAPI:
         except IntegrityError:
             return 0
 
-    def delete_home(self, ids):
+    def delete_home(self, ids) -> int:
         """
         Delete the home value for the specified IDs
 
@@ -1238,7 +1240,7 @@ class PostgisDbAPI:
         )
         return res.rowcount
 
-    def select_homes(self, ids) -> dict:
+    def select_homes(self, ids) -> dict[uuid.UUID, str]:
         """
         Find homes for IDs.
 
