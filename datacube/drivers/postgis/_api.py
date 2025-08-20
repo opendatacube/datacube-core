@@ -425,7 +425,9 @@ class PostgisDbAPI:
             ).fetchall()
         ]
 
-    def get_datasets_for_location(self, uri, mode: str | None = None):
+    def get_datasets_for_location(
+        self, uri, mode: str | None = None
+    ) -> Sequence[Dataset]:
         scheme, body = split_uri(uri)
 
         if mode is None:
@@ -444,7 +446,7 @@ class PostgisDbAPI:
             )
         ).fetchall()
 
-    def all_dataset_ids(self, archived: bool | None = False):
+    def all_dataset_ids(self, archived: bool | None = False) -> Sequence:
         query = select(Dataset.id)
         if archived:
             query = query.where(Dataset.archived.is_not(None))
@@ -485,7 +487,7 @@ class PostgisDbAPI:
             select(*_dataset_select_fields()).where(Dataset.id == dataset_id)
         ).first()
 
-    def get_datasets(self, dataset_ids):
+    def get_datasets(self, dataset_ids) -> Sequence:
         return self._connection.execute(
             select(*_dataset_select_fields()).where(Dataset.id.in_(dataset_ids))
         ).fetchall()
@@ -511,7 +513,7 @@ class PostgisDbAPI:
         query = select(*_dataset_select_fields()).where(where)
         return self._connection.execute(query).fetchall()
 
-    def search_products_by_metadata(self, metadata: dict) -> dict:
+    def search_products_by_metadata(self, metadata: dict) -> Sequence:
         """
         Find any datasets that have the given metadata.
         """
@@ -1103,7 +1105,7 @@ class PostgisDbAPI:
                 except (AttributeError, KeyError, ValueError):
                     continue
 
-    def get_all_products(self):
+    def get_all_products(self) -> Sequence:
         return self._connection.execute(
             select(Product).order_by(Product.name.asc())
         ).fetchall()
@@ -1111,14 +1113,14 @@ class PostgisDbAPI:
     def get_all_product_docs(self):
         return self._connection.execute(select(Product.definition))
 
-    def _get_products_for_metadata_type(self, id_):
+    def _get_products_for_metadata_type(self, id_) -> Sequence:
         return self._connection.execute(
             select(Product)
             .where(Product.metadata_type_ref == id_)
             .order_by(Product.name.asc())
         ).fetchall()
 
-    def get_all_metadata_types(self):
+    def get_all_metadata_types(self) -> Sequence:
         return self._connection.execute(
             select(MetadataType).order_by(MetadataType.name.asc())
         ).fetchall()
