@@ -94,10 +94,11 @@ def pseudo_ls8_dataset(index: Index, pseudo_ls8_type):
             pseudo_ls8_type.id,
         )
         was_inserted = was_inserted and connection.insert_dataset_location(
-            id_, "file://tmp/a/b/c"
+            id_,  # type: ignore[arg-type]
+            "file://tmp/a/b/c",
         )
     assert was_inserted
-    d = index.datasets.get(id_)
+    d = index.datasets.get(id_)  # type: ignore[arg-type]
     assert d is not None
     # The dataset should have been matched to the telemetry type.
     assert d.product.id == pseudo_ls8_type.id
@@ -147,10 +148,11 @@ def pseudo_ls8_dataset2(index: Index, pseudo_ls8_type):
             pseudo_ls8_type.id,
         )
         was_inserted = was_inserted and connection.insert_dataset_location(
-            id_, "file://tmp/d/e/f"
+            id_,  # type: ignore[arg-type]
+            "file://tmp/d/e/f",
         )
     assert was_inserted
-    d = index.datasets.get(id_)
+    d = index.datasets.get(id_)  # type: ignore[arg-type]
     assert d is not None
     # The dataset should have been matched to the telemetry type.
     assert d.product.id == pseudo_ls8_type.id
@@ -177,7 +179,7 @@ def pseudo_ls8_dataset3(
     with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(dataset_doc, id_, pseudo_ls8_type.id)
     assert was_inserted
-    d = index.datasets.get(id_)
+    d = index.datasets.get(id_)  # type: ignore[arg-type]
     assert d is not None
     # The dataset should have been matched to the telemetry type.
     assert d.product.id == pseudo_ls8_type.id
@@ -202,7 +204,7 @@ def pseudo_ls8_dataset4(
     with index._active_connection() as connection:
         was_inserted = connection.insert_dataset(dataset_doc, id_, pseudo_ls8_type.id)
         assert was_inserted
-        d = index.datasets.get(id_)
+        d = index.datasets.get(id_)  # type: ignore[arg-type]
         assert d is not None
         # The dataset should have been matched to the telemetry type.
         assert d.product.id == pseudo_ls8_type.id
@@ -787,7 +789,7 @@ def test_get_dataset_with_children(
     assert list(sources.sources) == []
 
     # It should also work with a string id
-    d = index.datasets.get(str(id_), include_sources=True)
+    d = index.datasets.get(str(id_), include_sources=True)  # type: ignore[arg-type]
     assert d is not None
     sources = d.sources
     assert sources is not None

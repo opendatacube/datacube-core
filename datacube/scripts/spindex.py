@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 import sys
+import uuid
 from collections.abc import Sequence
 
 import click
@@ -116,12 +117,16 @@ def list_spindex(index) -> None:
     "--dataset",
     "-d",
     multiple=True,
+    type=click.UUID,
     help="The id of a dataset to update the spatial index for (can be used multiple times for multiple datasets)",
 )
 @click.argument("srids", nargs=-1)
 @ui.pass_index()
 def update(
-    index: Index, product: Sequence[str], dataset: Sequence[str], srids: Sequence[str]
+    index: Index,
+    product: Sequence[str],
+    dataset: Sequence[uuid.UUID],
+    srids: Sequence[str],
 ) -> None:
     if not index.supports_spatial_indexes:
         echo(

@@ -34,12 +34,12 @@ class BatchStatus(NamedTuple):
     safe: Iterable[str] | None = None
 
 
-# Non-strict Dataset ID representation
+# Former non-strict Dataset ID representation.
 
-DSID: TypeAlias = str | UUID
+DSID: TypeAlias = UUID
 
 
-def dsid_to_uuid(dsid: DSID) -> UUID:
+def dsid_to_uuid(dsid: str | DSID) -> UUID:
     """
     Convert non-strict dataset ID representation to strict UUID
     """

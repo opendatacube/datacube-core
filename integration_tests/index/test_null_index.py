@@ -90,10 +90,10 @@ def test_null_product_resource(null_config: ODCEnvironment) -> None:
 def test_null_dataset_resource(null_config: ODCEnvironment) -> None:
     with Datacube(env=null_config, validate_connection=True) as dc:
         assert dc.index.datasets.get(test_uuid) is None
-        assert dc.index.datasets.bulk_get([test_uuid, "foo"]) == []
+        assert dc.index.datasets.bulk_get([test_uuid, "foo"]) == []  # type: ignore[list-item]
         assert dc.index.datasets.get_derived(test_uuid) == []
         assert not dc.index.datasets.has(test_uuid)
-        assert dc.index.datasets.bulk_has([test_uuid, "foo"]) == [False, False]
+        assert dc.index.datasets.bulk_has([test_uuid, "foo"]) == [False, False]  # type: ignore[list-item]
         with pytest.raises(NotImplementedError):
             dc.index.datasets.add(MagicMock())
         with pytest.raises(NotImplementedError):
@@ -101,11 +101,11 @@ def test_null_dataset_resource(null_config: ODCEnvironment) -> None:
         with pytest.raises(NotImplementedError):
             dc.index.datasets.update(MagicMock())
         with pytest.raises(NotImplementedError):
-            dc.index.datasets.archive([test_uuid, "foo"])
+            dc.index.datasets.archive([test_uuid, "foo"])  # type: ignore[list-item]
         with pytest.raises(NotImplementedError):
-            dc.index.datasets.restore([test_uuid, "foo"])
+            dc.index.datasets.restore([test_uuid, "foo"])  # type: ignore[list-item]
         with pytest.raises(NotImplementedError):
-            dc.index.datasets.purge([test_uuid, "foo"])
+            dc.index.datasets.purge([test_uuid, "foo"])  # type: ignore[list-item]
 
         assert empty(dc.index.datasets.get_all_dataset_ids(True))
         assert dc.index.datasets.get_location(test_uuid) is None

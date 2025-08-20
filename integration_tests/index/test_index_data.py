@@ -273,40 +273,40 @@ def test_index_duplicate_dataset(index: Index, cfg_env, ls8_eo3_dataset) -> None
 
 def test_has_dataset(index: Index, ls8_eo3_dataset: Dataset) -> None:
     assert index.datasets.has(ls8_eo3_dataset.id)
-    assert index.datasets.has(str(ls8_eo3_dataset.id))
+    assert index.datasets.has(str(ls8_eo3_dataset.id))  # type: ignore[arg-type]
 
     assert not index.datasets.has(UUID("f226a278-e422-11e6-b501-185e0f80a5c0"))
-    assert not index.datasets.has("f226a278-e422-11e6-b501-185e0f80a5c0")
+    assert not index.datasets.has("f226a278-e422-11e6-b501-185e0f80a5c0")  # type: ignore[arg-type]
 
     assert index.datasets.bulk_has(
         [ls8_eo3_dataset.id, UUID("f226a278-e422-11e6-b501-185e0f80a5c0")]
     ) == [True, False]
     assert index.datasets.bulk_has(
-        [str(ls8_eo3_dataset.id), "f226a278-e422-11e6-b501-185e0f80a5c0"]
+        [str(ls8_eo3_dataset.id), "f226a278-e422-11e6-b501-185e0f80a5c0"]  # type: ignore[list-item]
     ) == [True, False]
 
 
 def test_get_dataset(index: Index, ls8_eo3_dataset: Dataset) -> None:
     assert index.datasets.has(ls8_eo3_dataset.id)
-    assert index.datasets.has(str(ls8_eo3_dataset.id))
+    assert index.datasets.has(str(ls8_eo3_dataset.id))  # type: ignore[arg-type]
 
     assert index.datasets.bulk_has(
-        [ls8_eo3_dataset.id, "f226a278-e422-11e6-b501-185e0f80a5c0"]
+        [ls8_eo3_dataset.id, "f226a278-e422-11e6-b501-185e0f80a5c0"]  # type: ignore[list-item]
     ) == [True, False]
 
     for tr in (lambda x: x, lambda x: str(x)):
-        ds = index.datasets.get(tr(ls8_eo3_dataset.id))
+        ds = index.datasets.get(tr(ls8_eo3_dataset.id))  # type: ignore[arg-type]
         assert ds is not None
         assert ds.id == ls8_eo3_dataset.id
 
-        (ds,) = index.datasets.bulk_get([tr(ls8_eo3_dataset.id)])
+        (ds,) = index.datasets.bulk_get([tr(ls8_eo3_dataset.id)])  # type: ignore[list-item]
         assert ds.id == ls8_eo3_dataset.id
 
     assert (
         index.datasets.bulk_get(
             [
-                "f226a278-e422-11e6-b501-185e0f80a5c0",
-                "f226a278-e422-11e6-b501-185e0f80a5c1",
+                "f226a278-e422-11e6-b501-185e0f80a5c0",  # type: ignore[list-item]
+                "f226a278-e422-11e6-b501-185e0f80a5c1",  # type: ignore[list-item]
             ]
         )
         == []
@@ -733,7 +733,7 @@ def test_index_dataset_with_location(
         ]
 
         # test order using datasets.get(), it has custom query as it turns out
-        d = index.datasets.get(test_uuid)
+        d = index.datasets.get(test_uuid)  # type: ignore[arg-type]
         assert d is not None
         assert d._uris == [
             "file:///a",
@@ -755,7 +755,7 @@ def test_index_dataset_with_location(
             "file:///a",
             "file:///b",
         ]
-        d = index.datasets.get(test_uuid)
+        d = index.datasets.get(test_uuid)  # type: ignore[arg-type]
         assert d is not None
         assert d.uris == [  # Test of deprecated functionality
             "file:///c",
