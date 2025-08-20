@@ -81,7 +81,7 @@ def _dataset_select_fields() -> tuple:
     return tuple(f.alchemy_expression for f in _dataset_fields())
 
 
-def _base_known_fields() -> dict:
+def _base_known_fields() -> dict[str, PgField]:
     fields = get_native_fields().copy()
     fields["archived"] = NativeField(
         "archived", "Archived date", Dataset.__table__.c.archived
@@ -160,7 +160,7 @@ def mk_simple_offset_field(
     )
 
 
-def get_dataset_fields(metadata_type_definition: dict[str, Any]) -> dict[str, Any]:
+def get_dataset_fields(metadata_type_definition: dict[str, Any]) -> dict[str, PgField]:
     dataset_section = metadata_type_definition["dataset"]
 
     fields = get_native_fields()
@@ -190,7 +190,7 @@ def get_dataset_fields(metadata_type_definition: dict[str, Any]) -> dict[str, An
     return fields
 
 
-def non_native_fields(mdt_metadata) -> dict:
+def non_native_fields(mdt_metadata) -> dict[str, PgField]:
     return {
         name: field
         for name, field in get_dataset_fields(mdt_metadata).items()
@@ -208,7 +208,7 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata) -> dict:
     return extract_dataset_fields(ds_metadata, non_native_fields(mdt_metadata))
 
 
-def extract_dataset_fields(ds_metadata, fields) -> dict:
+def extract_dataset_fields(ds_metadata, fields: dict) -> dict:
     """
     :param ds_metadata: A Dataset metadata document
     :param fields: A dictionary of field names to Field objects
