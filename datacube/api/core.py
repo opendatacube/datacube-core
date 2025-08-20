@@ -791,19 +791,19 @@ class Datacube:
         if isinstance(coords, dict):
             warnings.warn(
                 "The coords argument to Datacube.create_storage is now expected "
-                "as a DataArrayCoordinates object instead of a dict.",
+                "as a DataArrayCoordinates object or None instead of a dict.",
                 ODC2DeprecationWarning,
             )
             coords = None if coords == {} else DataArrayCoordinates(*coords.values())
 
-        dims_default = (coords.dims if coords else ()) + geobox.dimensions
+        dims_default = (() if coords is None else coords.dims) + geobox.dimensions
         shape_default = (
-            tuple(c.size for k, c in coords.items() if k in dims_default)
-            if coords
-            else ()
+            ()
+            if coords is None
+            else tuple(c.size for k, c in coords.items() if k in dims_default)
         ) + geobox.shape.yx
         coords_default: OrderedDict[str, xarray.DataArray] = OrderedDict()
-        if coords:
+        if coords is not None:
             coords_default.update([(str(k), v) for k, v in coords.items()])
         coords_default.update(
             [(str(k), v) for k, v in xr_coords(geobox, spatial_ref).items()]
