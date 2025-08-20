@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 import itertools
 import threading
-from collections.abc import Generator, Iterator
+from collections.abc import Callable, Generator, Iterable, Iterator
 from queue import Queue
-from typing import Any
+from typing import Any, TypeVar
 
 EOS = object()
 _LCL = threading.local()
@@ -19,8 +19,15 @@ __all__ = [
     "thread_local_cache",
 ]
 
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
 
-def map_with_lookahead(it, if_one=None, if_many=None) -> Generator:
+
+def map_with_lookahead(
+    it: Iterable[T1],
+    if_one: Callable[[T1], T2] | None = None,
+    if_many: Callable[[T1], T2] | None = None,
+) -> Generator[T2]:
     """
     It's like normal map: creates a new generator by applying a function to every
     element of the original generator, but it applies `if_one` transform for
@@ -35,8 +42,11 @@ def map_with_lookahead(it, if_one=None, if_many=None) -> Generator:
     :param if_one: Function to apply for single element sequences
     :param if_many: Function to apply for multi-element sequences
     """
-    if_one = if_one or (lambda x: x)
-    if_many = if_many or (lambda x: x)
+    # Need to bind the identity function to a variable for MyPy to figure things out.
+    # This saves allocation of a closure too though, so this is actually better.
+    identity = lambda x: x  # noqa: E731
+    if_one = if_one or identity
+    if_many = if_many or identity
 
     it = iter(it)
     p1 = list(itertools.islice(it, 2))

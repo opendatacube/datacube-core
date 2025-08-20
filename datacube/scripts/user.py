@@ -6,7 +6,7 @@ import csv
 import logging
 import sys
 from collections import OrderedDict
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 import click
 import yaml
@@ -29,7 +29,7 @@ def user_cmd() -> None:
     pass
 
 
-def build_user_list(index):
+def build_user_list(index: Index) -> Sequence[OrderedDict[str, str | None]]:
     lstdct = []
     for role, user, description in index.users.list_users():
         info = OrderedDict(
@@ -39,13 +39,13 @@ def build_user_list(index):
     return lstdct
 
 
-def _write_csv(index: Iterable) -> None:
+def _write_csv(index: Iterable[dict[str, str | None]]) -> None:
     writer = csv.DictWriter(
         sys.stdout, ["role", "user", "description"], extrasaction="ignore"
     )
     writer.writeheader()
 
-    def add_first_role(row):
+    def add_first_role(row: dict[str, str | None]) -> dict[str, str | None]:
         roles_ = row["role"]
         row["role"] = roles_ if roles_ else None
         return row
@@ -53,7 +53,7 @@ def _write_csv(index: Iterable) -> None:
     writer.writerows(add_first_role(row) for row in index)
 
 
-def _write_yaml(index: Iterable) -> None:
+def _write_yaml(index: Iterable[dict[str, str | None]]) -> str | bytes | None:
     """
     Dump yaml data with support for OrderedDicts.
 

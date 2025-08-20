@@ -17,7 +17,7 @@ from datacube.migration import ODC2DeprecationWarning
 URL_RE: re.Pattern[str] = re.compile(r"\A\s*[\w\d\+]+://")
 
 
-def split_uri(uri):
+def split_uri(uri: str) -> tuple[str, str]:
     """
     Split the scheme and the remainder of the URI.
     """
@@ -160,7 +160,7 @@ def normalise_path(
     assert isinstance(p, str | pathlib.Path)
     assert isinstance(base, str | pathlib.Path | type(None))
 
-    def norm(p):
+    def norm(p: pathlib.Path) -> pathlib.Path:
         return pathlib.Path(os.path.normpath(str(p)))
 
     if isinstance(p, str):

@@ -250,7 +250,7 @@ class AbstractDatasetResource(ABC):
             _LOG.info(f"Archived less mature dataset: {lm_ds}")
 
     def find_less_mature(
-        self, ds: Dataset, delta: int | bool = 500
+        self, ds: Dataset, delta: int | bool | None = 500
     ) -> Iterable[Dataset]:
         """
         Find less mature versions of a dataset
@@ -275,7 +275,7 @@ class AbstractDatasetResource(ABC):
         else:
             raise TypeError("timedelta must be None, a positive integer, or a boolean")
 
-        def check_maturity_information(dataset, props):
+        def check_maturity_information(dataset, props) -> None:
             # check that the dataset metadata includes all maturity-related properties
             # passing in the required props to enable greater extensibility should it be needed
             for prop in props:
