@@ -151,7 +151,7 @@ When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyb
 Connect to catalog and find items
 ---------------------------------
 
-We use `pystac-client`_'s :code:`Client` class to connect to Planetary Computer's STAC catalog.
+We use :code:`pystac-client`'s :code:`Client` class to connect to Planetary Computer's STAC catalog.
 We also use :code:`planetary_computer.sign_inplace` to authorise our connection.
 Type the following into the empty cell below the **Connect to catalog and find items** heading:
 
@@ -295,6 +295,3 @@ In the last step you exported the loaded data as a series of Cloud Optimised Geo
 
    To download, open the file-browser by clicking the folder icon in the left menu bar.
    Then, download the Land Use Land Cover file for each year (denoted as :file:`LULC_{year}.tif`) by right-clicking each file and selecting :guilabel:`Download`.
-
-.. _pystac-client: https://pystac-client.readthedocs.io/en/stable/
-.. _odc-stac: https://odc-stac.readthedocs.io/en/latest/

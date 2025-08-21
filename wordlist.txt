@@ -261,6 +261,7 @@ GridSpec
 GridWorkflow
 gridWorkflow
 GroupBy
+guilabel
 handedly
 HDF
 hdf
@@ -310,6 +311,7 @@ jsonschema
 Jupyter
 jupyter
 JupyterLab
+kbd
 KeyboardInterrupt
 Kirill
 Kubernetes
