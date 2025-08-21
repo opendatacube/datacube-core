@@ -45,6 +45,7 @@ from datacube.index.abstract import (
     BatchStatus,
     DatasetSpatialMixin,
     DatasetTuple,
+    dsid_to_uuid,
 )
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.migration import ODC2DeprecationWarning
@@ -86,8 +87,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param include_deriveds: include the full derivative tree for the dataset.
         :param max_depth: The maximum depth of the source and/or derived tree.  Defaults to 0, meaning no limit.
         """
-        if isinstance(id_, str):
-            id_ = UUID(id_)
+        id_ = dsid_to_uuid(id_)
 
         source_tree = derived_tree = None
         if include_sources:
@@ -109,14 +109,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             )
 
     @override
-    def bulk_get(self, ids) -> list:
-        def to_uuid(x):
-            return x if isinstance(x, UUID) else UUID(x)
-
-        ids = [to_uuid(i) for i in ids]
-
+    def bulk_get(self, ids: Iterable[DSID]) -> list:
         with self._db_connection() as connection:
-            rows = connection.get_datasets(ids)
+            rows = connection.get_datasets([dsid_to_uuid(i) for i in ids])
             return [self._make(r, full_info=True) for r in rows]
 
     @deprecat(
@@ -131,12 +126,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param id_: dataset id
         """
-        if not isinstance(id_, UUID):
-            id_ = UUID(id_)
         with self._db_connection() as connection:
             return [
                 self._make(result, full_info=True)
-                for result in connection.get_derived_datasets(id_)
+                for result in connection.get_derived_datasets(dsid_to_uuid(id_))
             ]
 
     @override
@@ -161,9 +154,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection() as connection:
             existing = set(connection.datasets_intersection(ids_))
 
-        return [
-            x in existing for x in (UUID(x) if isinstance(x, str) else x for x in ids_)
-        ]
+        return [x in existing for x in (dsid_to_uuid(x) for x in ids_)]
 
     @override
     def add(
