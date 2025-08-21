@@ -17,7 +17,7 @@ import datetime
 import json
 import logging
 import uuid
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Generator, Iterable, Sequence
 from typing import Any
 from typing import cast as type_cast
 
@@ -81,7 +81,7 @@ def _dataset_select_fields() -> tuple:
     return tuple(f.alchemy_expression for f in _dataset_fields())
 
 
-def _base_known_fields() -> dict:
+def _base_known_fields() -> dict[str, PgField]:
     fields = get_native_fields().copy()
     fields["archived"] = NativeField(
         "archived", "Archived date", Dataset.__table__.c.archived
@@ -101,10 +101,6 @@ def _dataset_fields() -> tuple:
         NativeField("archived", "Archived date", Dataset.__table__.c.archived),
         native_flds["uri"],
     )
-
-
-def _dataset_bulk_select_fields() -> tuple:
-    return (Dataset.product_ref, Dataset.metadata_doc, Dataset.uri)
 
 
 def get_native_fields() -> dict[str, PgField]:
@@ -164,7 +160,7 @@ def mk_simple_offset_field(
     )
 
 
-def get_dataset_fields(metadata_type_definition: dict[str, Any]) -> dict[str, Any]:
+def get_dataset_fields(metadata_type_definition: dict[str, Any]) -> dict[str, PgField]:
     dataset_section = metadata_type_definition["dataset"]
 
     fields = get_native_fields()
@@ -194,7 +190,7 @@ def get_dataset_fields(metadata_type_definition: dict[str, Any]) -> dict[str, An
     return fields
 
 
-def non_native_fields(mdt_metadata) -> dict:
+def non_native_fields(mdt_metadata) -> dict[str, PgField]:
     return {
         name: field
         for name, field in get_dataset_fields(mdt_metadata).items()
@@ -212,7 +208,7 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata) -> dict:
     return extract_dataset_fields(ds_metadata, non_native_fields(mdt_metadata))
 
 
-def extract_dataset_fields(ds_metadata, fields) -> dict:
+def extract_dataset_fields(ds_metadata, fields: dict) -> dict:
     """
     :param ds_metadata: A Dataset metadata document
     :param fields: A dictionary of field names to Field objects
@@ -360,7 +356,7 @@ class PostgisDbAPI:
         )
         return r.rowcount > 0
 
-    def insert_dataset_search_bulk(self, search_type: str, values):
+    def insert_dataset_search_bulk(self, search_type: str, values) -> int:
         search_table = search_field_index_map[search_type]
         r = self._connection.execute(insert(search_table).values(values))
         return r.rowcount
@@ -387,17 +383,19 @@ class PostgisDbAPI:
         )
         return r.rowcount > 0
 
-    def insert_dataset_spatial_bulk(self, crs, values):
+    def insert_dataset_spatial_bulk(self, crs, values) -> int:
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
         r = self._connection.execute(insert(SpatialIndex).values(values))
         return r.rowcount
 
-    def spatial_extent(self, ids, crs):
+    def spatial_extent(self, ids, crs: CRS) -> Geometry | None:
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
         if SpatialIndex is None:
             # Requested a CRS that has no spatial index, so use 4326 (which always has a spatial index)
             # and reproject to requested CRS.
-            return self.spatial_extent(ids, CRS("epsg:4326")).to_crs(crs)
+            rv = self.spatial_extent(ids, CRS("epsg:4326"))
+            assert rv is not None
+            return rv.to_crs(crs)
         query = (
             select(func.ST_AsGeoJSON(func.ST_Union(SpatialIndex.extent)))
             .select_from(SpatialIndex)
@@ -427,7 +425,9 @@ class PostgisDbAPI:
             ).fetchall()
         ]
 
-    def get_datasets_for_location(self, uri, mode: str | None = None):
+    def get_datasets_for_location(
+        self, uri, mode: str | None = None
+    ) -> Sequence[Dataset]:
         scheme, body = split_uri(uri)
 
         if mode is None:
@@ -446,7 +446,7 @@ class PostgisDbAPI:
             )
         ).fetchall()
 
-    def all_dataset_ids(self, archived: bool | None = False):
+    def all_dataset_ids(self, archived: bool | None = False) -> Sequence:
         query = select(Dataset.id)
         if archived:
             query = query.where(Dataset.archived.is_not(None))
@@ -487,7 +487,7 @@ class PostgisDbAPI:
             select(*_dataset_select_fields()).where(Dataset.id == dataset_id)
         ).first()
 
-    def get_datasets(self, dataset_ids):
+    def get_datasets(self, dataset_ids) -> Sequence:
         return self._connection.execute(
             select(*_dataset_select_fields()).where(Dataset.id.in_(dataset_ids))
         ).fetchall()
@@ -513,7 +513,7 @@ class PostgisDbAPI:
         query = select(*_dataset_select_fields()).where(where)
         return self._connection.execute(query).fetchall()
 
-    def search_products_by_metadata(self, metadata: dict) -> dict:
+    def search_products_by_metadata(self, metadata: dict) -> Sequence:
         """
         Find any datasets that have the given metadata.
         """
@@ -616,7 +616,7 @@ class PostgisDbAPI:
         geom: Geometry | None = None,
         archived: bool | None = False,
         order_by=None,
-    ) -> Iterator:
+    ) -> Generator:
         """
         :return: An iterable of tuples of decoded values
         """
@@ -658,7 +658,7 @@ class PostgisDbAPI:
         if batch_size > 0 and not self.in_transaction:
             raise ValueError("Postgresql bulk reads must occur within a transaction.")
         query = (
-            select(*_dataset_bulk_select_fields())
+            select(Dataset.product_ref, Dataset.metadata_doc, Dataset.uri)
             .select_from(Dataset)
             .where(Dataset.archived.is_(None))
         )
@@ -691,7 +691,7 @@ class PostgisDbAPI:
             stream_results=True, yield_per=batch_size
         ).execute(query)
 
-    def insert_lineage_bulk(self, values) -> tuple:
+    def insert_lineage_bulk(self, values) -> tuple[int, int]:
         """
         Insert bulk lineage records (e.g. for index cloning)
 
@@ -708,7 +708,7 @@ class PostgisDbAPI:
 
     def get_duplicates(
         self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]
-    ) -> Iterable[dict[str, Any]]:
+    ) -> Generator[dict[str, Any]]:
         # TODO
         if "time" in [f.name for f in match_fields]:
             yield from self.get_duplicates_with_time(match_fields, expressions)
@@ -740,7 +740,7 @@ class PostgisDbAPI:
 
     def get_duplicates_with_time(
         self, match_fields: Sequence[PgField], expressions: Sequence[PgExpression]
-    ) -> Iterable[dict[str, Any]]:
+    ) -> Generator[dict[str, Any]]:
         fields = []
         for fld in match_fields:
             if fld.name == "time":
@@ -834,7 +834,7 @@ class PostgisDbAPI:
         period,
         time_field,
         expressions: Iterable[Expression],
-    ) -> Iterator[tuple[tuple[datetime.datetime, datetime.datetime], int]]:
+    ) -> Generator[tuple[tuple[datetime.datetime, datetime.datetime], int]]:
         results = self._connection.execute(
             self.count_datasets_through_time_query(
                 start, end, period, time_field, expressions
@@ -847,7 +847,7 @@ class PostgisDbAPI:
 
     def count_datasets_through_time_query(
         self, start, end, period, time_field, expressions
-    ):
+    ) -> Select:
         raw_expressions = self._alchemify_expressions(expressions)
 
         start_times = select(
@@ -981,8 +981,8 @@ class PostgisDbAPI:
         return verified
 
     @staticmethod
-    def _join_tables(expressions=None, fields=None):
-        join_args = set()
+    def _join_tables(expressions=None, fields=None) -> list:
+        join_args: set = set()
         if expressions:
             join_args.update(
                 expression.field.dataset_join_args for expression in expressions
@@ -1025,7 +1025,7 @@ class PostgisDbAPI:
 
         return res.inserted_primary_key[0]
 
-    def insert_product_bulk(self, values) -> tuple:
+    def insert_product_bulk(self, values) -> tuple[int, int]:
         requested = len(values)
         res = self._connection.execute(insert(Product), values)
         return res.rowcount, requested - res.rowcount
@@ -1075,7 +1075,7 @@ class PostgisDbAPI:
         )
         return res.inserted_primary_key[0]
 
-    def insert_metadata_bulk(self, values) -> tuple:
+    def insert_metadata_bulk(self, values) -> tuple[int, int]:
         requested = len(values)
         res = self._connection.execute(
             insert(MetadataType)
@@ -1094,7 +1094,7 @@ class PostgisDbAPI:
         return res.first()[0]
 
     @staticmethod
-    def _get_active_field_names(fields, metadata_doc) -> Iterator:
+    def _get_active_field_names(fields, metadata_doc) -> Generator:
         for field in fields.values():
             if field.can_extract:
                 try:
@@ -1104,7 +1104,7 @@ class PostgisDbAPI:
                 except (AttributeError, KeyError, ValueError):
                     continue
 
-    def get_all_products(self):
+    def get_all_products(self) -> Sequence:
         return self._connection.execute(
             select(Product).order_by(Product.name.asc())
         ).fetchall()
@@ -1112,19 +1112,19 @@ class PostgisDbAPI:
     def get_all_product_docs(self):
         return self._connection.execute(select(Product.definition))
 
-    def _get_products_for_metadata_type(self, id_):
+    def _get_products_for_metadata_type(self, id_) -> Sequence:
         return self._connection.execute(
             select(Product)
             .where(Product.metadata_type_ref == id_)
             .order_by(Product.name.asc())
         ).fetchall()
 
-    def get_all_metadata_types(self):
+    def get_all_metadata_types(self) -> Sequence:
         return self._connection.execute(
             select(MetadataType).order_by(MetadataType.name.asc())
         ).fetchall()
 
-    def get_all_metadata_type_defs(self) -> Iterator:
+    def get_all_metadata_type_defs(self) -> Generator:
         for r in self._connection.execute(
             select(MetadataType.definition).order_by(MetadataType.name.asc())
         ):
@@ -1159,7 +1159,7 @@ class PostgisDbAPI:
     def __repr__(self) -> str:
         return f"PostgresDb<connection={self._connection!r}>"
 
-    def list_users(self) -> Iterator:
+    def list_users(self) -> Generator:
         result = self._connection.execute(
             text("""
             select
@@ -1229,7 +1229,7 @@ class PostgisDbAPI:
         except IntegrityError:
             return 0
 
-    def delete_home(self, ids):
+    def delete_home(self, ids) -> int:
         """
         Delete the home value for the specified IDs
 
@@ -1241,7 +1241,7 @@ class PostgisDbAPI:
         )
         return res.rowcount
 
-    def select_homes(self, ids) -> dict:
+    def select_homes(self, ids) -> dict[uuid.UUID, str]:
         """
         Find homes for IDs.
 
@@ -1255,7 +1255,7 @@ class PostgisDbAPI:
 
     def get_all_relations(
         self, dsids: Iterable[uuid.UUID]
-    ) -> Iterable[LineageRelation]:
+    ) -> Generator[LineageRelation]:
         """
         Fetch all lineage relations in the database involving a set on dataset IDs.
 
