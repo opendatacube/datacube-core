@@ -16,9 +16,9 @@ During the tutorial, we will:
   * what (data provider and product)
   * where (area of interest)
   * when (date range)
-* Use `pystac-client`_ to connect to a `Spatio-Temporal Asset Catalog (STAC) <https://stacspec.org/en>`_ 
+* Use :ref:`pystac-client` to connect to a `Spatio-Temporal Asset Catalog (STAC) <https://stacspec.org/en>`_ 
   endpoint and search for data matching our what, where, and when
-* Use `odc-stac`_ to load the matching data into memory
+* Use :ref:`odc-stac` to load the matching data into memory
 * Visualise and export the data
 
 There is no need to install anything.
@@ -60,7 +60,7 @@ Python imports
 
 The notebook requires five libraries to run:
 
-* :code:`geopandas` for loading an area of interest from a GeoJSON file
+* `geopandas`_ for loading an area of interest from a GeoJSON file
 * :code:`odc.geo` for exporting loaded data
 * :code:`odc.stac` for loading data
 * :code:`planetary_computer` to provide authentication when accessing data
