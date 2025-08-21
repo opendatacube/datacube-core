@@ -1,0 +1,160 @@
+---
+# Dataset
+$schema: https://schemas.opendatacube.org/dataset
+id: 2aa69fcf-aa55-4747-9d95-3652f9fe79b0
+
+label: ga_ls8c_ard_3-1-0_088080_2020-05-25_final
+product:
+  name: ga_ls8c_ard_3
+  href: https://collections.dea.ga.gov.au/product/ga_ls8c_ard_3
+
+
+crs: epsg:32656
+geometry:
+  type: Polygon
+  coordinates: [[[572743.2722121085, -3077151.309749513], [572745.0, -3077145.0],
+      [572969.4472838908, -3077198.798209872], [573250.996461604, -3077257.9131992455],
+      [758606.0005942872, -3121687.9141904702], [759791.1380343756, -3121972.947862498],
+      [759832.5, -3122002.5], [714367.0886436494, -3312160.9887643186], [714322.5,
+        -3312262.5], [714228.5968569319, -3312239.9605382206], [714225.0, -3312255.0],
+      [527767.9988114258, -3267524.1716190595], [527167.7239312489, -3267374.1042750045],
+      [527095.752540109, -3267322.682433342], [527032.5, -3267307.5], [528337.9117568319,
+        -3261784.0095614507], [541042.9139480147, -3208729.0004160986], [553732.9148397002,
+        -3155853.9967016927], [572107.9166454426, -3079413.9891924215], [572647.9478624978,
+        -3077178.8619656246], [572677.5, -3077137.5], [572743.2722121085, -3077151.309749513]]]
+grids:
+  default:
+    shape: [7841, 7781]
+    transform: [30.0, 0.0, 526785.0, 0.0, -30.0, -3077085.0, 0.0, 0.0, 1.0]
+  panchromatic:
+    shape: [15681, 15561]
+    transform: [15.0, 0.0, 526792.5, 0.0, -15.0, -3077092.5, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: 2020-05-25 23:35:47.745731Z
+  dea:dataset_maturity: final
+  dtr:end_datetime: 2020-05-25 23:36:02.557719Z
+  dtr:start_datetime: 2020-05-25 23:35:32.815426Z
+  eo:cloud_cover: 42.42102985910952
+  eo:gsd: 15.0  # Ground sample distance (m)
+  eo:instrument: OLI_TIRS
+  eo:platform: landsat-8
+  eo:sun_azimuth: 34.22994171
+  eo:sun_elevation: 31.7895917
+  fmask:clear: 1.0427704509544131
+  fmask:cloud: 42.42102985910952
+  fmask:cloud_shadow: 2.919727915379625
+  fmask:snow: 0.00034972190505407335
+  fmask:water: 53.61612205265139
+  gqa:abs_iterative_mean_x: 0.17
+  gqa:abs_iterative_mean_xy: 0.24
+  gqa:abs_iterative_mean_y: 0.16
+  gqa:abs_x: 0.28
+  gqa:abs_xy: 0.4
+  gqa:abs_y: 0.28
+  gqa:cep90: .nan
+  gqa:iterative_mean_x: 0.03
+  gqa:iterative_mean_xy: 0.12
+  gqa:iterative_mean_y: 0.12
+  gqa:iterative_stddev_x: 0.21
+  gqa:iterative_stddev_xy: 0.26
+  gqa:iterative_stddev_y: 0.15
+  gqa:mean_x: -0.08
+  gqa:mean_xy: 0.15
+  gqa:mean_y: 0.12
+  gqa:stddev_x: 0.42
+  gqa:stddev_xy: 0.58
+  gqa:stddev_y: 0.4
+  landsat:collection_category: T1
+  landsat:collection_number: 1
+  landsat:landsat_product_id: LC08_L1TP_088080_20200525_20200608_01_T1
+  landsat:landsat_scene_id: LC80880802020146LGN00
+  landsat:wrs_path: 88
+  landsat:wrs_row: 80
+  odc:dataset_version: 3.1.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: 2020-06-18 07:07:06.303867Z
+  odc:producer: ga.gov.au
+  odc:product_family: ard
+  odc:region_code: '088080'
+
+measurements:
+  nbar_blue:
+    path: ga_ls8c_nbar_3-1-0_088080_2020-05-25_final_band02.tif
+  nbar_coastal_aerosol:
+    path: ga_ls8c_nbar_3-1-0_088080_2020-05-25_final_band01.tif
+  nbar_green:
+    path: ga_ls8c_nbar_3-1-0_088080_2020-05-25_final_band03.tif
+  nbar_nir:
+    path: ga_ls8c_nbar_3-1-0_088080_2020-05-25_final_band05.tif
+  nbar_panchromatic:
+    path: ga_ls8c_nbar_3-1-0_088080_2020-05-25_final_band08.tif
+    grid: panchromatic
+  nbar_red:
+    path: ga_ls8c_nbar_3-1-0_088080_2020-05-25_final_band04.tif
+  nbar_swir_1:
+    path: ga_ls8c_nbar_3-1-0_088080_2020-05-25_final_band06.tif
+  nbar_swir_2:
+    path: ga_ls8c_nbar_3-1-0_088080_2020-05-25_final_band07.tif
+  nbart_blue:
+    path: ga_ls8c_nbart_3-1-0_088080_2020-05-25_final_band02.tif
+  nbart_coastal_aerosol:
+    path: ga_ls8c_nbart_3-1-0_088080_2020-05-25_final_band01.tif
+  nbart_green:
+    path: ga_ls8c_nbart_3-1-0_088080_2020-05-25_final_band03.tif
+  nbart_nir:
+    path: ga_ls8c_nbart_3-1-0_088080_2020-05-25_final_band05.tif
+  nbart_panchromatic:
+    path: ga_ls8c_nbart_3-1-0_088080_2020-05-25_final_band08.tif
+    grid: panchromatic
+  nbart_red:
+    path: ga_ls8c_nbart_3-1-0_088080_2020-05-25_final_band04.tif
+  nbart_swir_1:
+    path: ga_ls8c_nbart_3-1-0_088080_2020-05-25_final_band06.tif
+  nbart_swir_2:
+    path: ga_ls8c_nbart_3-1-0_088080_2020-05-25_final_band07.tif
+  oa_azimuthal_exiting:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_azimuthal-exiting.tif
+  oa_azimuthal_incident:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_azimuthal-incident.tif
+  oa_combined_terrain_shadow:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_combined-terrain-shadow.tif
+  oa_exiting_angle:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_exiting-angle.tif
+  oa_fmask:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_fmask.tif
+  oa_incident_angle:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_incident-angle.tif
+  oa_nbar_contiguity:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_nbar-contiguity.tif
+  oa_nbart_contiguity:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_nbart-contiguity.tif
+  oa_relative_azimuth:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_relative-azimuth.tif
+  oa_relative_slope:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_relative-slope.tif
+  oa_satellite_azimuth:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_satellite-azimuth.tif
+  oa_satellite_view:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_satellite-view.tif
+  oa_solar_azimuth:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_solar-azimuth.tif
+  oa_solar_zenith:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_solar-zenith.tif
+  oa_time_delta:
+    path: ga_ls8c_oa_3-1-0_088080_2020-05-25_final_time-delta.tif
+
+accessories:
+  thumbnail:nbar:
+    path: ga_ls8c_nbar_3-1-0_088080_2020-05-25_final_thumbnail.jpg
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-1-0_088080_2020-05-25_final_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls8c_ard_3-1-0_088080_2020-05-25_final.sha1
+  metadata:processor:
+    path: ga_ls8c_ard_3-1-0_088080_2020-05-25_final.proc-info.yaml
+
+lineage:
+  level1:
+  - b5f234fe-bba8-5483-9bc0-250360d429cf
+...

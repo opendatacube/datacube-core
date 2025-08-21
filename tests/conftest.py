@@ -11,6 +11,7 @@ tests in this and sub packages.
 
 import os
 from pathlib import Path
+from typing import Any
 
 import pystac
 import pystac.collection
@@ -22,8 +23,15 @@ from odc.geo.geobox import GeoBox
 
 from datacube import Datacube
 from datacube.index.eo3 import prep_eo3
-from datacube.model import Dataset, Measurement, MetadataType, Product
-from datacube.utils.documents import read_documents
+from datacube.model import (
+    Dataset,
+    LineageTree,
+    Measurement,
+    MetadataType,
+    Product,
+    metadata_from_doc,
+)
+from datacube.utils.documents import load_from_yaml, read_documents
 
 AWS_ENV_VARS = [
     "AWS_ACCESS_KEY_ID",
@@ -360,15 +368,20 @@ SENTINEL_STAC_MS_RASTER_EXT: str = (
     "S2B_MSIL2A_20190629T212529_R043_T06VVN_20201006T080531_raster_ext.json"
 )
 USGS_LANDSAT_STAC_v1: str = "LC08_L2SP_028030_20200114_20200824_02_T1_SR.json"
+S2_L2A_STAC: str = "s2_l2a.stac-item.json"
+S2_L2A_PRODUCT: str = "s2_l2a.odc-product.yaml"
+ODC_DATASET_FILE: str = "ga_ls8c_ard_3-1-0_088080_2020-05-25_final.odc-metadata.yaml"
+ODC_METADATA_FILE: str = "eo3_landsat_ard.odc-type.yaml"
+ODC_PRODUCT_FILE: str = "ard_ls8.odc-product.yaml"
 
 
 @pytest.fixture
-def partial_proj_stac():
+def partial_proj_stac() -> pystac.Item:
     return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(PARTIAL_PROJ_STAC)))
 
 
 @pytest.fixture
-def no_bands_stac(partial_proj_stac):
+def no_bands_stac(partial_proj_stac) -> pystac.Item:
     partial_proj_stac.assets.clear()
     return partial_proj_stac
 
@@ -381,19 +394,95 @@ def usgs_landsat_stac_v1():
 
 
 @pytest.fixture
-def sentinel_stac_ms():
+def sentinel_stac_ms() -> pystac.Item:
     return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_MS)))
 
 
 @pytest.fixture
-def sentinel_stac_ms_with_raster_ext():
+def sentinel_stac_ms_with_raster_ext() -> pystac.Item:
     return pystac.item.Item.from_file(
         str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_MS_RASTER_EXT))
     )
 
 
 @pytest.fixture
-def sentinel_stac_collection():
+def sentinel_stac_collection() -> pystac.Collection:
     return pystac.collection.Collection.from_file(
         str(TEST_DATA_FOLDER.joinpath(SENTINEL_STAC_COLLECTION))
     )
+
+
+@pytest.fixture
+def s2_l2a_stac() -> pystac.Item:
+    return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(S2_L2A_STAC)))
+
+
+@pytest.fixture
+def s2_l2a_product(eo3_metadata) -> Product:
+    filepath = TEST_DATA_FOLDER.joinpath(S2_L2A_PRODUCT)
+    (_, doc), *_ = read_documents(filepath)
+    return Product(eo3_metadata, doc)
+
+
+@pytest.fixture
+def eo3_metadata_type() -> MetadataType:
+    filepath = TEST_DATA_FOLDER.joinpath(ODC_METADATA_FILE)
+    (_, doc), *_ = read_documents(filepath)
+    return metadata_from_doc(doc)
+
+
+@pytest.fixture
+def eo3_product(eo3_metadata_type: MetadataType) -> Product:
+    filepath = TEST_DATA_FOLDER.joinpath(ODC_PRODUCT_FILE)
+    (_, doc), *_ = read_documents(filepath)
+    return Product(eo3_metadata_type, doc)
+
+
+@pytest.fixture
+def odc_dataset_doc() -> dict[str, Any]:
+    filepath = TEST_DATA_FOLDER.joinpath(ODC_DATASET_FILE)
+    with open(str(filepath)) as f:
+        return next(iter(load_from_yaml(f, parse_dates=True)))
+
+
+@pytest.fixture
+def eo3_dataset(eo3_product, odc_dataset_doc) -> Dataset:
+    return Dataset(eo3_product, prep_eo3(odc_dataset_doc), uri=ODC_DATASET_FILE)
+
+
+@pytest.fixture
+def ds_legacy_sources(eo3_product, odc_dataset_doc) -> Dataset:
+    sample_source_def = {
+        "$schema": "https://schemas.opendatacube.org/dataset",
+        "id": "b5f234fe-bba8-5483-9bc0-250360d429cf",
+        "product": {"name": eo3_product.name},
+        "crs": "epsg:3857",
+        "properties": {
+            "datetime": "2020-04-20 00:26:43Z",
+            "odc:processing_datetime": "2020-05-16 10:56:18Z",
+        },
+        "grids": {
+            "default": {
+                "shape": [100, 200],
+                "transform": [10, 0, 100000, 0, -10, 200000, 0, 0, 1],
+            }
+        },
+    }
+    source_ds = Dataset(eo3_product, sample_source_def)
+    return Dataset(
+        eo3_product,
+        prep_eo3(odc_dataset_doc),
+        sources={"level1": source_ds},
+        uri=ODC_DATASET_FILE,
+    )
+
+
+@pytest.fixture
+def ds_ext_lineage(eo3_product, odc_dataset_doc) -> Dataset:
+    ds = Dataset(
+        eo3_product,
+        prep_eo3(odc_dataset_doc, remap_lineage=False),
+        uri=ODC_DATASET_FILE,
+    )
+    ds.source_tree = LineageTree.from_eo3_doc(ds.metadata_doc, home="src_home")
+    return ds

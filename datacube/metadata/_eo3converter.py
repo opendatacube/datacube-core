@@ -14,9 +14,7 @@ from collections.abc import Iterable, Iterator, Sequence
 from functools import singledispatch
 from typing import Any
 
-import pystac.collection
-import pystac.item
-from odc.geo import CRS
+from odc.geo import CRS, Geometry
 from odc.geo.geobox import GeoBox
 from odc.loader.types import (  # TODO: after loader 0.6.0 - add RasterSource
     BandKey,
@@ -35,30 +33,17 @@ from odc.stac.model import (
     ParsedItem,
     RasterCollectionMetadata,
 )
-from toolz import dicttoolz
+from pystac import Collection, Item
 
 from datacube.index.abstract import default_metadata_type_docs
 from datacube.index.eo3 import prep_eo3
 from datacube.model import Dataset, Product, metadata_from_doc
 
+from ._utils import stac_to_eo3_properties
+
 # uuid.uuid5(uuid.NAMESPACE_URL, "https://stacspec.org")
 UUID_NAMESPACE_STAC = uuid.UUID("55d26088-a6d0-5c77-bf9a-3a7f3c6a6dab")
 
-# Mapping between EO3 field names and STAC properties object field names
-# EO3 metadata was defined before STAC 1.0, so we used some extensions
-# that are now part of the standard instead
-STAC_TO_EO3_RENAMES = {
-    "end_datetime": "dtr:end_datetime",
-    "start_datetime": "dtr:start_datetime",
-    "gsd": "eo:gsd",
-    "instruments": "eo:instrument",
-    "platform": "eo:platform",
-    "constellation": "eo:constellation",
-    "view:off_nadir": "eo:off_nadir",
-    "view:azimuth": "eo:azimuth",
-    "view:sun_azimuth": "eo:sun_azimuth",
-    "view:sun_elevation": "eo:sun_elevation",
-}
 
 (_eo3,) = (
     metadata_from_doc(d) for d in default_metadata_type_docs() if d.get("name") == "eo3"
@@ -111,9 +96,9 @@ def infer_dc_product(x: Any, cfg: ConversionConfig | None = None) -> Product:
     )
 
 
-@infer_dc_product.register(pystac.item.Item)
+@infer_dc_product.register(Item)
 def infer_dc_product_from_item(
-    item: pystac.item.Item, cfg: ConversionConfig | None = None
+    item: Item, cfg: ConversionConfig | None = None
 ) -> Product:
     """
     Infer Datacube product object from a STAC Item.
@@ -126,7 +111,7 @@ def infer_dc_product_from_item(
 
 
 def _compute_uuid(
-    item: pystac.item.Item, mode: str = "auto", extras: Sequence[str] | None = None
+    item: Item, mode: str = "auto", extras: Sequence[str] | None = None
 ) -> uuid.UUID:
     if mode == "native":
         return uuid.UUID(item.id)
@@ -160,7 +145,7 @@ def _compute_uuid(
 
 
 def _to_grid(gbox: GeoBox) -> dict[str, Any]:
-    return {"shape": gbox.shape.yx, "transform": gbox.transform[:6]}  # type: ignore[index]
+    return {"shape": gbox.shape.yx, "transform": gbox.transform.to_shapely()}
 
 
 def _to_dataset(
@@ -168,6 +153,7 @@ def _to_dataset(
     properties: dict[str, Any],
     ds_uuid: uuid.UUID,
     product: Product,
+    geometry: dict[str, Any] | None,
 ) -> Dataset:
     # pylint: disable=too-many-locals
 
@@ -177,13 +163,20 @@ def _to_dataset(
     measurements: dict[str, dict[str, Any]] = {}
     crs: CRS | None = None
 
+    for key in ["proj:code", "proj:epsg", "proj:wkt2"]:
+        if key in properties:
+            crs = CRS(properties.get(key))
+
     for band_key, src in item.bands.items():
         name, idx = band_key
 
         m: dict[str, Any] = {"path": src.uri}
         if idx > 1:
             m["band"] = idx
-        measurements[name] = m
+        try:
+            measurements[product.canonical_measurement(name)] = m
+        except ValueError:
+            measurements[name] = m
 
         if not md.has_proj:
             continue
@@ -201,7 +194,7 @@ def _to_dataset(
             continue
         assert isinstance(gbox, GeoBox)
 
-        if crs is None:
+        if crs is None and grid_name == "default":
             crs = gbox.crs
 
         if grid_name not in grids:
@@ -213,29 +206,39 @@ def _to_dataset(
 
         gbox = mk_1x1_geobox(item.geometry)
         grids["default"] = _to_grid(gbox)
-        crs = gbox.crs
+        if crs is None:
+            crs = gbox.crs
 
     if crs is None:
         crs = EPSG4326
 
+    # lineage = properties.pop("odc:lineage", {})
+
     ds_doc = {
-        "id": str(ds_uuid),
         "$schema": "https://schemas.opendatacube.org/dataset",
+        "id": str(ds_uuid),
+        "product": {"name": product.name.lower()},
         "crs": str(crs),
         "grids": grids,
         "measurements": measurements,
-        "properties": dicttoolz.keymap(
-            lambda k: STAC_TO_EO3_RENAMES.get(k, k), properties
-        ),
+        "properties": stac_to_eo3_properties(properties),
         "accessories": item.accessories,
-        "lineage": {},
+        "lineage": {},  # TODO: properly handling lineage requires an Index
     }
 
+    if geometry is not None:
+        ds_doc["geometry"] = Geometry(geometry, 4326).to_crs(crs).json
+
+    title = ds_doc["properties"].pop("title", None)  # type: ignore[attr-defined]
+    if title is not None:
+        ds_doc["label"] = title
+
+    # TODO: this need to use Doc2Ds for consistency checks and lineage handling
     return Dataset(product, prep_eo3(ds_doc), uri=item.href)
 
 
 def _item_to_ds(
-    item: pystac.item.Item, product: Product, cfg: ConversionConfig | None = None
+    item: Item, product: Product, cfg: ConversionConfig | None = None
 ) -> Dataset:
     """
     Construct Dataset object from STAC Item and previously constructed Product.
@@ -253,11 +256,11 @@ def _item_to_ds(
     )
     _item = parse_item(item, md)
 
-    return _to_dataset(_item, item.properties, ds_uuid, product)
+    return _to_dataset(_item, item.properties, ds_uuid, product, item.geometry)
 
 
 def stac2ds(
-    items: Iterable[pystac.item.Item],
+    items: Iterable[Item],
     cfg: ConversionConfig | None = None,
     product_cache: dict[str, Product] | None = None,
 ) -> Iterator[Dataset]:
@@ -333,9 +336,9 @@ def stac2ds(
         yield _item_to_ds(item, product, cfg)
 
 
-@infer_dc_product.register(pystac.collection.Collection)
+@infer_dc_product.register(Collection)
 def infer_dc_product_from_collection(
-    collection: pystac.collection.Collection, cfg: ConversionConfig | None = None
+    collection: Collection, cfg: ConversionConfig | None = None
 ) -> Product:
     """
     Construct Datacube Product definition from STAC Collection.

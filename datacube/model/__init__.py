@@ -419,6 +419,18 @@ class Dataset:
 
         return None
 
+    @property
+    def accessories(self) -> dict[str, Any]:
+        return self.metadata_doc.get("accessories", {})
+
+    @property
+    def grids(self) -> dict[str, Any]:
+        return self.metadata_doc["grids"]
+
+    @property
+    def properties(self) -> dict[str, Any]:
+        return self.metadata_doc["properties"]
+
     @override
     def __eq__(self, other) -> bool:
         if isinstance(other, Dataset):
