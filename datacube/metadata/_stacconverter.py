@@ -66,16 +66,14 @@ def _media_type(path: Path) -> str:
     """
     if path.suffix == ".sha1":
         return MediaType.TEXT
-    elif path.suffix == ".yaml":
+    if path.suffix == ".yaml":
         return "text/yaml"
     mime_type = mimetypes.guess_type(path.name)[0]
     if mime_type:
         if mime_type == "image/tiff":
             return MediaType.COG
-        else:
-            return mime_type
-    else:
-        return "application/octet-stream"
+        return mime_type
+    return "application/octet-stream"
 
 
 def _asset_roles_fields(asset_name: str) -> list[str]:
@@ -84,8 +82,7 @@ def _asset_roles_fields(asset_name: str) -> list[str]:
     """
     if asset_name.startswith("thumbnail"):
         return ["thumbnail"]
-    else:
-        return ["metadata"]
+    return ["metadata"]
 
 
 def _asset_title_fields(asset_name: str) -> str | None:
@@ -94,8 +91,7 @@ def _asset_title_fields(asset_name: str) -> str | None:
     """
     if asset_name.startswith("thumbnail"):
         return "Thumbnail image"
-    else:
-        return None
+    return None
 
 
 def _uri_resolve(location: str | None, path: str) -> str:

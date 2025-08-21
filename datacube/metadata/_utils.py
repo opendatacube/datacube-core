@@ -55,10 +55,9 @@ def _value_to_stac_type(key: str, value):
     if key == "eo:instrument":
         return _as_stac_instruments(value)
     # Convert the non-default datetimes to a string
-    elif isinstance(value, datetime) and key != "datetime":
+    if isinstance(value, datetime) and key != "datetime":
         return datetime_to_str(value)
-    else:
-        return value
+    return value
 
 
 def _value_to_eo3_type(key: str, value):
@@ -66,14 +65,12 @@ def _value_to_eo3_type(key: str, value):
     if key == "instruments":
         if len(value) > 0:
             return "_".join([i.upper() for i in value])
-        else:
-            return None
-    elif key == "created" or "datetime" in key:
+        return None
+    if key == "created" or "datetime" in key:
         if isinstance(value, str):
             return datetime.fromisoformat(value)
         return value
-    else:
-        return value
+    return value
 
 
 def eo3_to_stac_properties(dataset: Dataset, title: str | None = None) -> dict:
