@@ -6,7 +6,7 @@ Introduction
 ============
 
 In this tutorial we will use Python libraries to find and load Land Use and Land Cover data from the freely available `Impact Observatory Annual Land Use Land Cover <https://planetarycomputer.microsoft.com/dataset/io-lulc-annual-v02>`_ product.
-After loading the data, we will export each year of data as a Cloud Optimised GeoTIFF.
+After loading the data, we will export each year of data as a `Cloud Optimised GeoTIFF <https://cogeo.org/>`_.
 This will allow you to further view or work with the data in GIS software and other tools.
 
 During the tutorial, we will:
@@ -16,7 +16,7 @@ During the tutorial, we will:
   * what (data provider and product)
   * where (area of interest)
   * when (date range)
-* Use `pystac-client`_ to connect to a Spatio-Temporal Asset Catalog (STAC) 
+* Use `pystac-client`_ to connect to a `Spatio-Temporal Asset Catalog (STAC) <https://stacspec.org/en>`_ 
   endpoint and search for data matching our what, where, and when
 * Use `odc-stac`_ to load the matching data into memory
 * Visualise and export the data
@@ -50,7 +50,7 @@ The tutorial environment may take a few minutes to start.
    For this tutorial, we believe you will learn more if you type the code yourself, rather than using copy-paste.
    Typing encourages you to slow down and think about what you're doing, which will help you gain understanding!
 
-   If you are stuck at any point, open the :code:`tutorial_solution.ipynb` notebook that is available in the file browser.
+   If you are stuck at any point, open the :file:`tutorial_solution.ipynb` notebook that is available in the file browser.
 
 Tutorial
 ========
@@ -77,7 +77,7 @@ Type the following into the empty cell below the **Python imports** heading:
    import planetary_computer
    from pystac_client import Client
 
-When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
+When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyboard.
    
 Set up query parameters
 -----------------------
@@ -91,9 +91,9 @@ In this section of the tutorial, you will specify:
 Area of interest
 ^^^^^^^^^^^^^^^^
 
-We specify the area of interest using the :code:`aoi.geojson` file, which can be loaded with :code:`geopandas`.
+We specify the area of interest using the :file:`aoi.geojson` file, which can be loaded with :code:`geopandas`.
 
-The area of interest is the island of La Gomera, one of the Canary Islands.
+The area of interest is the island of `La Gomera <https://en.wikipedia.org/wiki/La_Gomera>`_, one of the `Canary Islands <https://en.wikipedia.org/wiki/Canary_Islands>`_.
 
 .. image:: ../_static/tutorial-images/odc-stac/aoi.png
  :width: 600
@@ -107,7 +107,7 @@ The area of interest is the island of La Gomera, one of the Canary Islands.
    desired_aoi = gpd.read_file("aoi.geojson")
    desired_aoi_geometry = desired_aoi.iloc[0].geometry
 
-When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
+When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyboard.
 
 Date range
 ^^^^^^^^^^
@@ -122,7 +122,7 @@ Type the following into the empty cell below the **Date range** heading:
    desired_date_range = (desired_start_date, desired_end_date)
 
 
-When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
+When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyboard.
 
 STAC metadata
 ^^^^^^^^^^^^^
@@ -146,7 +146,7 @@ Type the following into the empty cell below the **STAC metadata** heading:
    desired_collections = ["io-lulc-annual-v02"]
    desired_assets = ["data"]
 
-When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
+When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyboard.
 
 Connect to catalog and find items
 ---------------------------------
@@ -162,7 +162,7 @@ Type the following into the empty cell below the **Connect to catalog and find i
       modifier=planetary_computer.sign_inplace,
    )
 
-When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
+When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyboard.
 
 Search for items
 ^^^^^^^^^^^^^^^^
@@ -180,7 +180,7 @@ Type the following into the empty cell below the **Search for items** heading:
 
    print(f"Found {len(items)} items")
 
-When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
+When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyboard.
 After running the cell, you should see a printed sentence reporting "Found 7 items"
 
 Troubleshooting
@@ -214,7 +214,7 @@ Type the following into the empty cell below the **Load items with odc-stac** he
 
    ds
 
-When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
+When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyboard.
 
 After running the cell, you should see a :code:`xarray.Dataset` summary.
 
@@ -235,7 +235,7 @@ Type the following into the empty cell below the **Visualise loaded data** headi
 
    ds["data"].plot.imshow(col="time", col_wrap=3)
 
-When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
+When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyboard.
 After running the cell, you should see the following visualisation.
 The colours in the plot represent the following land cover classes:
 
@@ -281,8 +281,8 @@ Type the following into the empty cell below the **Export loaded data** heading:
            overwrite=True,
        )
 
-When you have finished, run the cell by pressing :code:`Shift+Enter` on your keyboard.
-You should see seven new files in the file browser, starting with "LULC_2017.tif" and ending with "LULC_2023.tif".
+When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyboard.
+You should see seven new files in the file browser, starting with :file:`LULC_2017.tif` and ending with :file:`LULC_2023.tif`.
 
 Tutorial complete!
 ------------------
@@ -294,7 +294,7 @@ In the last step you exported the loaded data as a series of Cloud Optimised Geo
    Make sure you download these files from the file browser before exiting the tutorial space as they will be deleted when the tutorial space is closed.
 
    To download, open the file-browser by clicking the folder icon in the left menu bar.
-   Then, download the Land Use Land Cover file for each year (denoted as `LULC_<year>.tif`) by right-clicking each file and selecting "Download".
+   Then, download the Land Use Land Cover file for each year (denoted as :file:`LULC_{year}.tif`) by right-clicking each file and selecting :guilabel:`Download`.
 
 .. _pystac-client: https://pystac-client.readthedocs.io/en/stable/
 .. _odc-stac: https://odc-stac.readthedocs.io/en/latest/
