@@ -56,12 +56,12 @@ def as_expression(field: Field, value) -> Expression:
     """
     if isinstance(value, Range):
         return field.between(value.begin, value.end)
-    elif isinstance(value, list):
+    if isinstance(value, list):
         return OrExpression(*(as_expression(field, val) for val in value))
-    elif isinstance(value, Not):
+    if isinstance(value, Not):
         return NotExpression(as_expression(field, value.value))
     # Treat a date (day) as a time range.
-    elif isinstance(value, date) and not isinstance(value, datetime):
+    if isinstance(value, date) and not isinstance(value, datetime):
         return as_expression(
             field,
             Range(

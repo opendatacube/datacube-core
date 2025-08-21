@@ -239,7 +239,7 @@ class DatasetResource(AbstractDatasetResource):
             raise ValueError(
                 f"Unknown dataset {dataset.id}, cannot update - did you intend to add it?"
             )
-        elif existing.is_archived:
+        if existing.is_archived:
             raise ValueError(
                 f"Dataset {dataset.id} is archived.  Please restore before updating."
             )
@@ -360,10 +360,9 @@ class DatasetResource(AbstractDatasetResource):
     def get_all_dataset_ids(self, archived: bool | None = False) -> Iterable[UUID]:
         if archived:
             return (id_ for id_ in self._archived_by_id)
-        elif archived is not None:
+        if archived is not None:
             return (id_ for id_ in self._active_by_id)
-        else:
-            return (id_ for id_ in self._by_id)
+        return (id_ for id_ in self._by_id)
 
     @override
     @deprecat(
@@ -780,9 +779,9 @@ class DatasetResource(AbstractDatasetResource):
         def next_period(prev: datetime.datetime) -> datetime.datetime:
             if unit == "day":
                 return prev + datetime.timedelta(days=precision)
-            elif unit == "week":
+            if unit == "week":
                 return prev + datetime.timedelta(days=precision * 7)
-            elif unit == "year":
+            if unit == "year":
                 return datetime.datetime(
                     prev.year + precision,
                     prev.month,
@@ -909,7 +908,7 @@ class DatasetResource(AbstractDatasetResource):
             dsmin, dsmax = time_fld.extract(ds.metadata_doc)
             if dsmax is None and dsmin is None:
                 continue
-            elif dsmin is None:
+            if dsmin is None:
                 dsmin = dsmax
             elif dsmax is None:
                 dsmax = dsmin
@@ -1007,9 +1006,8 @@ class DatasetResource(AbstractDatasetResource):
                 ):
                     b_skipped += 1
                     continue
-                else:
-                    self._derived_from[rel.derived_id][rel.classifier] = rel.source_id
-                    b_added += 1
+                self._derived_from[rel.derived_id][rel.classifier] = rel.source_id
+                b_added += 1
             else:
                 self._derived_from[rel.derived_id] = {rel.classifier: rel.source_id}
                 b_added += 1

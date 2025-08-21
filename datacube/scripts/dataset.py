@@ -43,8 +43,7 @@ def report_old_options(mapping):
                 "DEPRECATED option detected: --%s use --%s instead", s, mapping[s]
             )
             return mapping[s]
-        else:
-            return s
+        return s
 
     return maybe_remap
 

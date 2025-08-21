@@ -677,8 +677,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     ) -> Iterable[Dataset]:
         if fetch_all:
             return [self._make(dataset, product=product) for dataset in query_result]
-        else:
-            return (self._make(dataset, product=product) for dataset in query_result)
+        return (self._make(dataset, product=product) for dataset in query_result)
 
     @override
     def search_by_metadata(

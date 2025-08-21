@@ -32,7 +32,7 @@ single_coord = xr.DataArray(np.zeros(1), [("time", np.array(["2001-01-01"]))]).c
 def test_xr_extension(odc_style_xr_dataset) -> None:
     xx = odc_style_xr_dataset
 
-    assert (1,) + xx.odc.geobox.shape == xx.B10.shape
+    assert (1, *xx.odc.geobox.shape) == xx.B10.shape
 
     (sx, zz0, tx, zz1, sy, ty) = xx.affine[:6]
     assert (zz0, zz1) == (0, 0)

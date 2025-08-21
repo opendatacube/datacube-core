@@ -291,16 +291,15 @@ def native_load(
                 yield _xx
 
         return yield_by_grid()
-    else:
-        return _native_load_1(
-            sources,
-            tuple(bands),
-            dst_geobox=dst_geobox,
-            optional_bands=optional_bands,
-            basis=basis,
-            pad=pad,
-            **kw,
-        )
+    return _native_load_1(
+        sources,
+        tuple(bands),
+        dst_geobox=dst_geobox,
+        optional_bands=optional_bands,
+        basis=basis,
+        pad=pad,
+        **kw,
+    )
 
 
 def dc_read(
@@ -528,13 +527,11 @@ def rio_slurp(fname, *args, **kw):
     if len(args) == 0:
         if "geobox" in kw:
             return rio_slurp_reproject(fname, **kw)
-        else:
-            return rio_slurp_read(fname, **kw)
+        return rio_slurp_read(fname, **kw)
 
     if isinstance(args[0], GeoBox):
         return rio_slurp_reproject(fname, *args, **kw)
-    else:
-        return rio_slurp_read(fname, *args, **kw)
+    return rio_slurp_read(fname, *args, **kw)
 
 
 def rio_slurp_xarray(fname, *args, rgb: str = "auto", **kw) -> xr.DataArray:

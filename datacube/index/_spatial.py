@@ -20,7 +20,7 @@ CRS_SPATIAL_KEYS = ("crs", "coordinate_reference_system")
 NON_GEOPOLYGON_SPATIAL_KEYS: tuple[str, ...] = COORDS_SPATIAL_KEYS + CRS_SPATIAL_KEYS
 
 # All of the above plus geopolygon
-SPATIAL_KEYS: tuple[str, ...] = NON_GEOPOLYGON_SPATIAL_KEYS + ("geopolygon",)
+SPATIAL_KEYS: tuple[str, ...] = (*NON_GEOPOLYGON_SPATIAL_KEYS, "geopolygon")
 
 
 def strip_all_spatial_fields_from_query(q: QueryDict) -> QueryDict:

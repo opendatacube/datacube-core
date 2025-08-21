@@ -81,7 +81,7 @@ def reproject_and_fuse(
     destination.fill(dst_nodata)
     if len(datasources) == 0:
         return destination
-    elif len(datasources) == 1:
+    if len(datasources) == 1:
         with ignore_exceptions_if(skip_broken_datasets), datasources[0].open() as rdr:
             read_time_slice(
                 rdr, destination, dst_geobox, resampling, dst_nodata, extra_dim_index
@@ -91,34 +91,33 @@ def reproject_and_fuse(
             progress_cbk(1, 1)
 
         return destination
-    else:
-        # Multiple sources, we need to fuse them together into a single array
-        buffer_ = np.full(destination.shape, dst_nodata, dtype=destination.dtype)
-        for n_so_far, source in enumerate(datasources, 1):
-            with ignore_exceptions_if(skip_broken_datasets):
-                with source.open() as rdr:
-                    roi = read_time_slice(
-                        rdr,
-                        buffer_,
-                        dst_geobox,
-                        resampling,
-                        dst_nodata,
-                        extra_dim_index,
-                    )
+    # Multiple sources, we need to fuse them together into a single array
+    buffer_ = np.full(destination.shape, dst_nodata, dtype=destination.dtype)
+    for n_so_far, source in enumerate(datasources, 1):
+        with ignore_exceptions_if(skip_broken_datasets):
+            with source.open() as rdr:
+                roi = read_time_slice(
+                    rdr,
+                    buffer_,
+                    dst_geobox,
+                    resampling,
+                    dst_nodata,
+                    extra_dim_index,
+                )
 
-                if not roi_is_empty(roi):
-                    fuse_func(destination[roi], buffer_[roi])
-                    if dst_nodata is not None:
-                        buffer_[roi] = dst_nodata  # clean up for next read
-                    elif issubclass(destination.dtype.type, numbers.Real):
-                        buffer_[roi] = float("nan")
-                    else:
-                        buffer_[roi] = 0
+            if not roi_is_empty(roi):
+                fuse_func(destination[roi], buffer_[roi])
+                if dst_nodata is not None:
+                    buffer_[roi] = dst_nodata  # clean up for next read
+                elif issubclass(destination.dtype.type, numbers.Real):
+                    buffer_[roi] = float("nan")
+                else:
+                    buffer_[roi] = 0
 
-            if progress_cbk:
-                progress_cbk(n_so_far, len(datasources))
+        if progress_cbk:
+            progress_cbk(n_so_far, len(datasources))
 
-        return destination
+    return destination
 
 
 def _mk_empty_ds(coords: DataArrayCoordinates, geobox: GeoBox) -> XrDataset:

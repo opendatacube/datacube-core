@@ -358,10 +358,9 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         def _listify(v):
             if isinstance(v, tuple):
                 return list(v)
-            elif isinstance(v, list):
+            if isinstance(v, list):
                 return v
-            else:
-                return [v]
+            return [v]
 
         for type_ in self.get_all():
             remaining_matchable = query.copy()

@@ -209,7 +209,7 @@ class Datacube:
             counts = sorted(counts, key=itemgetter(0))
 
             # Add sorted count to each existing row
-            rows = [row + [count[1]] for row, count in zip(rows, counts)]
+            rows = [[*row, count[1]] for row, count in zip(rows, counts)]
             cols += ["dataset_count"]
 
         # If pandas not requested, return list of dicts
@@ -819,16 +819,16 @@ class Datacube:
             elif extra_dims:
                 # 3D case
                 name = m.extra_dim
-                new_dims = dims_default[:1] + (name,) + dims_default[1:]
+                new_dims = (*dims_default[:1], name, *dims_default[1:])
                 new_coords = deepcopy(coords_default)
                 new_coords[name] = extra_dims._coords[name].copy()
                 new_coords[name].attrs.update(crs_attrs)
                 ds_coords.update(new_coords)
 
                 new_shape = (
-                    shape_default[:1]
-                    + (len(new_coords[name].values),)
-                    + shape_default[1:]
+                    *shape_default[:1],
+                    len(new_coords[name].values),
+                    *shape_default[1:],
                 )
                 arrays.append((m, new_shape, new_coords, new_dims))
 
@@ -957,7 +957,7 @@ class Datacube:
                         range(*index_subset)
                     ):
                         read_ios.append(
-                            ((index + (result_index,)), (datasets, m, extra_dim_index))
+                            (((*index, result_index)), (datasets, m, extra_dim_index))
                         )
                 else:
                     # Get extra_dim index if available
@@ -1082,16 +1082,15 @@ class Datacube:
                 extra_dims=extra_dims,
                 patch_url=patch_url,
             )
-        else:
-            return Datacube._xr_load(
-                sources,
-                geobox,
-                measurements,
-                skip_broken_datasets=skip_broken_datasets,
-                progress_cbk=progress_cbk,
-                extra_dims=extra_dims,
-                patch_url=patch_url,
-            )
+        return Datacube._xr_load(
+            sources,
+            geobox,
+            measurements,
+            skip_broken_datasets=skip_broken_datasets,
+            progress_cbk=progress_cbk,
+            extra_dims=extra_dims,
+            patch_url=patch_url,
+        )
 
     @override
     def __str__(self) -> str:
@@ -1354,8 +1353,7 @@ def _calculate_chunk_sizes(
 
     if extra_dim_chunks:
         return irr_chunks, extra_dim_chunks, grid_chunks
-    else:
-        return irr_chunks, grid_chunks
+    return irr_chunks, grid_chunks
 
 
 def _tokenize_dataset(dataset: Dataset) -> str:
@@ -1438,14 +1436,15 @@ def _make_dask_array(
                     for result_index, extra_dim_index in enumerate(
                         range(*index_subset)
                     ):
-                        dsk[key_prefix + (result_index,) + idx] = val + (
+                        dsk[(*key_prefix, result_index, *idx)] = (
+                            *val,
                             extra_dim_index,
                             patch_url,
                         )
                 else:
                     # Get extra_dim index if available
                     extra_dim_index = measurement.get("extra_dim_index", None)
-                    dsk[key_prefix + idx] = val + (extra_dim_index, patch_url)
+                    dsk[key_prefix + idx] = (*val, extra_dim_index, patch_url)
 
     y_shapes = [grid_chunks[0]] * gbt.shape[0]
     x_shapes = [grid_chunks[1]] * gbt.shape[1]
@@ -1461,7 +1460,7 @@ def _make_dask_array(
     data = da.Array(
         dsk,
         dsk_name,
-        chunks=actual_irr_chunks + (tuple(y_shapes), tuple(x_shapes)),
+        chunks=(*actual_irr_chunks, tuple(y_shapes), tuple(x_shapes)),
         dtype=measurement.dtype,
         shape=(chunked_srcs.shape + extra_dim_shape + gbt.base.shape),
     )

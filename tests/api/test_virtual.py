@@ -279,14 +279,13 @@ def dc():
                 example_dataset(product, ids[0], datetime(2014, 2, 7, 23, 57, 26)),
                 example_dataset(product, ids[1], datetime(2014, 1, 1, 23, 57, 26)),
             ]
-        elif product == "ls8_pq_albers":
+        if product == "ls8_pq_albers":
             return [example_dataset(product, ids[2], datetime(2014, 2, 7, 23, 57, 26))]
-        elif product == "ls7_nbar_albers":
+        if product == "ls7_nbar_albers":
             return [example_dataset(product, ids[3], datetime(2014, 1, 22, 23, 57, 36))]
-        elif product == "ls7_pq_albers":
+        if product == "ls7_pq_albers":
             return [example_dataset(product, ids[4], datetime(2014, 1, 22, 23, 57, 36))]
-        else:
-            return []
+        return []
 
     result.index.products.get_all = lambda: [example_product(x) for x in PRODUCT_LIST]
     result.index.products.get_by_name = example_product

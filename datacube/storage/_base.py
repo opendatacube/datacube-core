@@ -40,15 +40,14 @@ def _get_band_and_layer(b: dict[str, Any]) -> tuple[int | None, str | None]:
         raise ValueError(
             f"Expect `layer` to be one of None,int,str but it is {type(layer)}"
         )
-    else:
-        if not isinstance(band, int):
-            raise ValueError(f"Expect `band` to be an integer (it is {type(band)})")
-        if layer is not None and not isinstance(layer, str):
-            raise ValueError(
-                f"Expect `layer` to be one of None,str but it is {type(layer)}"
-            )
+    if not isinstance(band, int):
+        raise ValueError(f"Expect `band` to be an integer (it is {type(band)})")
+    if layer is not None and not isinstance(layer, str):
+        raise ValueError(
+            f"Expect `layer` to be one of None,str but it is {type(layer)}"
+        )
 
-        return band, layer
+    return band, layer
 
 
 def _extract_driver_data(ds: Dataset, mm: dict[str, Any]) -> Any | None:

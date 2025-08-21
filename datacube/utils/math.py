@@ -31,7 +31,7 @@ def unsqueeze_data_array(
     """
     new_dims = list(da.dims)
     new_dims.insert(pos, dim)
-    new_shape = da.data.shape[:pos] + (1,) + da.data.shape[pos:]
+    new_shape = (*da.data.shape[:pos], 1, *da.data.shape[pos:])
     new_data = da.data.reshape(new_shape)
     new_coords = dict(da.coords.items())
     new_coords[dim] = xr.DataArray([coord], dims=[dim], attrs=attrs)

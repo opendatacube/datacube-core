@@ -29,7 +29,7 @@ def _load_product_query(
 def _csv_search_raw(args, clirunner) -> str:
     # Do a CSV search from the cli, returning output as a string
     result = clirunner(
-        ["-f", "csv"] + list(args),
+        ["-f", "csv", *list(args)],
         cli_method=datacube.scripts.search_tool.cli,
         verbose_flag=False,
     )

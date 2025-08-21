@@ -51,8 +51,7 @@ def get_metadata_path(possible_path: str | Path) -> str:
 
     if is_supported_document_type(dataset_path):
         raise ValueError(f"No such file {dataset_path}")
-    else:
-        raise ValueError(f"No supported metadata docs found for dataset {dataset_path}")
+    raise ValueError(f"No supported metadata docs found for dataset {dataset_path}")
 
 
 def _find_any_metadata_suffix(path: Path) -> Path | None:

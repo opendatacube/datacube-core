@@ -48,8 +48,7 @@ class ReaderDriverCache:
             return driver.new_datasource
         if fallback is not None:
             return fallback
-        else:
-            raise KeyError("No driver found and no fallback provided")
+        raise KeyError("No driver found and no fallback provided")
 
     def drivers(self) -> list[str]:
         """

@@ -171,14 +171,13 @@ class ODCConfig:
             raise ConfigException("Cannot specify both config and raw_config")
         if isinstance(env, ODCEnvironment):
             return env
+        if isinstance(config, ODCConfig):
+            cfg = config
+        elif isinstance(raw_config, str):
+            cfg = ODCConfig(paths=config, text=raw_config)
         else:
-            if isinstance(config, ODCConfig):
-                cfg = config
-            elif isinstance(raw_config, str):
-                cfg = ODCConfig(paths=config, text=raw_config)
-            else:
-                cfg = ODCConfig(paths=config, raw_dict=raw_config)
-            return cfg[env]
+            cfg = ODCConfig(paths=config, raw_dict=raw_config)
+        return cfg[env]
 
     def _add_alias(self, alias: str, canonical: str) -> None:
         """
@@ -201,8 +200,7 @@ class ODCConfig:
         """
         if canonical_name in self.canonical_names:
             return self.canonical_names[canonical_name]
-        else:
-            return [canonical_name]
+        return [canonical_name]
 
     def _set_default(self) -> None:
         self.is_default = True

@@ -160,8 +160,7 @@ class AbstractIndex(ABC):
             raise NotImplementedError(
                 "This index driver does not support the Spatial Index API"
             )
-        else:
-            raise NotImplementedError()
+        raise NotImplementedError()
 
     def spatial_indexes(self, refresh: bool = False) -> Iterable[CRS]:
         """
@@ -175,8 +174,7 @@ class AbstractIndex(ABC):
             raise NotImplementedError(
                 "This index driver does not support the Spatial Index API"
             )
-        else:
-            raise NotImplementedError()
+        raise NotImplementedError()
 
     def update_spatial_index(
         self,
@@ -210,8 +208,7 @@ class AbstractIndex(ABC):
             raise NotImplementedError(
                 "This index driver does not support the Spatial Index API"
             )
-        else:
-            raise NotImplementedError()
+        raise NotImplementedError()
 
     def drop_spatial_index(self, crs: CRS) -> bool:
         """
@@ -229,8 +226,7 @@ class AbstractIndex(ABC):
             raise NotImplementedError(
                 "This index driver does not support the Spatial Index API"
             )
-        else:
-            raise NotImplementedError()
+        raise NotImplementedError()
 
     def clone(
         self,

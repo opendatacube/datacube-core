@@ -104,11 +104,10 @@ def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
 
         if len(matched) == 0:
             raise BadMatch(f"No matching Product found for dataset {doc_id}")
-        else:
-            raise BadMatch(
-                f"Auto match failed, dataset {doc_id} matches several products:\n"
-                f"{','.join(p.name for p in matched)}"
-            )
+        raise BadMatch(
+            f"Auto match failed, dataset {doc_id} matches several products:\n"
+            f"{','.join(p.name for p in matched)}"
+        )
 
     return match
 

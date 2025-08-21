@@ -46,8 +46,7 @@ class SpatialIndexORMRegistry:
             if epsg_or_crs.epsg is None:
                 raise ValueError("CRS with no epsg number")
             return epsg_or_crs.epsg
-        else:
-            return epsg_or_crs
+        return epsg_or_crs
 
     def register(self, epsg_or_crs: CRS | int) -> bool:
         """Ensure that SpatialIndex ORM clss is registered for this EPSG/SRID"""
@@ -120,10 +119,9 @@ def spindex_for_epsg(epsg: int) -> type[SpatialIndex]:
 def crs_to_epsg(crs: CRS) -> int:
     if not str(crs).upper().startswith("EPSG:") and crs.epsg is None:
         raise ValueError("Non-EPSG-style CRS.")
-    elif crs.epsg is not None:
+    if crs.epsg is not None:
         return crs.epsg
-    else:
-        return int(str(crs)[5:])
+    return int(str(crs)[5:])
 
 
 def spindex_for_crs(crs: CRS) -> type[SpatialIndex]:
@@ -218,16 +216,13 @@ def promote_to_multipolygon(geom: Geom) -> Geom:
     # Assumes input is a polygon or multipolygon - does not work on lines or points
     if geom.geom_type == "MultiPolygon":
         return geom
-    elif geom.geom_type == "Polygon":
+    if geom.geom_type == "Polygon":
         # Promote to multipolygon (is there a more elegant way to do this??)
         polycoords = [list(geom.geom.exterior.coords)]
         for interior in geom.geom.interiors:
             polycoords.append(list(interior.coords))
         return multipolygon([polycoords], crs=geom.crs)
-    else:
-        raise ValueError(
-            f"Cannot promote geometry type {geom.geom_type} to multi-polygon"
-        )
+    raise ValueError(f"Cannot promote geometry type {geom.geom_type} to multi-polygon")
 
 
 def geom_alchemy(geom: Geom) -> str:
@@ -252,12 +247,11 @@ def sanitise_extent(extent, crs) -> Geom:
     if crs.epsg == 4326:
         prelim = extent.to_crs(crs)
         return Geom(fix_shape(prelim.geom), crs=crs)
-    elif crs.epsg in EPSG4326_LIKE_CODES:
+    if crs.epsg in EPSG4326_LIKE_CODES:
         prelim = extent.to_crs("epsg:4326")
         fixed = Geom(fix_shape(prelim.geom), crs="epsg:4326")
         return fixed.to_crs(crs)
-    else:
-        return extent.to_crs(crs)
+    return extent.to_crs(crs)
 
 
 def generate_dataset_spatial_values(
@@ -275,15 +269,13 @@ def extract_geometry_from_eo3_projection(eo3_gs_doc) -> Geom | None:
     valid_data = eo3_gs_doc.get("valid_data")
     if valid_data:
         return Geom(valid_data, crs=native_crs)
-    else:
-        geo_ref_points = eo3_gs_doc.get("geo_ref_points")
-        if geo_ref_points:
-            return polygon(
-                [
-                    (geo_ref_points[key]["x"], geo_ref_points[key]["y"])
-                    for key in ("ll", "ul", "ur", "lr", "ll")
-                ],
-                crs=native_crs,
-            )
-        else:
-            return None
+    geo_ref_points = eo3_gs_doc.get("geo_ref_points")
+    if geo_ref_points:
+        return polygon(
+            [
+                (geo_ref_points[key]["x"], geo_ref_points[key]["y"])
+                for key in ("ll", "ul", "ur", "lr", "ll")
+            ],
+            crs=native_crs,
+        )
+    return None

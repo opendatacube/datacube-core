@@ -127,17 +127,16 @@ class AbstractTransaction(ABC):
                 self.rollback()
             # Tell runtime exception is caught and handled.
             return True
-        elif exc_value is not None:
+        if exc_value is not None:
             # Any other exception - reraise.  Rollback if outermost transaction
             if not self._controlling_trans:
                 self.rollback()
             # Instruct runtime to rethrow exception
             return False
-        else:
-            # Exited without exception.  Commit if outermost transaction
-            if not self._controlling_trans:
-                self.commit()
-            return True
+        # Exited without exception.  Commit if outermost transaction
+        if not self._controlling_trans:
+            self.commit()
+        return True
 
     # Internal abstract methods for implementation-specific functionality
     @abstractmethod

@@ -526,8 +526,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             location = connection.get_location(id_)
             if location:
                 return location[0]
-            else:
-                return None
+            return None
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
@@ -584,7 +583,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         if existing == uri:
             warnings.warn(f"Dataset {id_} already has uri {uri}")
             return False
-        elif existing is not None and existing != uri:
+        if existing is not None and existing != uri:
             raise ValueError(
                 "Postgis index does not support multiple dataset locations."
             )

@@ -505,7 +505,7 @@ def roi_intersect(a, b):
     def slice_intersect(a, b):
         if a.stop < b.start:
             return slice(a.stop, a.stop)
-        elif a.start > b.stop:
+        if a.start > b.stop:
             return slice(a.start, a.start)
 
         _in = max(a.start, b.start)

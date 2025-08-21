@@ -25,15 +25,13 @@ class LineageDirection(Enum):
     def opposite(self):
         if self == self.SOURCES:
             return self.DERIVED
-        else:
-            return self.SOURCES
+        return self.SOURCES
 
     @property
     def label(self) -> str:
         if self == self.SOURCES:
             return "sources"
-        else:
-            return "derivations"
+        return "derivations"
 
 
 SerialisedTree: TypeAlias = dict[str, str | dict[str, list["SerialisedTree"]]]

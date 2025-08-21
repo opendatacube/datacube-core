@@ -190,7 +190,6 @@ def gen_test_image_xy(
 
         if stacked:
             return np.stack([x, y])
-        else:
-            return x, y
+        return x, y
 
     return xy, denorm

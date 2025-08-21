@@ -255,49 +255,48 @@ class GridWorkflow:
                 if intersects(geobox.extent, dataset.extent.to_crs(self.grid_spec.crs)):
                     add_dataset_to_cells(cell_index, geobox, dataset)
             return cells
-        else:
-            datasets, query = self._find_datasets(geopolygon, indexers)
-            geobox_cache: dict[tuple[int, int], GeoBox] = {}
+        datasets, query = self._find_datasets(geopolygon, indexers)
+        geobox_cache: dict[tuple[int, int], GeoBox] = {}
 
-            if query.geopolygon:
-                # Get a rough region of tiles
-                query_tiles = {
-                    tile_index
-                    for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(
-                        query.geopolygon, geobox_cache=geobox_cache
-                    )
-                }
+        if query.geopolygon:
+            # Get a rough region of tiles
+            query_tiles = {
+                tile_index
+                for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(
+                    query.geopolygon, geobox_cache=geobox_cache
+                )
+            }
 
-                for dataset in datasets:
-                    # Go through our datasets and see which tiles each dataset produces, and whether they intersect
-                    # our query geopolygon.
-                    dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
-                    bbox = dataset_extent.boundingbox
-                    bbox = bbox.buffered(*tile_buffer) if tile_buffer else bbox
+            for dataset in datasets:
+                # Go through our datasets and see which tiles each dataset produces, and whether they intersect
+                # our query geopolygon.
+                dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
+                bbox = dataset_extent.boundingbox
+                bbox = bbox.buffered(*tile_buffer) if tile_buffer else bbox
 
-                    for tile_index, tile_geobox in self.grid_spec.tiles(
-                        bbox, geobox_cache=geobox_cache
+                for tile_index, tile_geobox in self.grid_spec.tiles(
+                    bbox, geobox_cache=geobox_cache
+                ):
+                    if tile_index in query_tiles and intersects(
+                        tile_geobox.extent, dataset_extent
                     ):
-                        if tile_index in query_tiles and intersects(
-                            tile_geobox.extent, dataset_extent
-                        ):
-                            add_dataset_to_cells(tile_index, tile_geobox, dataset)
-
-            else:
-                for dataset in datasets:
-                    dataset_extent = (
-                        dataset.extent.buffer(*tile_buffer)
-                        if tile_buffer
-                        else dataset.extent
-                    )
-                    for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(
-                        dataset_extent, geobox_cache=geobox_cache
-                    ):
-                        if tile_buffer:
-                            tile_geobox = tile_geobox.buffered(*tile_buffer)
                         add_dataset_to_cells(tile_index, tile_geobox, dataset)
 
-            return cells
+        else:
+            for dataset in datasets:
+                dataset_extent = (
+                    dataset.extent.buffer(*tile_buffer)
+                    if tile_buffer
+                    else dataset.extent
+                )
+                for tile_index, tile_geobox in self.grid_spec.tiles_from_geopolygon(
+                    dataset_extent, geobox_cache=geobox_cache
+                ):
+                    if tile_buffer:
+                        tile_geobox = tile_geobox.buffered(*tile_buffer)
+                    add_dataset_to_cells(tile_index, tile_geobox, dataset)
+
+        return cells
 
     def _find_datasets(self, geopolygon, indexers):
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
@@ -352,7 +351,7 @@ class GridWorkflow:
             sources = Datacube.group_datasets(dss, group_by)
             coord = sources[sources.dims[0]]
             for i in range(coord.size):
-                tile_index = cell_index + (coord.values[i],)
+                tile_index = (*cell_index, coord.values[i])
                 tiles[tile_index] = Tile(sources[i : i + 1], geobox)
 
         return tiles

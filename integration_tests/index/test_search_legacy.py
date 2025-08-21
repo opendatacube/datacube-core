@@ -1087,7 +1087,7 @@ def test_csv_search_via_cli(
     # Dataset 2 is the same but on day 2014-7-27
 
     def matches_both(*args) -> None:
-        rows = _cli_csv_search(("datasets",) + args, clirunner)
+        rows = _cli_csv_search(("datasets", *args), clirunner)
         assert len(rows) == 2
         assert {rows[0]["id"], rows[1]["id"]} == {
             str(pseudo_ls8_dataset.id),
@@ -1095,17 +1095,17 @@ def test_csv_search_via_cli(
         }
 
     def matches_1(*args) -> None:
-        rows = _cli_csv_search(("datasets",) + args, clirunner)
+        rows = _cli_csv_search(("datasets", *args), clirunner)
         assert len(rows) == 1
         assert rows[0]["id"] == str(pseudo_ls8_dataset.id)
 
     def matches_none(*args) -> None:
-        rows = _cli_csv_search(("datasets",) + args, clirunner)
+        rows = _cli_csv_search(("datasets", *args), clirunner)
         assert len(rows) == 0
 
     def no_such_product(*args) -> None:
         with pytest.raises(ValueError):
-            _cli_csv_search(("datasets",) + args, clirunner)
+            _cli_csv_search(("datasets", *args), clirunner)
 
     matches_both("lat in [-40, -10]")
     matches_both("product=" + pseudo_ls8_type.name)

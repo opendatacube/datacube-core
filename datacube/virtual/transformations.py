@@ -160,7 +160,7 @@ class ApplyMask(Transformation):
             mask = ~xarray.apply_ufunc(
                 binary_erosion,
                 ~mask,
-                kernel.reshape((1,) + kernel.shape),
+                kernel.reshape((1, *kernel.shape)),
                 output_dtypes=[bool],
                 dask="parallelized",
                 keep_attrs=True,
@@ -173,7 +173,7 @@ class ApplyMask(Transformation):
             mask = ~xarray.apply_ufunc(
                 binary_dilation,
                 ~mask,
-                kernel.reshape((1,) + kernel.shape),
+                kernel.reshape((1, *kernel.shape)),
                 output_dtypes=[bool],
                 dask="parallelized",
                 keep_attrs=True,
