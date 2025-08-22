@@ -27,7 +27,7 @@ This tutorial runs in an online environment that we have prepared for you.
 Launch tutorial environment
 ===========================
 
-Right-click on the Binder button below and select "Open Link in New Window" to launch the tutorial environment.
+Right-click on the Binder button below and select  :guilabel:`Open Link in New Window` to launch the tutorial environment.
 This will allow you to keep the tutorial instructions open alongside the environment.
 
 The tutorial environment may take a few minutes to start.
@@ -39,12 +39,12 @@ The tutorial environment may take a few minutes to start.
 
 | Once launched, you should see a Jupyter notebook environment with the tutorial notebook open. The tutorial notebook has headers that match up with the tutorial instructions on this page.
 
-.. image:: ../_static/tutorial-images/odc-stac/binder_view.png
+.. image:: odc-stac-images/binder_view.png
  :width: 600
  :alt: A view of a Jupyter notebook environment showing that the tutorial.ipynb file is loaded. The file is open with the header "odc-stac tutorial".
  :align: center
 
-| We also recommend that you open the file browser by clicking the folder icon on the left-hand menu bar (circled in red in the top-left of the image above). This will allow you to see the output files at the end of the tutorial.
+| We also recommend that you open the file browser by clicking the folder icon on the left-hand menu bar (circled in purple in the top-left of the image above). This will allow you to see the output files at the end of the tutorial.
 
 .. note::
    For this tutorial, we believe you will learn more if you type the code yourself, rather than using copy-paste.
@@ -60,11 +60,11 @@ Python imports
 
 The notebook requires five libraries to run:
 
-* `geopandas`_ for loading an area of interest from a GeoJSON file
-* :code:`odc.geo` for exporting loaded data
-* :code:`odc.stac` for loading data
-* :code:`planetary_computer` to provide authentication when accessing data
-* :code:`pystac-client` for querying catalogs of data
+* :doc:`geopandas <geopandas:about>` for loading an area of interest from a GeoJSON file
+* :doc:`odc.geo <odc-geo:intro>` for exporting loaded data
+* :doc:`odc.stac <odc-stac:intro>` for loading data
+* `planetary_computer <https://github.com/microsoft/planetary-computer-sdk-for-python>`_ to provide authentication when accessing data
+* :doc:`pystac-client <pystac-client:index>` for querying catalogs of data
 
 We will import either the library, or specific functions and classes from the library.
 Type the following into the empty cell below the **Python imports** heading:
@@ -95,7 +95,7 @@ We specify the area of interest using the :file:`aoi.geojson` file, which can be
 
 The area of interest is the island of `La Gomera <https://en.wikipedia.org/wiki/La_Gomera>`_, one of the `Canary Islands <https://en.wikipedia.org/wiki/Canary_Islands>`_.
 
-.. image:: ../_static/tutorial-images/odc-stac/aoi.png
+.. image:: odc-stac-images/aoi.png
  :width: 600
  :alt: A map of La Gomera with satellite imagery, with the area of interest shown as a yellow bounding box.
  :align: center
@@ -108,6 +108,8 @@ The area of interest is the island of `La Gomera <https://en.wikipedia.org/wiki/
    desired_aoi_geometry = desired_aoi.iloc[0].geometry
 
 When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyboard.
+
+.. _odc-stac-tutorial-date-range:
 
 Date range
 ^^^^^^^^^^
@@ -151,8 +153,8 @@ When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyb
 Connect to catalog and find items
 ---------------------------------
 
-We use :code:`pystac-client`'s :code:`Client` class to connect to Planetary Computer's STAC catalog.
-We also use :code:`planetary_computer.sign_inplace` to authorise our connection.
+We use :class:`pystac-client:pystac_client.Client` to connect to Planetary Computer's STAC catalog.
+We also use planetary-computer's `sign_inplace <https://planetarycomputer.microsoft.com/docs/quickstarts/reading-stac/>`_ modifier to authorise our connection.
 Type the following into the empty cell below the **Connect to catalog and find items** heading:
 
 .. code-block:: python
@@ -167,7 +169,7 @@ When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyb
 Search for items
 ^^^^^^^^^^^^^^^^
 
-After setting up the :code:`Client`, we use the :code:`search` method to find items that match our chosen collection, area of interest, and date range.
+After setting up the :class:`Client <pystac-client:pystac_client.Client>`, we use :meth:`pystac-client:pystac_client.Client.search` to find items that match our chosen collection, area of interest, and date range.
 Type the following into the empty cell below the **Search for items** heading:
 
 .. code-block:: python
@@ -193,12 +195,12 @@ If the sentence shows a different number of items, try checking whether your :co
    print(desired_date_range)
 
 should return :code:`('2017-01-01', '2023-01-01')`.
-If you see a different date range, return to the **Set up query parameters - Date range** section and ensure your :code:`desired_start_date` and :code:`desired_end_date` values match those given in the instructions.
+If you see a different date range, return to the :ref:`odc-stac-tutorial-date-range` section and ensure your :code:`desired_start_date` and :code:`desired_end_date` values match those given in the instructions.
 
 Load items with odc-stac
 ------------------------
 
-After producing a list of items to load, we can use the :code:`load` function from :code:`odc-stac` to read the requested assets from the items and return them as xarrays.
+After producing a list of items to load, we can use :func:`odc-stac:odc.stac.load` to read the requested assets from the items and return them as xarrays.
 
 Type the following into the empty cell below the **Load items with odc-stac** heading:
 
@@ -216,9 +218,9 @@ Type the following into the empty cell below the **Load items with odc-stac** he
 
 When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyboard.
 
-After running the cell, you should see a :code:`xarray.Dataset` summary.
+After running the cell, you should see an :class:`xarray:xarray.Dataset` summary.
 
-.. image:: ../_static/tutorial-images/odc-stac/xarray_output.png
+.. image:: odc-stac-images/xarray_output.png
  :width: 600
  :alt: A table showing a summary of the loaded xarray, including dimensions, coordinates, and data variables.
  :align: center
@@ -227,7 +229,7 @@ Visualise loaded data
 ---------------------
 
 To confirm that we have loaded the requested data, it is useful to visualise it. 
-We can use :code:`xarray`'s built-in plotting functionality to make a basic plot.
+We can use xarray's :ref:`plotting <xarray:plotting>` functionality to make a basic plot.
 
 Type the following into the empty cell below the **Visualise loaded data** heading:
 
@@ -239,12 +241,19 @@ When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyb
 After running the cell, you should see the following visualisation.
 The colours in the plot represent the following land cover classes:
 
-- dark blue: water
-- green: built area
-- yellow: rangeland
-- mid blue: trees
++-----------+------------------+
+| Colour    | Land cover class |
++===========+==================+
+| dark blue | water            |
++-----------+------------------+
+| green     | built area       |
++-----------+------------------+
+| yellow    | rangeland        |
++-----------+------------------+
+| mid blue  | trees            |
++-----------+------------------+
 
-.. image:: ../_static/tutorial-images/odc-stac/output.png
+.. image:: odc-stac-images/output.png
  :width: 600
  :alt: A series of images showing the land cover data for each year, from 2017 to 2023. Each image shows the island in green, yellow and mid blue, surrounded by ocean in dark blue.
  :align: center
@@ -261,7 +270,7 @@ Export loaded data
 
 Once you have loaded and checked your data, it is often useful to export it.
 This allows you to use the data in other software and analyses.
-The :code:`odc-geo` library provides the :code:`write_cog` function to generate and write these files from an :code:`xarray`.
+We use :func:`odc-geo:odc.geo.xr.write_cog` to generate and write these files from an :class:`xarray:xarray.DataArray`.
 
 The code below extracts the year of each image from the dataset, then uses a loop to export each dataset to a new file.
 
@@ -287,8 +296,8 @@ You should see seven new files in the file browser, starting with :file:`LULC_20
 Tutorial complete!
 ------------------
 
-Congratulations, you've used :code:`pystac-client` to search for data in a public STAC catalog and :code:`odc-stac` to load the data into an :code:`xarray`.
-In the last step you exported the loaded data as a series of Cloud Optimised GeoTIFF files, which you can now use in other applications.
+Congratulations, you've used :doc:`pystac-client <pystac-client:index>` to search for data in a public STAC catalog and :doc:`odc-stac <odc-stac:intro>` to load the data into an :class:`xarray:xarray.Dataset`.
+In the last step, you exported the loaded data as a series of Cloud Optimised GeoTIFF files, which you can now use in other applications.
 
 .. note::
    Make sure you download these files from the file browser before exiting the tutorial space as they will be deleted when the tutorial space is closed.
