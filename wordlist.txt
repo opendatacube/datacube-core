@@ -49,6 +49,7 @@ autosummary
 autoupdate
 autoupdates
 auxuser
+avif
 aws
 backend
 backends

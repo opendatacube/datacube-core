@@ -229,7 +229,7 @@ Visualise loaded data
 ---------------------
 
 To confirm that we have loaded the requested data, it is useful to visualise it. 
-We can use xarray's :ref:`plotting <xarray:plotting>` functionality to make a basic plot.
+We can use the :ref:`xarray plotting <xarray:plotting>` functionality to make a basic plot.
 
 Type the following into the empty cell below the **Visualise loaded data** heading:
 
