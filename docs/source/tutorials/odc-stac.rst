@@ -39,7 +39,7 @@ The tutorial environment may take a few minutes to start.
 
 | Once launched, you should see a Jupyter notebook environment with the tutorial notebook open. The tutorial notebook has headers that match up with the tutorial instructions on this page.
 
-.. image:: odc-stac-images/binder_view.png
+.. image:: odc-stac-images/binder_view.avif
  :width: 600
  :alt: A view of a Jupyter notebook environment showing that the tutorial.ipynb file is loaded. The file is open with the header "odc-stac tutorial".
  :align: center
@@ -95,7 +95,7 @@ We specify the area of interest using the :file:`aoi.geojson` file, which can be
 
 The area of interest is the island of `La Gomera <https://en.wikipedia.org/wiki/La_Gomera>`_, one of the `Canary Islands <https://en.wikipedia.org/wiki/Canary_Islands>`_.
 
-.. image:: odc-stac-images/aoi.png
+.. image:: odc-stac-images/aoi.avif
  :width: 600
  :alt: A map of La Gomera with satellite imagery, with the area of interest shown as a yellow bounding box.
  :align: center
@@ -220,7 +220,7 @@ When you have finished, run the cell by pressing :kbd:`Shift+Enter` on your keyb
 
 After running the cell, you should see an :class:`xarray:xarray.Dataset` summary.
 
-.. image:: odc-stac-images/xarray_output.png
+.. image:: odc-stac-images/xarray_output.avif
  :width: 600
  :alt: A table showing a summary of the loaded xarray, including dimensions, coordinates, and data variables.
  :align: center
@@ -253,7 +253,7 @@ The colours in the plot represent the following land cover classes:
 | mid blue  | trees            |
 +-----------+------------------+
 
-.. image:: odc-stac-images/output.png
+.. image:: odc-stac-images/output.avif
  :width: 600
  :alt: A series of images showing the land cover data for each year, from 2017 to 2023. Each image shows the island in green, yellow and mid blue, surrounded by ocean in dark blue.
  :align: center
