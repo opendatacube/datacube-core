@@ -16,9 +16,9 @@ During the tutorial, we will:
   * what (data provider and product)
   * where (area of interest)
   * when (date range)
-* Use :ref:`pystac-client` to connect to a `Spatio-Temporal Asset Catalog (STAC) <https://stacspec.org/en>`_ 
+* Use :doc:`pystac-client <pystac-client:index>` to connect to a `Spatio-Temporal Asset Catalog (STAC) <https://stacspec.org/en>`_ 
   endpoint and search for data matching our what, where, and when
-* Use :ref:`odc-stac` to load the matching data into memory
+* Use :doc:`odc-stac <odc-stac:intro>` to load the matching data into memory
 * Visualise and export the data
 
 There is no need to install anything.
