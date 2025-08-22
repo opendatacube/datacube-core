@@ -90,7 +90,7 @@ jobs:
     - name: Build Packages
       run: |
         uv build
-        uv tool run twine check dist/*
+        uv tool run twine check --strict dist/*
 
     # Uses to OIDC identification between GitHub and PyPI
     - name: Upload package to PyPI on GitHub Release
