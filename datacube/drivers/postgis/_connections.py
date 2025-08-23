@@ -90,14 +90,13 @@ class PostGisDb:
         validate: bool = True,
     ) -> "PostGisDb":
         url = psql_url_from_config(config_env)
-        kwargs = {
-            "application_name": application_name,
-            "iam_rds_auth": config_env.db_iam_authentication,
-            "pool_timeout": config_env.db_connection_timeout,
-        }
-        if config_env.db_iam_authentication:
-            kwargs["iam_rds_timeout"] = config_env.db_iam_timeout
-        engine = cls._create_engine(url, **kwargs)
+        engine = cls._create_engine(
+            url,
+            application_name,
+            config_env.db_iam_authentication,
+            config_env.db_iam_timeout if config_env.db_iam_authentication else 600,
+            config_env.db_connection_timeout,
+        )
         if validate:
             if not _core.database_exists(engine):
                 raise IndexSetupError(
