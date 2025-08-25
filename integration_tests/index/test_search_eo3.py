@@ -1135,39 +1135,26 @@ def test_find_duplicates_with_time(
 
     search_result = namedtuple("search_result", ["region_code", "time"])
 
-    expected_result_old = [
+    # Postgis driver returns datetimes, postgres returns strings.
+    time = (
         (
-            search_result(
-                "090086", '("2023-04-30 23:50:33.884549","2023-04-30 23:50:34.884549")'
+            datetime.datetime(
+                2023, 4, 30, 23, 50, 33, 884549, tzinfo=datetime.timezone.utc
             ),
-            {nrt_dataset.id, final_dataset.id},
-        )
-    ]
-    expected_result_new = [
-        (
-            search_result(
-                "090086",
-                (
-                    datetime.datetime(
-                        2023, 4, 30, 23, 50, 33, 884549, tzinfo=datetime.timezone.utc
-                    ),
-                    datetime.datetime(
-                        2023, 4, 30, 23, 50, 34, 884549, tzinfo=datetime.timezone.utc
-                    ),
-                ),
+            datetime.datetime(
+                2023, 4, 30, 23, 50, 34, 884549, tzinfo=datetime.timezone.utc
             ),
-            {nrt_dataset.id, final_dataset.id},
         )
-    ]
+        if index._db.driver_name == "postgis"  # type: ignore[attr-defined]
+        else '("2023-04-30 23:50:33.884549","2023-04-30 23:50:34.884549")'
+    )
     res = sorted(
         index.datasets.search_product_duplicates(
-            nrt_dataset.product,
-            "region_code",
-            "time",
+            nrt_dataset.product, "region_code", "time"
         )
     )
 
-    assert res in (expected_result_old, expected_result_new)
+    assert res == [(search_result("090086", time), {nrt_dataset.id, final_dataset.id})]
 
 
 def test_csv_search_via_cli_eo3(
