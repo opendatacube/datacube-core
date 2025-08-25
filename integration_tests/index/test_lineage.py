@@ -28,7 +28,7 @@ def test_lineage_home_api(index) -> None:
     for home in index.lineage.get_homes(*a_uuids).values():
         assert home == "eggs"
     assert index.lineage.get_homes(*b_uuids) == {}
-    assert index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 0
+    assert index.lineage.set_home("eggs", *a_uuids, allow_updates=True) == 10
     assert index.lineage.set_home("eggs", *b_uuids, allow_updates=True) == 10
 
     # Test clear_home with actual work done.

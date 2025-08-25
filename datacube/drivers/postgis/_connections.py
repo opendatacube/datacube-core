@@ -285,7 +285,7 @@ class PostGisDb:
         Low level context manager, use <index_resource>._db_connection instead
         """
         with self._engine.connect().execution_options(
-            isolation_level="AUTOCOMMIT"
+            isolation_level="AUTOCOMMIT", preserve_rowcount=True
         ) as connection:
             try:
                 yield _api.PostgisDbAPI(self, connection)
