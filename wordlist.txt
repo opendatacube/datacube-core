@@ -121,6 +121,7 @@ cubeenv
 currentmodule
 cyear
 cython
+cyprusdatacube
 da
 Dahu
 DeprecationWarning
