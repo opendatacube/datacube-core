@@ -301,7 +301,7 @@ def _values_to_search(**kwargs) -> dict:
     return search
 
 
-def _time_to_search_dims(time_range):
+def _time_to_search_dims(time_range) -> Range:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         tr_start, tr_end = time_range, time_range

@@ -75,7 +75,7 @@ def eo3_lonlat_bbox(
 
 
 def eo3_grid_spatial(
-    doc: dict[str, Any], resolution: float | None = None, grid_name: str = "default"
+    doc: Mapping[str, Any], resolution: float | None = None, grid_name: str = "default"
 ) -> dict[str, Any]:
     """Using doc[grids|crs|geometry] compute EO3 style grid spatial:
 
@@ -154,7 +154,7 @@ def eo3_grid_spatial(
 
 
 def add_eo3_parts(
-    doc: dict[str, Any], resolution: float | None = None
+    doc: Mapping[str, Any], resolution: float | None = None
 ) -> dict[str, Any]:
     """Add spatial keys the DB requires to eo3 metadata"""
     # Clone and update to ensure idempotency

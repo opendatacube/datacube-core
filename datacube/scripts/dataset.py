@@ -8,7 +8,14 @@ import json
 import logging
 import sys
 from collections import OrderedDict
-from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
+from collections.abc import (
+    Generator,
+    Iterable,
+    Iterator,
+    Mapping,
+    MutableMapping,
+    Sequence,
+)
 from textwrap import dedent
 from typing import Any, Literal, cast
 from uuid import UUID
@@ -91,7 +98,7 @@ def dataset_stream(doc_stream, ds_resolve) -> Iterator:
         yield dataset
 
 
-def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Iterator:
+def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Generator[tuple]:
     """Consume stream of dataset documents, associate each to a product by looking
     up existing dataset in the index. Datasets not in the database will be
     logged.

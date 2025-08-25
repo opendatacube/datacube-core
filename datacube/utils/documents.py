@@ -14,7 +14,7 @@ import json
 import logging
 import math
 from collections import OrderedDict
-from collections.abc import Callable, Generator, Mapping
+from collections.abc import Callable, Generator, Mapping, Sequence
 from contextlib import contextmanager
 from copy import deepcopy
 from io import TextIOWrapper
@@ -298,7 +298,7 @@ class UnknownMetadataType(InvalidDocException):
     pass
 
 
-def get_doc_offset(offset: list[str | int], document: dict, default=None):
+def get_doc_offset(offset: Sequence[str | int], document: dict, default=None):
     return toolz.get_in(offset, document, default=default)
 
 
@@ -412,9 +412,11 @@ class SimpleDocNav:
     dataset dictionary.
     """
 
-    def __init__(self, doc: dict[str, Any], sources_path=None) -> None:
+    def __init__(
+        self, doc: dict[str, Any], sources_path: Sequence[str] | None = None
+    ) -> None:
         if not isinstance(doc, collections.abc.Mapping):
-            raise ValueError("")
+            raise ValueError("SimpleDocNav requires a Mapping")
 
         self._doc = doc
         self._doc_without = None
@@ -424,6 +426,7 @@ class SimpleDocNav:
         self._sources = None
         self._doc_uuid: UUID | None = None
 
+    # FIXME: despite the type signature, this returns a Mapping.
     @property
     def doc(self) -> dict[str, Any]:
         return self._doc
@@ -454,7 +457,7 @@ class SimpleDocNav:
         return self._sources
 
     @property
-    def sources_path(self):
+    def sources_path(self) -> Sequence[str]:
         return self._sources_path
 
     @property
@@ -476,7 +479,7 @@ def _set_doc_offset(offset: list[str | int], document: dict, value) -> None:
 class DocReader:
     def __init__(
         self,
-        type_definition: dict[str, list[str]],
+        type_definition: Mapping[str, list[str]],
         search_fields: Mapping[str, Field],
         doc: Mapping[str, Field],
     ) -> None:
@@ -515,7 +518,7 @@ class DocReader:
         return _set_doc_offset(offset, self._doc, val)
 
     @override
-    def __dir__(self):
+    def __dir__(self) -> list:
         return list(self.fields)
 
     @property
@@ -538,7 +541,7 @@ class DocReader:
         }
 
     @property
-    def fields(self):
+    def fields(self) -> dict[str, Any]:
         return {**self.system_fields, **self.search_fields}
 
 
