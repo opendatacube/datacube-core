@@ -131,6 +131,12 @@ null = 'datacube.index.null.index:index_driver_init'
 memory = 'datacube.index.memory.index:index_driver_init'
 postgis = 'datacube.index.postgis.index:index_driver_init'
 
+[tool.codespell]
+ignore-words-list = 'Nd,nD'
+skip = "uv.lock,./build,./docs/build,__pycache__"
+# Ignore base64 encoded strings
+ignore-regex = '[A-Za-z0-9+/]{100,}'
+
 [tool.coverage.run]
 branch = false
 omit = [
@@ -240,9 +246,3 @@ enable_error_code = ['explicit-override']
 ignore_missing_imports = true
 warn_redundant_casts = true
 warn_unused_ignores = true
-
-[tool.codespell]
-ignore-words-list = 'nd,dout,nempty'
-skip = "uv.lock,./build"
-# Ignore base64 encoded strings
-ignore-regex = '[A-Za-z0-9+/]{100,}'

@@ -59,8 +59,6 @@ tests
 *.rst
 docs
 LICENSE
-spellcheck.yaml
-wordlist.txt
 
 # PyBuilder
 **/target

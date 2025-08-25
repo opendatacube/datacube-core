@@ -361,11 +361,11 @@ def flatten_datasets(
 
     if depth_map:
         # convert dict Int->V to just a list
-        dout = [None] * len(depth_map)
+        depth_list = [None] * len(depth_map)
         for k, v in depth_map.items():
-            dout[k] = v
+            depth_list[k] = v
 
-        return id_map, dout
+        return id_map, depth_list
 
     return id_map
 
