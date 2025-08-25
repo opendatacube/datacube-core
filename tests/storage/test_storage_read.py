@@ -176,9 +176,9 @@ def test_read_with_reproject(nearest_resampling, tmpdir) -> None:
 
     geobox = gbx.zoom_out(geobox, 4)
     yy, roi = _read(geobox, resampling="average")
-    nvalid = (yy != -999).sum()
-    nempty = (yy == -999).sum()
-    assert nvalid > nempty
+    num_valid = (yy != -999).sum()
+    num_empty = (yy == -999).sum()
+    assert num_valid > num_empty
 
 
 @nearest_resampling_parametrize
@@ -331,6 +331,6 @@ def test_read_with_reproject_v2(nearest_resampling, tmpdir) -> None:
 
     geobox = gbx.zoom_out(geobox, 4)
     yy, roi = _read(geobox, resampling="average")
-    nvalid = (yy != -999).sum()
-    nempty = (yy == -999).sum()
-    assert nvalid > nempty
+    num_valid = (yy != -999).sum()
+    num_empty = (yy == -999).sum()
+    assert num_valid > num_empty
