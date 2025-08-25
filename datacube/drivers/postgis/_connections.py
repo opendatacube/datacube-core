@@ -16,7 +16,7 @@ Postgis connection and setup
 import json
 import logging
 import re
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Generator, Iterable, Mapping
 from contextlib import contextmanager
 from typing import Any
 
@@ -90,14 +90,13 @@ class PostGisDb:
         validate: bool = True,
     ) -> "PostGisDb":
         url = psql_url_from_config(config_env)
-        kwargs = {
-            "application_name": application_name,
-            "iam_rds_auth": config_env.db_iam_authentication,
-            "pool_timeout": config_env.db_connection_timeout,
-        }
-        if config_env.db_iam_authentication:
-            kwargs["iam_rds_timeout"] = config_env.db_iam_timeout
-        engine = cls._create_engine(url, **kwargs)
+        engine = cls._create_engine(
+            url,
+            application_name,
+            config_env.db_iam_authentication,
+            config_env.db_iam_timeout if config_env.db_iam_authentication else 600,
+            config_env.db_connection_timeout,
+        )
         if validate:
             if not _core.database_exists(engine):
                 raise IndexSetupError(
@@ -117,7 +116,7 @@ class PostGisDb:
 
     @staticmethod
     def _create_engine(
-        url,
+        url: str | EngineUrl,
         application_name: str | None = None,
         iam_rds_auth: bool = False,
         iam_rds_timeout: float | int = 600,
@@ -269,7 +268,7 @@ class PostGisDb:
         return [CRS(epsg) for epsg in self.spindexes]
 
     @contextmanager
-    def _connect(self) -> Iterator:
+    def _connect(self) -> Generator[_api.PostgisDbAPI]:
         """
         Borrow a connection from the pool.
 
@@ -333,6 +332,6 @@ def _to_json(o) -> str:
     return json.dumps(fixedup, default=_json_fallback)
 
 
-def _json_fallback(obj) -> None:
+def _json_fallback(obj: Any) -> None:
     """Fallback json serialiser."""
     raise TypeError(f"Type not serializable: {type(obj)}")
