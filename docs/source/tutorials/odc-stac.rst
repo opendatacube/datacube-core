@@ -211,7 +211,7 @@ Type the following into the empty cell below the **Load items with odc-stac** he
       bands=desired_assets,
       geopolygon=aoi_geometry,
       crs="utm",
-      resolution=30
+      resolution=30,
    )
 
    ds
