@@ -22,14 +22,14 @@ class LineageDirection(Enum):
     SOURCES = 1
     DERIVED = 2
 
-    def opposite(self):
-        if self == self.SOURCES:
-            return self.DERIVED
-        return self.SOURCES
+    def opposite(self) -> "LineageDirection":
+        if self == LineageDirection.SOURCES:
+            return LineageDirection.DERIVED
+        return LineageDirection.SOURCES
 
     @property
     def label(self) -> str:
-        if self == self.SOURCES:
+        if self == LineageDirection.SOURCES:
             return "sources"
         return "derivations"
 
