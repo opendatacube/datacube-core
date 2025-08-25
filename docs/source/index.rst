@@ -19,6 +19,12 @@ Earth observation satellite data and related data from multiple sources.
 
       Information on the purpose of the Open Data Cube, as well as its design.
 
+   .. grid-item-card:: Tutorials
+      :link: tutorials/index
+      :link-type: doc
+
+      Tutorials to help you learn about different features of the Open Data Cube.
+   
    .. grid-item-card:: Setup
       :link: installation/index
       :link-type: doc
@@ -50,6 +56,7 @@ Contents
     :maxdepth: 3
 
     about-core-concepts/index
+    tutorials/index
     installation/index
     data-access-analysis/index
     api/index

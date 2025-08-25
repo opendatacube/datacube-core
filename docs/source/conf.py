@@ -66,6 +66,10 @@ intersphinx_mapping = {
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
+    "geopandas": ("https://geopandas.org/en/stable/", None),
+    "odc-geo": ("https://odc-geo.readthedocs.io/en/stable/", None),
+    "odc-stac": ("https://odc-stac.readthedocs.io/en/latest/", None),
+    "pystac-client": ("https://pystac-client.readthedocs.io/en/stable/", None),
 }
 
 graphviz_output_format = "svg"

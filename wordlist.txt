@@ -21,6 +21,7 @@ algo
 allrob
 Analytics
 analytics
+aoi
 antimeridian
 api
 APIs
@@ -48,6 +49,7 @@ autosummary
 autoupdate
 autoupdates
 auxuser
+avif
 aws
 backend
 backends
@@ -199,13 +201,17 @@ ESRI
 executor
 f'file
 fd
+Fdoc
 feedstock
 ferdman
 Festivus
 fmask
 fmt
 fn
+Fodc
 func
+Ftree
+Ftutorial
 ga
 gbox
 GCS
@@ -222,8 +228,10 @@ GeoboxTiles
 geoextensions
 GEOGCS
 GeoJSON
+geojson
 Geomedian
 geomedian
+geopandas
 GeoPolygon
 geopolygon
 geopolygons
@@ -245,6 +253,8 @@ Github
 github
 githubusercontent
 GloVis
+Gomera
+gpd
 GQA
 graphviz
 gridded
@@ -252,6 +262,7 @@ GridSpec
 GridWorkflow
 gridWorkflow
 GroupBy
+guilabel
 handedly
 HDF
 hdf
@@ -269,8 +280,10 @@ iam
 ident
 identifier
 igsekor
+iloc
 img
 importlib
+imshow
 IndexDriver
 INEGI
 inegi
@@ -281,11 +294,14 @@ ingestor
 INI
 ini
 init
+inplace
 installable
 io
 ipynb
+Isabela
 isel
 isinstance
+Isla
 jfEZEOkxRXgNsAsHEC
 jpg
 JSK
@@ -296,6 +312,7 @@ jsonschema
 Jupyter
 jupyter
 JupyterLab
+kbd
 KeyboardInterrupt
 Kirill
 Kubernetes
@@ -309,6 +326,7 @@ landsatonaws
 lbg
 LEDAPS
 ledaps
+len
 libgdal
 libhdf
 libnetcdf
@@ -327,6 +345,8 @@ lon
 lonlat
 lr
 LTS
+LULC
+lulc
 lv
 macosx
 MakeMask
@@ -339,6 +359,7 @@ maxdepth
 md
 metadataType
 MetadataTypes
+microsoft
 miniconda
 Miniforge
 mk
@@ -355,6 +376,7 @@ multipoint
 multipolygon
 multispectral
 mx
+mybinder
 mydb
 myenv
 mypassword
@@ -428,6 +450,7 @@ pgisintegration
 pixelquality
 pjonsson
 pkgs
+planetarycomputer
 Pluggable
 pmap
 png
@@ -465,10 +488,12 @@ pyproj
 pyproject
 pyspellcheck
 pyspelling
+pystac
 pytest
 PythonAPI
 pytz
 QGIS
+rangeland
 RasterDatasetDataSource
 RasterIO
 rasterio
@@ -540,9 +565,11 @@ staticmethod
 stdlib
 Stereographic
 str
+strftime
 stylesheet
 subcommands
 sudo
+Supercell
 sv
 svg
 swir
@@ -557,6 +584,7 @@ tif
 timedelta
 timeslice
 timeslot
+timestep
 TIRS
 tmp
 toctree
@@ -585,6 +613,7 @@ URI
 uri
 URIs
 url
+urlpath
 usablity
 USGS
 usgs
@@ -594,6 +623,7 @@ UsingODC
 usp
 usr
 utils
+utm
 UUID
 uuid
 UUIDs
