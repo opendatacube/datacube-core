@@ -56,6 +56,10 @@ World Food Programme Humanitarian Data Cube
 https://data.earthobservation.vam.wfp.org/
 
 
+Cyprus Data Cube
+----------------
+https://cyprusdatacube.com/
+
 .. note::
 
   If you'd like your project to be on this list, please raise an issue or create a pull request.
