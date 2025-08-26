@@ -57,6 +57,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         """
         :param definition:
         """
+        MetadataType.validate(definition)  # type: ignore[attr-defined]
         return self._make(definition)
 
     @override
