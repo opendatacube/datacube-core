@@ -76,7 +76,7 @@ def load_from_yaml(handle: TextIOWrapper, parse_dates: bool = False) -> Generato
     yield from yaml.load_all(handle, Loader=loader)
 
 
-def parse_yaml(doc: str) -> Mapping[str, Any]:
+def parse_yaml(doc: str | bytes) -> Mapping[str, Any]:
     """Convert a single document yaml string into a parsed document"""
     return yaml.load(doc, Loader=SafeLoader)
 
@@ -178,6 +178,33 @@ def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:
             raise InvalidDocException(f"Failed to load {p}: {e}") from None
         except Exception as e:
             raise InvalidDocException(f"Failed to load {p}: {e}") from None
+
+
+def parse_doc_stream(
+    doc_stream: Sequence[tuple[str, str | bytes]],
+    on_error: Callable[[str, str | bytes], None] | None = None,
+    transform: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
+) -> Generator[tuple[str, Mapping[str, Any] | None]]:
+    """
+    Replace doc bytes/strings with parsed dicts.
+
+    :param doc_stream: sequence of tuples consisting of uri and doc
+    :param on_error: Callback that gets the uri and doc as parameters
+    :param transform: if supplied, transforms the parsed document further
+
+    On output doc is replaced with python dict parsed from yaml, or with None
+    if parsing/transform error occurred.
+    """
+    for uri, doc in doc_stream:
+        try:
+            metadata = json.loads(doc) if uri.endswith(".json") else parse_yaml(doc)
+            if transform is not None:
+                metadata = transform(metadata)
+        except Exception:  # pylint: disable=broad-except
+            if on_error is not None:
+                on_error(uri, doc)
+            metadata = None
+        yield uri, metadata
 
 
 def netcdf_extract_string(chars) -> str:
