@@ -12,6 +12,7 @@ import math
 import mimetypes
 import warnings
 from collections.abc import Generator
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
@@ -22,9 +23,11 @@ from pystac.extensions.projection import ProjectionExtension
 from pystac.extensions.view import ViewExtension
 
 import datacube.utils.uris as dc_uris
-from datacube.model import Dataset
+from datacube.index.eo3 import is_doc_eo3, prep_eo3
+from datacube.model import Dataset, Product
 
-from ._utils import eo3_to_stac_properties
+from ..migration import ODC2DeprecationWarning
+from ._utils import EO3_MD_TYPE, EO_MD_TYPE, eo3_to_stac_properties
 
 
 def _lineage_fields(dataset: Dataset) -> dict:
@@ -180,6 +183,8 @@ def ds2stac(
     properties.update(_lineage_fields(dataset))
 
     dt = properties.get("datetime")
+    if isinstance(dt, str):
+        dt = datetime.fromisoformat(dt)
 
     item = Item(
         id=str(dataset.id),
@@ -256,3 +261,48 @@ def ds2stac(
         item.add_asset(name, asset=asset)
 
     return item
+
+
+def infer_eo3_product(metadata_doc: dict) -> Product:
+    # Create a basic Product from a dataset metadata_doc
+    name = metadata_doc["product"]["name"]
+    doc = {
+        "name": name,
+        "metadata_type": "eo3",
+        "metadata": {"product": {"name": name}},
+        "measurements": [{"name": key} for key in metadata_doc["measurements"]],
+    }
+    return Product(EO3_MD_TYPE, doc)
+
+
+def infer_eo_product(metadata_doc: dict) -> Product:
+    name = metadata_doc["product_type"]
+    doc = {
+        "name": name,
+        "metadata_type": "eo",
+        "metadata": {"product_type": name},
+        "measurements": [{"name": key} for key in metadata_doc["image"]["bands"]],
+    }
+    return Product(EO_MD_TYPE, doc)
+
+
+def ds_doc_to_stac(
+    metadata_doc: dict,
+    uri: str | None = None,
+    stac_url: str | None = None,
+    self_url: str | None = None,
+    collection_url: str | None = None,
+) -> Item:
+    warnings.warn("It is strongly preferred to use ds2stac if possible.")
+    if is_doc_eo3(metadata_doc):
+        product = infer_eo3_product(metadata_doc)
+        dataset = Dataset(product, prep_eo3(metadata_doc), uri=uri)
+    else:
+        warnings.warn(
+            "Support for legacy eo datasets is deprecated and will require an "
+            "eo3-style properties dict to be added to the metadata.",
+            ODC2DeprecationWarning,
+        )
+        product = infer_eo_product(metadata_doc)
+        dataset = Dataset(product, metadata_doc, uri=uri)
+    return ds2stac(dataset, stac_url, self_url, collection_url)

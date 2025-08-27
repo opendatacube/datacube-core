@@ -19,7 +19,13 @@ from pystac.extensions.item_assets import ItemAssetsExtension
 from pystac.extensions.projection import ProjectionExtension
 from toolz import dicttoolz
 
-from datacube.metadata import ds2stac, infer_dc_product, stac2ds
+from datacube.metadata import (
+    ds2stac,
+    ds_doc_to_stac,
+    infer_dc_product,
+    infer_eo3_product,
+    stac2ds,
+)
 from datacube.metadata._eo3converter import _compute_uuid, _item_to_ds
 from datacube.model import Dataset, Product
 from datacube.testutils.io import native_geobox
@@ -385,3 +391,51 @@ def test_roundtrip(eo3_dataset: Dataset, eo3_product: Product):
     assert set(roundtrip.measurements.keys()) == set(original.measurements.keys())
     assert roundtrip.measurements["nbar_panchromatic"]["grid"] == "g15"
     assert set(roundtrip.accessories.keys()) == set(original.accessories.keys())
+
+
+def test_infer_eo3_product(odc_dataset_doc) -> None:
+    product = infer_eo3_product(odc_dataset_doc)
+    assert product.definition == {
+        "name": "ga_ls8c_ard_3",
+        "metadata_type": "eo3",
+        "metadata": {"product": {"name": "ga_ls8c_ard_3"}},
+        "measurements": [
+            {"name": "nbar_blue"},
+            {"name": "nbar_coastal_aerosol"},
+            {"name": "nbar_green"},
+            {"name": "nbar_nir"},
+            {"name": "nbar_panchromatic"},
+            {"name": "nbar_red"},
+            {"name": "nbar_swir_1"},
+            {"name": "nbar_swir_2"},
+            {"name": "nbart_blue"},
+            {"name": "nbart_coastal_aerosol"},
+            {"name": "nbart_green"},
+            {"name": "nbart_nir"},
+            {"name": "nbart_panchromatic"},
+            {"name": "nbart_red"},
+            {"name": "nbart_swir_1"},
+            {"name": "nbart_swir_2"},
+            {"name": "oa_azimuthal_exiting"},
+            {"name": "oa_azimuthal_incident"},
+            {"name": "oa_combined_terrain_shadow"},
+            {"name": "oa_exiting_angle"},
+            {"name": "oa_fmask"},
+            {"name": "oa_incident_angle"},
+            {"name": "oa_nbar_contiguity"},
+            {"name": "oa_nbart_contiguity"},
+            {"name": "oa_relative_azimuth"},
+            {"name": "oa_relative_slope"},
+            {"name": "oa_satellite_azimuth"},
+            {"name": "oa_satellite_view"},
+            {"name": "oa_solar_azimuth"},
+            {"name": "oa_solar_zenith"},
+            {"name": "oa_time_delta"},
+        ],
+    }
+
+
+def test_dsdoc_to_stac(odc_dataset_doc, eo3_dataset) -> None:
+    from_doc = ds_doc_to_stac(odc_dataset_doc, uri=eo3_dataset.uri)
+    from_ds = ds2stac(eo3_dataset)
+    assert from_doc.to_dict() == from_ds.to_dict()
