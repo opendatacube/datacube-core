@@ -11,7 +11,8 @@ from typing import Any
 
 from pystac.utils import datetime_to_str
 
-from datacube.model import Dataset
+from datacube.index.abstract import default_metadata_type_docs
+from datacube.model import Dataset, metadata_from_doc
 
 # Mapping between EO3 field names and STAC properties object field names
 # EO3 metadata was defined before STAC 1.0, so we used some extensions
@@ -31,6 +32,12 @@ STAC_TO_EO3_RENAMES = {
 }
 
 EO3_TO_STAC_RENAMES = {v: k for k, v in STAC_TO_EO3_RENAMES.items()}
+
+_default_md_types = {
+    d.get("name"): metadata_from_doc(d) for d in default_metadata_type_docs()
+}
+EO3_MD_TYPE = _default_md_types["eo3"]
+EO_MD_TYPE = _default_md_types["eo"]
 
 
 def _as_stac_instruments(value: str) -> list[str]:

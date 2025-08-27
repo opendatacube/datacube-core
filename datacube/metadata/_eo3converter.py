@@ -35,19 +35,13 @@ from odc.stac.model import (
 )
 from pystac import Collection, Item
 
-from datacube.index.abstract import default_metadata_type_docs
 from datacube.index.eo3 import prep_eo3
-from datacube.model import Dataset, Product, metadata_from_doc
+from datacube.model import Dataset, Product
 
-from ._utils import stac_to_eo3_properties
+from ._utils import EO3_MD_TYPE, stac_to_eo3_properties
 
 # uuid.uuid5(uuid.NAMESPACE_URL, "https://stacspec.org")
 UUID_NAMESPACE_STAC = uuid.UUID("55d26088-a6d0-5c77-bf9a-3a7f3c6a6dab")
-
-
-(_eo3,) = (
-    metadata_from_doc(d) for d in default_metadata_type_docs() if d.get("name") == "eo3"
-)
 
 
 def _to_product(md: RasterCollectionMetadata) -> Product:
@@ -85,7 +79,7 @@ def _to_product(md: RasterCollectionMetadata) -> Product:
             for band_key, band in md.meta.bands.items()  # TODO: use .raster_bands() after loader 0.6.0
         ],
     }
-    return Product(_eo3, doc, stac=md)
+    return Product(EO3_MD_TYPE, doc, stac=md)
 
 
 @singledispatch
@@ -166,6 +160,7 @@ def _to_dataset(
     for key in ["proj:code", "proj:epsg", "proj:wkt2"]:
         if key in properties:
             crs = CRS(properties.get(key))
+            break
 
     for band_key, src in item.bands.items():
         name, idx = band_key
