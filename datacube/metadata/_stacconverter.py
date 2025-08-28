@@ -12,7 +12,6 @@ import math
 import mimetypes
 import warnings
 from collections.abc import Generator
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
@@ -25,6 +24,7 @@ from pystac.extensions.view import ViewExtension
 import datacube.utils.uris as dc_uris
 from datacube.index.eo3 import is_doc_eo3, prep_eo3
 from datacube.model import Dataset, Product
+from datacube.utils import parse_time
 
 from ..migration import ODC2DeprecationWarning
 from ._utils import EO3_MD_TYPE, EO_MD_TYPE, eo3_to_stac_properties
@@ -184,7 +184,7 @@ def ds2stac(
 
     dt = properties.get("datetime")
     if isinstance(dt, str):
-        dt = datetime.fromisoformat(dt)
+        dt = parse_time(dt)
 
     item = Item(
         id=str(dataset.id),

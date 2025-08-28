@@ -139,7 +139,7 @@ def _compute_uuid(
 
 
 def _to_grid(gbox: GeoBox) -> dict[str, Any]:
-    return {"shape": gbox.shape.yx, "transform": gbox.transform.to_shapely()}
+    return {"shape": gbox.shape.yx, "transform": gbox.transform[:6]}
 
 
 def _to_dataset(
@@ -228,7 +228,7 @@ def _to_dataset(
     if title is not None:
         ds_doc["label"] = title
 
-    # TODO: this need to use Doc2Ds for consistency checks and lineage handling
+    # TODO: this needs to use Doc2Ds for consistency checks and lineage handling
     return Dataset(product, prep_eo3(ds_doc), uri=item.href)
 
 
