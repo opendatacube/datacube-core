@@ -26,7 +26,7 @@ from datacube import utils
 from datacube.drivers.postgis._schema import Dataset, search_field_index_map
 from datacube.model import Range
 from datacube.model.fields import _AVAILABLE_TYPES, Expression, Field
-from datacube.utils import cached_property, get_doc_offset
+from datacube.utils import cached_property, get_doc_offset, parse_time
 from datacube.utils.changes import Offset
 from datacube.utils.dates import tz_as_utc
 
@@ -409,9 +409,9 @@ class DateDocField(SimpleDocField):
         raise ValueError(f"Value not readable as date: {value!r}")
 
     @override
-    def normalise_value(self, value):
+    def normalise_value(self, value: str | datetime) -> datetime:
         if isinstance(value, str):
-            value = datetime.fromisoformat(value)
+            value = parse_time(value)
         return tz_as_utc(value)
 
     @override
