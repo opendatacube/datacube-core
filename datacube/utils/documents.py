@@ -186,14 +186,18 @@ def parse_doc_stream(
     transform: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> Generator[tuple[str, Mapping[str, Any] | None]]:
     """
-    Replace doc bytes/strings with parsed dicts.
+    Parse a stream of (filename, document body) tuples
+    
+    The document bodies are interpreted as either YAML or JSON depending on the filename suffix
+    and turned into dictionary structures.
+    
+    If any error occurs while parsing, the ``on_error`` callback is run, and None is returned
+    instead of a dictionary.
 
-    :param doc_stream: sequence of tuples consisting of uri and doc
-    :param on_error: Callback that gets the uri and doc as parameters
-    :param transform: if supplied, transforms the parsed document further
+    :param doc_stream: sequence of tuples consisting of uri and document body
+    :param on_error: error callback that gets the uri and doc as parameters
+    :param transform: if given, transforms the parsed document
 
-    On output doc is replaced with python dict parsed from yaml, or with None
-    if parsing/transform error occurred.
     """
     for uri, doc in doc_stream:
         try:
