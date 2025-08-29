@@ -426,7 +426,7 @@ def _normalise_geobox(
         "The use of datacube.utils.geometry.GeoBox objects is deprecated, "
         "and support will be removed in a future release.\n"
         "Now converting to an odc.geo GeoBox.",
-        ODC2DeprecationWarning,
+        ODC2DeprecationWarning, stacklevel=3,
     )
     crs = None if gbox.crs is None else gbox.crs._str
     return GeoBox(shape=gbox.shape, affine=gbox.affine, crs=crs)

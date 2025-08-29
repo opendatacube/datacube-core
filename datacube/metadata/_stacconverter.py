@@ -162,7 +162,7 @@ def _stac_links(
         )
 
     if not collection_url and not stac_url:
-        warnings.warn("No collection provided for STAC Item.")
+        warnings.warn("No collection provided for STAC Item.", stacklevel=2)
 
 
 def ds2stac(
@@ -293,7 +293,7 @@ def ds_doc_to_stac(
     self_url: str | None = None,
     collection_url: str | None = None,
 ) -> Item:
-    warnings.warn("It is strongly preferred to use ds2stac if possible.")
+    warnings.warn("It is strongly preferred to use ds2stac if possible.", stacklevel=2)
     if is_doc_eo3(metadata_doc):
         product = infer_eo3_product(metadata_doc)
         dataset = Dataset(product, prep_eo3(metadata_doc), uri=uri)
@@ -301,7 +301,7 @@ def ds_doc_to_stac(
         warnings.warn(
             "Support for legacy eo datasets is deprecated and will require an "
             "eo3-style properties dict to be added to the metadata.",
-            ODC2DeprecationWarning,
+            ODC2DeprecationWarning, stacklevel=2,
         )
         product = infer_eo_product(metadata_doc)
         dataset = Dataset(product, metadata_doc, uri=uri)

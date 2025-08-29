@@ -112,7 +112,7 @@ class ODCOptionHandler:
                     warnings.warn(
                         f"Config being passed in by legacy environment variable ${envvar_name}. "
                         f"Please use ${canonical_name} instead.",
-                        ODC2DeprecationWarning,
+                        ODC2DeprecationWarning, stacklevel=3,
                     )
                     return val
             global_name = f"odc_all_{self.name}".upper()

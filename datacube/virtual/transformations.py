@@ -237,7 +237,7 @@ class ToFloat(Transformation):
     ) -> None:
         warnings.warn(
             "the `to_float` transform is deprecated, please use `expressions` instead",
-            category=DeprecationWarning,
+            stacklevel=2, category=DeprecationWarning,
         )
         self.apply_to = apply_to
         self.dtype = dtype
@@ -302,7 +302,7 @@ class Rename(Transformation):
     def __init__(self, measurement_names: Mapping) -> None:
         warnings.warn(
             "the `rename` transform is deprecated, please use `expressions` instead",
-            category=DeprecationWarning,
+            stacklevel=2, category=DeprecationWarning,
         )
         self.measurement_names = measurement_names
 
@@ -361,7 +361,7 @@ class Select(Transformation):
     def __init__(self, measurement_names: Iterable) -> None:
         warnings.warn(
             "the `select` transform is deprecated, please use `expressions` instead",
-            category=DeprecationWarning,
+            stacklevel=2, category=DeprecationWarning,
         )
         self.measurement_names = measurement_names
 

@@ -350,7 +350,7 @@ class CRS:
         """DEPRECATED"""
         warnings.warn(
             "Please use `str(crs)` instead of `crs.crs_str`",
-            category=DeprecationWarning,
+            stacklevel=2, category=DeprecationWarning,
         )
         return self._str
 

@@ -73,7 +73,7 @@ def find_config(
                 "Datacube config path being determined by legacy $DATACUBE_CONFIG_PATH environment variable. "
                 "This environment variable is deprecated and the behaviour of it has changed somewhat since datacube "
                 "1.8.x.   Please refer to the documentation for details and switch to $ODC_CONFIG_PATH",
-                ODC2DeprecationWarning,
+                ODC2DeprecationWarning, stacklevel=2,
             )
             paths.extend(os.environ["DATACUBE_CONFIG_PATH"].split(":"))
         else:

@@ -564,7 +564,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :return: Was one added?
         """
         if not uri:
-            warnings.warn(f"Cannot add empty uri. (dataset {id_})")
+            warnings.warn(f"Cannot add empty uri. (dataset {id_})", stacklevel=2)
             return False
 
         with self._db_connection() as connection:
