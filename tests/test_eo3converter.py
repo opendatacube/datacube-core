@@ -11,7 +11,6 @@ from typing import Any
 
 import pystac
 import pytest
-from affine import Affine
 from odc.geo.geom import Geometry
 from odc.stac._mdtools import RasterCollectionMetadata, has_proj_ext, has_raster_ext
 from pystac.extensions.eo import EOExtension
@@ -365,18 +364,17 @@ def test_roundtrip(eo3_dataset: Dataset, eo3_product: Product):
     assert (
         list(roundtrip.grids["default"]["shape"]) == original.grids["default"]["shape"]
     )
-    # assert list(roundtrip.grids["default"]["transform"]) == original.grids["default"]["transform"][:6]
     assert (
-        roundtrip.grids["default"]["transform"]
-        == Affine(*original.grids["default"]["transform"]).to_shapely()
+        list(roundtrip.grids["default"]["transform"])
+        == original.grids["default"]["transform"][:6]
     )
     # there's no way to conserve grid names when converting to stac, but values should still be the same
     assert (
         list(roundtrip.grids["g15"]["shape"]) == original.grids["panchromatic"]["shape"]
     )
     assert (
-        roundtrip.grids["g15"]["transform"]
-        == Affine(*original.grids["panchromatic"]["transform"]).to_shapely()
+        list(roundtrip.grids["g15"]["transform"])
+        == original.grids["panchromatic"]["transform"][:6]
     )
 
     assert roundtrip.crs == original.crs
