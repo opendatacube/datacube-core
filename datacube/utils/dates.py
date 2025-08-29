@@ -9,7 +9,7 @@ Includes sequence generation functions to be used by statistics apps
 
 """
 
-from collections.abc import Iterator
+from collections.abc import Generator
 from datetime import date, datetime, timezone, tzinfo
 
 import dateutil
@@ -25,7 +25,7 @@ DURATIONS = {"y": "years", "m": "months", "d": "days"}
 
 def date_sequence(
     start: date | None, end: date | int | None, stats_duration: str, step_size: str
-) -> Iterator:
+) -> Generator[tuple]:
     """
     Generate a sequence of time span tuples
 
@@ -46,7 +46,7 @@ def date_sequence(
             yield start_date, start_date + stats_duration
 
 
-def parse_interval(interval):
+def parse_interval(interval) -> tuple:
     count, units = _split_duration(interval)
     try:
         return count, FREQS[units]
@@ -66,7 +66,7 @@ def parse_duration(duration):
     return relativedelta(**delta)
 
 
-def _split_duration(duration):
+def _split_duration(duration) -> tuple:
     return int(duration[:-1]), duration[-1:]
 
 
