@@ -13,7 +13,8 @@ def select_unique(things):
     for other in rest:
         if first != other:
             warnings.warn(
-                f"select_unique may have failed: {first} is not the same as {other}", stacklevel=3
+                f"select_unique may have failed: {first} is not the same as {other}",
+                stacklevel=3,
             )
             break
 

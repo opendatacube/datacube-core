@@ -128,7 +128,9 @@ def _write_cog(
     )
 
     if (blocksize % 16) != 0:
-        warnings.warn("Block size must be a multiple of 16, will be adjusted", stacklevel=3)
+        warnings.warn(
+            "Block size must be a multiple of 16, will be adjusted", stacklevel=3
+        )
 
     rio_opts = {
         "width": w,

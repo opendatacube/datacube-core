@@ -12,5 +12,6 @@ from datacube.migration import ODC2DeprecationWarning
 
 warnings.warn(
     "The old datacube.config  is no longer supported.  Please use the new datacube.cfg library",
-    ODC2DeprecationWarning, stacklevel=2,
+    ODC2DeprecationWarning,
+    stacklevel=2,
 )
