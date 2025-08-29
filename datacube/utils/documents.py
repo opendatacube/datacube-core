@@ -187,10 +187,10 @@ def parse_doc_stream(
 ) -> Generator[tuple[str, Mapping[str, Any] | None]]:
     """
     Parse a stream of (filename, document body) tuples
-    
+
     The document bodies are interpreted as either YAML or JSON depending on the filename suffix
     and turned into dictionary structures.
-    
+
     If any error occurs while parsing, the ``on_error`` callback is run, and None is returned
     instead of a dictionary.
 
