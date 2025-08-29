@@ -30,6 +30,8 @@ import toolz
 import yaml
 from typing_extensions import override
 
+from datacube.utils.changes import Offset
+
 # Compatibility-imports to preserve the API.
 from datacube.utils.json_types import JsonAtom, JsonDict, JsonLike  # noqa: F401
 
@@ -624,5 +626,5 @@ def schema_validated(schema: Path):
     return decorate
 
 
-def _readable_offset(offset) -> str:
+def _readable_offset(offset: Offset) -> str:
     return ".".join(map(str, offset))

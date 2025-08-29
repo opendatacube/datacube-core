@@ -66,7 +66,7 @@ def run_migrations_offline() -> None:
 
 
 def include_name(
-    name,
+    name: str | None,
     type_: Literal[
         "schema",
         "table",

@@ -45,7 +45,7 @@ def fake_index():
     )
 
 
-def test_create_gridworkflow_creation_with_product(fake_index):
+def test_create_gridworkflow_creation_with_product(fake_index) -> None:
     index = fake_index
 
     # need product or grispec
@@ -91,13 +91,13 @@ def sample_grid_workflow():
     return gw, gridspec, fakedataset, fakeindex
 
 
-def test_gridworkflow_str_repr(sample_grid_workflow):
+def test_gridworkflow_str_repr(sample_grid_workflow) -> None:
     gw, _, _, _ = sample_grid_workflow
     assert len(str(gw)) > 0
     assert len(repr(gw)) > 0
 
 
-def test_gridworkflow_cell_observations(sample_grid_workflow):
+def test_gridworkflow_cell_observations(sample_grid_workflow) -> None:
     gw, gridspec, _, _ = sample_grid_workflow
     query = {
         "product": "fake_product_name",
@@ -111,7 +111,7 @@ def test_gridworkflow_cell_observations(sample_grid_workflow):
     ) == [(1, -2)]
 
 
-def test_gridworkflow_cell_observations_errors(sample_grid_workflow):
+def test_gridworkflow_cell_observations_errors(sample_grid_workflow) -> None:
     gw, gridspec, _, _ = sample_grid_workflow
     query = {
         "product": "fake_product_name",
@@ -129,7 +129,7 @@ def test_gridworkflow_cell_observations_errors(sample_grid_workflow):
     assert str(e.value) == "Cannot process tile_buffering and geopolygon together."
 
 
-def test_gridworkflow_list_tiles_unpadded(sample_grid_workflow):
+def test_gridworkflow_list_tiles_unpadded(sample_grid_workflow) -> None:
     gw, _, _, _ = sample_grid_workflow
     query = {
         "product": "fake_product_name",
@@ -138,7 +138,7 @@ def test_gridworkflow_list_tiles_unpadded(sample_grid_workflow):
     assert len(gw.list_tiles(**query)) == 1
 
 
-def test_gridworkflow_list_tiles_padded(sample_grid_workflow):
+def test_gridworkflow_list_tiles_padded(sample_grid_workflow) -> None:
     gw, _, _, _ = sample_grid_workflow
     query = {
         "product": "fake_product_name",
@@ -147,7 +147,7 @@ def test_gridworkflow_list_tiles_padded(sample_grid_workflow):
     assert len(gw.list_tiles(tile_buffer=(20, 20), **query)) == 9
 
 
-def test_gridworkflow_list_tiles_multiple_datasets(sample_grid_workflow):
+def test_gridworkflow_list_tiles_multiple_datasets(sample_grid_workflow) -> None:
     gw, gridspec, fakedataset, fakeindex = sample_grid_workflow
     query = {
         "product": "fake_product_name",
@@ -170,7 +170,7 @@ def test_gridworkflow_list_tiles_multiple_datasets(sample_grid_workflow):
     assert len(gw.list_tiles(tile_buffer=(20, 20), **query)) == 12
 
 
-def test_gridworkflow_returned_tile_properties(sample_grid_workflow):
+def test_gridworkflow_returned_tile_properties(sample_grid_workflow) -> None:
     gw, gridspec, fakedataset, fakeindex = sample_grid_workflow
     query = {
         "product": "fake_product_name",
@@ -201,7 +201,7 @@ def test_gridworkflow_returned_tile_properties(sample_grid_workflow):
     assert tile.geobox.affine * (10, 10) == padded_tile.geobox.affine * (10 + 2, 10 + 2)
 
 
-def test_gridworkflow_loading(sample_grid_workflow):
+def test_gridworkflow_loading(sample_grid_workflow) -> None:
     gw, _, fakedataset, _ = sample_grid_workflow
     query = {
         "product": "fake_product_name",
@@ -230,7 +230,7 @@ def test_gridworkflow_loading(sample_grid_workflow):
         assert "resampling" in kwargs
 
 
-def test_gridworkflow_cell_index_extract(sample_grid_workflow):
+def test_gridworkflow_cell_index_extract(sample_grid_workflow) -> None:
     gw, gridspec, fakedataset, fakeindex = sample_grid_workflow
     query = {
         "product": "fake_product_name",
@@ -260,7 +260,7 @@ def test_gridworkflow_cell_index_extract(sample_grid_workflow):
         gw.list_cells(cell_index=(1, -2), time=query["time"])
 
 
-def test_gridworkflow_with_time_depth():
+def test_gridworkflow_with_time_depth() -> None:
     """Test GridWorkflow with time series.
     Also test `Tile` methods `split` and `split_by_time`
     """
@@ -287,7 +287,7 @@ def test_gridworkflow_with_time_depth():
     gw = GridWorkflow(fakeindex, gridspec)
     query = {"product": "fake_product_name"}
 
-    cells = gw.list_cells(**query)
+    cells = gw.list_cells(cell_index=None, **query)
     for _, cell in cells.items():
         #  test Tile.split()
         for _, tile in cell.split("time"):

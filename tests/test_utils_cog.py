@@ -5,6 +5,7 @@
 import math
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import numpy as np
 import pytest
@@ -18,7 +19,13 @@ from datacube.testutils.io import native_load, rio_slurp, rio_slurp_xarray
 from datacube.utils.cog import _write_cog, to_cog, write_cog
 
 
-def gen_test_data(prefix, dask=False, shape=None, dtype="int16", nodata=-999):
+def gen_test_data(
+    prefix: str | Path,
+    dask: bool = False,
+    shape=None,
+    dtype: str = "int16",
+    nodata=-999,
+):
     w, h, ndw = 96, 64, 7
     if shape is not None:
         h, w = shape
@@ -28,13 +35,13 @@ def gen_test_data(prefix, dask=False, shape=None, dtype="int16", nodata=-999):
     ds, gbox = gen_tiff_dataset(
         SimpleNamespace(name="aa", values=aa, nodata=nodata), prefix
     )
-    extras = {}
+    extras: dict[str, Any] = {}
 
     if dask:
         extras.update(dask_chunks={"time": 1})
 
     xx = native_load([ds], ["aa"], Datacube.group_datasets, "time", **extras)
-
+    assert isinstance(xx, xr.Dataset)
     return xx.aa.isel(time=0), ds
 
 

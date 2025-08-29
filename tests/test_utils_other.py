@@ -204,7 +204,7 @@ def test_pick_uri() -> None:
 
 
 @given(integers(min_value=10, max_value=30))
-def test_gen_pass(n_bytes) -> None:
+def test_gen_pass(n_bytes: int) -> None:
     password1 = gen_password(n_bytes)
     password2 = gen_password(n_bytes)
     assert len(password1) >= n_bytes
@@ -213,7 +213,7 @@ def test_gen_pass(n_bytes) -> None:
 
 
 @given(text(alphabet=string.digits + string.ascii_letters + " ,:.![]?", max_size=20))
-def test_write_user_secret_file(txt) -> None:
+def test_write_user_secret_file(txt: str) -> None:
     fname = ".tst-datacube-uefvwr4cfkkl0ijk.txt"
 
     write_user_secret_file(txt, fname)

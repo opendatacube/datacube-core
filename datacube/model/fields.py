@@ -9,14 +9,14 @@ This allows extraction of fields of interest from dataset metadata document.
 
 import decimal
 from collections.abc import Callable, Mapping
-from typing import Any, Literal, TypeAlias, get_args
+from typing import Any, Generic, Literal, TypeAlias, get_args
 
 import toolz
 from typing_extensions import override
 
 from datacube.utils import parse_time
 
-from ._base import Range
+from ._base import OrderedT, Range
 
 # Allowed values for field 'type' (specified in a metadata type document)
 _AVAILABLE_TYPES: TypeAlias = Literal[
@@ -135,12 +135,12 @@ class SimpleField(Field):
         return self._converter(v)
 
 
-class RangeField(Field):
+class RangeField(Generic[OrderedT], Field):
     def __init__(
         self,
         min_offset,
         max_offset,
-        base_converter,
+        base_converter: type | Callable[[Any], OrderedT],
         type_name: _AVAILABLE_TYPES,
         name: str = "",
         description: str = "",
@@ -155,7 +155,7 @@ class RangeField(Field):
 
     @override
     def extract(self, doc) -> Range | None:
-        def extract_raw(paths):
+        def extract_raw(paths) -> list[OrderedT]:
             vv = [toolz.get_in(p, doc, default=None) for p in paths]
             return [self._converter(v) for v in vv if v is not None]
 
@@ -171,7 +171,9 @@ class RangeField(Field):
         return Range(v_min, v_max)
 
 
-def parse_search_field(doc, name: str = "") -> RangeField | SimpleField:
+def parse_search_field(
+    doc: Mapping[str, Any], name: str = ""
+) -> RangeField | SimpleField:
     parsers: dict[str, type | Callable[[Any], Any]] = {
         "string": str,
         "double": float,

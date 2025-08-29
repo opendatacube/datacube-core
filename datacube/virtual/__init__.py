@@ -3,7 +3,7 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import copy
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any, cast
 
 from datacube.model import Measurement
@@ -58,7 +58,9 @@ class NameResolver:
 
         get = recipe.get
 
-        def lookup(name, namespace=None, kind: str = "transformation"):
+        def lookup(
+            name: str | Callable | None, namespace=None, kind: str = "transformation"
+        ):
             if callable(name):
                 return name
 

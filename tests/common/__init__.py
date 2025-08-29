@@ -39,7 +39,11 @@ NO_WARN_CFG = {"*": {"warnings": "ignore"}}
 
 
 def mk_stac_item(
-    _id, datetime="2012-12-12T00:00:00Z", geometry=None, stac_extensions=None, **props
+    _id,
+    datetime: str = "2012-12-12T00:00:00Z",
+    geometry=None,
+    stac_extensions=None,
+    **props,
 ):
     if stac_extensions is None:
         stac_extensions = []

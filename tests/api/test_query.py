@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import numpy as np
 import pandas
 import pytest
-from odc.geo import CRS
+from odc.geo import CRS, Geometry
 
 from datacube.api.query import GroupBy, Query, query_group_by, solar_day, solar_offset
 from datacube.model import Range
@@ -312,10 +312,10 @@ def test_solar_offset() -> None:
 
     from odc.geo.geom import point
 
-    def _hr(t):
+    def _hr(t: timedelta) -> float:
         return t.days * 24 + t.seconds / 3600
 
-    def p(lon):
+    def p(lon: float) -> Geometry:
         return point(lon, 0, "epsg:4326")
 
     assert solar_offset(p(0)) == timedelta(seconds=0)

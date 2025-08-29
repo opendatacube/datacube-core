@@ -261,11 +261,11 @@ def test_user_creation(clirunner, example_user) -> None:
     assert_no_user(clirunner, username)
 
 
-def assert_user_with_role(clirunner, role, user_name) -> None:
+def assert_user_with_role(clirunner, role, user_name: str) -> None:
     result = clirunner(["user", "list"])
     assert "{}{}".format("user: ", user_name) in result.output
 
 
-def assert_no_user(clirunner, username) -> None:
+def assert_no_user(clirunner, username: str) -> None:
     result = clirunner(["user", "list"])
     assert username not in result.output

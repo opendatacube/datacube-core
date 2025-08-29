@@ -19,6 +19,7 @@ __all__ = [
     "thread_local_cache",
 ]
 
+T = TypeVar("T")
 T1 = TypeVar("T1")
 T2 = TypeVar("T2")
 

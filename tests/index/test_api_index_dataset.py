@@ -175,7 +175,7 @@ class MockDb:
     def datasets_intersection(self, ids):
         return [k for k in ids if k in self.dataset]
 
-    def contains_dataset(self, dataset_id):
+    def contains_dataset(self, dataset_id) -> bool:
         return dataset_id in self.dataset
 
     def insert_dataset_location(self, *args, **kwargs) -> None:
@@ -209,7 +209,7 @@ class MockTypesResource:
         return self.type
 
     @contextmanager
-    def _db_connection(self, transaction=False):
+    def _db_connection(self, transaction: bool = False):
         yield MockDb()
 
 
@@ -222,7 +222,7 @@ class MockIndex:
         return None
 
     @contextmanager
-    def _active_connection(self, transaction=False):
+    def _active_connection(self, transaction: bool = False):
         yield self._db
 
 

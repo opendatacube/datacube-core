@@ -20,7 +20,7 @@ from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from typing import Any
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import Connection, create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
 from typing_extensions import override
@@ -229,7 +229,7 @@ class PostgresDb:
             finally:
                 connection.close()
 
-    def give_me_a_connection(self):
+    def give_me_a_connection(self) -> Connection:
         return self._engine.connect()
 
     @classmethod
@@ -248,7 +248,7 @@ def handle_dynamic_token_authentication(
     last_token_time = [0.0]
 
     @event.listens_for(engine, "do_connect")
-    def override_new_connection(dialect, conn_rec, cargs, cparams):
+    def override_new_connection(dialect, conn_rec, cargs, cparams) -> None:
         # Handle IAM authentication
         # Importing here because the function `clock_gettime` is not available on Windows
         # which shouldn't be a problem, because boto3 auth is mostly used on AWS.

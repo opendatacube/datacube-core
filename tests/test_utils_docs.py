@@ -288,12 +288,12 @@ def test_traverse_datasets() -> None:
     +--> E
     """
 
-    def node(name, **kwargs):
+    def node(name: str, **kwargs):
         return SimpleNamespace(id=name, sources=kwargs)
 
     A, *_ = make_graph_abcde(node)
 
-    def visitor(node, name=None, depth=0, out=None) -> None:
+    def visitor(node, name: str | None = None, depth: int = 0, out=None) -> None:
         s = "{}:{}:{:d}".format(node.id, name if name else "..", depth)
         out.append(s)
 
@@ -354,7 +354,7 @@ def test_simple_doc_nav() -> None:
     nu_map = {n: uuid4() for n in ["A", "B", "C", "D", "E"]}
     un_map = {u: n for n, u in nu_map.items()}
 
-    def node(name, **kwargs):
+    def node(name: str, **kwargs):
         return {"id": nu_map[name], "lineage": {"source_datasets": kwargs}}
 
     A, _, C, _, _ = make_graph_abcde(node)  # noqa: N806
@@ -368,7 +368,7 @@ def test_simple_doc_nav() -> None:
     assert rdr.sources is rdr.sources
     assert isinstance(rdr.sources_path, tuple)
 
-    def visitor(node, name=None, depth=0, out=None) -> None:
+    def visitor(node, name: str | None = None, depth: int = 0, out=None) -> None:
         s = "{}:{}:{:d}".format(un_map[node.id], name if name else "..", depth)
         out.append(s)
 

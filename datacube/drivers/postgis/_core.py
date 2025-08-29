@@ -316,7 +316,7 @@ def to_pg_role(role) -> str:
     return pg_role
 
 
-def from_pg_role(pg_role):
+def from_pg_role(pg_role: str) -> str:
     """
     Convert a PostgreSQL role name back to an ODC name.
 

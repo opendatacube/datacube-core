@@ -161,7 +161,7 @@ class FakeDatasetSource(DataSource):
     def __init__(
         self,
         value,
-        bandnumber=1,
+        bandnumber: int = 1,
         nodata=-999,
         shape=(2, 2),
         crs=None,

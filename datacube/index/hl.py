@@ -23,7 +23,7 @@ from datacube.model.utils import (
     remap_lineage_doc,
 )
 from datacube.utils import InvalidDocException, SimpleDocNav, changes, jsonify_document
-from datacube.utils.changes import get_doc_changes
+from datacube.utils.changes import Offset, get_doc_changes
 
 from .eo3 import is_doc_eo3, is_doc_geo, prep_eo3
 
@@ -148,7 +148,7 @@ def check_consistent(
     if len(diffs) == 0:
         return True, None
 
-    def render_diff(offset, a, b) -> str:
+    def render_diff(offset: Offset, a, b) -> str:
         offset = ".".join(map(str, offset))
         return f"{offset}: {a!r}!={b!r}"
 
