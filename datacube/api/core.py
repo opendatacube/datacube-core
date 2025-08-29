@@ -11,6 +11,7 @@ import uuid
 import warnings
 from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 from itertools import groupby
+from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 import deprecat
@@ -1109,7 +1110,12 @@ class Datacube:
     def __enter__(self) -> Datacube:
         return self
 
-    def __exit__(self, type_, value, traceback) -> None:
+    def __exit__(
+        self,
+        type_: type[BaseException] | None,
+        value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         self.close()
 
 

@@ -94,7 +94,9 @@ class SpatialIndexORMRegistry:
         return type(f"SpatialIdx{epsg}", (SpatialIndex, Base), attributes)
 
 
-def is_spindex_table_name(name: str) -> bool:
+def is_spindex_table_name(name: str | None) -> bool:
+    if name is None:
+        return False
     bits = name.split("_")
     if len(bits) == 2 and bits[0] == "spatial":
         try:

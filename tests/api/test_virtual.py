@@ -49,7 +49,7 @@ def test_formula_parsing() -> None:
 PRODUCT_LIST = ["ls7_pq_albers", "ls8_pq_albers", "ls7_nbar_albers", "ls8_nbar_albers"]
 
 
-def example_metadata_type():
+def example_metadata_type() -> MetadataType:
     return MetadataType(
         {
             "name": "eo",
@@ -65,7 +65,7 @@ def example_metadata_type():
     )
 
 
-def example_product(name):
+def example_product(name: str):
     if name not in PRODUCT_LIST:
         return None
 
@@ -119,7 +119,7 @@ def example_product(name):
     return result
 
 
-def example_grid_spatial():
+def example_grid_spatial() -> dict:
     return {
         "projection": {
             "valid_data": {
@@ -263,7 +263,7 @@ def dc():
         "dda8b22e-27f5-40a5-99d4-b94810f545d0",
     ]
 
-    def example_dataset(product, id_, center_time):
+    def example_dataset(product, id_, center_time) -> Dataset:
         result = Dataset(
             example_product(product),
             {"id": id_, "grid_spatial": example_grid_spatial()},
@@ -272,7 +272,7 @@ def dc():
         result.center_time = center_time
         return result
 
-    def find_datasets(*args, **kwargs):
+    def find_datasets(*args, **kwargs) -> list:
         product = kwargs["product"]
         if product == "ls8_nbar_albers":
             return [
@@ -294,7 +294,7 @@ def dc():
 
 
 @pytest.fixture
-def query():
+def query() -> dict[str, tuple[str | float, str | float]]:
     return {
         "time": ("2014-01-01", "2014-03-01"),
         "lat": (-35.2, -35.21),

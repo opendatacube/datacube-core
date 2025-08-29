@@ -286,7 +286,7 @@ def test_accessories(sentinel_stac_ms: pystac.Item) -> None:
     assert set(ds.metadata_doc["accessories"].keys()) == set(expected_accs)
 
 
-def test_ds2stac(eo3_dataset: Dataset):
+def test_ds2stac(eo3_dataset: Dataset) -> None:
     assert eo3_dataset.uri is not None
     output_stac = ds2stac(eo3_dataset).to_dict()
     assert output_stac["properties"]["instruments"] == ["oli", "tirs"]
@@ -310,7 +310,7 @@ def test_ds2stac(eo3_dataset: Dataset):
     ]
 
 
-def test_ds2stac_links(eo3_dataset: Dataset):
+def test_ds2stac_links(eo3_dataset: Dataset) -> None:
     eo3_dataset.uri = None
     output_stac = ds2stac(
         eo3_dataset,
@@ -342,7 +342,7 @@ def test_ds2stac_links(eo3_dataset: Dataset):
     ]
 
 
-def test_sources(ds_legacy_sources: Dataset, ds_ext_lineage: Dataset):
+def test_sources(ds_legacy_sources: Dataset, ds_ext_lineage: Dataset) -> None:
     assert ds2stac(ds_legacy_sources).to_dict()["properties"]["odc:lineage"] == {
         "level1": ["b5f234fe-bba8-5483-9bc0-250360d429cf"]
     }
@@ -351,7 +351,7 @@ def test_sources(ds_legacy_sources: Dataset, ds_ext_lineage: Dataset):
     }
 
 
-def test_roundtrip(eo3_dataset: Dataset, eo3_product: Product):
+def test_roundtrip(eo3_dataset: Dataset, eo3_product: Product) -> None:
     original = eo3_dataset
     roundtrip = _item_to_ds(ds2stac(eo3_dataset), eo3_product)
     orig_doc = original.metadata_doc

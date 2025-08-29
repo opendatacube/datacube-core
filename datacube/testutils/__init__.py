@@ -417,7 +417,7 @@ def split_test_image(aa):
 
 
 def gen_tiff_dataset(
-    bands: Sequence[BandObject],
+    bands: BandObject | Sequence[BandObject],
     base_folder,
     prefix: str = "",
     timestamp: str = "2018-07-19",

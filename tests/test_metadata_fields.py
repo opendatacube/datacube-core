@@ -5,7 +5,9 @@
 import datetime
 import decimal
 import sys
+from collections.abc import Mapping
 from textwrap import dedent
+from typing import Any
 
 import pytest
 import yaml
@@ -171,7 +173,7 @@ def test_metadata_from_doc() -> None:
 
 
 def test_bad_field_definition() -> None:
-    def doc(s):
+    def doc(s: str) -> Mapping[str, Any]:
         return yaml.safe_load(dedent(s))
 
     with pytest.raises(ValueError):

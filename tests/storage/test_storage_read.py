@@ -53,7 +53,7 @@ def test_read_paste(nearest_resampling, tmpdir) -> None:
         resampling=nearest_resampling,
         fallback_nodata: int | float | None = -999,
         dst_nodata: int | float | None = -999,
-        check_paste=False,
+        check_paste: bool = False,
     ) -> tuple[np.ndarray, tuple[slice, slice]]:
         with RasterFileDataSource(mm.path, 1, nodata=fallback_nodata).open() as rdr:
             if check_paste:
@@ -201,7 +201,7 @@ def test_read_paste_v2(nearest_resampling, tmpdir) -> None:
         resampling=nearest_resampling,
         fallback_nodata=-999,
         dst_nodata=-999,
-        check_paste=False,
+        check_paste: bool = False,
     ):
         rdr = open_reader(mm.path, nodata=fallback_nodata)
         if check_paste:

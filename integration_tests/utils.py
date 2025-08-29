@@ -66,7 +66,7 @@ def limit_num_measurements(dataset_type):
     return dataset_type
 
 
-def _make_geotiffs(tiffs_dir, day_offset, num_bands=NUM_BANDS):
+def _make_geotiffs(tiffs_dir, day_offset, num_bands: int = NUM_BANDS):
     """
     Generate custom geotiff files, one per band.
 

@@ -8,7 +8,7 @@ import itertools
 import math
 import warnings
 from collections import OrderedDict
-from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
+from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Sequence
 from typing import Any, NamedTuple, Optional, TypeAlias, Union
 
 import cachetools
@@ -24,6 +24,8 @@ from pyproj.transformer import Transformer
 from shapely import from_wkt, geometry, ops
 from shapely.geometry import base
 from typing_extensions import override
+
+from datacube.utils.generic import T
 
 from ..math import is_almost_int
 from .tools import is_affine_st, roi_normalise, roi_shape
@@ -155,7 +157,7 @@ def _make_crs(crs: str | int | _CRS) -> tuple[_CRS, str, int | None]:
     return crs, crs_str, epsg
 
 
-def _make_crs_transform_key(from_crs, to_crs, always_xy):
+def _make_crs_transform_key(from_crs, to_crs, always_xy: T) -> tuple[int, int, T]:
     return id(from_crs), id(to_crs), always_xy
 
 
@@ -211,10 +213,10 @@ class CRS:
                 "Expect string or any object with `.to_epsg()` or `.to_wkt()` methods"
             )
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, str]:
         return {"crs_str": self._str}
 
-    def __setstate__(self, state) -> None:
+    def __setstate__(self, state: Mapping[str, str | int | _CRS]) -> None:
         self._crs, self._str, self._epsg = _make_crs(state["crs_str"])
 
     def to_wkt(self, pretty: bool = False, version: WktVersion | None = None) -> str:

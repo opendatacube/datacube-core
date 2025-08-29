@@ -11,7 +11,7 @@ from datacube.testutils.threads import FakeThreadPoolExecutor
 
 
 def test_fakethreadpool() -> None:
-    def tfunc(a: int, b: int = 0, please_fail=False) -> int:
+    def tfunc(a: int, b: int = 0, please_fail: bool = False) -> int:
         if please_fail:
             raise ValueError("as you wish")
         if a == 13:

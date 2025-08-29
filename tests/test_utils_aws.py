@@ -34,7 +34,7 @@ def _json(**kw):
     return json.dumps(kw)
 
 
-def mock_urlopen(text, code=200):
+def mock_urlopen(text: str, code: int = 200):
     m = mock.MagicMock()
     m.getcode.return_value = code
     m.read.return_value = text.encode("utf8")

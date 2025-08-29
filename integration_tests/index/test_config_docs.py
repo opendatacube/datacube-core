@@ -157,7 +157,7 @@ def test_field_expression_unchanged(
     )
 
 
-def _object_exists(index: Index, index_name) -> bool:
+def _object_exists(index: Index, index_name: str) -> bool:
     assert isinstance(
         index, datacube.index.postgres.index.Index | datacube.index.postgis.index.Index
     )

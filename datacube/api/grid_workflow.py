@@ -146,11 +146,11 @@ class Tile:
             yield str(p), Tile(sources=sources_slice, geobox=self.geobox)
 
     @override
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Tile<sources={self.sources!r},\n\tgeobox={self.geobox!r}>"
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
 
@@ -170,7 +170,7 @@ class GridWorkflow:
         index: Index,
         grid_spec: GridSpec | OldGridSpec | None = None,
         product: Product | str | None = None,
-    ):
+    ) -> None:
         """
         Create a grid workflow tool.
 
@@ -212,7 +212,7 @@ class GridWorkflow:
         geopolygon: Geometry | None = None,
         tile_buffer: tuple[float, float] | None = None,
         **indexers: QueryField,
-    ) -> dict[tuple[int, int], dict[str, Dataset | GeoBox]]:
+    ) -> dict[tuple[int, int], dict[str, list[Dataset] | GeoBox]]:
         """
         List datasets, grouped by cell.
 
@@ -239,12 +239,12 @@ class GridWorkflow:
             raise GridWorkflowException(
                 "Cannot process tile_buffering and geopolygon together."
             )
-        cells: dict[tuple[int, int], dict[str, Dataset | GeoBox]] = {}
+        cells: dict[tuple[int, int], dict[str, list[Dataset] | GeoBox]] = {}
 
-        def add_dataset_to_cells(tile_index, tile_geobox, dataset_):
+        def add_dataset_to_cells(tile_index, tile_geobox, dataset_) -> None:
             cells.setdefault(tile_index, {"datasets": [], "geobox": tile_geobox})[
                 "datasets"
-            ].append(dataset_)
+            ].append(dataset_)  # type: ignore[union-attr]
 
         if cell_index:
             geobox = self.grid_spec.tile_geobox(cell_index)
@@ -474,9 +474,9 @@ class GridWorkflow:
         return tile
 
     @override
-    def __str__(self):
+    def __str__(self) -> str:
         return f"GridWorkflow<index={self.index!r},\n\tgridspec={self.grid_spec!r}>"
 
     @override
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()

@@ -11,7 +11,7 @@ products implementing the same interface.
 import uuid
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from collections.abc import Hashable, Iterator, Mapping, Sequence
+from collections.abc import Hashable, Iterable, Iterator, Mapping, Sequence
 from collections.abc import Mapping as TypeMapping
 from typing import Any, cast
 
@@ -1124,7 +1124,9 @@ class Reproject(VirtualProduct):
         return result
 
 
-def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
+def reproject_band(
+    band, geobox, resampling, dims: str | Iterable[Hashable], dask_chunks=None
+):
     """Reproject a single measurement to the geobox."""
     if not hasattr(band.data, "dask") or dask_chunks is None:
         data = reproject_array(band.data, band.nodata, band.geobox, geobox, resampling)
@@ -1138,9 +1140,9 @@ def reproject_band(band, geobox, resampling, dims, dask_chunks=None):
     )
 
     gt = GeoboxTiles(geobox, spatial_chunks)
-    new_layer = {}
+    new_layer: dict[tuple[Hashable, xarray.DataArray], Any] = {}
 
-    for tile_index in numpy.ndindex(gt.shape):
+    for tile_index in numpy.ndindex(gt.shape):  # type: ignore[call-overload]
         sub_geobox = gt[tile_index]
         # find the input array slice from the output geobox
         reproject_roi = compute_reproject_roi(band.geobox, sub_geobox, padding=1)
@@ -1203,7 +1205,7 @@ def reproject_array(src, nodata, s_geobox, d_geobox, resampling):
 
 
 def wrap_in_dataarray(
-    reprojected_data, src_band, dst_geobox, dims: Sequence[int]
+    reprojected_data, src_band, dst_geobox, dims: str | Iterable[Hashable]
 ) -> xarray.DataArray:
     """Wrap the reproject numpy array in a `xarray.DataArray` with relevant metadata."""
     non_spatial_shape = src_band.shape[:-2]

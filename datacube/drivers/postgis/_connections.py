@@ -313,7 +313,7 @@ def handle_dynamic_token_authentication(
     last_token_time = [0.0]
 
     @event.listens_for(engine, "do_connect")
-    def override_new_connection(dialect, conn_rec, cargs, cparams):
+    def override_new_connection(dialect, conn_rec, cargs, cparams) -> None:
         # Handle IAM authentication
         # Importing here because the function `clock_gettime` is not available on Windows
         # which shouldn't be a problem, because boto3 auth is mostly used on AWS.

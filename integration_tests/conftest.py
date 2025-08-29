@@ -311,7 +311,7 @@ def doc_to_ds(
     return index.datasets.get_unsafe(ds.id)
 
 
-def doc_to_ds_no_add(index: Index, product_name, ds_doc, ds_path) -> Dataset:
+def doc_to_ds_no_add(index: Index, product_name: str, ds_doc, ds_path) -> Dataset:
     from datacube.index.hl import Doc2Dataset
 
     resolver = Doc2Dataset(index, products=[product_name], verify_lineage=False)

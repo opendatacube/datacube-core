@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from abc import ABC, abstractmethod
 from threading import Lock
+from types import TracebackType
 from typing import Any
 
 from typing_extensions import override
@@ -111,7 +112,12 @@ class AbstractTransaction(ABC):
         self.begin()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> bool:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value,  # FIXME: should be BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
         if not self.active:
             # User has already manually committed or rolled back.
             return True
