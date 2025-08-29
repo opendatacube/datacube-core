@@ -567,12 +567,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :return: Was one added?
         """
         if not uri:
-            warnings.warn(f"Cannot add empty uri. (dataset {id_})")
+            warnings.warn(f"Cannot add empty uri. (dataset {id_})", stacklevel=2)
             return False
 
         existing = self.get_location(id_)
         if existing == uri:
-            warnings.warn(f"Dataset {id_} already has uri {uri}")
+            warnings.warn(f"Dataset {id_} already has uri {uri}", stacklevel=2)
             return False
         if existing is not None and existing != uri:
             raise ValueError(

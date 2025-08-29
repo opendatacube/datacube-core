@@ -416,10 +416,10 @@ class DatasetResource(AbstractDatasetResource):
     def add_location(self, id_: DSID, uri: str) -> bool:
         uuid = dsid_to_uuid(id_)
         if uuid not in self._by_id:
-            warnings.warn(f"dataset {id_} is not an active dataset")
+            warnings.warn(f"dataset {id_} is not an active dataset", stacklevel=2)
             return False
         if not uri:
-            warnings.warn(f"Cannot add empty uri. (dataset {id_})")
+            warnings.warn(f"Cannot add empty uri. (dataset {id_})", stacklevel=2)
             return False
         if uri in self._locations[uuid]:
             return False

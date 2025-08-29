@@ -792,6 +792,7 @@ class Datacube:
                 "The coords argument to Datacube.create_storage is now expected "
                 "as a DataArrayCoordinates object or None instead of a dict.",
                 ODC2DeprecationWarning,
+                stacklevel=2
             )
             coords = None if coords == {} else DataArrayCoordinates(*coords.values())
 
@@ -1477,7 +1478,7 @@ def _handle_legacy_resolution(
         "Square resolutions can be provided as an int or float, "
         "or axis order can be specified with odc.geo.resxy_ or odc.geo.resyx_. "
         "Legacy resolution formats are assumed to use (y, x) ordering.",
-        ODC2DeprecationWarning,
+        ODC2DeprecationWarning, stacklevel=2,
     )
     if not len(resolution):
         _LOG.warning("Empty resolution value. Ignoring")
