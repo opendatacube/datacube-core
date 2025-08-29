@@ -139,7 +139,7 @@ def _compute_uuid(
 
 
 def _to_grid(gbox: GeoBox) -> dict[str, Any]:
-    return {"shape": gbox.shape.yx, "transform": gbox.transform[:6]}
+    return {"shape": gbox.shape.yx, "transform": gbox.transform[:6]}  # type: ignore[index]
 
 
 def _to_dataset(
