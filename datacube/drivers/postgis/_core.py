@@ -212,7 +212,8 @@ def schema_is_latest(engine: Engine) -> bool:
     import warnings
 
     warnings.warn(
-        f"Current Alembic schema revision is {current_rev} expected {latest_rev}", stacklevel=2
+        f"Current Alembic schema revision is {current_rev} expected {latest_rev}",
+        stacklevel=2,
     )
     return False
 

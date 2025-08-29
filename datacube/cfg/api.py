@@ -235,7 +235,8 @@ class ODCConfig:
                 warnings.warn(
                     "Setting the default environment with $DATACUBE_ENVIRONMENT is deprecated. "
                     "Please use $ODC_ENVIRONMENT instead.",
-                    ODC2DeprecationWarning, stacklevel=3,
+                    ODC2DeprecationWarning,
+                    stacklevel=3,
                 )
                 item = os.environ["DATACUBE_ENVIRONMENT"]
             elif "default" in self.known_environments:
@@ -244,7 +245,8 @@ class ODCConfig:
                 warnings.warn(
                     "Defaulting to the 'datacube' environment - "
                     "this fallback behaviour is deprecated and may change in a future release.",
-                    ODC2DeprecationWarning, stacklevel=3,
+                    ODC2DeprecationWarning,
+                    stacklevel=3,
                 )
                 item = "datacube"
             else:
@@ -289,7 +291,8 @@ class ODCEnvironment:
         if name == "user" and "default_environment" in raw:
             warnings.warn(
                 "The 'default_environment' setting in the 'user' section is no longer supported - "
-                "please refer to the documentation for more information", stacklevel=2
+                "please refer to the documentation for more information",
+                stacklevel=2,
             )
 
         self._env_overrides_applied = False
@@ -324,7 +327,8 @@ class ODCEnvironment:
                     self._handle_option(handler)
                 if self._cfg.is_default and not self._env_overrides_applied:
                     warnings.warn(
-                        "No configuration file found - using default configuration and environment variables", stacklevel=3
+                        "No configuration file found - using default configuration and environment variables",
+                        stacklevel=3,
                     )
 
         # Config already processed

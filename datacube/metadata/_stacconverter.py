@@ -301,7 +301,8 @@ def ds_doc_to_stac(
         warnings.warn(
             "Support for legacy eo datasets is deprecated and will require an "
             "eo3-style properties dict to be added to the metadata.",
-            ODC2DeprecationWarning, stacklevel=2,
+            ODC2DeprecationWarning,
+            stacklevel=2,
         )
         product = infer_eo_product(metadata_doc)
         dataset = Dataset(product, metadata_doc, uri=uri)
