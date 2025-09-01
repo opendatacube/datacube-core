@@ -14,6 +14,7 @@ from typing import Any
 
 import dask
 import toolz
+from botocore.credentials import ReadOnlyCredentials
 from dask.delayed import Delayed, DelayedLeaf, delayed
 from dask.distributed import Client
 
@@ -83,7 +84,7 @@ def start_local_dask(
     mem_safety_margin: str | int | None = None,
     memory_limit: str | int | None = None,
     **kw,
-):
+) -> Client:
     """
     Wrapper around ``distributed.Client(..)`` constructor that deals with memory better.
 
@@ -270,7 +271,7 @@ def _save_blob_to_s3(
     data: bytes | str,
     url: str,
     profile: str | None = None,
-    creds=None,
+    creds: ReadOnlyCredentials | None = None,
     region_name: str | None = None,
     with_deps=None,
     **kw,

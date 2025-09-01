@@ -472,7 +472,7 @@ class SimpleDocNav:
         return self._doc_without
 
     @property
-    def id(self):
+    def id(self) -> UUID | None:
         if not self._doc_uuid:
             doc_id = self._doc.get("id", None)
             if doc_id:

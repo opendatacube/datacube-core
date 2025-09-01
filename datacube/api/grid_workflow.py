@@ -37,7 +37,7 @@ class GridWorkflowException(DatacubeException):
     """An ODC Exception raised while building or running Grid Workflows"""
 
 
-def _fast_slice(array: xr.DataArray, indexers):
+def _fast_slice(array: xr.DataArray, indexers) -> xr.DataArray:
     data = array.values[indexers]
     dims = [
         dim for dim, indexer in zip(array.dims, indexers) if isinstance(indexer, slice)
@@ -99,7 +99,7 @@ class Tile:
     def product(self) -> Product:
         return self.sources.values[0][0].product
 
-    def __getitem__(self, chunk):
+    def __getitem__(self, chunk) -> Tile:
         sources = _fast_slice(self.sources, chunk[: len(self.sources.shape)])
         geobox = self.geobox[chunk[len(self.sources.shape) :]]
         return Tile(sources, geobox)
@@ -464,7 +464,7 @@ class GridWorkflow:
             skip_broken_datasets=skip_broken_datasets,
         )
 
-    def update_tile_lineage(self, tile: Tile):
+    def update_tile_lineage(self, tile: Tile) -> Tile:
         for i in range(tile.sources.size):
             sources = tile.sources.values[i]
             tile.sources.values[i] = tuple(

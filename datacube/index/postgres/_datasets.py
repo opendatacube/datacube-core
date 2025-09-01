@@ -1037,7 +1037,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 yield columns._asdict()  # type: ignore[attr-defined]
 
     @override
-    def spatial_extent(self, ids, crs=None) -> None:
+    def spatial_extent(self, ids: Iterable[DSID], crs=None) -> None:
         return None
 
     @override

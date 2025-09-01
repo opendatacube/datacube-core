@@ -17,7 +17,7 @@ import datetime
 import json
 import logging
 import uuid
-from collections.abc import Generator, Iterable, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import Any
 from typing import cast as type_cast
 
@@ -160,7 +160,9 @@ def mk_simple_offset_field(
     )
 
 
-def get_dataset_fields(metadata_type_definition: dict[str, Any]) -> dict[str, PgField]:
+def get_dataset_fields(
+    metadata_type_definition: Mapping[str, Any],
+) -> dict[str, PgField]:
     dataset_section = metadata_type_definition["dataset"]
 
     fields = get_native_fields()
@@ -190,7 +192,7 @@ def get_dataset_fields(metadata_type_definition: dict[str, Any]) -> dict[str, Pg
     return fields
 
 
-def non_native_fields(mdt_metadata) -> dict[str, PgField]:
+def non_native_fields(mdt_metadata: Mapping[str, Any]) -> dict[str, PgField]:
     return {
         name: field
         for name, field in get_dataset_fields(mdt_metadata).items()
@@ -198,7 +200,7 @@ def non_native_fields(mdt_metadata) -> dict[str, PgField]:
     }
 
 
-def extract_dataset_search_fields(ds_metadata, mdt_metadata) -> dict:
+def extract_dataset_search_fields(ds_metadata, mdt_metadata: Mapping[str, Any]) -> dict:
     """
     :param ds_metadata: A Dataset metadata document
     :param mdt_metadata: The corresponding metadata-type definition document
@@ -208,7 +210,7 @@ def extract_dataset_search_fields(ds_metadata, mdt_metadata) -> dict:
     return extract_dataset_fields(ds_metadata, non_native_fields(mdt_metadata))
 
 
-def extract_dataset_fields(ds_metadata, fields: dict) -> dict:
+def extract_dataset_fields(ds_metadata, fields: Mapping) -> dict:
     """
     :param ds_metadata: A Dataset metadata document
     :param fields: A dictionary of field names to Field objects
@@ -426,7 +428,7 @@ class PostgisDbAPI:
         ]
 
     def get_datasets_for_location(
-        self, uri, mode: str | None = None
+        self, uri: str, mode: str | None = None
     ) -> Sequence[Dataset]:
         scheme, body = split_uri(uri)
 
@@ -1135,7 +1137,7 @@ class PostgisDbAPI:
             select(Dataset.uri).where(Dataset.id == dataset_id)
         ).first()
 
-    def remove_location(self, dataset_id, uri) -> bool:
+    def remove_location(self, dataset_id, uri: str) -> bool:
         """
         Remove a dataset's location
 

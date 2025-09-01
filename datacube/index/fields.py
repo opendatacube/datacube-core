@@ -10,7 +10,7 @@ from datetime import date, datetime, time, timezone
 
 from typing_extensions import override
 
-from datacube.model import Not, Range
+from datacube.model import Not, QueryField, Range
 from datacube.model.fields import Expression, Field
 
 __all__ = [
@@ -50,7 +50,7 @@ class NotExpression(Expression):
         return not self.expr.evaluate(ctx)
 
 
-def as_expression(field: Field, value) -> Expression:
+def as_expression(field: Field, value: QueryField) -> Expression:
     """
     Convert a single field/value to expression, following the "simple" conventions.
     """

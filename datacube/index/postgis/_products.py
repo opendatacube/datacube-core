@@ -18,6 +18,7 @@ from typing_extensions import override
 from datacube.drivers.postgis import PostGisDb
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource, BatchStatus
+from datacube.index.abstract._metadata_types import AbstractMetadataTypeResource
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import Product, QueryDict, QueryField
 from datacube.utils import _readable_offset, changes, jsonify_document
@@ -42,7 +43,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         self.get_unsafe = lru_cache()(self.get_unsafe)  # type: ignore[method-assign]
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)  # type: ignore[method-assign]
 
-    def __getstate__(self):
+    def __getstate__(self) -> tuple[PostGisDb, AbstractMetadataTypeResource]:
         """
         We define getstate/setstate to avoid pickling the caches
         """
@@ -431,7 +432,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             for row in connection.get_all_product_docs():
                 yield row[0]
 
-    def _make_many(self, query_rows):
+    def _make_many(self, query_rows) -> Generator[Product]:
         return (self._make(c) for c in query_rows)
 
     def _make(self, query_row) -> Product:

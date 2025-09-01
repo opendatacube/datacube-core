@@ -14,6 +14,7 @@ from typing import Any, NamedTuple, cast
 from uuid import UUID
 
 from deprecat import deprecat
+from odc.geo import CRS, Geometry
 from typing_extensions import override
 
 from datacube.index import fields
@@ -891,7 +892,9 @@ class DatasetResource(AbstractDatasetResource):
             yield make_summary(ds)
 
     @override
-    def spatial_extent(self, ids, crs=None):
+    def spatial_extent(
+        self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")
+    ) -> Geometry | None:
         return None
 
     @override

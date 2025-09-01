@@ -249,7 +249,9 @@ def resolve_legacy_lineage(
 
     ds_by_uuid = toolz.valmap(toolz.first, flatten_datasets(main_ds))
     all_uuid = list(ds_by_uuid)
-    db_dss = {ds.id: ds for ds in index.datasets.bulk_get(all_uuid)}
+    db_dss: dict[UUID | None, Dataset] = {
+        ds.id: ds for ds in index.datasets.bulk_get(all_uuid)
+    }
 
     lineage_uuids = set(filter(lambda x: x != main_uuid, all_uuid))
     missing_lineage = lineage_uuids - set(db_dss)
@@ -293,7 +295,7 @@ def resolve_legacy_lineage(
                 return None, error_report
 
     def with_cache(
-        v: Dataset, k: UUID, cache: MutableMapping[UUID, Dataset]
+        v: Dataset, k: UUID | None, cache: MutableMapping[UUID | None, Dataset]
     ) -> Dataset:
         cache[k] = v
         return v
@@ -301,7 +303,7 @@ def resolve_legacy_lineage(
     def resolve_ds(
         ds: SimpleDocNav,
         sources: Mapping[str, Dataset] | None,
-        cache: MutableMapping[UUID, Dataset],
+        cache: MutableMapping[UUID | None, Dataset],
     ) -> Dataset:
         cached = cache.get(ds.id)
         if cached is not None:

@@ -12,7 +12,7 @@ from typing import Any
 from pystac.utils import datetime_to_str
 
 from datacube.index.abstract import default_metadata_type_docs
-from datacube.model import Dataset, metadata_from_doc
+from datacube.model import Dataset, MetadataType, metadata_from_doc
 from datacube.utils import parse_time
 
 # Mapping between EO3 field names and STAC properties object field names
@@ -32,13 +32,13 @@ STAC_TO_EO3_RENAMES = {
     "created": "odc:processing_datetime",
 }
 
-EO3_TO_STAC_RENAMES = {v: k for k, v in STAC_TO_EO3_RENAMES.items()}
+EO3_TO_STAC_RENAMES: dict[str, str] = {v: k for k, v in STAC_TO_EO3_RENAMES.items()}
 
 _default_md_types = {
     d.get("name"): metadata_from_doc(d) for d in default_metadata_type_docs()
 }
-EO3_MD_TYPE = _default_md_types["eo3"]
-EO_MD_TYPE = _default_md_types["eo"]
+EO3_MD_TYPE: MetadataType = _default_md_types["eo3"]
+EO_MD_TYPE: MetadataType = _default_md_types["eo"]
 
 
 def _as_stac_instruments(value: str) -> list[str]:
@@ -68,7 +68,7 @@ def _value_to_stac_type(key: str, value):
     return value
 
 
-def _value_to_eo3_type(key: str, value):
+def _value_to_eo3_type(key: str, value) -> str | datetime | None:
     # TODO: remove once list field types are supported
     if key == "instruments":
         if len(value) > 0:

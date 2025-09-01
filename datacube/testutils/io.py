@@ -308,7 +308,7 @@ def dc_read(
     band: int = 1,
     geobox=None,
     resampling: str = "nearest",
-    dtype=None,
+    dtype: str | np.dtype | None = None,
     dst_nodata: float | None = None,
     fallback_nodata=None,
 ):

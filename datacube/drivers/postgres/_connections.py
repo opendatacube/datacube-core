@@ -16,7 +16,7 @@ Postgres connection and setup
 import json
 import logging
 import re
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Mapping
 from contextlib import contextmanager
 from typing import Any
 
@@ -27,6 +27,7 @@ from typing_extensions import override
 
 import datacube
 from datacube.index.exceptions import IndexSetupError
+from datacube.model import Field
 from datacube.utils import jsonify_document
 
 from ...cfg import ODCEnvironment, psql_url_from_config
@@ -233,7 +234,9 @@ class PostgresDb:
         return self._engine.connect()
 
     @classmethod
-    def get_dataset_fields(cls, metadata_type_definition):
+    def get_dataset_fields(
+        cls, metadata_type_definition: Mapping[str, Any]
+    ) -> Mapping[str, Field]:
         return _api.get_dataset_fields(metadata_type_definition)
 
     @override

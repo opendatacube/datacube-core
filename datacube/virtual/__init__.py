@@ -254,7 +254,9 @@ def catalog_from_yaml(
     return Catalog(name_resolver, parse_yaml(catalog_body))
 
 
-def catalog_from_file(filename: str, name_resolver=None) -> Catalog:
+def catalog_from_file(
+    filename: str, name_resolver: NameResolver | None = None
+) -> Catalog:
     """
     Load a catalog of virtual products from a yaml file.
     """

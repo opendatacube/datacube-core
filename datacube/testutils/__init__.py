@@ -241,7 +241,7 @@ def mk_sample_dataset(
     uri: str | list[str] | None = "file:///tmp",
     product_name: str = "sample",
     format: str | None = "GeoTiff",  # noqa: A002
-    timestamp=None,
+    timestamp: str | None = None,
     id: str = "3a1df9e0-8484-44fc-8102-79184eab85dd",  # noqa: A002
     geobox: GeoBox | None = None,
     product_opts: dict | None = None,
@@ -332,7 +332,9 @@ def dataset_maker(idx: int, t: datetime | None = None):
     return make
 
 
-def gen_dataset_test_dag(idx: int, t=None, force_tree: bool = False) -> Any:
+def gen_dataset_test_dag(
+    idx: int, t: datetime | None = None, force_tree: bool = False
+) -> Any:
     """Build document suitable for consumption by dataset add
 
     when force_tree is True pump the object graph through json
@@ -368,7 +370,7 @@ def load_dataset_definition(
 
 
 def mk_test_image(
-    w, h, dtype: str = "int16", nodata=-999, nodata_width: int = 4
+    w, h, dtype: str = "int16", nodata: int | None = -999, nodata_width: int = 4
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64 | np.signedinteger[Any]]]:
     """
     Create 2d ndarray where each pixel value is formed by packing x coordinate in
@@ -478,11 +480,11 @@ def mk_sample_xr_dataset(
     crs: str | CRS | None = "EPSG:3578",
     shape=(33, 74),
     resolution: tuple[float, float] | None = None,
-    xy=(0, 0),
+    xy: tuple[int, int] = (0, 0),
     time: str | None = "2020-02-13T11:12:13.1234567Z",
     name: str = "band",
     dtype: str = "int16",
-    nodata=-999,
+    nodata: int = -999,
     units: str = "1",
 ) -> xr.Dataset:
     """Note that resolution is in Y,X order to match that of GeoBox.

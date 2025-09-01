@@ -182,7 +182,10 @@ def xr_iter(data_array: DataArray) -> Generator[tuple[tuple, dict, Any]]:
 
 
 def xr_apply(
-    data_array: DataArray, func, dtype=None, with_numeric_index: bool = False
+    data_array: DataArray,
+    func,
+    dtype: str | numpy.dtype | type | None = None,
+    with_numeric_index: bool = False,
 ) -> DataArray:
     """
     Apply a function to every element of a :class:`xarray.DataArray`

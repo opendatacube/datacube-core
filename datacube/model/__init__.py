@@ -773,7 +773,7 @@ class Product:
         return self.metadata_type.dataset_reader(self.metadata_doc)
 
     @property
-    def fields(self):
+    def fields(self) -> dict[str, Any]:
         return self.metadata_type.dataset_reader(self.metadata_doc).fields
 
     @property
