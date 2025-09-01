@@ -67,7 +67,7 @@ class PgField(Field):
         )
 
     @property
-    def postgres_index_type(self) -> str:
+    def postgres_index_type(self) -> str | None:
         return "btree"
 
     @override
@@ -107,7 +107,7 @@ class NativeField(PgField):
 
     @property
     @override
-    def postgres_index_type(self):
+    def postgres_index_type(self) -> str | None:
         # Don't add extra indexes for native fields.
         return None
 
@@ -246,7 +246,7 @@ class IntDocField(SimpleDocField):
         return cast(value, postgres.INTEGER)
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> "ValueBetweenExpression":
         return ValueBetweenExpression(self, low, high)
 
     @override
@@ -278,7 +278,7 @@ class NumericDocField(SimpleDocField):
         return cast(value, postgres.NUMERIC)
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> "ValueBetweenExpression":
         return ValueBetweenExpression(self, low, high)
 
     @override
@@ -294,7 +294,7 @@ class DoubleDocField(SimpleDocField):
         return cast(value, postgres.DOUBLE_PRECISION)
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> "ValueBetweenExpression":
         return ValueBetweenExpression(self, low, high)
 
     @override
@@ -320,15 +320,15 @@ class DateDocField(SimpleDocField):
         raise ValueError(f"Value not readable as date: {value!r}")
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> "ValueBetweenExpression":
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value) -> datetime:
+    def parse_value(self, value: datetime | str) -> datetime:
         return utils.parse_time(value)
 
     @property
-    def day(self):
+    def day(self) -> NativeField:
         """Get field truncated to the day"""
         return NativeField(
             f"{self.name}_day",
@@ -353,7 +353,7 @@ class RangeDocField(PgDocField):
         name: str,
         description: str,
         alchemy_column,
-        indexed,
+        indexed: bool,
         min_offset=None,
         max_offset=None,
     ) -> None:
@@ -486,7 +486,7 @@ class DateRangeDocField(RangeDocField):
         )
 
     @override
-    def between(self, low, high) -> Expression:
+    def between(self, low: datetime, high: datetime) -> Expression:
         low = _number_implies_year(low)
         high = _number_implies_year(high)
 
@@ -540,7 +540,7 @@ class PgExpression(Expression):
 
 
 class ValueBetweenExpression(PgExpression):
-    def __init__(self, field, low_value, high_value) -> None:
+    def __init__(self, field: PgField, low_value, high_value) -> None:
         super().__init__(field)
         self.low_value = low_value
         self.high_value = high_value
@@ -562,7 +562,7 @@ class ValueBetweenExpression(PgExpression):
 
 
 class RangeBetweenExpression(PgExpression):
-    def __init__(self, field, low_value, high_value, _range_class) -> None:
+    def __init__(self, field: PgField, low_value, high_value, _range_class) -> None:
         super().__init__(field)
         self.low_value = low_value
         self.high_value = high_value
@@ -577,7 +577,7 @@ class RangeBetweenExpression(PgExpression):
 
 
 class RangeContainsExpression(PgExpression):
-    def __init__(self, field, value) -> None:
+    def __init__(self, field: PgField, value) -> None:
         super().__init__(field)
         self.value = value
 
@@ -588,7 +588,7 @@ class RangeContainsExpression(PgExpression):
 
 
 class EqualsExpression(PgExpression):
-    def __init__(self, field, value) -> None:
+    def __init__(self, field: PgField, value) -> None:
         super().__init__(field)
         self.value = value
 

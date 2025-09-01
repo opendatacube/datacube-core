@@ -331,7 +331,7 @@ class NumericDocField(SimpleDocField):
         )
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> "RangeBetweenExpression":
         # Numeric fields actually stored as ranges in current schema.
         # return ValueBetweenExpression(self, low, high)
         return RangeBetweenExpression(self, low, high, _range_class=PgRange)
@@ -428,15 +428,15 @@ class DateDocField(SimpleDocField):
         )
 
     @override
-    def between(self, low, high):
+    def between(self, low, high) -> "ValueBetweenExpression":
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value) -> datetime:
+    def parse_value(self, value: datetime | str) -> datetime:
         return utils.parse_time(value)
 
     @property
-    def day(self):
+    def day(self) -> NativeField:
         """Get field truncated to the day"""
         return NativeField(
             f"{self.name}_day",
@@ -662,7 +662,7 @@ class PgExpression(Expression):
 
 
 class ValueBetweenExpression(PgExpression):
-    def __init__(self, field, low_value, high_value) -> None:
+    def __init__(self, field: PgField, low_value, high_value) -> None:
         super().__init__(field)
         self.low_value = low_value
         self.high_value = high_value
@@ -683,7 +683,7 @@ class ValueBetweenExpression(PgExpression):
 
 
 class RangeBetweenExpression(PgExpression):
-    def __init__(self, field, low_value, high_value, _range_class) -> None:
+    def __init__(self, field: PgField, low_value, high_value, _range_class) -> None:
         super().__init__(field)
         self.low_value = low_value
         self.high_value = high_value
@@ -697,7 +697,7 @@ class RangeBetweenExpression(PgExpression):
 
 
 class RangeContainsExpression(PgExpression):
-    def __init__(self, field, value) -> None:
+    def __init__(self, field: PgField, value) -> None:
         super().__init__(field)
         self.value = value
 
@@ -708,7 +708,7 @@ class RangeContainsExpression(PgExpression):
 
 
 class EqualsExpression(PgExpression):
-    def __init__(self, field, value) -> None:
+    def __init__(self, field: PgField, value) -> None:
         super().__init__(field)
         self.value = value
 

@@ -12,6 +12,7 @@ from collections.abc import Iterable
 
 import pandas
 import xarray
+from pandas.core.frame import DataFrame
 from xarray import DataArray, Dataset
 
 from datacube.utils.math import valid_mask
@@ -30,7 +31,7 @@ def list_flag_names(variable):
     return sorted(flags_def.keys())
 
 
-def describe_variable_flags(variable, with_pandas: bool = True):
+def describe_variable_flags(variable, with_pandas: bool = True) -> DataFrame | str:
     """
     Returns either a Pandas Dataframe (with_pandas=True - default) or a string
     (with_pandas=False) describing the available flags for a masking variable

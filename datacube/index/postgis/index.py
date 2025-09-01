@@ -3,9 +3,10 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 from deprecat import deprecat
 from odc.geo import CRS
@@ -141,7 +142,7 @@ class Index(AbstractIndex):
 
     @classmethod
     @override
-    def get_dataset_fields(cls, doc) -> dict:
+    def get_dataset_fields(cls, doc: Mapping[str, Any]) -> dict:
         return PostGisDb.get_dataset_fields(doc)
 
     @override

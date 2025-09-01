@@ -17,6 +17,7 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
+from pathlib import Path
 from textwrap import dedent
 from typing import Any, Literal, cast
 from uuid import UUID
@@ -335,10 +336,10 @@ def parse_update_rules(
 @ui.pass_index()
 def update_cmd(
     index: Index,
-    keys_that_can_change,
+    keys_that_can_change: Sequence[str],
     dry_run,
     location_policy: Literal["keep", "archive", "forget"],
-    dataset_paths,
+    dataset_paths: Iterable[Path | str],
     archive_less_mature,
 ) -> None:
     if not dataset_paths:

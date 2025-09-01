@@ -8,6 +8,7 @@ from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import Any, NamedTuple
 
 from deprecat import deprecat
+from odc.geo import CRS, Geometry
 from typing_extensions import override
 
 from datacube.index.abstract import DSID, AbstractDatasetResource
@@ -31,7 +32,7 @@ class DatasetResource(AbstractDatasetResource):
         raise KeyError(id_)
 
     @override
-    def bulk_get(self, ids) -> list:
+    def bulk_get(self, ids: Iterable[DSID]) -> list:
         return []
 
     @override
@@ -39,11 +40,11 @@ class DatasetResource(AbstractDatasetResource):
         return []
 
     @override
-    def has(self, id_) -> bool:
+    def has(self, id_: DSID) -> bool:
         return False
 
     @override
-    def bulk_has(self, ids_) -> list:
+    def bulk_has(self, ids_: Iterable[DSID]) -> list:
         return [False for id_ in ids_]
 
     @override
@@ -61,20 +62,25 @@ class DatasetResource(AbstractDatasetResource):
 
     @override
     def can_update(
-        self, dataset, updates_allowed=None
+        self, dataset: Dataset, updates_allowed=None
     ) -> tuple[bool, list[Change], list[Change]]:
         raise NotImplementedError()
 
     @override
-    def update(self, dataset: Dataset, updates_allowed=None, archive_less_mature=None):
+    def update(
+        self,
+        dataset: Dataset,
+        updates_allowed=None,
+        archive_less_mature: int | None = None,
+    ):
         raise NotImplementedError()
 
     @override
-    def archive(self, ids):
+    def archive(self, ids: Iterable[DSID]):
         raise NotImplementedError()
 
     @override
-    def restore(self, ids):
+    def restore(self, ids: Iterable[DSID]):
         raise NotImplementedError()
 
     @override
@@ -95,7 +101,7 @@ class DatasetResource(AbstractDatasetResource):
         return []
 
     @override
-    def get_location(self, id_) -> None:
+    def get_location(self, id_: DSID) -> None:
         return None
 
     @deprecat(
@@ -129,7 +135,7 @@ class DatasetResource(AbstractDatasetResource):
         raise NotImplementedError()
 
     @override
-    def get_datasets_for_location(self, uri, mode=None) -> list:
+    def get_datasets_for_location(self, uri: str, mode: str | None = None) -> list:
         return []
 
     @deprecat(
@@ -255,5 +261,7 @@ class DatasetResource(AbstractDatasetResource):
         return []
 
     @override
-    def spatial_extent(self, ids=None, product=None, crs=None):
+    def spatial_extent(
+        self, ids: Iterable[DSID], crs: CRS = CRS("EPSG:4326")
+    ) -> Geometry | None:
         return None

@@ -90,7 +90,7 @@ class MakeMask(Transformation):
         )
 
     @override
-    def compute(self, data):
+    def compute(self, data) -> xarray.Dataset:
         def worker(_, value):
             return make_mask_prim(value, **self.flags)
 
@@ -149,7 +149,7 @@ class ApplyMask(Transformation):
         return selective_apply_dict(rest, apply_to=self.apply_to, value_map=worker)
 
     @override
-    def compute(self, data):
+    def compute(self, data) -> xarray.Dataset:
         mask = data[self.mask_measurement_name]
         rest = data.drop_vars([self.mask_measurement_name])
 
@@ -255,7 +255,7 @@ class ToFloat(Transformation):
         )
 
     @override
-    def compute(self, data):
+    def compute(self, data) -> xarray.Dataset:
         def worker(_, value):
             if hasattr(value, "dtype") and value.dtype == self.dtype:
                 return value
@@ -598,7 +598,7 @@ class XarrayReduction(Transformation):
         )
 
     @override
-    def compute(self, data):
+    def compute(self, data) -> xarray.Dataset:
         func = getattr(xarray.DataArray, self.method)
 
         def worker(_, value):

@@ -27,6 +27,7 @@ from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
 from typing_extensions import override
 
 import datacube
+from datacube.drivers.postgis._fields import PgField
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import jsonify_document
 
@@ -298,7 +299,9 @@ class PostGisDb:
         return self._engine.connect()
 
     @classmethod
-    def get_dataset_fields(cls, metadata_type_definition):
+    def get_dataset_fields(
+        cls, metadata_type_definition: Mapping[str, Any]
+    ) -> dict[str, PgField]:
         return _api.get_dataset_fields(metadata_type_definition)
 
     @override

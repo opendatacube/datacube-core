@@ -39,7 +39,7 @@ def _rasterio_crs(src):
     return CRS(src.crs)
 
 
-def maybe_lock(lock):
+def maybe_lock(lock: RLock | None) -> RLock | contextlib.suppress:
     if lock is None:
         return contextlib.suppress()
     return lock
@@ -94,6 +94,7 @@ class BandDataSource(GeoRasterReader):
             return self.source.ds.read(
                 indexes=self.source.bidx, window=window, out_shape=out_shape
             )
+        return None
 
 
 class RasterioDataSource(DataSource):

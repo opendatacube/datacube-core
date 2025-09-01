@@ -152,7 +152,7 @@ class VirtualDatasetBox:
 
         return self.box.shape + self.geobox.shape
 
-    def __getitem__(self, chunk):
+    def __getitem__(self, chunk) -> "VirtualDatasetBox":
         if self.load_natively:
             raise VirtualProductException("slicing requires known geobox")
 
@@ -167,7 +167,7 @@ class VirtualDatasetBox:
             geopolygon=self.geopolygon,
         )
 
-    def map(self, func, dtype: str = "O"):
+    def map(self, func, dtype: str = "O") -> "VirtualDatasetBox":
         return VirtualDatasetBox(
             xr_apply(self.box, func, dtype=dtype),
             self.geobox,
@@ -176,7 +176,7 @@ class VirtualDatasetBox:
             geopolygon=self.geopolygon,
         )
 
-    def filter(self, predicate):
+    def filter(self, predicate) -> "VirtualDatasetBox":
         mask = self.map(predicate, dtype="bool")
 
         # NOTE: this could possibly result in an empty box
@@ -1126,7 +1126,7 @@ class Reproject(VirtualProduct):
 
 def reproject_band(
     band, geobox, resampling, dims: str | Iterable[Hashable], dask_chunks=None
-):
+) -> xarray.DataArray:
     """Reproject a single measurement to the geobox."""
     if not hasattr(band.data, "dask") or dask_chunks is None:
         data = reproject_array(band.data, band.nodata, band.geobox, geobox, resampling)
@@ -1229,7 +1229,7 @@ def wrap_in_dataarray(
     return result
 
 
-def virtual_product_kind(recipe: dict[str, Any]) -> str:
+def virtual_product_kind(recipe: Mapping[str, Any]) -> str:
     """One of product, transform, collate, juxtapose, aggregate, or reproject."""
     candidates = [
         key
@@ -1246,7 +1246,7 @@ def virtual_product_kind(recipe: dict[str, Any]) -> str:
     return candidates[0]
 
 
-def from_validated_recipe(recipe):
+def from_validated_recipe(recipe: Mapping[str, Any]) -> VirtualProduct:
     lookup = {
         "product": Product,
         "transform": Transform,

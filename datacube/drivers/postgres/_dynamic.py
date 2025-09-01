@@ -7,9 +7,13 @@ Methods for managing dynamic dataset field indexes and views.
 """
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from sqlalchemy import Index, select, text
+from sqlalchemy.engine.base import Connection, Engine
+from sqlalchemy.engine.mock import MockConnection
+
+from datacube.drivers.postgres._fields import PgField
 
 from ._core import schema_qualified
 from ._schema import DATASET, METADATA_TYPE, PRODUCT
@@ -18,7 +22,7 @@ from .sql import CreateView, pg_exists
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def contains_all(d_: dict, *keys) -> bool:
+def contains_all(d_: Mapping, *keys) -> bool:
     """
     Does the dictionary have values for all of the given keys?
 
@@ -78,7 +82,7 @@ def check_dynamic_fields(
     concurrently,
     dataset_filter,
     excluded_field_names: Sequence[str],
-    fields,
+    fields: Mapping[str, PgField],
     name: str,
     rebuild_indexes: bool = False,
     rebuild_view: bool = False,
@@ -132,7 +136,7 @@ def check_dynamic_fields(
 
 
 def _check_field_index(
-    conn,
+    conn: Connection | Engine | MockConnection,
     fields,
     name_prefix,
     filter_expression,

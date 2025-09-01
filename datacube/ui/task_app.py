@@ -168,7 +168,7 @@ def validate_year(ctx, param, value):
         ) from None
 
 
-def break_query_into_years(time_query, **kwargs):
+def break_query_into_years(time_query: str | tuple[str, str] | None, **kwargs):
     if time_query is None:
         return [kwargs]
     return [

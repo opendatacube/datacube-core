@@ -57,7 +57,7 @@ def map_with_lookahead(
         yield proc(v)
 
 
-def qmap(func, q: Queue, eos_marker=EOS) -> Generator:
+def qmap(func, q: Queue, eos_marker: object = EOS) -> Generator:
     """Converts queue to an iterator.
 
     For every `item` in the `q` that is not `eos_marker`, `yield proc(item)`
@@ -76,7 +76,7 @@ def qmap(func, q: Queue, eos_marker=EOS) -> Generator:
                 q.task_done()
 
 
-def it2q(its: Iterator, q: Queue, eos_marker=EOS) -> None:
+def it2q(its: Iterator, q: Queue, eos_marker: object = EOS) -> None:
     """Convert iterator into a Queue
 
     [1, 2, 3] => [1, 2, 3, eos_marker]

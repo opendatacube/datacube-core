@@ -743,6 +743,7 @@ def test_dataset_add_http(
 
     ds = load_dataset_definition(p.datasets)
     assert ds is not None
+    assert ds.id is not None
     assert index.datasets.has(ds.id)
 
 

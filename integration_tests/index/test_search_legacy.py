@@ -216,6 +216,7 @@ def ls5_dataset_w_children(
     clirunner(["dataset", "add", str(example_ls5_dataset_path)])
     doc = load_dataset_definition(example_ls5_dataset_path)
     assert doc is not None
+    assert doc.id is not None
     return index.datasets.get(doc.id, include_sources=True)
 
 

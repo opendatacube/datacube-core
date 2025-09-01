@@ -66,7 +66,7 @@ def _raster_metadata(band):
 
 
 def get_raster_info(
-    ds: Dataset, measurements: list[str] | None = None
+    ds: Dataset, measurements: Sequence[str] | None = None
 ) -> dict[str, Any]:
     """
     :param ds: Dataset
@@ -307,7 +307,7 @@ def dc_read(
     band: int = 1,
     geobox=None,
     resampling: str = "nearest",
-    dtype=None,
+    dtype: str | np.dtype | None = None,
     dst_nodata: float | None = None,
     fallback_nodata=None,
 ):

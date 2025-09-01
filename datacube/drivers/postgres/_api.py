@@ -16,7 +16,7 @@ Persistence API implementation for postgres.
 import datetime
 import logging
 import uuid  # noqa: F401
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from typing import Any
 from typing import cast as type_cast
 
@@ -40,6 +40,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import INTERVAL, JSONB, UUID, insert
 from sqlalchemy.engine import Row
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql.selectable import NamedFromClause
 from typing_extensions import override
 
 from datacube.index.abstract import DSID
@@ -72,7 +73,9 @@ def _dataset_uri_field(table):
 
 # Fields for selecting dataset with uris
 # Need to alias the table, as queries may join the location table for filtering.
-SELECTED_DATASET_LOCATION = DATASET_LOCATION.alias("selected_dataset_location")
+SELECTED_DATASET_LOCATION: NamedFromClause = DATASET_LOCATION.alias(
+    "selected_dataset_location"
+)
 # All active URIs, from newest to oldest
 _ALL_ACTIVE_URIS = func.array(
     select(_dataset_uri_field(SELECTED_DATASET_LOCATION))
@@ -148,7 +151,9 @@ def get_native_fields() -> dict[str, PgField]:
     return fields
 
 
-def get_dataset_fields(metadata_type_definition: dict[str, Any]) -> dict[str, Any]:
+def get_dataset_fields(
+    metadata_type_definition: Mapping[str, Any],
+) -> dict[str, PgField]:
     dataset_section = metadata_type_definition["dataset"]
 
     fields = get_native_fields()
@@ -212,12 +217,12 @@ class PostgresDbAPI:
     def execute(self, command):
         return self._connection.execute(command)
 
-    def insert_dataset(self, metadata_doc, dataset_id, product_id):
+    def insert_dataset(self, metadata_doc, dataset_id, product_id) -> bool:
         """
         Insert dataset if not already indexed.
         :return: whether it was inserted
         """
-        dataset_type_ref = bindparam("dataset_type_ref")
+        dataset_type_ref: Any = bindparam("dataset_type_ref")
         ret = self._connection.execute(
             insert(DATASET)
             .from_select(
@@ -303,7 +308,7 @@ class PostgresDbAPI:
             ).fetchall()
         ]
 
-    def get_datasets_for_location(self, uri, mode: str | None = None):
+    def get_datasets_for_location(self, uri: str, mode: str | None = None):
         scheme, body = split_uri(uri)
 
         if mode is None:
@@ -1089,7 +1094,7 @@ class PostgresDbAPI:
         self,
         id_,
         name: str,
-        definition,
+        definition: Mapping[str, Any],
         rebuild_indexes: bool = False,
         rebuild_views: bool = False,
         concurrently: bool = True,
@@ -1270,7 +1275,7 @@ class PostgresDbAPI:
             ).fetchall()
         ]
 
-    def remove_location(self, dataset_id, uri) -> bool:
+    def remove_location(self, dataset_id, uri: str) -> bool:
         """
         Remove the given location for a dataset
 
@@ -1288,7 +1293,7 @@ class PostgresDbAPI:
         )
         return res.rowcount > 0
 
-    def archive_location(self, dataset_id, uri) -> bool:
+    def archive_location(self, dataset_id, uri: str) -> bool:
         scheme, body = split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update()
@@ -1304,7 +1309,7 @@ class PostgresDbAPI:
         )
         return res.rowcount > 0
 
-    def restore_location(self, dataset_id, uri) -> bool:
+    def restore_location(self, dataset_id, uri: str) -> bool:
         scheme, body = split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update()
@@ -1342,7 +1347,7 @@ class PostgresDbAPI:
             yield _core.from_pg_role(row.role_name), row.user_name, row.description
 
     def create_user(
-        self, username: str, password: str, role, description: str | None = None
+        self, username: str, password: str, role: str, description: str | None = None
     ) -> None:
         pg_role = _core.to_pg_role(role)
         username = escape_pg_identifier(self._connection, username)

@@ -41,7 +41,7 @@ SAMPLE_WKT_WITHOUT_AUTHORITY = """PROJCS["unnamed",
 
 def mkA(  # noqa: N802
     rot: float = 0.0,
-    scale=(1, 1),
+    scale: tuple[int, int] = (1, 1),
     shear: float = 0.0,
     translation: tuple[float, float] = (0.0, 0.0),
 ) -> Affine:

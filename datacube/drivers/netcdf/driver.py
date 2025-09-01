@@ -5,6 +5,8 @@
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import xarray as xr
+
 from datacube.storage._rio import RasterDatasetDataSource
 from datacube.utils.uris import normalise_path
 
@@ -64,7 +66,12 @@ class NetcdfWriterDriver:
         return normalise_path(file_path).as_uri()
 
     def write_dataset_to_storage(
-        self, dataset, file_uri, global_attributes=None, variable_params=None, **kwargs
+        self,
+        dataset: xr.Dataset,
+        file_uri,
+        global_attributes=None,
+        variable_params=None,
+        **kwargs,
     ) -> dict:
         write_dataset_to_netcdf(
             dataset,

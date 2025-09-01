@@ -6,8 +6,11 @@ from collections.abc import Iterable, MutableMapping
 from typing import Literal
 
 from alembic import context
+from alembic.config import Config
 from alembic.operations import MigrationScript
 from alembic.runtime.migration import MigrationContext
+from sqlalchemy.engine.base import Connection
+from sqlalchemy.sql.schema import MetaData
 
 from datacube.cfg import ODCConfig, ODCEnvironment
 from datacube.drivers.postgis._connections import PostGisDb
@@ -18,10 +21,10 @@ from datacube.drivers.postgis.sql import SCHEMA_NAME
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 try:
-    config = context.config
+    config: Config | None = context.config
 except AttributeError:
     # Occurs when being scanned for doctests, so safe to ignore type warnings
-    config = None  # type: ignore[assignment]
+    config = None
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -34,7 +37,7 @@ except AttributeError:
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
-target_metadata = Base.metadata
+target_metadata: MetaData = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -97,6 +100,7 @@ def include_name(
 
 
 def get_odc_env() -> ODCEnvironment:
+    assert config is not None
     # In active Alembic Config?
     cfg = config.attributes.get("cfg")
     env = config.attributes.get("env")
@@ -119,6 +123,7 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
     """
     # An active postgis Connection:
+    assert config is not None
     connection = config.attributes.get("connection")
     if connection:
         run_migration_with_connection(connection)
@@ -138,13 +143,14 @@ def run_migrations_online() -> None:
         run_migration_with_connection(connection)
 
 
-def run_migration_with_connection(connection) -> None:
+def run_migration_with_connection(connection: Connection) -> None:
     # Do not generate a file with --autogenerate unless there is a difference.
     def process_revision_directives(
         context: MigrationContext,
         revision: str | Iterable[str | None] | Iterable[str],
         directives: list[MigrationScript],
     ) -> None:
+        assert config is not None
         assert config.cmd_opts is not None
         if getattr(config.cmd_opts, "autogenerate", False):
             script = directives[0]

@@ -10,11 +10,13 @@ from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING
 
 from cachetools.func import lru_cache
+from odc.geo import CRS, Geometry
 from typing_extensions import override
 
 from datacube.drivers.postgres import PostgresDb
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
+from datacube.index.abstract._metadata_types import AbstractMetadataTypeResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.model import Product, QueryField
 from datacube.utils import _readable_offset, changes, jsonify_document
@@ -40,7 +42,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         self.get_unsafe = lru_cache()(self.get_unsafe)  # type: ignore[method-assign]
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)  # type: ignore[method-assign]
 
-    def __getstate__(self):
+    def __getstate__(self) -> tuple[PostgresDb, AbstractMetadataTypeResource]:
         """
         We define getstate/setstate to avoid pickling the caches
         """
@@ -426,7 +428,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             for record in connection.get_all_product_docs():
                 yield record[0]
 
-    def _make_many(self, query_rows):
+    def _make_many(self, query_rows) -> Generator[Product]:
         return (self._make(c) for c in query_rows)
 
     def _make(self, query_row) -> Product:
@@ -439,7 +441,9 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         )
 
     @override
-    def spatial_extent(self, product: Product | str, crs=None):
+    def spatial_extent(
+        self, product: str | Product, crs: CRS = CRS("EPSG:4326")
+    ) -> Geometry | None:
         return None
 
     @override

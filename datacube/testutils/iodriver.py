@@ -6,10 +6,8 @@
 
 from pathlib import Path
 
-from datacube.drivers._types import ReaderDriver
-from datacube.drivers.rio._reader import (
-    RDEntry,
-)
+from datacube.drivers._types import GeoRasterReader, ReaderDriver
+from datacube.drivers.rio._reader import RDEntry
 from datacube.storage import BandInfo
 from datacube.testutils import mk_sample_dataset
 from datacube.testutils.threads import FakeThreadPoolExecutor
@@ -51,7 +49,7 @@ def open_reader(
     band_name: str = "b1",
     format: str = GeoTIFF,  # pylint: disable=redefined-builtin  # noqa: A002
     **extras,
-):
+) -> GeoRasterReader:
     """
     **extras**:
        layer, band, nodata, dtype, units, aliases

@@ -10,6 +10,7 @@ from typing import Literal
 
 import rasterio
 import rasterio.env
+from botocore.credentials import Credentials
 from deprecat import deprecat
 from rasterio.session import AWSSession, DummySession
 
@@ -171,7 +172,7 @@ def configure_s3_access(
     cloud_defaults: bool = True,
     client=None,
     **gdal_opts,
-):
+) -> Credentials | None:
     """
     Use :meth:`datacube.utils.aws.configure_s3_access` instead.
     """
