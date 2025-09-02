@@ -1,0 +1,199 @@
+---
+name: eo3_s1_nrb
+description: EO3 for DEA Sentinel-1 Normalised Radar backscatter
+dataset:
+  id: [id]
+  sources: [lineage, source_datasets]
+
+  grid_spatial: [grid_spatial, projection]
+  measurements: [measurements]
+  creation_dt: [properties, 'odc:processing_datetime']
+  label: [label]
+  format: [properties, 'odc:file_format']
+
+  search_fields:
+    platform: # Sentinel-1A/B/C/D
+      description: The platform code
+      offset: [properties, 'eo:platform'] # EO3 name for the field
+      indexed: false
+
+    instrument: # Sentinel-1A/B/C/D CSAR
+      description: The instrument name
+      offset: [properties, 'eo:instrument']
+      indexed: false
+
+    product_family: # sar_ard
+      description: The product family code
+      offset: [properties, 'odc:product_family']
+      indexed: false
+
+    scene_id: # Scene name
+      description: The ESA scene ID (e.g. S1A_EW_GRDM_1SDH_20211219T152835_20211219T152939_041079_04E161_47D4)
+      offset: [properties, 'sarard:scene_id']
+      indexed: false
+      type: string
+    
+    region_code: # Burst ID
+      description: >
+        The spatial reference code from the provider.
+        For Sentinel-1 normalised radar backscatter 
+        processed with the OPERA-ISCE3 pipeline 
+        the region code is comprised of three pieces of 
+        ESA metadata, formatted as: "t{track_number}_{esa_burst_id}_{swath_id}".
+        In general it is a unique string identifier
+        that datasets covering roughly the same spatial
+        region share.        
+      offset: [properties, 'odc:region_code']
+      indexed: true
+      type: string
+
+    crs_raw:
+      description: The raw CRS string as it appears in the metadata
+      offset: ['crs']
+      indexed: false
+
+    time:
+      description: Acquisition time range
+      type: datetime-range
+      min_offset:
+        - [properties, 'dtr:start_datetime']
+        - [properties, datetime]
+      max_offset:
+        - [properties, 'dtr:end_datetime']
+        - [properties, datetime]
+
+    lon:
+      description: Longitude range
+      type: double-range
+      min_offset:
+        - [extent, lon, begin]
+      max_offset:
+        - [extent, lon, end]
+
+    lat:
+      description: Latitude range
+      type: double-range
+      min_offset:
+        - [extent, lat, begin]
+      max_offset:
+        - [extent, lat, end]
+
+    # Sentinel-1 specific properties
+    # Instrument mode
+    instrument_mode:
+      description: The acquisition mode (one of SM, IW, EW, WV)
+      offset: [properties, 'sar:instrument_mode']
+      indexed: false
+      type: string
+
+    # Observation direction
+    observation_direction:
+      description: The observation direction of the satellite relative to the flight path
+      offset: [properties, 'sar:observation_direction'] 
+      indexed: false
+      type: string
+
+    # Orbit state
+    orbit_state:
+      description: The orbit state (one of ascending or descending)
+      offset: [properties, 'sat:orbit_state']
+      indexed: false
+      type: string
+
+    # Absolute orbit
+    absolute_orbit:
+      description: The absolute orbit number of the satellite
+      offset: [properties, 'sat:absolute_orbit']
+      indexed: false
+      type: integer
+
+    # Relative orbit
+    relative_orbit:
+      description: The orbit number in the satellite's repeat cycle
+      offset: [properties, 'sat:relative_orbit']
+      indexed: false
+      type: integer
+
+    # Orbit cycle
+    orbit_cycle:
+      description: The number of days for the satellite to repeat its orbit track
+      offset: [properties, 'sat:orbit_cycle']
+      indexed: false
+      type: integer
+
+    # Orbit source
+    orbit_source:
+      description: The orbit file type
+      offset: [properties, 's1:orbit_source']
+      indexed: false
+      type: string
+
+    # Burst ID
+    burst_id:
+      description: The OPERA-ISCE3 Burst ID, formatted as "t{track_number}_{esa_burst_id}_{swath_id}"
+      offset: [properties, 'sarard:burst_id']
+      indexed: true
+      type: string
+
+    # Measurement type
+    measurement_type:
+      description: The backscatter measurement type (one of gamma_0, sigma_0, beta_0)
+      offset: [properties, 'sarard:measurement_type']
+      indexed: false
+      type: string
+
+    # Measurement convention
+    measurement_convention:
+      description: The convention used to measure backscatter
+      offset: [properties, 'sarard:measurement_convention']
+      indexed: false
+      type: string
+
+    # Conversion equation
+    conversion_eq:
+      description: The equation to convert product to decibels
+      offset: [properties, 'sarard:conversion_eq']
+      indexed: false
+      type: string
+
+    # Noise removal
+    noise_removal_applied:
+      description: Whether noise removal has been applied
+      offset: [properties, 'sarard:noise_removal_applied']
+      indexed: false
+      type: string
+
+    # Static tropospheric correction
+    static_tropospheric_correction_applied:
+      description: Whether static tropospheric correction has been applied
+      offset: [properties, 'sarard:static_tropospheric_correction_applied']
+      indexed: false
+      type: string
+
+    # Wet tropospheric correction
+    wet_tropospheric_correction_applied:
+      description: Whether wet tropospheric correction has been applied
+      offset: [properties, 'sarard:wet_tropospheric_correction_applied']
+      indexed: false
+      type: string
+
+    # Bistatic correction
+    bistatic_correction_applied:
+      description: Whether bistatic correction has been applied
+      offset: [properties, 'sarard:bistatic_correction_applied']
+      indexed: false
+      type: string
+
+    # Ionospheric correction
+    ionospheric_correction_applied:
+      description: Whether ionospheric correction has been applied
+      offset: [properties, 'sarard:ionospheric_correction_applied']
+      indexed: false
+      type: string
+
+    # Speckle filter
+    speckle_filter_applied:
+      description: Whether a speckle filter has been applied
+      offset: [properties, 'sarard:speckle_filter_applied']
+      indexed: false
+      type: string
