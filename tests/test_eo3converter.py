@@ -5,13 +5,14 @@
 # pylint: disable=unused-argument,unused-variable,missing-module-docstring,wrong-import-position,import-error
 # pylint: disable=redefined-outer-name,protected-access,import-outside-toplevel
 
-import os
+import math
 import uuid
 from typing import Any
 
 import pystac
 import pytest
 from odc.geo.geom import Geometry
+from odc.stac import load
 from odc.stac._mdtools import RasterCollectionMetadata, has_proj_ext, has_raster_ext
 from pystac.extensions.eo import EOExtension
 from pystac.extensions.item_assets import ItemAssetsExtension
@@ -287,8 +288,11 @@ def test_accessories(sentinel_stac_ms: pystac.Item) -> None:
 
 
 def test_ds2stac(eo3_dataset: Dataset) -> None:
-    assert eo3_dataset.uri is not None
-    output_stac = ds2stac(eo3_dataset).to_dict()
+    output_stac = ds2stac(
+        eo3_dataset,
+        self_url="https://localhost/stac/eo3_dataset.json",
+        base_url="https://localhost/",
+    ).to_dict()
     assert output_stac["properties"]["instruments"] == ["oli", "tirs"]
     assert set(output_stac["assets"].keys()) == set(
         list(eo3_dataset.measurements.keys()) + list(eo3_dataset.accessories.keys())
@@ -296,32 +300,14 @@ def test_ds2stac(eo3_dataset: Dataset) -> None:
     assert output_stac["links"] == [
         {
             "rel": "self",
-            "href": os.path.abspath(eo3_dataset.uri).replace(
-                "odc-metadata.yaml", "stac-item.json"
-            ),
-            "type": "application/json",
-        },
-        {
-            "rel": "odc_yaml",
-            "href": eo3_dataset.uri,
-            "type": "text/yaml",
-            "title": "ODC Dataset YAML",
-        },
-    ]
-
-
-def test_ds2stac_links(eo3_dataset: Dataset) -> None:
-    eo3_dataset.uri = None
-    output_stac = ds2stac(
-        eo3_dataset,
-        self_url="https://localhost/stac/eo3_dataset.json",
-        stac_url="https://localhost/",
-    ).to_dict()
-    assert output_stac["links"] == [
-        {
-            "rel": "self",
             "href": "https://localhost/stac/eo3_dataset.json",
             "type": "application/json",
+        },
+        {
+            "title": "ODC Dataset YAML",
+            "rel": "odc_yaml",
+            "href": f"https://localhost/dataset/{eo3_dataset.id}.odc-metadata.yaml",
+            "type": "text/yaml",
         },
         {
             "rel": "collection",
@@ -434,6 +420,31 @@ def test_infer_eo3_product(odc_dataset_doc) -> None:
 
 
 def test_dsdoc_to_stac(odc_dataset_doc, eo3_dataset) -> None:
-    from_doc = ds_doc_to_stac(odc_dataset_doc, uri=eo3_dataset.uri)
+    from_doc = ds_doc_to_stac(odc_dataset_doc)
     from_ds = ds2stac(eo3_dataset)
     assert from_doc.to_dict() == from_ds.to_dict()
+
+
+def test_s1_nrb(s1_nrb_stac, s1_nrb_product) -> None:
+    # simulate loading an indexed stac dataset by converting it to eo3 then back to stac
+    eo3_ds = next(
+        iter(
+            stac2ds([s1_nrb_stac], product_cache={"ga_s1_nrb_iw_hh_0": s1_nrb_product})
+        )
+    )
+    dc_stac = ds2stac(eo3_ds)
+    assert (
+        "https://stac-extensions.github.io/sat/v1.0.0/schema.json"
+        in dc_stac.stac_extensions
+    )
+    assert (
+        "https://stac-extensions.github.io/sar/v1.0.0/schema.json"
+        in dc_stac.stac_extensions
+    )
+    stac_ds = load(
+        [dc_stac],
+        crs="EPSG:32753",
+        resolution=20,
+        bbox=(137.26307, -7.45486, 137.32457, -7.41362),
+    )
+    assert not math.isnan(stac_ds.VV_gamma0.data[0][0][0])

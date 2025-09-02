@@ -1,0 +1,613 @@
+{
+    "type": "Feature",
+    "stac_version": "1.1.0",
+    "stac_extensions": [
+        "https://stac-extensions.github.io/product/v0.1.0/schema.json",
+        "https://stac-extensions.github.io/sar/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/sat/v1.1.0/schema.json",
+        "https://stac-extensions.github.io/sentinel-1/v0.2.0/schema.json",
+        "https://stac-extensions.github.io/processing/v1.2.0/schema.json",
+        "https://stac-extensions.github.io/storage/v2.0.0/schema.json",
+        "https://stac-extensions.github.io/ceos-ard/v0.2.0/schema.json"
+    ],
+    "id": "ga_s1a_nrb_0-1-0_T002-003270-IW2_20180306T203033Z",
+    "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                [
+                    137.41483427834683,
+                    -7.636146385818411
+                ],
+                [
+                    137.41431890797708,
+                    -7.543817802484732
+                ],
+                [
+                    137.4138099866416,
+                    -7.451488795654488
+                ],
+                [
+                    137.4133075076778,
+                    -7.35915937041914
+                ],
+                [
+                    137.41281146451072,
+                    -7.266829531873516
+                ],
+                [
+                    137.41232185065275,
+                    -7.1744992851157905
+                ],
+                [
+                    137.32748784988001,
+                    -7.17493724606201
+                ],
+                [
+                    137.24264863044976,
+                    -7.175359562588836
+                ],
+                [
+                    137.15780438217303,
+                    -7.175766230091816
+                ],
+                [
+                    137.07295529491805,
+                    -7.1761572441365
+                ],
+                [
+                    136.98810155860846,
+                    -7.1765326004585495
+                ],
+                [
+                    136.9032433632208,
+                    -7.1768922949638565
+                ],
+                [
+                    136.81838089878258,
+                    -7.177236323728659
+                ],
+                [
+                    136.73351435537,
+                    -7.177564682999631
+                ],
+                [
+                    136.64864392310594,
+                    -7.177877369194005
+                ],
+                [
+                    136.56376979215747,
+                    -7.1781743788996435
+                ],
+                [
+                    136.47889215273412,
+                    -7.178455708875146
+                ],
+                [
+                    136.4791925358277,
+                    -7.270837397248897
+                ],
+                [
+                    136.4794968635057,
+                    -7.363218697526912
+                ],
+                [
+                    136.4798051397536,
+                    -7.455599604878236
+                ],
+                [
+                    136.48011736861082,
+                    -7.547980114475703
+                ],
+                [
+                    136.48043355417053,
+                    -7.640360221495966
+                ],
+                [
+                    136.56539957318753,
+                    -7.640060587539001
+                ],
+                [
+                    136.65036206574916,
+                    -7.639744253718228
+                ],
+                [
+                    136.73532084067307,
+                    -7.63941122349016
+                ],
+                [
+                    136.8202757068197,
+                    -7.639061500493378
+                ],
+                [
+                    136.9052264730944,
+                    -7.63869508854843
+                ],
+                [
+                    136.9901729484496,
+                    -7.638311991657716
+                ],
+                [
+                    137.07511494188725,
+                    -7.637912214005405
+                ],
+                [
+                    137.16005226246057,
+                    -7.637495759957298
+                ],
+                [
+                    137.24498471927663,
+                    -7.637062634060726
+                ],
+                [
+                    137.3299121214984,
+                    -7.6366128410444265
+                ],
+                [
+                    137.41483427834683,
+                    -7.636146385818411
+                ]
+            ]
+        ]
+    },
+    "bbox": [
+        136.47889215273412,
+        -7.640360221495966,
+        137.41483427834683,
+        -7.1744992851157905
+    ],
+    "properties": {
+        "gsd": 20.0,
+        "constellation": "Sentinel-1",
+        "platform": "Sentinel-1A",
+        "instruments": [
+            "Sentinel-1A CSAR"
+        ],
+        "created": "2025-08-26T07:50:33.135818Z",
+        "start_datetime": "2018-03-06T20:30:33.946912Z",
+        "end_datetime": "2018-03-06T20:30:37.036413Z",
+        "odc:product": "ga_s1_nrb_iw_vv_vh_0",
+        "odc:product_family": "sar_ard",
+        "odc:region_code": "t002_003270_iw2",
+        "odc:producer": "ga.gov.au",
+        "odc:dataset_version": "0-1-0",
+        "product:type": "RTC_S1",
+        "ceosard:type": "radar",
+        "ceosard:specification": "NRB",
+        "ceosard:specification_version": "5.5",
+        "proj:code": "EPSG:32753",
+        "proj:bbox": [
+            663300.0,
+            9155180.0,
+            766420.0,
+            9206260.0
+        ],
+        "sar:frequency_band": "C",
+        "sar:center_frequency": 5.40500045433435,
+        "sarard:center_frequency_unit": "GHz",
+        "sar:polarizations": [
+            "VV",
+            "VH"
+        ],
+        "sar:observation_direction": "right",
+        "sar:beam_ids": [
+            "IW2"
+        ],
+        "sar:instrument_mode": "IW",
+        "sat:orbit_state": "descending",
+        "sat:absolute_orbit": 20899,
+        "sat:relative_orbit": 2,
+        "sat:orbit_cycle": 12,
+        "s1:orbit_source": "POE precise orbit",
+        "processing:level": "L2",
+        "processing:facility": "Geoscience Australia",
+        "processing:datetime": "2025-08-26T07:50:33.135818Z",
+        "processing:version": "0-1-0",
+        "processing:software": {
+            "isce3": "0.24.4",
+            "s1Reader": "0.2.5",
+            "GeoscienceAustralia/RTC": "1.0.4",
+            "sar-pipeline": "0.3.1.dev0+g4b7eea64a.d20250825",
+            "dem-handler": "0.2.3"
+        },
+        "sarard:source_id": [
+            "S1A_IW_SLC__1SDV_20180306T203033_20180306T203100_020899_023DAA_F0D1.SAFE"
+        ],
+        "sarard:source_geometry": "slant range",
+        "sarard:scene_id": "S1A_IW_SLC__1SDV_20180306T203033_20180306T203100_020899_023DAA_F0D1",
+        "sarard:burst_id": "t002_003270_iw2",
+        "sarard:beam_id": "IW2",
+        "sarard:orbit_files": [
+            "S1A_OPER_AUX_POEORB_OPOD_20210306T151055_V20180305T225942_20180307T005942.EOF"
+        ],
+        "sarard:UL_longitude": 136.47889215273412,
+        "sarard:UL_latitude": -7.1744992851157905,
+        "sarard:LR_longitude": 137.41483427834683,
+        "sarard:LR_latitude": -7.640360221495966,
+        "sarard:pixel_spacing_x": 20.0,
+        "sarard:pixel_spacing_y": 20.0,
+        "sarard:pixel_spacing_unit": "metre",
+        "sarard:resolution_x": 20.0,
+        "sarard:resolution_y": 20.0,
+        "sarard:resolution_unit": "metre",
+        "sarard:speckle_filter_applied": false,
+        "sarard:speckle_filter_type": "",
+        "sarard:speckle_filter_window": [],
+        "sarard:measurement_type": "Gamma-0",
+        "sarard:measurement_convention": "linear backscatter intensity",
+        "sarard:conversion_eq": "10*log10(backscatter_linear)",
+        "sarard:noise_removal_applied": true,
+        "sarard:static_tropospheric_correction_applied": true,
+        "sarard:wet_tropospheric_correction_applied": false,
+        "sarard:bistatic_correction_applied": true,
+        "sarard:ionospheric_correction_applied": false,
+        "sarard:geometric_accuracy_ALE": 2.94,
+        "sarard:geometric_accuracy_rmse": 3.08,
+        "sarard:geometric_accuracy_range": 1.63,
+        "sarard:geometric_accuracy_azimuth": 1.92,
+        "sarard:geometric_accuracy_unit": "metre",
+        "storage:schemes": {
+            "aws": {
+                "type": "aws-s3",
+                "platform": "https://{bucket}.s3.{region}.amazonaws.com",
+                "bucket": "deant-data-public-dev",
+                "region": "ap-southeast-2"
+            }
+        },
+        "proj:shape": [
+            2554,
+            5156
+        ],
+        "proj:transform": [
+            20.0,
+            0.0,
+            663300.0,
+            0.0,
+            -20.0,
+            9206260.0,
+            0.0,
+            0.0,
+            1.0
+        ],
+        "sarard:number_of_lines": 2554,
+        "sarard:number_of_pixels_per_line": 5156,
+        "datetime": "2018-03-06T20:30:33.946912Z"
+    },
+    "links": [
+        {
+            "rel": "geoid-source",
+            "href": "https://aria-geoid.s3.us-west-2.amazonaws.com/us_nga_egm2008_1_4326__agisoft.tif",
+            "type": "image/tiff; application=geotiff"
+        },
+        {
+            "rel": "ceos-ard-specification",
+            "href": "https://ceos.org/ard/files/PFS/SAR/v1.2/CEOS-ARD_PFS_Synthetic_Aperture_Radar_v1.2.pdf",
+            "type": "application/pdf"
+        },
+        {
+            "rel": "derived-from",
+            "href": "https://datapool.asf.alaska.edu/SLC/SA/S1A_IW_SLC__1SDV_20180306T203033_20180306T203100_020899_023DAA_F0D1.zip"
+        },
+        {
+            "rel": "dem-source",
+            "href": "https://registry.opendata.aws/copernicus-dem/",
+            "type": "text/html"
+        },
+        {
+            "rel": "rtc-algorithm",
+            "href": "https://doi.org/10.1109/TGRS.2022.3147472",
+            "type": "text/html"
+        },
+        {
+            "rel": "geocoding-algorithm",
+            "href": "https://doi.org/10.1109/TGRS.2022.3147472",
+            "type": "text/html"
+        },
+        {
+            "rel": "noise-correction",
+            "href": "https://sentinels.copernicus.eu/documents/247904/2142675/Thermal-Denoising-of-Products-Generated-by-Sentinel-1-IPF.pdf",
+            "type": "application/pdf"
+        },
+        {
+            "rel": "static-layers-stac-item",
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_static_0/t002_003270_iw2/ga_s1_nrb-static_0-1-0_T002-003270-IW2_20140403_stac-item.json",
+            "type": "[None, 'application/geo+json', 'application/json']"
+        },
+        {
+            "rel": "static-layers-browse",
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/index.html?prefix=experimental/for_zhengshu/ga_s1_nrb_iw_static_0/t002_003270_iw2",
+            "type": "text/html"
+        },
+        {
+            "rel": "h5-metadata",
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_vv_vh_0/t002_003270_iw2/2018/03/06/ga_s1a_nrb_0-1-0_T002-003270-IW2_20180306T203033Z_metadata.h5",
+            "type": "application/x-hdf5"
+        },
+        {
+            "rel": "processing-config",
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_vv_vh_0/t002_003270_iw2/2018/03/06/ga_s1a_nrb_0-1-0_T002-003270-IW2_20180306T203033Z_proc-config.yaml",
+            "type": "application/yaml"
+        },
+        {
+            "rel": "browse",
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/index.html?prefix=experimental/for_zhengshu/ga_s1_nrb_iw_vv_vh_0/t002_003270_iw2/2018/03/06",
+            "type": "text/html"
+        },
+        {
+            "rel": "self",
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_vv_vh_0/t002_003270_iw2/2018/03/06/ga_s1a_nrb_0-1-0_T002-003270-IW2_20180306T203033Z_stac-item.json",
+            "type": "[None, 'application/geo+json', 'application/json']"
+        },
+        {
+            "rel": "collection",
+            "href": "https://explorer.dev.dea.ga.gov.au/stac/collections/ga_s1_nrb_iw_vv_vh_0",
+            "type": "[None, 'application/geo+json', 'application/json']"
+        }
+    ],
+    "assets": {
+        "VV_gamma0": {
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_vv_vh_0/t002_003270_iw2/2018/03/06/ga_s1a_nrb_0-1-0_T002-003270-IW2_20180306T203033Z_VV-gamma0.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "title": "VV_gamma0",
+            "description": "VV polarised gamma0 linear backscatter",
+            "proj:shape": [
+                2554,
+                5156
+            ],
+            "proj:transform": [
+                20.0,
+                0.0,
+                663300.0,
+                0.0,
+                -20.0,
+                9206260.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "proj:code": "EPSG:32753",
+            "raster:data_type": "float32",
+            "raster:sampling": "area",
+            "raster:nodata": "nan",
+            "raster:pixel_coordinate_convention": "pixel ULC",
+            "processing:level": "L2",
+            "roles": [
+                "data",
+                "backscatter"
+            ]
+        },
+        "VH_gamma0": {
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_vv_vh_0/t002_003270_iw2/2018/03/06/ga_s1a_nrb_0-1-0_T002-003270-IW2_20180306T203033Z_VH-gamma0.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "title": "VH_gamma0",
+            "description": "VH polarised gamma0 linear backscatter",
+            "proj:shape": [
+                2554,
+                5156
+            ],
+            "proj:transform": [
+                20.0,
+                0.0,
+                663300.0,
+                0.0,
+                -20.0,
+                9206260.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "proj:code": "EPSG:32753",
+            "raster:data_type": "float32",
+            "raster:sampling": "area",
+            "raster:nodata": "nan",
+            "raster:pixel_coordinate_convention": "pixel ULC",
+            "processing:level": "L2",
+            "roles": [
+                "data",
+                "backscatter"
+            ]
+        },
+        "mask": {
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_vv_vh_0/t002_003270_iw2/2018/03/06/ga_s1a_nrb_0-1-0_T002-003270-IW2_20180306T203033Z_mask.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "title": "mask",
+            "description": "shadow layover data mask",
+            "proj:shape": [
+                2554,
+                5156
+            ],
+            "proj:transform": [
+                20.0,
+                0.0,
+                663300.0,
+                0.0,
+                -20.0,
+                9206260.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "proj:code": "EPSG:32753",
+            "raster:data_type": "uint8",
+            "raster:sampling": "area",
+            "raster:nodata": 255.0,
+            "raster:pixel_coordinate_convention": "pixel ULC",
+            "raster:values": {
+                "shadow": 1,
+                "layover": 2,
+                "shadow_and_layover": 3,
+                "invalid_sample": 255
+            },
+            "roles": [
+                "data",
+                "auxiliary",
+                "mask",
+                "shadow",
+                "layover"
+            ]
+        },
+        "thumbnail": {
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_static_0/t002_003270_iw2/ga_s1_nrb-static_0-1-0_T002-003270-IW2_20140403_thumbnail.png",
+            "type": "image/png",
+            "title": "thumbnail",
+            "description": "thumbnail image for backscatter",
+            "roles": [
+                "thumbnail"
+            ]
+        },
+        "number_of_looks": {
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_static_0/t002_003270_iw2/ga_s1_nrb-static_0-1-0_T002-003270-IW2_20140403_number-of-looks.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "title": "number_of_looks",
+            "description": "number of looks",
+            "proj:shape": [
+                2554,
+                5156
+            ],
+            "proj:transform": [
+                20.0,
+                0.0,
+                663300.0,
+                0.0,
+                -20.0,
+                9206260.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "proj:code": "EPSG:32753",
+            "raster:data_type": "float32",
+            "raster:sampling": "area",
+            "raster:nodata": "nan",
+            "raster:pixel_coordinate_convention": "pixel ULC",
+            "roles": [
+                "data",
+                "auxiliary"
+            ]
+        },
+        "gamma0_to_beta0_ratio": {
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_static_0/t002_003270_iw2/ga_s1_nrb-static_0-1-0_T002-003270-IW2_20140403_gamma0-to-beta0-ratio.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "title": "gamma0_to_beta0_ratio",
+            "description": "backscatter conversion layer, gamma0 to beta0. Eq. beta0 = rtc_anf_gamma0_to_beta0*gamma0",
+            "proj:shape": [
+                2554,
+                5156
+            ],
+            "proj:transform": [
+                20.0,
+                0.0,
+                663300.0,
+                0.0,
+                -20.0,
+                9206260.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "proj:code": "EPSG:32753",
+            "raster:data_type": "float32",
+            "raster:sampling": "area",
+            "raster:nodata": "nan",
+            "raster:pixel_coordinate_convention": "pixel ULC",
+            "roles": [
+                "data",
+                "auxiliary",
+                "conversion"
+            ]
+        },
+        "gamma0_to_sigma0_ratio": {
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_static_0/t002_003270_iw2/ga_s1_nrb-static_0-1-0_T002-003270-IW2_20140403_gamma0-to-sigma0-ratio.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "title": "gamma0_to_sigma0_ratio",
+            "description": "backscatter conversion layer, gamma0 to sigma0. Eq. sigma0 = rtc_anf_sigma0_to_sigma0*gamma0",
+            "proj:shape": [
+                2554,
+                5156
+            ],
+            "proj:transform": [
+                20.0,
+                0.0,
+                663300.0,
+                0.0,
+                -20.0,
+                9206260.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "proj:code": "EPSG:32753",
+            "raster:data_type": "float32",
+            "raster:sampling": "area",
+            "raster:nodata": "nan",
+            "raster:pixel_coordinate_convention": "pixel ULC",
+            "roles": [
+                "data",
+                "auxiliary",
+                "conversion"
+            ]
+        },
+        "local_incidence_angle": {
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_static_0/t002_003270_iw2/ga_s1_nrb-static_0-1-0_T002-003270-IW2_20140403_local-incidence-angle.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "title": "local_incidence_angle",
+            "description": "local incidence angle (LIA)",
+            "proj:shape": [
+                2554,
+                5156
+            ],
+            "proj:transform": [
+                20.0,
+                0.0,
+                663300.0,
+                0.0,
+                -20.0,
+                9206260.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "proj:code": "EPSG:32753",
+            "raster:data_type": "float32",
+            "raster:sampling": "area",
+            "raster:nodata": "nan",
+            "raster:pixel_coordinate_convention": "pixel ULC",
+            "roles": [
+                "data",
+                "auxiliary"
+            ]
+        },
+        "incidence_angle": {
+            "href": "https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/for_zhengshu/ga_s1_nrb_iw_static_0/t002_003270_iw2/ga_s1_nrb-static_0-1-0_T002-003270-IW2_20140403_incidence-angle.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "title": "incidence_angle",
+            "description": "incidence angle (IA)",
+            "proj:shape": [
+                2554,
+                5156
+            ],
+            "proj:transform": [
+                20.0,
+                0.0,
+                663300.0,
+                0.0,
+                -20.0,
+                9206260.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "proj:code": "EPSG:32753",
+            "raster:data_type": "float32",
+            "raster:sampling": "area",
+            "raster:nodata": "nan",
+            "raster:pixel_coordinate_convention": "pixel ULC",
+            "roles": [
+                "data",
+                "auxiliary"
+            ]
+        }
+    },
+    "collection": "ga_s1_nrb_iw_vv_vh_0"
+}

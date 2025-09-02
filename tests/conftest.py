@@ -373,6 +373,9 @@ S2_L2A_PRODUCT: str = "s2_l2a.odc-product.yaml"
 ODC_DATASET_FILE: str = "ga_ls8c_ard_3-1-0_088080_2020-05-25_final.odc-metadata.yaml"
 ODC_METADATA_FILE: str = "eo3_landsat_ard.odc-type.yaml"
 ODC_PRODUCT_FILE: str = "ard_ls8.odc-product.yaml"
+S1_NRB_STAC: str = "ga_s1a_nrb_0-1-0_T002-003270-IW2_20180306T203033Z_stac-item.json"
+S1_NRB_PRODUCT: str = "ga_s1_nrb_iw_hh_0.odc-product.yaml"
+S1_NRB_METADATA_FILE: str = "eo3_s1_nrb.odc-type.yaml"
 
 
 @pytest.fixture
@@ -486,3 +489,22 @@ def ds_ext_lineage(eo3_product, odc_dataset_doc) -> Dataset:
     )
     ds.source_tree = LineageTree.from_eo3_doc(ds.metadata_doc, home="src_home")
     return ds
+
+
+@pytest.fixture
+def s1_nrb_metadata_type() -> MetadataType:
+    filepath = TEST_DATA_FOLDER.joinpath(S1_NRB_METADATA_FILE)
+    (_, doc), *_ = read_documents(filepath)
+    return metadata_from_doc(doc)
+
+
+@pytest.fixture
+def s1_nrb_stac() -> pystac.Item:
+    return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(S1_NRB_STAC)))
+
+
+@pytest.fixture
+def s1_nrb_product(s1_nrb_metadata_type) -> Product:
+    filepath = TEST_DATA_FOLDER.joinpath(S1_NRB_PRODUCT)
+    (_, doc), *_ = read_documents(filepath)
+    return Product(s1_nrb_metadata_type, doc)

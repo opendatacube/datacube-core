@@ -19,6 +19,8 @@ from urllib.parse import urljoin
 from pystac import Asset, Item, Link, MediaType
 from pystac.extensions.eo import Band, EOExtension
 from pystac.extensions.projection import ProjectionExtension
+from pystac.extensions.sar import SarExtension
+from pystac.extensions.sat import SatExtension
 from pystac.extensions.view import ViewExtension
 
 import datacube.utils.uris as dc_uris
@@ -107,70 +109,84 @@ def _uri_resolve(location: str | None, path: str) -> str:
 
 def _stac_links(
     dataset: Dataset,
-    stac_url: str | None,
+    base_url: str | None,
     self_url: str | None,
-    collection_url: str | None,
+    ds_yaml_url: str | None,
 ) -> Generator[Link, Any, Any]:
     """
     Add links for ODC product into a STAC Item
     """
     # TODO: better logic for relative links
-    if dataset.uri:
-        if not self_url:
-            link = Link(
-                rel="self",
-                media_type=MediaType.JSON,
-                target=dataset.uri.replace("odc-metadata.yaml", "stac-item.json"),
-            )
-            yield link
-        if dataset.uri.endswith("yaml"):
-            yield Link(
-                title="ODC Dataset YAML",
-                rel="odc_yaml",
-                media_type="text/yaml",
-                target=dataset.uri,
-            )
     if self_url:
         yield Link(
             rel="self",
             media_type=MediaType.JSON,
             target=self_url,
         )
+    elif base_url:
+        yield Link(
+            rel="self",
+            media_type=MediaType.JSON,
+            target=urljoin(
+                base_url,
+                f"/stac/collections/{dataset.product.name}/items/{dataset.id!s}",
+            ),
+        )
+    else:
+        warnings.warn("Unable to determine self link for STAC Item.", stacklevel=2)
 
-    if collection_url:
+    if ds_yaml_url:
+        yield Link(
+            title="ODC Dataset YAML",
+            rel="odc_yaml",
+            media_type="text/yaml",
+            target=ds_yaml_url,
+        )
+
+    if base_url:
+        if not ds_yaml_url:
+            yield Link(
+                title="ODC Dataset YAML",
+                rel="odc_yaml",
+                media_type="text/yaml",
+                target=urljoin(base_url, f"/dataset/{dataset.id}.odc-metadata.yaml"),
+            )
         yield Link(
             rel="collection",
-            target=collection_url,
+            target=urljoin(base_url, f"/stac/collections/{dataset.product.name}"),
         )
-    if stac_url:
-        if not collection_url:
-            yield Link(
-                rel="collection",
-                target=urljoin(stac_url, f"/stac/collections/{dataset.product.name}"),
-            )
         yield Link(
             title="ODC Product Overview",
             rel="product_overview",
             media_type="text/html",
-            target=urljoin(stac_url, f"product/{dataset.product.name}"),
+            target=urljoin(base_url, f"product/{dataset.product.name}"),
         )
         yield Link(
             title="ODC Dataset Overview",
             rel="alternative",
             media_type="text/html",
-            target=urljoin(stac_url, f"dataset/{dataset.id}"),
+            target=urljoin(base_url, f"dataset/{dataset.id}"),
         )
-
-    if not collection_url and not stac_url:
+    else:
         warnings.warn("No collection provided for STAC Item.", stacklevel=2)
 
 
 def ds2stac(
     dataset: Dataset,
-    stac_url: str | None = None,
+    base_url: str | None = None,
     self_url: str | None = None,
-    collection_url: str | None = None,
+    ds_yaml_url: str | None = None,
+    asset_location: str | None = None,
 ) -> Item:
+    """
+    Convert an EO3-compatible ODC Dataset to a STAC Item.
+    :param base_url: The URL off which the Item links are determined
+    :param self_url: The Item self_link value
+    :param ds_yaml_url: URL for the ODC Dataset YAML
+    :param asset_location: Resolve Asset links against this URL.
+        Will default to the dataset location if not provided.
+    :return: pystac.Item
+    """
     if dataset.extent is None:
         geometry = None
         bbox = None
@@ -196,7 +212,7 @@ def ds2stac(
     )
 
     # Add links
-    for link in _stac_links(dataset, stac_url, self_url, collection_url):
+    for link in _stac_links(dataset, base_url, self_url, ds_yaml_url):
         item.links.append(link)
 
     EOExtension.ext(item, add_if_missing=True)
@@ -213,14 +229,22 @@ def ds2stac(
     if any(k.startswith("view:") for k in properties):
         ViewExtension.ext(item, add_if_missing=True)
 
+    if any(k.startswith("sar:") for k in properties):
+        SarExtension.ext(item, add_if_missing=True)
+
+    if any(k.startswith("sat:") for k in properties):
+        SatExtension.ext(item, add_if_missing=True)
+
+    # url against which asset href can be resolved
+    asset_location = asset_location or dataset.uri
     # Add assets that are data
     for name, measurement in dataset.measurements.items():
-        if not dataset.uri and not measurement.get("path"):
+        if not measurement.get("path"):
             # No URL to link to. URL is mandatory for Stac validation.
             continue
 
         asset = Asset(
-            href=_uri_resolve(dataset.uri, measurement["path"]),
+            href=_uri_resolve(asset_location, measurement["path"]),
             media_type=_media_type(Path(measurement["path"])),
             title=name,
             roles=["data"],
@@ -247,12 +271,12 @@ def ds2stac(
 
     # Add assets that are accessories
     for name, accessory in dataset.accessories.items():
-        if not dataset.uri and not accessory.get("path"):
+        if not accessory.get("path"):
             # No URL to link to. URL is mandatory for Stac validation.
             continue
 
         asset = Asset(
-            href=_uri_resolve(dataset.uri, accessory["path"]),
+            href=_uri_resolve(asset_location, accessory["path"]),
             media_type=_media_type(Path(accessory["path"])),
             title=_asset_title_fields(name),
             roles=_asset_roles_fields(name),
@@ -288,15 +312,29 @@ def infer_eo_product(metadata_doc: dict) -> Product:
 
 def ds_doc_to_stac(
     metadata_doc: dict,
-    uri: str | None = None,
-    stac_url: str | None = None,
+    ds_uri: str | None = None,
+    base_url: str | None = None,
     self_url: str | None = None,
-    collection_url: str | None = None,
+    ds_yaml_url: str | None = None,
+    asset_location: str | None = None,
 ) -> Item:
+    """
+    Convert a raw dataset metadata document to a STAC Item.
+
+    :metadata_doc: The raw ODC metadata document, loaded into a dict
+    :param ds_uri: The dataset uri. Will override the location value in the metadata doc if exists.
+    :param base_url: The URL off which the Item links are determined
+    :param self_url: The Item self_link value
+    :param ds_yaml_url: URL for the ODC Dataset YAML
+    :param asset_location: Resolve Asset links against this URL
+    :return: pystac.Item
+    """
     warnings.warn("It is strongly preferred to use ds2stac if possible.", stacklevel=2)
     if is_doc_eo3(metadata_doc):
         product = infer_eo3_product(metadata_doc)
-        dataset = Dataset(product, prep_eo3(metadata_doc), uri=uri)
+        dataset = Dataset(
+            product, prep_eo3(metadata_doc), uri=ds_uri or metadata_doc.get("location")
+        )
     else:
         warnings.warn(
             "Support for legacy eo datasets is deprecated and will require an "
@@ -305,5 +343,7 @@ def ds_doc_to_stac(
             stacklevel=2,
         )
         product = infer_eo_product(metadata_doc)
-        dataset = Dataset(product, metadata_doc, uri=uri)
-    return ds2stac(dataset, stac_url, self_url, collection_url)
+        dataset = Dataset(
+            product, metadata_doc, uri=ds_uri or metadata_doc.get("location")
+        )
+    return ds2stac(dataset, base_url, self_url, ds_yaml_url, asset_location)
