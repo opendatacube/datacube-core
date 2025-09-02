@@ -117,7 +117,7 @@ class RasterioDataSource(DataSource):
 
     @override
     @contextmanager
-    def open(self) -> Generator[GeoRasterReader]:
+    def open(self) -> Generator[BandDataSource]:
         """Context manager which returns a :class:`BandDataSource`"""
 
         activate_from_config()  # check if settings changed and apply new
