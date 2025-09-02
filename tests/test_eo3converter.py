@@ -339,7 +339,9 @@ def test_sources(ds_legacy_sources: Dataset, ds_ext_lineage: Dataset) -> None:
 
 def test_roundtrip(eo3_dataset: Dataset, eo3_product: Product) -> None:
     original = eo3_dataset
-    roundtrip = _item_to_ds(ds2stac(eo3_dataset), eo3_product)
+    roundtrip = _item_to_ds(
+        ds2stac(eo3_dataset, base_url="https://localhost/"), eo3_product
+    )
     orig_doc = original.metadata_doc
     rt_doc = roundtrip.metadata_doc
 
