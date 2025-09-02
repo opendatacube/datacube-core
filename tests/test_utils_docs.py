@@ -13,6 +13,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from uuid import UUID, uuid4
 
+import boto3
+import moto
 import numpy as np
 import pytest
 import toolz
@@ -198,9 +200,6 @@ def test_read_docs_from_s3(sample_document_files, monkeypatch) -> None:
     """
     Use a mocked S3 bucket to test reading documents from S3
     """
-    boto3 = pytest.importorskip("boto3")
-    moto = pytest.importorskip("moto")
-
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake")
 
