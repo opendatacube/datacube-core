@@ -51,13 +51,16 @@ class BandDataSource(GeoRasterReader):
     """
 
     def __init__(
-        self, source: rasterio.Band, nodata=None, lock: RLock | None = None
+        self,
+        source: rasterio.Band,
+        nodata: np.float32 | np.float64 | np.dtype | None = None,
+        lock: RLock | None = None,
     ) -> None:
         self.source = source
         if nodata is None:
             nodata = self.source.ds.nodatavals[self.source.bidx - 1]
 
-        self._nodata = num2numpy(nodata, source.dtype)
+        self._nodata = nodata
         self._lock = lock
 
     @property
