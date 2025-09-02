@@ -226,14 +226,13 @@ def ds2stac(
             proj.apply(wkt2=dataset.crs.wkt, **_proj_fields(dataset.grids))
 
     # To pass validation, only add 'view' extension when we're using it somewhere.
-    if any(k.startswith("view:") for k in properties):
-        ViewExtension.ext(item, add_if_missing=True)
-
-    if any(k.startswith("sar:") for k in properties):
-        SarExtension.ext(item, add_if_missing=True)
-
-    if any(k.startswith("sat:") for k in properties):
-        SatExtension.ext(item, add_if_missing=True)
+    for k in properties:
+        if k.startswith("view:"):
+            ViewExtension.ext(item, add_if_missing=True)
+        if k.startswith("sar:"):
+            SarExtension.ext(item, add_if_missing=True)
+        if k.startswith("sat:"):
+            SatExtension.ext(item, add_if_missing=True)
 
     # url against which asset href can be resolved
     asset_location = asset_location or dataset.uri
