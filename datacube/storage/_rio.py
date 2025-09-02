@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from threading import RLock
 from urllib.parse import urlparse
@@ -117,7 +117,7 @@ class RasterioDataSource(DataSource):
 
     @override
     @contextmanager
-    def open(self) -> Iterator[GeoRasterReader]:
+    def open(self) -> Generator[GeoRasterReader]:
         """Context manager which returns a :class:`BandDataSource`"""
 
         activate_from_config()  # check if settings changed and apply new
