@@ -9,6 +9,10 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
   - package-ecosystem: docker
     directory: "/docker"
     schedule:
