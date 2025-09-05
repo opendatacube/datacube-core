@@ -21,7 +21,7 @@ from odc.geo.xr import xr_coords
 from typing_extensions import override
 
 from ..api import Datacube
-from ..index.eo3 import EO3Grid, is_doc_eo3
+from ..index.eo3 import EO3Grid
 from ..model import Dataset
 from ..storage import BandInfo, reproject_and_fuse
 from ..storage._read import rdr_geobox
@@ -57,7 +57,7 @@ class RasterFileDataSource(RasterioDataSource):
         return self.crs
 
 
-def _raster_metadata(band):
+def _raster_metadata(band: BandInfo) -> SimpleNamespace:
     source = RasterDatasetDataSource(band)
     with source.open() as rdr:
         return SimpleNamespace(
@@ -66,7 +66,7 @@ def _raster_metadata(band):
 
 
 def get_raster_info(
-    ds: Dataset, measurements: list[str] | None = None
+    ds: Dataset, measurements: Sequence[str] | None = None
 ) -> dict[str, Any]:
     """
     :param ds: Dataset
@@ -96,7 +96,9 @@ def eo3_geobox(ds: Dataset, band: str | None = None, grid: str = "default") -> G
     return GeoBox(parsed.shape, parsed.transform, crs)
 
 
-def native_geobox(ds: Dataset, measurements=None, basis: str | None = None) -> GeoBox:
+def native_geobox(
+    ds: Dataset, measurements: Sequence[str] | None = None, basis: str | None = None
+) -> GeoBox:
     """Compute native GeoBox for a set of bands for a given dataset
 
     :param ds: Dataset
@@ -117,20 +119,19 @@ def native_geobox(ds: Dataset, measurements=None, basis: str | None = None) -> G
                 raise ValueError("Broken GridSpec detected")
             return bb[0]
 
-    if measurements is None and basis is None:
+    if basis is not None:
+        if ds.is_eo3:
+            return eo3_geobox(ds, basis)
+        return get_raster_info(ds, [basis])[basis].geobox
+
+    if measurements is None:
         measurements = list(ds.product.measurements)
 
-    if is_doc_eo3(ds.metadata_doc):
-        if basis is not None:
-            return eo3_geobox(ds, basis)
-
-        gboxes = [eo3_geobox(ds, band) for band in measurements]
-    else:
-        if basis is not None:
-            return get_raster_info(ds, [basis])[basis].geobox
-
-        ii = get_raster_info(ds, measurements)
-        gboxes = [info.geobox for info in ii.values()]
+    gboxes = (
+        [eo3_geobox(ds, band) for band in measurements]
+        if ds.is_eo3
+        else [info.geobox for info in get_raster_info(ds, measurements).values()]
+    )
 
     geobox = gboxes[0]
     consistent = all(geobox == gbox for gbox in gboxes)
