@@ -260,34 +260,38 @@ remaining configuration options only apply to the ``postgres`` and
 
 .. confval:: db_database
 
-   **Only used for the 'postgres' and 'postgis' index drivers.**
+   .. admonition::
+      Only used for the 'postgres' and 'postgis' index drivers.
 
-   **Only used if :confval:`db_url` is not set.**
+      Only used if :confval:`db_url` is not set.
 
    The name of the database to connect to.  Defaults to ``"datacube"``.
 
 .. confval:: db_hostname
 
-   **Only used for the 'postgres' and 'postgis' index drivers.**
+   .. admonition::
+      Only used for the 'postgres' and 'postgis' index drivers.
 
-   **Only used if :confval:`db_url` is not set.**
+      Only used if :confval:`db_url` is not set.
 
    The hostname to connect to.  May be set to an empty string, in which case a
    local socket is used. Defaults to ``"localhost"`` if not set at all.
 
 .. confval:: db_port
 
-   **Only used for the 'postgres' and 'postgis' index drivers.**
+   .. admonition::
+      Only used for the 'postgres' and 'postgis' index drivers.
 
-   **Only used if :confval:`db_url` is not set.**
+      Only used if :confval:`db_url` is not set.
 
    The TCP port to connect to.  Defaults to 5432.  Not used when connecting over a local socket.
 
 .. confval:: db_username
 
-   **Only used for the 'postgres' and 'postgis' index drivers.**
+   .. admonition::
+      Only used for the 'postgres' and 'postgis' index drivers.
 
-   **Only used if :confval:`db_url` is not set.**
+      Only used if :confval:`db_url` is not set.
 
    The username to use when connecting to the database. Defaults to the
    username of the logged-in user on UNIX-like systems.
