@@ -133,16 +133,11 @@ def update_products(
                 type_, allow_unsafe_updates=allow_unsafe
             )
 
-            if can_update:
-                echo(
-                    f'Can update "{type_.name}": {len(list(unsafe_changes))} unsafe '
-                    f"changes, {len(list(safe_changes))} safe changes"
-                )
-            else:
-                echo(
-                    f'Cannot update "{type_.name}": {len(list(unsafe_changes))} unsafe'
-                    f"changes, {len(list(safe_changes))} safe changes"
-                )
+            echo(
+                f'Can{"" if can_update else "not"} update "{type_.name}": '
+                f"{len(list(unsafe_changes))} unsafe changes, {len(list(safe_changes))}"
+                " safe changes"
+            )
     sys.exit(failures)
 
 
