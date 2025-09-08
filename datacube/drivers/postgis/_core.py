@@ -13,7 +13,7 @@ from alembic import command, config
 from alembic.migration import MigrationContext
 from alembic.runtime.environment import EnvironmentContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import MetaData, inspect, text
+from sqlalchemy import Connection, MetaData, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.sql.ddl import DropSchema
@@ -286,10 +286,8 @@ def has_schema(engine) -> bool:
     return SCHEMA_NAME in inspector.get_schema_names()
 
 
-def drop_db(connection) -> None:
-    # if_exists parameter seems to not be working in SQLA1.4?
-    if has_schema(connection.engine):
-        connection.execute(DropSchema(SCHEMA_NAME, cascade=True, if_exists=True))
+def drop_db(connection: Connection) -> None:
+    connection.execute(DropSchema(SCHEMA_NAME, cascade=True, if_exists=True))
 
 
 def to_pg_role(role) -> str:
