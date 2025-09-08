@@ -48,12 +48,14 @@ jobs:
         with:
           environment-file: conda-environment.yml
           auto-update-conda: true
+          condarc-file: condarc.yml
           python-version: ${{ matrix.python-version}}
       - uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
         if: steps.conda1.outcome == 'failure'
         with:
           environment-file: conda-environment.yml
           auto-update-conda: true
+          condarc-file: condarc.yml
           python-version: ${{ matrix.python-version}}
 
       - name: Get pip cache dir
