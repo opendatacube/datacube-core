@@ -615,7 +615,6 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
 def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb) -> None:
     with db._engine.connect() as connection:
         if cfg_env._name in ("datacube", "default", "postgres"):
-            # with db.begin() as c:  # Drop SCHEMA
             pgres_core.drop_db(connection)
         else:
             pgis_core.drop_db(connection)
