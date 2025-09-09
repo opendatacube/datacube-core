@@ -291,9 +291,8 @@ def has_role(conn, role_name: str) -> bool:
     return bool(res)
 
 
-def has_schema(engine) -> bool:
-    inspector = inspect(engine)
-    return SCHEMA_NAME in inspector.get_schema_names()
+def has_schema(engine: Engine, schema_name: str = SCHEMA_NAME) -> bool:
+    return inspect(engine).has_schema(schema_name)
 
 
 def drop_db(connection: Connection) -> None:
