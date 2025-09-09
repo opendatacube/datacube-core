@@ -41,4 +41,3 @@ dependencies:
   - odc-geo >=0.4.8
   - odc-loader <=0.5.1
   - odc-stac >= 0.4.0
-  - minizip ==4.0.6
