@@ -597,7 +597,7 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
         # Drop tables so our tests have a clean db.
         # with db.begin() as c:  # Creates a new PostgresDbAPI, by passing a new connection to it
         with db._engine.connect() as connection:
-            pgres_core.drop_db(connection)
+            pgres_core.drop_schema(connection)
             if tz:
                 connection.execute(
                     text(f"alter database {db_name} set timezone = {tz!r}")
@@ -610,7 +610,7 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
             cfg_env, application_name="test-run", validate_connection=False
         )
         with db._engine.connect() as connection:
-            pgis_core.drop_db(connection)
+            pgis_core.drop_schema(connection)
             if tz:
                 connection.execute(
                     text(f"alter database {db_name} set timezone = {tz!r}")
@@ -622,9 +622,9 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
 def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb) -> None:
     with db._engine.connect() as connection:
         if cfg_env._name in ("datacube", "default", "postgres", "datacube3"):
-            pgres_core.drop_db(connection)
+            pgres_core.drop_schema(connection)
         else:
-            pgis_core.drop_db(connection)
+            pgis_core.drop_schema(connection)
     db.close()
 
 
