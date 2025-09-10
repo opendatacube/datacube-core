@@ -8,6 +8,7 @@ Core SQL schema settings.
 
 import logging
 
+from deprecat import deprecat
 from sqlalchemy import Connection, MetaData, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema, DropSchema
@@ -24,6 +25,7 @@ from datacube.drivers.postgres.sql import (
     escape_pg_identifier,
     pg_column_exists,
 )
+from datacube.migration import ODC2DeprecationWarning
 
 USER_ROLES = ("agdc_user", "agdc_ingest", "agdc_manage", "agdc_admin")
 
@@ -295,8 +297,18 @@ def has_schema(engine: Engine, schema_name: str = SCHEMA_NAME) -> bool:
     return inspect(engine).has_schema(schema_name)
 
 
+def drop_schema(connection: Connection, schema_name: str = SCHEMA_NAME) -> None:
+    connection.execute(DropSchema(schema_name, cascade=True, if_exists=True))
+
+
+@deprecat(
+    reason="The 'drop_db' function has been deprecated. "
+    "Please use 'drop_schema' instead.",
+    version="1.9.10",
+    category=ODC2DeprecationWarning,
+)
 def drop_db(connection: Connection) -> None:
-    connection.execute(DropSchema(SCHEMA_NAME, cascade=True, if_exists=True))
+    drop_schema(connection)
 
 
 def to_pg_role(role: str) -> str:

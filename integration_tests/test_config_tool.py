@@ -176,12 +176,12 @@ def test_db_init_rebuild(clirunner, cfg_env, ls8_eo3_product) -> None:
 
 def test_db_init(clirunner, index) -> None:
     if index._db.driver_name == "postgis":
-        from datacube.drivers.postgis._core import drop_db, has_schema
+        from datacube.drivers.postgis._core import drop_schema, has_schema
     else:
-        from datacube.drivers.postgres._core import drop_db, has_schema
+        from datacube.drivers.postgres._core import drop_schema, has_schema
 
     with index._db._connect() as connection:
-        drop_db(connection._connection)
+        drop_schema(connection._connection)
 
         assert not has_schema(index._db._engine)
 

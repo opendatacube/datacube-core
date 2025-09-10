@@ -13,6 +13,7 @@ from alembic import command, config
 from alembic.migration import MigrationContext
 from alembic.runtime.environment import EnvironmentContext
 from alembic.script import ScriptDirectory
+from deprecat import deprecat
 from sqlalchemy import Connection, MetaData, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema
@@ -25,6 +26,7 @@ from datacube.drivers.postgis.sql import (
     UPDATE_TIMESTAMP_SQL,
     escape_pg_identifier,
 )
+from datacube.migration import ODC2DeprecationWarning
 
 USER_ROLES = ("odc_user", "odc_manage", "odc_admin")
 
@@ -285,8 +287,18 @@ def has_schema(engine: Engine, schema_name: str = SCHEMA_NAME) -> bool:
     return inspect(engine).has_schema(schema_name)
 
 
+def drop_schema(connection: Connection, schema_name: str = SCHEMA_NAME) -> None:
+    connection.execute(DropSchema(schema_name, cascade=True, if_exists=True))
+
+
+@deprecat(
+    reason="The 'drop_db' function has been deprecated. "
+    "Please use 'drop_schema' instead.",
+    version="1.9.10",
+    category=ODC2DeprecationWarning,
+)
 def drop_db(connection: Connection) -> None:
-    connection.execute(DropSchema(SCHEMA_NAME, cascade=True, if_exists=True))
+    drop_schema(connection)
 
 
 def to_pg_role(role) -> str:
