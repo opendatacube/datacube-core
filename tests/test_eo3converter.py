@@ -9,6 +9,7 @@ import math
 import uuid
 from typing import Any
 
+import moto
 import pystac
 import pytest
 from odc.geo.geom import Geometry
@@ -427,7 +428,7 @@ def test_dsdoc_to_stac(odc_dataset_doc, eo3_dataset) -> None:
     assert from_doc.to_dict() == from_ds.to_dict()
 
 
-def test_s1_nrb(s1_nrb_stac, s1_nrb_product) -> None:
+def test_s1_nrb(s1_nrb_stac, s1_nrb_product, without_aws_env) -> None:
     # simulate loading an indexed stac dataset by converting it to eo3 then back to stac
     eo3_ds = next(
         iter(
@@ -443,10 +444,11 @@ def test_s1_nrb(s1_nrb_stac, s1_nrb_product) -> None:
         "https://stac-extensions.github.io/sar/v1.0.0/schema.json"
         in dc_stac.stac_extensions
     )
-    stac_ds = load(
-        [dc_stac],
-        crs="EPSG:32753",
-        resolution=20,
-        bbox=(137.26307, -7.45486, 137.32457, -7.41362),
-    )
+    with moto.mock_aws():
+        stac_ds = load(
+            [dc_stac],
+            crs="EPSG:32753",
+            resolution=20,
+            bbox=(137.26307, -7.45486, 137.32457, -7.41362),
+        )
     assert not math.isnan(stac_ds.VV_gamma0.data[0][0][0])
