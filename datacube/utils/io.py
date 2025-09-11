@@ -3,7 +3,9 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import os
+from collections.abc import Generator
 from pathlib import Path
+from sys import stdin
 
 
 def _norm_path(path: str | Path, in_home_dir: bool = False) -> Path:
@@ -49,6 +51,19 @@ def write_user_secret_file(
     with os.fdopen(os.open(str(fname), open_flags, access), mode) as handle:
         handle.write(text)
         handle.close()
+
+
+def read_stdin_lines(skip_empty: bool = False) -> Generator[str]:
+    """Read lines from stdin.
+
+    Returns iterator of lines with any whitespace trimmed.
+
+    :param skip_empty: omit whitespace only lines when true.
+    """
+    for line in stdin:
+        line = line.strip()
+        if not skip_empty or len(line) > 0:
+            yield line
 
 
 def slurp(
