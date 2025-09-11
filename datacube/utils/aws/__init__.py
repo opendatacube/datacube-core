@@ -9,6 +9,7 @@ Helper methods for working with AWS
 import functools
 import os
 import time
+from collections.abc import Generator
 from typing import IO, Any, TypeAlias
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -415,6 +416,26 @@ def s3_dump(data: bytes | str | IO, url: str, s3: MaybeS3 = None, **kwargs):
     )
     code = r["ResponseMetadata"]["HTTPStatusCode"]
     return 200 <= code < 300
+
+
+def s3_ls_dir(uri: str, s3: BaseClient | None = None, **kw) -> Generator[str]:
+    bucket, prefix = s3_url_parse(uri)
+
+    if len(prefix) > 0 and not prefix.endswith("/"):
+        prefix = prefix + "/"
+
+    s3 = s3 or s3_client()
+    paginator = s3.get_paginator("list_objects_v2")
+
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix, Delimiter="/", **kw):
+        sub_dirs = page.get("CommonPrefixes", [])
+        files = page.get("Contents", [])
+
+        for p in sub_dirs:
+            yield f"s3://{bucket}/{p['Prefix']}"
+
+        for o in files:
+            yield f"s3://{bucket}/{o['Key']}"
 
 
 def get_aws_settings(

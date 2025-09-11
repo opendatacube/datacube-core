@@ -3,9 +3,11 @@
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import json
+import os
 from typing import Any
 from unittest import mock
 
+import boto3
 import botocore
 import moto
 import pytest
@@ -28,6 +30,10 @@ from datacube.utils.aws import (
     s3_head_object,
     s3_url_parse,
 )
+from datacube.utils.aws.queue import get_queues, redrive_queue
+
+ALIVE_QUEUE_NAME = "mock-alive-queue"
+DEAD_QUEUE_NAME = "mock-dead-queue"
 
 
 def _json(**kw):
@@ -40,6 +46,106 @@ def mock_urlopen(text: str, code: int = 200):
     m.read.return_value = text.encode("utf8")
     m.__enter__.return_value = m
     return m
+
+
+def get_n_messages(queue) -> int:
+    return int(queue.attributes.get("ApproximateNumberOfMessages"))
+
+
+@pytest.fixture
+def aws_env(monkeypatch) -> None:
+    if "AWS_DEFAULT_REGION" not in os.environ:
+        monkeypatch.setenv("AWS_DEFAULT_REGION", "us-west-2")
+
+
+@moto.mock_aws
+def test_redrive_to_queue(aws_env: None) -> None:
+    resource = boto3.resource("sqs")
+
+    dead_queue = resource.create_queue(QueueName=DEAD_QUEUE_NAME)
+    alive_queue = resource.create_queue(
+        QueueName=ALIVE_QUEUE_NAME,
+        Attributes={
+            "RedrivePolicy": json.dumps(
+                {
+                    "deadLetterTargetArn": dead_queue.attributes.get("QueueArn"),
+                    "maxReceiveCount": 2,
+                }
+            ),
+        },
+    )
+
+    # Test redriving to a queue without an alive queue specified
+    dead_queue.send_message(MessageBody=json.dumps({"test": 1}))
+    assert get_n_messages(dead_queue) == 1
+
+    count = redrive_queue(DEAD_QUEUE_NAME, max_wait=0)
+    assert count == 1
+
+    # Test redriving to a queue that is specified
+    dead_queue.send_message(MessageBody=json.dumps({"test": 2}))
+    assert get_n_messages(dead_queue) == 1
+
+    redrive_queue(DEAD_QUEUE_NAME, ALIVE_QUEUE_NAME, max_wait=0)
+    assert get_n_messages(dead_queue) == 1
+    assert get_n_messages(alive_queue) == 2
+
+    # Test lots of messages:
+    for i in range(35):
+        dead_queue.send_message(MessageBody=json.dumps({"content": f"Something {i}"}))
+
+    count = redrive_queue(DEAD_QUEUE_NAME, ALIVE_QUEUE_NAME, max_wait=0)
+    assert count == 35
+
+    assert get_n_messages(dead_queue) == 0
+
+
+@moto.mock_aws
+def test_get_queues(aws_env: None) -> None:
+    resource = boto3.resource("sqs")
+
+    resource.create_queue(QueueName="a_queue1")
+    resource.create_queue(QueueName="b_queue2")
+    resource.create_queue(QueueName="c_queue3")
+    resource.create_queue(QueueName="d_queue4")
+
+    queues = get_queues()
+
+    assert len(list(queues)) == 4
+
+    # Test prefix
+    queues = get_queues(prefix="a_queue1")
+    assert "queue1" in next(iter(queues)).url
+
+    # Test prefix
+    queues = get_queues(contains="2")
+    assert "b_queue2" in next(iter(queues)).url
+
+    # Test prefix and contains
+    queues = get_queues(prefix="c", contains="3")
+    assert "c_queue3" in next(iter(queues)).url
+
+    # Test prefix and not contains
+    queues = get_queues(prefix="d", contains="5")
+    assert len(list(queues)) == 0
+
+    # Test contains and not prefix
+    queues = get_queues(prefix="q", contains="2")
+    assert len(list(queues)) == 0
+
+    # Test not found prefix
+    queues = get_queues(prefix="fake_start")
+    assert len(list(queues)) == 0
+
+    # Test not found contains
+    queues = get_queues(contains="not_there")
+    assert len(list(queues)) == 0
+
+
+@moto.mock_aws
+def test_get_queues_empty(aws_env: None) -> None:
+    queues = get_queues()
+    assert list(queues) == []
 
 
 def test_ec2_current_region() -> None:
