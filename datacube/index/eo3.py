@@ -18,7 +18,13 @@ from odc.geo import (
     Geometry,
     SomeCRS,
 )
+from odc.geo.geobox import GeoBox
 from odc.geo.geom import lonlat_bounds, polygon
+from odc.stac._mdtools import _group_geoboxes
+from toolz.dicttoolz import get_in
+
+from datacube.model import Dataset, Product, Range
+from datacube.utils import DocReader
 
 EO3_SCHEMA = "https://schemas.opendatacube.org/dataset"
 
@@ -273,3 +279,278 @@ def prep_eo3(
 
             doc["lineage"] = {"source_datasets": sources}
     return doc
+
+
+def _accessories_from_eo1(metadata_doc: dict) -> dict[str, Any]:
+    """Create an EO3 accessories section from an EO1 document"""
+    accessories = {}
+
+    # Browse image -> thumbnail
+    if "browse" in metadata_doc:
+        for name, browse in metadata_doc["browse"].items():
+            accessories[f"thumbnail:{name}"] = {"path": browse["path"]}
+
+    # Checksum
+    if "checksum_path" in metadata_doc:
+        accessories["checksum:sha1"] = {"path": metadata_doc["checksum_path"]}
+    return accessories
+
+
+def field_label(key, value):
+    yield "title", value
+
+
+def field_platform(key, value):
+    yield "eo:platform", value.lower().replace("_", "-")
+
+
+def field_instrument(key, value):
+    yield "eo:instrument", value
+
+
+def field_format(key, value):
+    yield "odc:file_format", value
+
+
+def field_product(key, value):
+    yield "odc:product_family", value
+
+
+def field_path_row(key, value):
+    # Path/Row fields are ranges in datacube but 99% of the time
+    # they are a single value
+    # (they are ranges in telemetry products)
+    # Stac doesn't accept a range here, so we'll skip it in those products,
+    # but we can handle the 99% case when lower==higher.
+    if key == "sat_path":
+        kind = "landsat:wrs_path"
+    elif key == "sat_row":
+        kind = "landsat:wrs_row"
+    else:
+        raise ValueError(f"Path/row kind {key!r}")
+
+    # If there's only one value in the range, return it.
+    if isinstance(value, Range):
+        if value.end is None or value.begin == value.end:
+            # Standard stac
+            yield kind, int(value.begin)
+        else:
+            # Our questionable output. Only present in telemetry products?
+            yield f"odc:{key}", [value.begin, value.end]
+
+
+# Other Property examples:
+# collection  "landsat-8-l1"
+# eo:gsd  15
+# eo:platform "landsat-8"
+# eo:instrument "OLI_TIRS"
+# eo:off_nadir  0
+# datetime  "2019-02-12T19:26:08.449265+00:00"
+# eo:sun_azimuth  -172.29462212
+# eo:sun_elevation  -6.62176054
+# eo:cloud_cover  -1
+# eo:row  "135"
+# eo:column "044"
+# landsat:product_id  "LC08_L1GT_044135_20190212_20190212_01_RT"
+# landsat:scene_id  "LC80441352019043LGN00"
+# landsat:processing_level  "L1GT"
+# landsat:tier  "RT"
+
+_EO1_PROPERTY_MAP = {
+    "platform": field_platform,
+    "instrument": field_instrument,
+    "sat_path": field_path_row,
+    "sat_row": field_path_row,
+    "label": field_label,
+    "format": field_format,
+    "product_type": field_product,
+}
+
+
+def _build_properties(d: DocReader):
+    for key, val in d.fields.items():
+        if val is None:
+            continue
+        converter = _EO1_PROPERTY_MAP.get(key)
+        if converter:
+            yield from converter(key, val)
+
+
+def make_grids(ds: Dataset) -> dict:
+    geoboxes = {}
+    ref_points = ds._gs["geo_ref_points"]
+
+    def _shape_and_transform(m: dict, adjust: bool = False):
+        res = m.get("cell_size")
+        shape = m.get("shape")
+        if res:
+            if isinstance(res, float):
+                res_x, res_y = res, -res
+            else:
+                # y value is not always negative even when we are dealing with a square resolution
+                res_x, res_y = res["x"], -res["y"] if res["y"] == res["x"] else res["y"]
+            transform = Affine(
+                res_x, 0.0, ref_points["ul"]["x"], 0.0, res_y, ref_points["ul"]["y"]
+            )
+            shape_x, shape_y = ~Affine(*transform) * (
+                ref_points["lr"]["x"],
+                ref_points["lr"]["y"],
+            )
+        elif shape:
+            # the browse.full.shape values generally seem to be accurate but off by 1, so adjust accordingly
+            # this logic has been extrapolated from a very small sample size and may be removed in the future
+            shape_x, shape_y = (
+                shape["x"] - 1,
+                shape["y"] - 1 if adjust else shape["x"],
+                shape["y"],
+            )
+            if not res:
+                transform = ds.transform * Affine.scale(1 / shape_x, 1 / shape_y)
+        else:
+            return None, None
+        return [shape_y, shape_x], transform
+
+    for name, measurement in ds.measurements.items():
+        shape, transform = _shape_and_transform(measurement)
+        if shape:
+            geoboxes[name] = GeoBox(shape, transform, ds.crs)
+
+    if (
+        geoboxes == {}
+    ):  # no grid info in measurements, see if we can get a default from browse
+        if full := get_in(["browse", "full"], ds.metadata_doc):
+            shape, transform = _shape_and_transform(full, True)
+            if shape:
+                # might want to do a sanity check first to see if the values from here are accurate
+                return {"default": {"shape": shape, "transform": list(transform)}}, {}
+        # could defaulting to the product resolution be an option?
+        return {}, {}
+
+    named_gboxes, band2grid = _group_geoboxes(geoboxes)
+    grids = {
+        name: {"shape": gbox.shape.yx, "transform": gbox.transform[:6]}
+        for name, gbox in named_gboxes.items()
+    }
+    return grids, band2grid
+
+
+def convert_bands(ds: Dataset, grid_mappings: dict) -> dict:
+    def _to_measurement(name, band):
+        m = {"path": band.get("path", "")}
+        if grid_mappings.get(name, "default") != "default":
+            m["grid"] = grid_mappings[name]
+        if "label" in band:
+            m["aliases"] = [band.get("label")]
+        # others?
+        return m
+
+    return {name: _to_measurement(name, band) for name, band in ds.measurements.items()}
+
+
+def convert_eo_dataset(eo_ds: Dataset) -> Dataset:
+    # Update the metadata doc of an eo-type Dataset to be eo3-compatible
+    if eo_ds.is_eo3:
+        return eo_ds
+
+    if eo_ds.crs is None:
+        raise ValueError("Dataset must have CRS to be converted to EO3.")
+
+    grids, grid_mappings = make_grids(eo_ds)
+    if not grids:
+        # could make this a warning if we relax prep_eo3
+        raise ValueError(
+            "Unable to determine dataset grids, necessary for conversion to EO3."
+        )
+
+    eo3_doc = {
+        "$schema": "https://schemas.opendatacube.org/dataset",
+        "id": str(eo_ds.id),
+        "label": eo_ds.metadata.label,
+        "product": {"name": eo_ds.product.name},
+        "properties": {
+            "datetime": get_in(
+                ["extent", "center_dt"], eo_ds.metadata_doc, default=eo_ds.center_time
+            ),
+            "odc:processing_datetime": eo_ds.metadata.creation_dt or eo_ds.indexed_time,
+            **(dict(_build_properties(eo_ds.metadata))),
+        },
+        "crs": str(eo_ds.crs),
+        "grids": grids,
+        "extent": {
+            "lon": {
+                "begin": eo_ds.metadata.lon.begin,
+                "end": eo_ds.metadata.lon.end,
+            },
+            "lat": {
+                "begin": eo_ds.metadata.lat.begin,
+                "end": eo_ds.metadata.lat.end,
+            },
+        },
+        "geometry": eo_ds._gs.get("valid_data"),
+        "grid_spatial": eo_ds.metadata_doc["grid_spatial"],
+        "measurements": convert_bands(eo_ds, grid_mappings),
+        "accessories": _accessories_from_eo1(eo_ds.metadata_doc),
+        "lineage": {
+            "source_datasets": {
+                name: doc.get("id") for name, doc in eo_ds.metadata.sources.items()
+            }
+        },
+    }
+    if eo_ds.time and eo_ds.time.begin != eo_ds.time.end:
+        eo3_doc["properties"].update(
+            {
+                "dtr:start_datetime": eo_ds.time.begin,
+                "dtr:end_datetime": eo_ds.time.end,
+            }
+        )
+    location = eo_ds.metadata_doc.get("location") or eo_ds.uri
+    if location:
+        eo3_doc["location"] = location
+
+    return Dataset(convert_eo_product(eo_ds.product), eo3_doc, uri=location)
+
+
+def convert_eo_product(eo_product: Product) -> Product:
+    from datacube.metadata._utils import (
+        EO3_MD_TYPE,  # import here to avoid circular import error
+    )
+    # the default md types should probably find another place to live anyway
+
+    old_def = eo_product.definition
+    metadata = old_def["metadata"]
+    metadata_offsets = {
+        "eo:platform": ["platform", "code"],
+        "eo:instrument": ["instrument", "name"],
+        "odc:file_format": ["format", "name"],
+        "odc:product_family": ["product_type"],
+    }
+    properties = {}
+    for name, offset in metadata_offsets.items():
+        if val := get_in(offset, metadata) is not None:
+            properties[name] = (
+                val.lower().replace("_", "-") if name == "eo:platform" else val
+            )
+
+    new_def = {
+        "name": old_def["name"],
+        "license": "CC-BY-4.0",
+        "metadata_type": "eo3",
+        "description": old_def["description"],
+        "metadata": {
+            "product": {"name": old_def["name"]},
+            "properties": properties,
+        },
+        "measurements": old_def["measurements"],
+    }
+    if "load" in old_def:
+        new_def["load"] = old_def["load"]
+    elif "storage" in old_def:
+        storage = old_def["storage"]
+        if "crs" in storage and "resolution" in storage:
+            # does it matter if resolution is in lat lon?
+            new_def["load"] = {
+                "crs": storage["crs"],
+                "resolution": storage["resolution"],
+            }
+
+    return Product(EO3_MD_TYPE, new_def)

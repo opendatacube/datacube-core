@@ -24,7 +24,7 @@ from pystac.extensions.sat import SatExtension
 from pystac.extensions.view import ViewExtension
 
 import datacube.utils.uris as dc_uris
-from datacube.index.eo3 import is_doc_eo3, prep_eo3
+from datacube.index.eo3 import convert_eo_dataset, is_doc_eo3, prep_eo3
 from datacube.model import Dataset, Product
 from datacube.utils import parse_time
 
@@ -187,6 +187,15 @@ def ds2stac(
         Will default to the dataset location if not provided.
     :return: pystac.Item
     """
+    if not dataset.is_eo3:
+        warnings.warn(
+            "Support for legacy EO datasets is deprecated. "
+            "The metadata will be converted to EO3.",
+            ODC2DeprecationWarning,
+            stacklevel=2,
+        )
+        dataset = convert_eo_dataset(dataset)
+
     if dataset.extent is None:
         geometry = None
         bbox = None
@@ -238,7 +247,7 @@ def ds2stac(
     asset_location = asset_location or dataset.uri
     # Add assets that are data
     for name, measurement in dataset.measurements.items():
-        if not measurement.get("path"):
+        if not asset_location and not measurement.get("path"):
             # No URL to link to. URL is mandatory for Stac validation.
             continue
 
@@ -258,7 +267,7 @@ def ds2stac(
             proj_fields = _proj_fields(
                 dataset.grids, measurement.get("grid", "default")
             )
-            if proj_fields is not None:
+            if proj_fields:
                 proj = ProjectionExtension.ext(asset)  # type: ignore[arg-type]
                 proj.apply(
                     shape=proj_fields["shape"],
@@ -270,7 +279,7 @@ def ds2stac(
 
     # Add assets that are accessories
     for name, accessory in dataset.accessories.items():
-        if not accessory.get("path"):
+        if not asset_location and not accessory.get("path"):
             # No URL to link to. URL is mandatory for Stac validation.
             continue
 
@@ -299,9 +308,12 @@ def infer_eo3_product(metadata_doc: dict) -> Product:
 
 
 def infer_eo_product(metadata_doc: dict) -> Product:
-    name = metadata_doc["product_type"]
+    name = metadata_doc[
+        "product_type"
+    ]  # this isn't always the product name, but it's the best we can do
     doc = {
         "name": name,
+        "description": f"A barebones Product definition for an EO1 {name} dataset.",
         "metadata_type": "eo",
         "metadata": {"product_type": name},
         "measurements": [{"name": key} for key in metadata_doc["image"]["bands"]],
@@ -331,18 +343,8 @@ def ds_doc_to_stac(
     warnings.warn("It is strongly preferred to use ds2stac if possible.", stacklevel=2)
     if is_doc_eo3(metadata_doc):
         product = infer_eo3_product(metadata_doc)
-        dataset = Dataset(
-            product, prep_eo3(metadata_doc), uri=ds_uri or metadata_doc.get("location")
-        )
+        metadata_doc = prep_eo3(metadata_doc)
     else:
-        warnings.warn(
-            "Support for legacy eo datasets is deprecated and will require an "
-            "eo3-style properties dict to be added to the metadata.",
-            ODC2DeprecationWarning,
-            stacklevel=2,
-        )
         product = infer_eo_product(metadata_doc)
-        dataset = Dataset(
-            product, metadata_doc, uri=ds_uri or metadata_doc.get("location")
-        )
+    dataset = Dataset(product, metadata_doc, uri=ds_uri or metadata_doc.get("location"))
     return ds2stac(dataset, base_url, self_url, ds_yaml_url, asset_location)
