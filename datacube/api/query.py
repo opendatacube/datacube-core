@@ -167,7 +167,7 @@ class Query:
             self.geopolygon = like.extent
 
             if "time" not in self.search:
-                time_coord = like.coords.get("time")  # type: ignore[attr-defined]
+                time_coord = like.coords.get("time")
                 if time_coord is not None:
                     self.search["time"] = _time_to_search_dims(
                         # convert from np.datetime64 to datetime.datetime
