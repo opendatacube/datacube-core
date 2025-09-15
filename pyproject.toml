@@ -99,6 +99,7 @@ dev = [
     "types-python-dateutil",
     "types-PyYAML",
     "types-setuptools",
+    {include-group = "doc"},
 ]
 doc = [
     'autodocsumm',
