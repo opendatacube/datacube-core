@@ -376,15 +376,25 @@ def _build_properties(d: DocReader):
             yield from converter(key, val)
 
 
-def make_grids(ds: Dataset) -> dict:
+def make_grids(ds: Dataset) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
+    """
+    Determine grid values if possible from geo_ref_points and cell_size/shape values.
+    If measurements do not contain the necessary information, see if it can be found in
+    browse.
+    Return grids dict and (optionally) mapping of measurement name to grid name.
+    """
     geoboxes = {}
-    ref_points = ds._gs["geo_ref_points"]
+    assert ds._gs is not None  # would have errored earlier if grid_spatial was missing
+    ref_points = ds._gs.get("geo_ref_points")
+    if not ref_points:
+        raise ValueError("Dataset must have geo_ref_points to be converted to EO3.")
 
     def _shape_and_transform(m: dict, adjust: bool = False):
+        # calculate shape (y,x) and transform, or return None if they cannot be determined
         res = m.get("cell_size")
         shape = m.get("shape")
         if res:
-            if isinstance(res, float):
+            if isinstance(res, int | float):
                 res_x, res_y = res, -res
             else:
                 # y value is not always negative even when we are dealing with a square resolution
@@ -392,7 +402,7 @@ def make_grids(ds: Dataset) -> dict:
             transform = Affine(
                 res_x, 0.0, ref_points["ul"]["x"], 0.0, res_y, ref_points["ul"]["y"]
             )
-            shape_x, shape_y = ~Affine(*transform) * (
+            shape_x, shape_y = ~transform * (
                 ref_points["lr"]["x"],
                 ref_points["lr"]["y"],
             )
@@ -400,15 +410,14 @@ def make_grids(ds: Dataset) -> dict:
             # the browse.full.shape values generally seem to be accurate but off by 1, so adjust accordingly
             # this logic has been extrapolated from a very small sample size and may be removed in the future
             shape_x, shape_y = (
-                shape["x"] - 1,
-                shape["y"] - 1 if adjust else shape["x"],
-                shape["y"],
+                (shape["x"] - 1, shape["y"] - 1) if adjust else (shape["x"], shape["y"])
             )
             if not res:
+                assert ds.transform is not None
                 transform = ds.transform * Affine.scale(1 / shape_x, 1 / shape_y)
         else:
             return None, None
-        return [shape_y, shape_x], transform
+        return (shape_y, shape_x), transform
 
     for name, measurement in ds.measurements.items():
         shape, transform = _shape_and_transform(measurement)
@@ -422,19 +431,21 @@ def make_grids(ds: Dataset) -> dict:
             shape, transform = _shape_and_transform(full, True)
             if shape:
                 # might want to do a sanity check first to see if the values from here are accurate
-                return {"default": {"shape": shape, "transform": list(transform)}}, {}
+                return {"default": {"shape": shape, "transform": transform[:6]}}, {}  # type: ignore[index]
         # could defaulting to the product resolution be an option?
         return {}, {}
 
     named_gboxes, band2grid = _group_geoboxes(geoboxes)
     grids = {
-        name: {"shape": gbox.shape.yx, "transform": gbox.transform[:6]}
+        name: {"shape": gbox.shape.yx, "transform": gbox.transform[:6]}  # type: ignore[index]
         for name, gbox in named_gboxes.items()
     }
     return grids, band2grid
 
 
-def convert_bands(ds: Dataset, grid_mappings: dict) -> dict:
+def convert_bands(
+    ds: Dataset, grid_mappings: dict[str, str]
+) -> dict[str, dict[str, str]]:
     def _to_measurement(name, band):
         m = {"path": band.get("path", "")}
         if grid_mappings.get(name, "default") != "default":
@@ -486,7 +497,7 @@ def convert_eo_dataset(eo_ds: Dataset) -> Dataset:
                 "end": eo_ds.metadata.lat.end,
             },
         },
-        "geometry": eo_ds._gs.get("valid_data"),
+        "geometry": eo_ds._gs.get("valid_data"),  # type: ignore[union-attr]
         "grid_spatial": eo_ds.metadata_doc["grid_spatial"],
         "measurements": convert_bands(eo_ds, grid_mappings),
         "accessories": _accessories_from_eo1(eo_ds.metadata_doc),
@@ -499,8 +510,8 @@ def convert_eo_dataset(eo_ds: Dataset) -> Dataset:
     if eo_ds.time and eo_ds.time.begin != eo_ds.time.end:
         eo3_doc["properties"].update(
             {
-                "dtr:start_datetime": eo_ds.time.begin,
-                "dtr:end_datetime": eo_ds.time.end,
+                "dtr:start_datetime": eo_ds.time.begin.isoformat(),
+                "dtr:end_datetime": eo_ds.time.end.isoformat(),
             }
         )
     location = eo_ds.metadata_doc.get("location") or eo_ds.uri
@@ -511,10 +522,9 @@ def convert_eo_dataset(eo_ds: Dataset) -> Dataset:
 
 
 def convert_eo_product(eo_product: Product) -> Product:
-    from datacube.metadata._utils import (
-        EO3_MD_TYPE,  # import here to avoid circular import error
-    )
+    # import here to avoid circular import error
     # the default md types should probably find another place to live anyway
+    from datacube.metadata._utils import EO3_MD_TYPE
 
     old_def = eo_product.definition
     metadata = old_def["metadata"]
@@ -526,7 +536,7 @@ def convert_eo_product(eo_product: Product) -> Product:
     }
     properties = {}
     for name, offset in metadata_offsets.items():
-        if val := get_in(offset, metadata) is not None:
+        if (val := get_in(offset, metadata)) is not None:
             properties[name] = (
                 val.lower().replace("_", "-") if name == "eo:platform" else val
             )
@@ -547,7 +557,6 @@ def convert_eo_product(eo_product: Product) -> Product:
     elif "storage" in old_def:
         storage = old_def["storage"]
         if "crs" in storage and "resolution" in storage:
-            # does it matter if resolution is in lat lon?
             new_def["load"] = {
                 "crs": storage["crs"],
                 "resolution": storage["resolution"],

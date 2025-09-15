@@ -10,11 +10,14 @@ from affine import Affine
 from datacube.index.eo3 import (
     EO3Grid,
     add_eo3_parts,
+    convert_eo_dataset,
+    convert_eo_product,
     eo3_grid_spatial,
     is_doc_eo3,
     is_doc_geo,
     prep_eo3,
 )
+from datacube.metadata._stacconverter import infer_eo_product
 from datacube.model import Dataset
 from datacube.testutils import mk_sample_product
 from datacube.utils.documents import InvalidDocException, parse_yaml
@@ -379,3 +382,154 @@ def test_geom_from_eo3_proj() -> None:
         )
         is not None
     )
+
+
+def test_eo1_dataset_conversion(eo_dataset_doc, ls5_nbar_product) -> None:
+    eo_ds = Dataset(infer_eo_product(eo_dataset_doc), eo_dataset_doc)
+    assert not eo_ds.is_eo3
+    compat_ds = convert_eo_dataset(eo_ds)
+    assert compat_ds.is_eo3
+    assert compat_ds.properties
+    assert compat_ds.accessories
+    assert compat_ds.properties["datetime"] == compat_ds.center_time.strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+    assert compat_ds.metadata_doc["lineage"]["source_datasets"] == {
+        "level1": "ee983642-1cd3-11e6-aaba-a0000100fe80"
+    }
+
+    eo_ds = Dataset(ls5_nbar_product, eo_dataset_doc)
+    expected_ds_doc = {
+        "$schema": "https://schemas.opendatacube.org/dataset",
+        "id": "bbf3e21c-82b0-11e5-9ba1-a0000100fe80",
+        "label": "LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302",
+        "product": {"name": "ls5_nbar_scene"},
+        "crs": "EPSG:28355",
+        "geometry": None,
+        "extent": {
+            "lon": {
+                "begin": 148.48815577279413,
+                "end": 151.19156117169499,
+            },
+            "lat": {
+                "begin": -35.61237326356207,
+                "end": -33.588046887860685,
+            },
+        },
+        "grid_spatial": {
+            "projection": {
+                "geo_ref_points": {
+                    "ul": {
+                        "x": 638000.0,
+                        "y": 6276000.0,
+                    },
+                    "ur": {
+                        "x": 880025.0,
+                        "y": 6276000.0,
+                    },
+                    "ll": {
+                        "x": 638000.0,
+                        "y": 6057975.0,
+                    },
+                    "lr": {
+                        "x": 880025.0,
+                        "y": 6057975.0,
+                    },
+                },
+                "zone": -55,
+                "spatial_reference": "EPSG:28355",
+            },
+        },
+        "grids": {
+            "default": {
+                "shape": (8721, 9681),
+                "transform": (25.0, 0.0, 638000.0, 0.0, -25.0, 6276000.0),
+            },
+        },
+        "properties": {
+            "datetime": "1990-03-02 23:11:16",
+            "odc:processing_datetime": "2015-03-22 01:49:21",
+            "odc:product_family": "nbar",
+            "dtr:start_datetime": "1990-03-02T23:11:04",
+            "dtr:end_datetime": "1990-03-02T23:11:28",
+            "eo:instrument": "TM",
+            "eo:platform": "landsat-5",
+            "odc:file_format": "GeoTiff",
+            "title": "LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302",
+            "landsat:wrs_path": 90,
+            "landsat:wrs_row": 84,
+        },
+        "measurements": {
+            "1": {
+                "path": "product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B10.tif",
+            },
+            "2": {
+                "path": "product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B20.tif",
+            },
+            "3": {
+                "path": "product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B30.tif",
+            },
+        },
+        "accessories": {
+            "checksum:sha1": {"path": "package.sha1"},
+        },
+        "lineage": {
+            "source_datasets": {
+                "level1": "ee983642-1cd3-11e6-aaba-a0000100fe80",
+            },
+        },
+    }
+    assert convert_eo_dataset(eo_ds).metadata_doc == expected_ds_doc
+
+    # remove grid information from measurements to seek from browse
+    new_doc = eo_dataset_doc
+    new_doc["image"]["bands"] = {
+        "1": {
+            "path": "product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B10.tif"
+        },
+        "2": {
+            "path": "product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B20.tif"
+        },
+        "3": {
+            "path": "product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B30.tif"
+        },
+    }
+    eo_ds = Dataset(ls5_nbar_product, new_doc)
+    with pytest.raises(ValueError) as e:
+        convert_eo_dataset(eo_ds)
+    assert "Unable to determine dataset grids" in str(e.value)
+
+    new_doc["browse"] = {
+        "full": {"path": "browse.fr.jpg", "cell_size": 25.0, "file_type": "image/jpg"}
+    }
+    eo_ds = Dataset(ls5_nbar_product, new_doc)
+    converted_ds = convert_eo_dataset(eo_ds)
+    assert converted_ds.metadata_doc["grids"] == {
+        "default": {
+            "shape": (8721.0, 9681.0),
+            "transform": (25.0, 0.0, 638000.0, 0.0, -25.0, 6276000.0),
+        },
+    }
+    assert converted_ds._gs == eo_ds._gs
+    assert converted_ds.accessories == {
+        "checksum:sha1": {"path": "package.sha1"},
+        "thumbnail:full": {
+            "path": "browse.fr.jpg",
+        },
+    }
+
+
+def test_eo1_product_conversion(ls5_nbar_product) -> None:
+    converted_product = convert_eo_product(ls5_nbar_product)
+    assert converted_product.name == "ls5_nbar_scene"
+    assert converted_product.definition["metadata_type"] == "eo3"
+    assert converted_product.metadata_doc == {
+        "product": {"name": "ls5_nbar_scene"},
+        "properties": {
+            "eo:platform": "landsat-5",
+            "odc:product_family": "nbar",
+            "eo:instrument": "TM",
+            "odc:file_format": "GeoTIFF",
+        },
+    }
+    assert converted_product.measurements == ls5_nbar_product.measurements

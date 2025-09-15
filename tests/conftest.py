@@ -303,6 +303,22 @@ def eo3_dataset_s2(eo3_metadata):
     return Dataset(Product(eo3_metadata, product_doc), prep_eo3(ds_doc))
 
 
+@pytest.fixture
+def ls_scene_metadata(data_folder) -> MetadataType:
+    (_, doc), *_ = read_documents(
+        os.path.join(data_folder, "landsat_scene.odc-type.yaml")
+    )
+    return MetadataType(doc)
+
+
+@pytest.fixture
+def ls5_nbar_product(data_folder, ls_scene_metadata) -> Product:
+    (_, doc), *_ = read_documents(
+        os.path.join(data_folder, "ls5_nbar_scene.odc-product.yaml")
+    )
+    return Product(ls_scene_metadata, doc)
+
+
 netcdf_num = 1
 
 
