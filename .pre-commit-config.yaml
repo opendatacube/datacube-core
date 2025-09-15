@@ -21,7 +21,6 @@ repos:
         rev: v3.3.8  # Use the sha / tag you want to point at
         hooks:
         -   id: pylint
-            language_version: '3.12'  # Reqd of 2025-01-15
     - repo: https://github.com/astral-sh/ruff-pre-commit
       rev: v0.12.12
       hooks:
