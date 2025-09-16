@@ -218,6 +218,34 @@ def test_dataset_add_not_eo3(index: Index, ls8_eo3_product, eo3_wo_dataset_doc) 
     assert isinstance(_err, BadMatch)
 
 
+def test_dataset_opt_measurements(
+    index: Index, s1_dataset_doc, ga_s1_full_product
+) -> None:
+    doc, uri = s1_dataset_doc
+    doc["product"]["name"] = ga_s1_full_product.name
+
+    doc2ds = Doc2Dataset(index)
+    _ds, _err = doc2ds(doc, uri)
+    assert _ds is not None
+    # remove optional measurement
+    doc["measurements"].pop("VH")
+    _ds, _err = doc2ds(doc, uri)
+    assert _ds is not None
+    # remove conditional measurement
+    vv = doc["measurements"].pop("VV")
+    _ds, _err = doc2ds(doc, uri)
+    assert "The dataset must define at least one of the following measurements" in _err
+    assert "VV" in _err  # order of these two isn't consistent
+    assert "HH" in _err
+    # remove required measurement
+    doc["measurements"]["VV"] = vv
+    doc["measurements"].pop("mask")
+    _ds, _err = doc2ds(doc, uri)
+    assert (
+        _err == "The dataset does not specify the following required measurements: mask"
+    )
+
+
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_eo3_no_schema(
     dataset_add_configs, index_empty, clirunner, caplog

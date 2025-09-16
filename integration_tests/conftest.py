@@ -253,6 +253,11 @@ def s1_product_doc() -> dict:
 
 
 @pytest.fixture
+def s1_full_product_doc() -> dict:
+    return get_eo3_test_data_doc("ga_s1_full.odc-product.yaml")
+
+
+@pytest.fixture
 def final_dataset_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("final_dataset.yaml"),
@@ -380,6 +385,15 @@ def ga_s2am_ard_3_product(
 @pytest.fixture
 def ga_s1_product(index: Index, eo3_s1_metadata_type, s1_product_doc) -> Product:
     p = index.products.add_document(s1_product_doc)
+    assert p is not None
+    return p
+
+
+@pytest.fixture
+def ga_s1_full_product(
+    index: Index, eo3_s1_metadata_type, s1_full_product_doc
+) -> Product:
+    p = index.products.add_document(s1_full_product_doc)
     assert p is not None
     return p
 

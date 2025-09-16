@@ -485,6 +485,7 @@ class Measurement:
         "add_offset",
         "extra_dim",
         "dims",
+        "optional",
     )
     ATTR_SKIP = [
         "name",
@@ -495,6 +496,7 @@ class Measurement:
         "extra_dim",
         "dims",
         "extra_dim_index",
+        "optional",
     ]
 
     def __init__(self, canonical_name: str | None = None, *args, **kwargs) -> None:
