@@ -121,12 +121,12 @@ def test_more_check_doc_unchanged() -> None:
     check_doc_unchanged({"a": 1}, {"a": 1}, "Letters")
 
     with pytest.raises(
-        DocumentMismatchError, match="^Letters differs from stored.*a: 1!=2"
+        DocumentMismatchError, match=r"^Letters differs from stored.*a: 1!=2"
     ):
         check_doc_unchanged({"a": 1}, {"a": 2}, "Letters")
 
     with pytest.raises(
-        DocumentMismatchError, match="^Letters differs from stored.*a.b: 1!=2"
+        DocumentMismatchError, match=r"^Letters differs from stored.*a.b: 1!=2"
     ):
         check_doc_unchanged({"a": {"b": 1}}, {"a": {"b": 2}}, "Letters")
 

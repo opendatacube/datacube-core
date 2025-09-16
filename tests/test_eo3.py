@@ -152,7 +152,7 @@ def test_bad_grids() -> None:
 
 
 def test_eo3_grid_spatial_nogrids() -> None:
-    with pytest.raises(ValueError, match="grids.foo"):
+    with pytest.raises(ValueError, match=r"grids.foo"):
         eo3_grid_spatial(
             {
                 "crs": "EPSG:4326",
@@ -176,7 +176,7 @@ def test_is_eo3(sample_doc, sample_doc_180) -> None:
     assert is_doc_eo3({"crs": "EPSG:4326"}) is False
     assert is_doc_eo3({"crs": "EPSG:4326", "grids": {}}) is False
 
-    with pytest.raises(ValueError, match="Unsupported dataset schema.*"):
+    with pytest.raises(ValueError, match=r"Unsupported dataset schema.*"):
         _ = is_doc_eo3({"$schema": "https://schemas.opendatacube.org/eo4"})
 
 
