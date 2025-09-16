@@ -160,7 +160,7 @@ def test_lineage_tree_index_api_inconsistent_homes(
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_get_extensions(index: Index, dataset_with_external_lineage) -> None:
-    dataset, src_lineage_tree, derived_lineage_tree, ids = dataset_with_external_lineage
+    _, _, _, ids = dataset_with_external_lineage
 
     ds = index.datasets.get(ids["root"])
     assert ds is not None

@@ -71,7 +71,7 @@ def _table_contents(flags_def):
 
 
 def _order_bitdefs_by_bits(bitdef):
-    name, defn = bitdef
+    _, defn = bitdef
     try:
         return min(defn["bits"])
     except TypeError:

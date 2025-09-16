@@ -34,7 +34,7 @@ def test_xr_extension(odc_style_xr_dataset) -> None:
 
     assert (1, *xx.odc.geobox.shape) == xx.B10.shape
 
-    (sx, zz0, tx, zz1, sy, ty) = xx.affine[:6]
+    (_, zz0, _, zz1, _, _) = xx.affine[:6]
     assert (zz0, zz1) == (0, 0)
 
     xx = remove_crs(xx)

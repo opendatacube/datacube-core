@@ -32,7 +32,7 @@ def gen_test_data(
 
     aa = mk_test_image(w, h, dtype, nodata, nodata_width=ndw)
 
-    ds, gbox = gen_tiff_dataset(
+    ds, _ = gen_tiff_dataset(
         SimpleNamespace(name="aa", values=aa, nodata=nodata), prefix
     )
     extras: dict[str, Any] = {}
@@ -60,7 +60,7 @@ def gen_test_data(
 )
 def test_cog_file(tmpdir, opts) -> None:
     pp = Path(str(tmpdir))
-    xx, ds = gen_test_data(pp)
+    xx, _ = gen_test_data(pp)
 
     with suppress_deprecations():
         # write to file
@@ -121,7 +121,7 @@ def test_cog_file(tmpdir, opts) -> None:
         )  # Test of deprecated method
 
     # check writing floating point COG with no explicit nodata
-    zz, ds = gen_test_data(pp, dtype="float32", nodata=None)
+    zz, _ = gen_test_data(pp, dtype="float32", nodata=None)
     # write to file
     with suppress_deprecations():
         ff = write_cog(zz, pp / "cog_float.tif", **opts)
@@ -134,7 +134,7 @@ def test_cog_file(tmpdir, opts) -> None:
 
 def test_cog_file_dask(tmpdir) -> None:
     pp = Path(str(tmpdir))
-    xx, ds = gen_test_data(pp, dask=True)
+    xx, _ = gen_test_data(pp, dask=True)
     assert is_dask_collection(xx)
 
     path = pp / "cog.tif"
@@ -154,7 +154,7 @@ def test_cog_file_dask(tmpdir) -> None:
 @pytest.mark.parametrize("shape", [None, (1024, 512)])
 def test_cog_mem(tmpdir, shape) -> None:
     pp = Path(str(tmpdir))
-    xx, ds = gen_test_data(pp, shape=shape)
+    xx, _ = gen_test_data(pp, shape=shape)
 
     # write to memory 1
     with suppress_deprecations():
@@ -198,7 +198,7 @@ def test_cog_mem(tmpdir, shape) -> None:
 
 def test_cog_mem_dask(tmpdir) -> None:
     pp = Path(str(tmpdir))
-    xx, ds = gen_test_data(pp, dask=True)
+    xx, _ = gen_test_data(pp, dask=True)
 
     # write to memory 1
     with suppress_deprecations():
@@ -235,7 +235,7 @@ def test_cog_mem_dask(tmpdir) -> None:
 @pytest.mark.parametrize("use_windowed_writes", [False, True])
 def test_cog_rgba(tmpdir, use_windowed_writes) -> None:
     pp = Path(str(tmpdir))
-    xx, ds = gen_test_data(pp)
+    xx, _ = gen_test_data(pp)
     pix = np.dstack([xx.values] * 4)
     rgba = xr.DataArray(pix, attrs=xx.attrs, dims=("y", "x", "band"), coords=xx.coords)
     assert rgba.odc.geobox == xx.odc.geobox

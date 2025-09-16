@@ -177,7 +177,7 @@ def test_is_eo3(sample_doc, sample_doc_180) -> None:
     assert is_doc_eo3({"crs": "EPSG:4326", "grids": {}}) is False
 
     with pytest.raises(ValueError, match="Unsupported dataset schema.*"):
-        is_doc_eo3({"$schema": "https://schemas.opendatacube.org/eo4"})
+        _ = is_doc_eo3({"$schema": "https://schemas.opendatacube.org/eo4"})
 
 
 def test_is_geo(sample_doc, sample_doc_180) -> None:

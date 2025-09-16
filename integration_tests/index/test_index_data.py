@@ -335,9 +335,9 @@ def test_transactions_api_ctx_mgr(
     from datacube.index.hl import Doc2Dataset
 
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
-    ds1, err = resolver(*eo3_ls8_dataset_doc)
+    ds1, _ = resolver(*eo3_ls8_dataset_doc)
     assert ds1 is not None
-    ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    ds2, _ = resolver(*eo3_ls8_dataset2_doc)
     assert ds2 is not None
     with pytest.raises(Exception) as e:  # noqa: SIM117
         with index.transaction() as trans:
@@ -371,9 +371,9 @@ def test_transactions_api_ctx_mgr_nested(
     from datacube.index.hl import Doc2Dataset
 
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
-    ds1, err = resolver(*eo3_ls8_dataset_doc)
+    ds1, _ = resolver(*eo3_ls8_dataset_doc)
     assert ds1 is not None
-    ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    ds2, _ = resolver(*eo3_ls8_dataset2_doc)
     assert ds2 is not None
     with pytest.raises(Exception) as e:  # noqa: SIM117
         with index.transaction():
@@ -410,8 +410,8 @@ def test_transactions_api_manual(
     from datacube.index.hl import Doc2Dataset
 
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
-    ds1, err = resolver(*eo3_ls8_dataset_doc)
-    ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    ds1, _ = resolver(*eo3_ls8_dataset_doc)
+    ds2, _ = resolver(*eo3_ls8_dataset2_doc)
     assert ds1 is not None
     assert ds2 is not None
     trans = index.transaction()
@@ -442,9 +442,9 @@ def test_transactions_api_hybrid(
     from datacube.index.hl import Doc2Dataset
 
     resolver = Doc2Dataset(index, products=[ls8_eo3_product.name], verify_lineage=False)
-    ds1, err = resolver(*eo3_ls8_dataset_doc)
+    ds1, _ = resolver(*eo3_ls8_dataset_doc)
     assert ds1 is not None
-    ds2, err = resolver(*eo3_ls8_dataset2_doc)
+    ds2, _ = resolver(*eo3_ls8_dataset2_doc)
     assert ds2 is not None
     with index.transaction() as trans:
         assert index.datasets.get(ds1.id) is None

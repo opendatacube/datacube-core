@@ -270,9 +270,9 @@ def test_mem_dataset_add_eo3(
 
     resolver = Doc2Dataset(dc.index)
     with pytest.raises(ValueError) as e:
-        ds, err = resolver(dataset_with_lineage_doc[0], dataset_with_lineage_doc[1])
+        _, _ = resolver(dataset_with_lineage_doc[0], dataset_with_lineage_doc[1])
     assert "Embedded lineage not supported for eo3 metadata types" in str(e.value)
-    (doc_ls8, loc_ls8), (doc_wo, loc_wo) = datasets_with_unembedded_lineage_doc
+    (doc_ls8, loc_ls8), (doc_wo, _) = datasets_with_unembedded_lineage_doc
     assert not dc.index.datasets.has(doc_ls8["id"])
     assert not dc.index.datasets.has(doc_wo["id"])
     assert list(dc.index.datasets.bulk_has((doc_ls8["id"], doc_wo["id"]))) == [
@@ -315,7 +315,7 @@ def test_mem_ds_lineage(mem_eo3_data: tuple) -> None:
 
 
 def test_mem_ds_search_dups(mem_eo3_data: tuple) -> None:
-    dc, ls8_id, wo_id = mem_eo3_data
+    dc, ls8_id, _ = mem_eo3_data
     ls8_ds = dc.index.datasets.get(ls8_id)
     dup_results = dc.index.datasets.search_product_duplicates(
         ls8_ds.product, "cloud_cover", "dataset_maturity"
@@ -324,7 +324,7 @@ def test_mem_ds_search_dups(mem_eo3_data: tuple) -> None:
 
 
 def test_mem_ds_locations(mem_eo3_data: tuple) -> None:
-    dc, ls8_id, wo_id = mem_eo3_data
+    dc, ls8_id, _ = mem_eo3_data
     before_test = datetime.datetime.now()
     ls8ds = dc.index.datasets.get(ls8_id)
     with suppress_deprecations():
@@ -421,7 +421,7 @@ def test_mem_ds_locations(mem_eo3_data: tuple) -> None:
 
 
 def test_mem_ds_updates(mem_eo3_data: tuple) -> None:
-    dc, ls8_id, wo_id = mem_eo3_data
+    dc, ls8_id, _ = mem_eo3_data
     # Test updates
     raw = dc.index.datasets.get(ls8_id)
     # Update location only
@@ -687,7 +687,7 @@ def test_mem_ds_search_and_count(mem_eo3_data: tuple) -> None:
 
 
 def test_mem_ds_search_and_count_by_product(mem_eo3_data: tuple) -> None:
-    dc, ls8_id, wo_id = mem_eo3_data
+    dc, _, _ = mem_eo3_data
     # No source_filter; no results
     assert not list(dc.index.datasets.search_by_product(platform="deplatformed"))
     lds = list(dc.index.datasets.search_by_product(platform="landsat-8"))
@@ -840,7 +840,7 @@ def test_mem_ds_search_by_metadata(mem_eo3_data: tuple) -> None:
 
 
 def test_mem_ds_count_product_through_time(mem_eo3_data: tuple) -> None:
-    dc, ls8_id, wo_id = mem_eo3_data
+    dc, _, _ = mem_eo3_data
     lds = list(
         dc.index.datasets.count_by_product_through_time(
             period="1 day",
