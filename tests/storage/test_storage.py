@@ -495,7 +495,7 @@ def _read_from_source(
 class TestRasterDataReading:
     @pytest.mark.parametrize("dst_nodata", [np.nan, float("nan"), -999])
     def xtest_failed_data_read(self, make_sample_geotiff, dst_nodata) -> None:
-        sample_geotiff_path, geobox, written_data = make_sample_geotiff(dst_nodata)
+        sample_geotiff_path, _, written_data = make_sample_geotiff(dst_nodata)
 
         src_transform = Affine(25.0, 0.0, 1200000.0, 0.0, -25.0, -4200000.0)
         source = RasterFileDataSource(sample_geotiff_path, 1, transform=src_transform)
@@ -566,7 +566,7 @@ class TestRasterDataReading:
     def test_read_data_from_outside_file_region(
         self, make_sample_netcdf, dst_transform
     ) -> None:
-        sample_nc, geobox, written_data = make_sample_netcdf
+        sample_nc, _, _ = make_sample_netcdf
 
         source = RasterFileDataSource(sample_nc, 1)
 

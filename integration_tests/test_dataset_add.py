@@ -552,7 +552,7 @@ def dataset_archive_prep(dataset_add_configs, index_empty, clirunner):
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) -> None:
-    p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
+    _, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
     non_existent_uuid = "00000000-1036-5607-a62f-fde5e3fec985"
 
@@ -630,7 +630,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) ->
 def test_dataset_archive_restore_invalid(
     dataset_add_configs, index_empty, clirunner
 ) -> None:
-    p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
+    _, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
     non_existent_uuid = "00000000-1036-5607-a62f-fde5e3fec985"
 
@@ -665,7 +665,7 @@ def test_dataset_archive_restore_invalid(
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_archive_restore(dataset_add_configs, index_empty, clirunner) -> None:
-    p, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
+    _, _, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
     # Run for real
     _ = clirunner(["dataset", "archive", str(ds.id)])

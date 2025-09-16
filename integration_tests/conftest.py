@@ -529,9 +529,9 @@ def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc):
     from datacube.index.hl import Doc2Dataset
 
     resolver = Doc2Dataset(mem_index_eo3.index)
-    ds_ls8, err = resolver(doc_ls8, loc_ls8)
+    ds_ls8, _ = resolver(doc_ls8, loc_ls8)
     mem_index_eo3.index.datasets.add(ds_ls8)
-    ds_wo, err = resolver(doc_wo, loc_wo)
+    ds_wo, _ = resolver(doc_wo, loc_wo)
     mem_index_eo3.index.datasets.add(ds_wo)
     return mem_index_eo3, ds_ls8.id, ds_wo.id
 

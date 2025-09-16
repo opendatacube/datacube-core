@@ -159,11 +159,11 @@ def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:
         else:
             url = as_url(path)
 
-            def add_uri_no_part(x):
-                idx, doc = x
+            def add_uri_no_part(x: tuple) -> tuple:
+                _, doc = x
                 return url, doc
 
-            def add_uri_with_part(x):
+            def add_uri_with_part(x: tuple) -> tuple:
                 idx, doc = x
                 return mk_part_uri(url, idx), doc
 

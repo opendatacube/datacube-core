@@ -268,7 +268,7 @@ aws_secret_access_key = fake-fake-fake
 def test_get_aws_settings_no_credentials(without_aws_env) -> None:
     # get_aws_settings should fail when credentials are not available
     with pytest.raises(ValueError, match="Couldn't get credentials"):
-        aws, creds = get_aws_settings(region_name="fake")
+        _, _ = get_aws_settings(region_name="fake")
 
 
 def test_creds_with_retry() -> None:
