@@ -132,7 +132,7 @@ memory = 'datacube.index.memory.index:index_driver_init'
 postgis = 'datacube.index.postgis.index:index_driver_init'
 
 [tool.codespell]
-ignore-words-list = 'Nd,nD'
+ignore-words-list = 'Nd,nD,UE'
 skip = "uv.lock,./build,./docs/build,__pycache__"
 # Ignore base64 encoded strings
 ignore-regex = '[A-Za-z0-9+/]{100,}'

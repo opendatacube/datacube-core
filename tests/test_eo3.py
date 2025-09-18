@@ -384,7 +384,9 @@ def test_geom_from_eo3_proj() -> None:
     )
 
 
-def test_eo1_dataset_conversion(eo_dataset_doc, ls5_nbar_product) -> None:
+def test_eo1_dataset_conversion(
+    eo_dataset_doc, ls5_nbar_product, ls8_fc_albers_dataset, ls5_nbar_dataset
+) -> None:
     eo_ds = Dataset(infer_eo_product(eo_dataset_doc), eo_dataset_doc)
     assert not eo_ds.is_eo3
     compat_ds = convert_eo_dataset(eo_ds)
@@ -497,7 +499,7 @@ def test_eo1_dataset_conversion(eo_dataset_doc, ls5_nbar_product) -> None:
     eo_ds = Dataset(ls5_nbar_product, new_doc)
     with pytest.raises(ValueError) as e:
         convert_eo_dataset(eo_ds)
-    assert "Unable to determine dataset grids" in str(e.value)
+    assert "Unable to retrieve resolution or shape values" in str(e.value)
 
     new_doc["browse"] = {
         "full": {"path": "browse.fr.jpg", "cell_size": 25.0, "file_type": "image/jpg"}
@@ -517,6 +519,29 @@ def test_eo1_dataset_conversion(eo_dataset_doc, ls5_nbar_product) -> None:
             "path": "browse.fr.jpg",
         },
     }
+
+    # fallback to product for grid info
+    converted_ds = convert_eo_dataset(ls8_fc_albers_dataset)
+    assert converted_ds.metadata_doc["grids"] == {
+        "default": {
+            "shape": (4000, 4000),
+            "transform": (25.0, 0.0, -1.0e06, 0.0, -25.0, -1.8e06),
+        }
+    }
+
+    # open data to get info from there
+    converted_ds = convert_eo_dataset(ls8_fc_albers_dataset, True)
+    assert converted_ds.metadata_doc["grids"] == {
+        "default": {
+            "shape": (4000, 4000),
+            "transform": (25.0, 0.0, -1.0e06, 0.0, -25.0, -1.8e06),
+        }
+    }
+
+    # crs from map_projection utm
+    converted_ds = convert_eo_dataset(ls5_nbar_dataset)
+    assert converted_ds.metadata_doc["crs"] == "EPSG:32755"
+    assert str(converted_ds.crs) == "EPSG:32755"
 
 
 def test_eo1_product_conversion(ls5_nbar_product) -> None:

@@ -1,0 +1,73 @@
+---
+# EO1 Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/83e6b87b-47a8-4861-857f-31c15c6371b7.odc-metadata.yaml
+id: 83e6b87b-47a8-4861-857f-31c15c6371b7
+product_type: fractional_cover
+creation_dt: '2017-10-28T11:35:29.501959'
+platform:
+  code: LANDSAT_8
+instrument:
+  name: OLI_TIRS
+format:
+  name: GeoTIFF
+extent:
+  coord:
+    ll:
+      lat: -1.746626643576206e+01
+      lon: 1.2259008608821634e+02
+    lr:
+      lat: -1.7529532008663747e+01
+      lon: 1.2352816898765161e+02
+    ul:
+      lat: -1.65627298608884e+01
+      lon: 1.2265876598018544e+02
+    ur:
+      lat: -1.6625697673841323e+01
+      lon: 1.2359004409177635e+02
+  to_dt: '2015-07-10T01:48:36.500000'
+  from_dt: '2015-07-10T01:48:36.500000'
+  center_dt: '2015-07-10T01:48:36.500000'
+grid_spatial:
+  projection:
+    valid_data:
+      type: Polygon
+      coordinates:
+      - - - -1.e+06
+          - -1.9e+06
+        - - -1.e+06
+          - -1.8e+06
+        - - -9.e+05
+          - -1.8e+06
+        - - -9.e+05
+          - -1.9e+06
+        - - -1.e+06
+          - -1.9e+06
+    geo_ref_points:
+      ll:
+        x: -1.e+06
+        y: -1.9e+06
+      lr:
+        x: -9.e+05
+        y: -1.9e+06
+      ul:
+        x: -1.e+06
+        y: -1.8e+06
+      ur:
+        x: -9.e+05
+        y: -1.8e+06
+    spatial_reference: EPSG:3577
+image:
+  bands:
+    BS:
+      path: LS8_OLI_FC_3577_-10_-19_20150710014836_BS.tif
+    PV:
+      path: LS8_OLI_FC_3577_-10_-19_20150710014836_PV.tif
+    UE:
+      path: LS8_OLI_FC_3577_-10_-19_20150710014836_UE.tif
+    NPV:
+      path: LS8_OLI_FC_3577_-10_-19_20150710014836_NPV.tif
+lineage:
+  source_datasets: {}
+location: 
+  s3://dea-public-data-dev/fractional-cover/fc/v2.2.1/ls8/x_-10/y_-19/2015/07/10/LS8_OLI_FC_3577_-10_-19_20150710014836.yaml
+...
