@@ -929,7 +929,7 @@ class Product:
                         spectral_definition.get("response")
                     ):
                         raise ValueError(
-                            f"spectral_definition_map: wavelength should be the same length as response "
+                            "spectral_definition_map: wavelength should be the same length as response "
                             f"in the product definition for spectral definition at index {idx}."
                         )
 
@@ -1496,8 +1496,7 @@ class ExtraDimensions:
     def __str__(self) -> str:
         return (
             f"ExtraDimensions(extra_dim={dict(self._dims)}, dim_slice={self._dim_slice} "
-            f"coords={self._coords} "
-            f")"
+            f"coords={self._coords})"
         )
 
     @override
