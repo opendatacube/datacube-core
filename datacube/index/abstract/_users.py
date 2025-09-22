@@ -33,7 +33,7 @@ class AbstractUserResource(ABC):
         Create a new user
         :param username: username of the new user
         :param password: password of the new user
-        :param role: default role of the the new user
+        :param role: default role of the new user
         :param description: optional description for the new user
         """
 
