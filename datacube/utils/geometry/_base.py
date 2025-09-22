@@ -857,7 +857,7 @@ def clip_lon180(geom: Geometry, tol: float = 1e-6) -> Geometry:
 
     .. note:: This will only do "right thing" for chopped geometries,
         expectation is that all the points are to one side of lon=180
-        line, or in the the capture zone of lon=(+/-)180
+        line, or in the capture zone of lon=(+/-)180
     """
     thresh = 180 - tol
 
