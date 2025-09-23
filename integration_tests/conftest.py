@@ -288,6 +288,14 @@ def ga_s2am_ard_3_final_doc() -> tuple[dict, str]:
     )
 
 
+@pytest.fixture
+def ls8_stac_doc() -> tuple[dict, str]:
+    return (
+        get_eo3_test_data_doc("ga_ls8c_ard_3_stac.json"),
+        str(EO3_TESTDIR / "ga_ls8c_ard_3_stac.json"),
+    )
+
+
 def doc_to_ds(
     index: Index,
     product_name: str,

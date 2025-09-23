@@ -258,6 +258,7 @@ def stac2ds(
     items: Iterable[Item],
     cfg: ConversionConfig | None = None,
     product_cache: dict[str, Product] | None = None,
+    only_known_products: bool = False,
 ) -> Iterator[Dataset]:
     """
     STAC :class:`~pystac.item.Item` to :class:`~datacube.model.Dataset` stream converter.
@@ -319,12 +320,21 @@ def stac2ds(
 
     """
     products: dict[str, Product] = {} if product_cache is None else product_cache
+    # TODO: this options may be better placed in the cfg
+    if only_known_products and not products:
+        raise ValueError(
+            "Cannot provide empty product cache if requiring known products"
+        )
     for item in items:
         collection_id = _collection_id(item)
         product = products.get(collection_id)
 
         # Have not seen this collection yet, figure it out
         if product is None:
+            if only_known_products:
+                raise ValueError(
+                    f"Collection {collection_id} not included in product cache"
+                )
             product = infer_dc_product(item, cfg)
             products[collection_id] = product
 
