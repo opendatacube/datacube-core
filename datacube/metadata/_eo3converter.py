@@ -225,7 +225,7 @@ def _to_dataset(
     if geometry is not None:
         ds_doc["geometry"] = Geometry(geometry, 4326).to_crs(crs).json
 
-    title = ds_doc["properties"].pop("title", None)  # type: ignore[attr-defined]
+    title = ds_doc["properties"].pop("title", None)
     if title is not None:
         ds_doc["label"] = title
 
