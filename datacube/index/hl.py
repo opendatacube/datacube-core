@@ -493,11 +493,14 @@ class Doc2Dataset:
                         iter(
                             stac2ds(
                                 [item],
+                                cfg={
+                                    "only_known_products": True,
+                                    "remap_lineage": not self.index.supports_external_lineage,
+                                },
                                 product_cache={
                                     product.name: product
                                     for product in self.index.products.get_all()
                                 },
-                                only_known_products=True,
                             )
                         )
                     ).metadata_doc
