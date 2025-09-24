@@ -183,8 +183,8 @@ def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:
 
 
 def parse_doc_stream(
-    doc_stream: Sequence[tuple[str, str | bytes]],
-    on_error: Callable[[str, str | bytes], None] | None = None,
+    doc_stream: Sequence[tuple[str, str | bytes | None]],
+    on_error: Callable[[str, str | bytes | None], None] | None = None,
     transform: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> Generator[tuple[str, Mapping[str, Any] | None]]:
     """
@@ -203,6 +203,8 @@ def parse_doc_stream(
     """
     for uri, doc in doc_stream:
         try:
+            if doc is None:
+                raise Exception(f"No document for {uri}")
             metadata = json.loads(doc) if uri.endswith(".json") else parse_yaml(doc)
             if transform is not None:
                 metadata = transform(metadata)
