@@ -1087,7 +1087,10 @@ DatasetType = Product
 
 
 @deprecat(
-    reason="This version of GridSpec has been deprecated. Please use the GridSpec class defined in odc-geo.",
+    reason="This version of GridSpec has been deprecated. Please use the GridSpec class defined in odc-geo.\n"
+    "Note that in odc-geo GridSpec, tile_size has been renamed tile_shape and should be provided in pixels, "
+    "resolution is expected in (X, Y) order or simply X if using square pixels with inverted Y axis, "
+    "and origin (if provided) must be an instance of odc.geo.XY",
     version="1.9.0",
     category=ODC2DeprecationWarning,
 )
@@ -1125,17 +1128,8 @@ class GridSpec:
         origin: tuple[float, float] | None = None,
     ) -> None:
         self.crs = crs
-        _LOG.warning(
-            "In odc-geo GridSpec, tile_size has been renamed tile_shape and should be provided in pixels."
-        )
         self.tile_size = tile_size
-        _LOG.warning(
-            "In odc-geo GridSpec, resolution is expected in (X, Y) order, "
-            "or simply X if using square pixels with inverted Y axis."
-        )
         self.resolution = resolution
-        if origin is not None:
-            _LOG.warning("In odc-geo GridSpec, origin is expected in (X, Y) order.")
         self.origin = origin or (0.0, 0.0)
 
     @override
