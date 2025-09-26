@@ -171,8 +171,7 @@ class Datacube:
                 if col == "crs":
                     return load_hints.get("output_crs", None)
                 return load_hints.get(col, None)
-            with warnings.catch_warnings(action="ignore", category=DeprecationWarning):
-                return getattr(product.grid_spec, col, None)
+            return getattr(product.grid_spec, col, None)
 
         # Read properties from each datacube product
         cols = [
@@ -563,8 +562,7 @@ class Datacube:
             resolution = _handle_legacy_resolution(resolution)
 
         load_hints = datacube_product.load_hints()
-        with warnings.catch_warnings(action="ignore", category=DeprecationWarning):
-            grid_spec = None if load_hints is not None else datacube_product.grid_spec
+        grid_spec = None if load_hints is not None else datacube_product.grid_spec
 
         geobox = output_geobox(
             like=like,
