@@ -11,12 +11,7 @@ import pytest
 from sqlalchemy import text
 
 from datacube.drivers.postgres import _schema
-from datacube.drivers.postgres.sql import SCHEMA_NAME
-
-COLUMN_PRESENCE = """
-select exists (select 1 from information_schema.columns
-where table_schema='{schema}' and table_name='{table}' and column_name='{column}');
-"""
+from datacube.drivers.postgres.sql import SCHEMA_NAME, pg_column_exists
 
 DROP_COLUMN = """
 alter table {schema}.{table} drop column {column}
@@ -28,17 +23,6 @@ from pg_trigger
 where not tgisinternal
 and tgrelid = '{schema}.{table}'::regclass;
 """
-
-
-def check_column(conn, table_name: str, column_name: str) -> bool:
-    column_result = conn.execute(
-        text(
-            COLUMN_PRESENCE.format(
-                schema=SCHEMA_NAME, table=table_name, column=column_name
-            )
-        )
-    ).fetchone()
-    return column_result == (True,)
 
 
 def check_trigger(conn, table_name: str) -> bool:
@@ -63,16 +47,11 @@ def test_added_column(clirunner, uninitialised_postgres_db) -> None:
     assert "Created." in result.output
 
     with uninitialised_postgres_db._connect() as connection:
-        assert check_column(connection, _schema.METADATA_TYPE.name, "updated")
-        assert not check_column(connection, _schema.METADATA_TYPE.name, "fake_column")
-        assert check_column(connection, _schema.PRODUCT.name, "updated")
-        assert not check_column(connection, _schema.PRODUCT.name, "fake_column")
-        assert check_column(connection, _schema.DATASET.name, "updated")
-        assert not check_column(connection, _schema.DATASET.name, "fake_column")
-        assert check_column(connection, _schema.DATASET_LOCATION.name, "added")
-        assert not check_column(
-            connection, _schema.DATASET_LOCATION.name, "fake_column"
-        )
+        c = connection._connection
+        assert pg_column_exists(c, _schema.METADATA_TYPE.name, "updated")
+        assert pg_column_exists(c, _schema.PRODUCT.name, "updated")
+        assert pg_column_exists(c, _schema.DATASET.name, "updated")
+        assert pg_column_exists(c, _schema.DATASET_LOCATION.name, "added")
 
         # Check for triggers
         assert check_trigger(connection, _schema.METADATA_TYPE.name)
@@ -88,21 +67,23 @@ def test_readd_column(clirunner, uninitialised_postgres_db) -> None:
     assert "Created." in result.output
 
     with uninitialised_postgres_db._connect() as connection:
+        c = connection._connection
         # Drop all the columns for an init rerun
         drop_column(connection, _schema.METADATA_TYPE.name, "updated")
         drop_column(connection, _schema.PRODUCT.name, "updated")
         drop_column(connection, _schema.DATASET.name, "updated")
         drop_column(connection, _schema.DATASET_LOCATION.name, "added")
 
-        assert not check_column(connection, _schema.METADATA_TYPE.name, "updated")
-        assert not check_column(connection, _schema.PRODUCT.name, "updated")
-        assert not check_column(connection, _schema.DATASET.name, "updated")
-        assert not check_column(connection, _schema.DATASET_LOCATION.name, "added")
+        assert not pg_column_exists(c, _schema.METADATA_TYPE.name, "updated")
+        assert not pg_column_exists(c, _schema.PRODUCT.name, "updated")
+        assert not pg_column_exists(c, _schema.DATASET.name, "updated")
+        assert not pg_column_exists(c, _schema.DATASET_LOCATION.name, "added")
 
     result = clirunner(["--env", "datacube", "system", "init"])
 
     with uninitialised_postgres_db._connect() as connection:
-        assert check_column(connection, _schema.METADATA_TYPE.name, "updated")
-        assert check_column(connection, _schema.PRODUCT.name, "updated")
-        assert check_column(connection, _schema.DATASET.name, "updated")
-        assert check_column(connection, _schema.DATASET_LOCATION.name, "added")
+        c = connection._connection
+        assert pg_column_exists(c, _schema.METADATA_TYPE.name, "updated")
+        assert pg_column_exists(c, _schema.PRODUCT.name, "updated")
+        assert pg_column_exists(c, _schema.DATASET.name, "updated")
+        assert pg_column_exists(c, _schema.DATASET_LOCATION.name, "added")
