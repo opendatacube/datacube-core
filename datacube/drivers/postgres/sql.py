@@ -6,7 +6,9 @@
 Custom types for postgres & sqlalchemy
 """
 
-from sqlalchemy import TIMESTAMP, text
+import warnings
+
+from sqlalchemy import TIMESTAMP, Connection, inspect, text
 from sqlalchemy.dialects.postgresql.ranges import AbstractRange, Range
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import sqltypes
@@ -143,21 +145,19 @@ def pg_exists(conn, name: str) -> bool:
     return conn.execute(text(f"SELECT to_regclass('{name}')")).scalar() is not None
 
 
-def pg_column_exists(conn, table, column) -> bool:
+def pg_column_exists(
+    conn: Connection, table: str, column: str, schema: str | None = SCHEMA_NAME
+) -> bool:
     """
-    Does a postgres object exist?
+    Does a table column exist?
     """
-    return (
-        conn.execute(
-            text(f"""
-                        SELECT 1 FROM pg_attribute
-                        WHERE attrelid = to_regclass('{table}')
-                        AND attname = '{column}'
-                        AND NOT attisdropped
-                        """)
-        ).scalar()
-        is not None
-    )
+    if table.startswith((f"{SCHEMA_NAME}.", f"'{SCHEMA_NAME}.", f'"{SCHEMA_NAME}.')):
+        warnings.warn(
+            f"Call pg_column_exists with a table name without {SCHEMA_NAME}.",
+            stacklevel=2,
+        )
+        table = table.replace(f"{SCHEMA_NAME}.", "")
+    return column in [x.get("name") for x in inspect(conn).get_columns(table, schema)]
 
 
 def escape_pg_identifier(conn, name: str):
