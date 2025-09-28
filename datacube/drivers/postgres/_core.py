@@ -207,7 +207,7 @@ def schema_is_latest(engine: Engine) -> bool:
     This is run when a new connection is established to see if it's compatible.
 
     It should be runnable by unprivileged users. If it returns false, their
-    connection will be rejected and they will be told to get an administrator
+    connection will be rejected, and they will be told to get an administrator
     to apply updates.
 
     See the ``update_schema()`` function below for actually applying the updates.
@@ -215,10 +215,11 @@ def schema_is_latest(engine: Engine) -> bool:
     # In lieu of a versioned schema, we typically check by seeing if one of the objects
     # from the change exists.
     #
-    # Eg.
-    #     return pg_column_exists(engine, schema_qualified('dataset_location'), 'archived')
+    # E.g.
+    #     return pg_column_exists(engine, 'dataset_location', 'archived')
     #
-    # ie. Does the 'archived' column exist? If so, we know the related schema was applied.
+    # i.e. Does the 'archived' column exist? If so, we know the related schema
+    # was applied.
 
     # No schema changes recently. Everything is perfect.
     return True
@@ -242,7 +243,7 @@ def update_schema(engine: Engine) -> None:
 
     # Post 1.8 DB Incremental Sync triggers
     with engine.connect() as connection:
-        if not pg_column_exists(connection, schema_qualified("dataset"), "updated"):
+        if not pg_column_exists(connection, "dataset", "updated"):
             _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
             connection.execute(text("begin"))
             install_timestamp_trigger(connection)
