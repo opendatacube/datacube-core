@@ -12,14 +12,9 @@ Includes sequence generation functions to be used by statistics apps
 from collections.abc import Generator
 from datetime import date, datetime, timezone, tzinfo
 
-import dateutil
-import dateutil.parser
 import numpy as np
 import xarray as xr
-from dateutil.relativedelta import relativedelta
-from dateutil.rrule import DAILY, MONTHLY, YEARLY, rrule
 
-FREQS: dict[str, int] = {"y": YEARLY, "m": MONTHLY, "d": DAILY}
 DURATIONS = {"y": "years", "m": "months", "d": "days"}
 
 
@@ -38,6 +33,8 @@ def date_sequence(
     :param step_size: How far apart should the start dates be
     :return: sequence of (start_date, end_date) tuples
     """
+    from dateutil.rrule import rrule
+
     interval, freq = parse_interval(step_size)
     stats_duration = parse_duration(stats_duration)
     for start_date in rrule(freq, interval=interval, dtstart=start, until=end):
@@ -47,6 +44,9 @@ def date_sequence(
 
 
 def parse_interval(interval) -> tuple:
+    from dateutil.rrule import DAILY, MONTHLY, YEARLY
+
+    FREQS: dict[str, int] = {"y": YEARLY, "m": MONTHLY, "d": DAILY}  # noqa: N806
     count, units = _split_duration(interval)
     try:
         return count, FREQS[units]
@@ -57,6 +57,8 @@ def parse_interval(interval) -> tuple:
 
 
 def parse_duration(duration):
+    from dateutil.relativedelta import relativedelta
+
     count, units = _split_duration(duration)
     try:
         delta = {DURATIONS[units]: count}
@@ -118,6 +120,8 @@ def parse_time(time: str | datetime) -> datetime:
 
             return parse_datetime(time)
         except (ImportError, ValueError):  # pragma: no cover
-            return dateutil.parser.parse(time)
+            from dateutil.parser import parse
+
+            return parse(time)
 
     return time
