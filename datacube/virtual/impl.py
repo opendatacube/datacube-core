@@ -1129,7 +1129,9 @@ def reproject_band(
 ) -> xarray.DataArray:
     """Reproject a single measurement to the geobox."""
     if not hasattr(band.data, "dask") or dask_chunks is None:
-        data = reproject_array(band.data, band.nodata, band.geobox, geobox, resampling)
+        data = reproject_array(
+            band.data, band.nodata, band.odc.geobox, geobox, resampling
+        )
         return wrap_in_dataarray(data, band, geobox, dims)
 
     dask_name = f"warp_{band.name}-{uuid.uuid4().hex}"
@@ -1145,7 +1147,7 @@ def reproject_band(
     for tile_index in numpy.ndindex(gt.shape):  # type: ignore[call-overload]
         sub_geobox = gt[tile_index]
         # find the input array slice from the output geobox
-        reproject_roi = compute_reproject_roi(band.geobox, sub_geobox, padding=1)
+        reproject_roi = compute_reproject_roi(band.odc.geobox, sub_geobox, padding=1)
 
         # find the chunk from the input array with the slice index
         subset_band = band[(..., *reproject_roi.roi_src)].chunk(-1)
@@ -1191,7 +1193,8 @@ def reproject_band(
 
 def reproject_array(src, nodata, s_geobox, d_geobox, resampling):
     """Reproject a numpy array."""
-    dst = numpy.full(d_geobox.shape, fill_value=nodata, dtype=src.dtype)
+    # add time dimension to the shape to match src dims
+    dst = numpy.full((1, *d_geobox.shape), fill_value=nodata, dtype=src.dtype)
     rio_reproject(
         src=src,
         dst=dst,
