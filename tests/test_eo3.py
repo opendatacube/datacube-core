@@ -530,6 +530,18 @@ def test_eo1_dataset_conversion(
     }
 
     # open data to get info from there
+    from datacube.utils.rio import activate_rio_env
+
+    activate_rio_env(
+        cloud_defaults=True,
+        aws={
+            "aws_unsigned": True,
+            "aws_secret_access_key": "fake-secret",
+            "aws_access_key_id": "fake-key-id",
+            "aws_session_token": "fake-token",
+            "region_name": "us-west-1",
+        },
+    )
     converted_ds = convert_eo_dataset(ls8_fc_albers_dataset, True)
     assert converted_ds.metadata_doc["grids"] == {
         "default": {

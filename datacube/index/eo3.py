@@ -381,7 +381,7 @@ def _build_properties(d: DocReader):
 
 
 def make_grids(
-    ds: Dataset, open_datafiles: bool = False
+    ds: Dataset, open_datafiles: bool
 ) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
     """
     Determine grid values if possible from geo_ref_points and cell_size/shape values.
@@ -393,13 +393,13 @@ def make_grids(
     """
     geoboxes = {}
     assert ds._gs is not None
-    ref_points = ds._gs.get("geo_ref_points")
+    ref_points: dict = ds._gs["geo_ref_points"]
 
     def _shape_and_transform(
         res: int | float | dict | None = None,
         shape: dict | None = None,
         adjust: bool = False,
-    ) -> tuple[tuple[int | float, int | float], Affine] | None:
+    ) -> tuple[tuple[int, int], Affine] | tuple[None, None]:
         # calculate shape (y,x) and transform, or return None if they cannot be determined
         if res:
             if isinstance(res, int | float):
@@ -425,7 +425,7 @@ def make_grids(
                 transform = ds.transform * Affine.scale(1 / shape_x, 1 / shape_y)
         else:
             return None, None
-        return (shape_y, shape_x), transform
+        return (int(shape_y), int(shape_x)), transform
 
     # We handle open_datafiles first since it should only be set when it's absolutely necessary
     if open_datafiles:
@@ -468,7 +468,7 @@ def make_grids(
                 "You may want to try again with open_datafiles=True to retrieve the information from the band files, "
                 "but be warned that it may be very slow.",
             )
-        return {"default": {"shape": shape, "transform": transform[:6]}}, {}
+        return {"default": {"shape": shape, "transform": transform[:6]}}, {}  # type: ignore[index]
 
     named_gboxes, band2grid = _group_geoboxes(geoboxes)
     grids = {
@@ -543,7 +543,7 @@ def convert_eo_dataset(eo_ds: Dataset, open_datafiles: bool = False) -> Dataset:
                 "end": eo_ds.metadata.lat.end,
             },
         },
-        "geometry": eo_ds._gs.get("valid_data"),  # type: ignore[union-attr]
+        "geometry": eo_ds._gs.get("valid_data"),
         "grid_spatial": eo_ds.metadata_doc["grid_spatial"],
         "measurements": convert_bands(eo_ds, grid_mappings),
         "accessories": _accessories_from_eo1(eo_ds.metadata_doc),
