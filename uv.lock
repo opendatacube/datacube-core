@@ -859,6 +859,7 @@ dependencies = [
     { name = "pandas" },
     { name = "pyproj", version = "3.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pyproj", version = "3.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "python-dateutil" },
     { name = "pyyaml" },
     { name = "rasterio" },
     { name = "ruamel-yaml" },
@@ -870,9 +871,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dateutil = [
-    { name = "python-dateutil" },
-]
 distributed = [
     { name = "dask", extra = ["distributed"] },
     { name = "distributed" },
@@ -902,7 +900,7 @@ dev = [
     { name = "boto3-stubs" },
     { name = "botocore-stubs" },
     { name = "click" },
-    { name = "datacube", extra = ["dateutil", "netcdf", "postgres", "psycopg3"] },
+    { name = "datacube", extra = ["netcdf", "postgres", "psycopg3"] },
     { name = "hypothesis" },
     { name = "ipython", version = "8.37.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "ipython", version = "9.6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -976,7 +974,7 @@ requires-dist = [
     { name = "psycopg", marker = "extra == 'psycopg3'" },
     { name = "psycopg2", marker = "extra == 'postgres'" },
     { name = "pyproj", specifier = ">=2.5" },
-    { name = "python-dateutil", marker = "extra == 'dateutil'" },
+    { name = "python-dateutil" },
     { name = "pyyaml" },
     { name = "rasterio", specifier = ">=1.3.11" },
     { name = "ruamel-yaml" },
@@ -985,7 +983,7 @@ requires-dist = [
     { name = "toolz" },
     { name = "xarray", specifier = ">=0.9" },
 ]
-provides-extras = ["performance", "dateutil", "distributed", "s3", "netcdf", "postgres", "psycopg3"]
+provides-extras = ["performance", "distributed", "s3", "netcdf", "postgres", "psycopg3"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -994,7 +992,7 @@ dev = [
     { name = "boto3-stubs" },
     { name = "botocore-stubs" },
     { name = "click", specifier = ">=8.2" },
-    { name = "datacube", extras = ["dateutil", "netcdf", "postgres", "psycopg3"] },
+    { name = "datacube", extras = ["netcdf", "postgres", "psycopg3"] },
     { name = "hypothesis" },
     { name = "ipython" },
     { name = "moto", specifier = ">=5.0" },
@@ -1297,7 +1295,7 @@ name = "importlib-metadata"
 version = "8.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zipp", marker = "python_full_version < '3.12'" },
+    { name = "zipp" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/76/66/650a33bd90f786193e4de4b3ad86ea60b53c89b669a5c7be931fac31cdb0/importlib_metadata-8.7.0.tar.gz", hash = "sha256:d13b81ad223b890aa16c5471f2ac3056cf76c5f10f82d6f9292f0b415f389000", size = 56641, upload-time = "2025-04-27T15:29:01.736Z" }
 wheels = [
