@@ -44,6 +44,7 @@ dependencies = [
     'packaging',
     'pandas',
     'pyproj>=2.5',
+    'python-dateutil',
     'pyyaml',
     'rasterio>=1.3.11',  # Deleted Numpy version in 1.3.10
     'ruamel.yaml',
@@ -67,7 +68,6 @@ Chat = "https://discord.com/invite/4hhBQVas5U"
 
 [project.optional-dependencies]
 performance = ['ciso8601', 'bottleneck']
-dateutil = ['python-dateutil']
 distributed = ['distributed', 'dask[distributed]']
 s3 = ['boto3', 'botocore']
 netcdf = ['netcdf4']
@@ -76,7 +76,7 @@ psycopg3 = ['psycopg']
 
 [dependency-groups]
 dev = [
-    'datacube[dateutil,netcdf,postgres,psycopg3]',
+    'datacube[netcdf,postgres,psycopg3]',
     # Test requirements
     'click>=8.2', # Only the tests need >=8.2, everything else works with older click.
     'hypothesis',
