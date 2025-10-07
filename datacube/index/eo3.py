@@ -397,10 +397,10 @@ def make_grids(
 
     def _shape_and_transform(
         res: int | float | dict | None,
-        shape: dict | None = None,
+        shape: dict | None,
         adjust: bool = False,
     ) -> tuple[tuple[int, int], Affine] | tuple[None, None]:
-        # calculate shape (y,x) and transform, or return None if they cannot be determined
+        """Calculate shape (y,x) and transform, or return None if they cannot be determined"""
         if res:
             if isinstance(res, int | float):
                 res_x, res_y = res, -res
@@ -453,7 +453,8 @@ def make_grids(
                 {
                     "x": ds.product.default_resolution.x,
                     "y": ds.product.default_resolution.y,
-                }
+                },
+                None,
             )
         elif ds.product.grid_spec:
             # assumes we'll get a legacy GridSpec since we're dealing with legacy datasets
@@ -461,7 +462,8 @@ def make_grids(
                 {
                     "x": ds.product.grid_spec.resolution[1],
                     "y": ds.product.grid_spec.resolution[0],
-                }
+                },
+                None,
             )
         else:
             raise ValueError(
