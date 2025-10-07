@@ -396,7 +396,7 @@ def make_grids(
     ref_points: dict = ds._gs["geo_ref_points"]
 
     def _shape_and_transform(
-        res: int | float | dict | None = None,
+        res: int | float | dict | None,
         shape: dict | None = None,
         adjust: bool = False,
     ) -> tuple[tuple[int, int], Affine] | tuple[None, None]:
