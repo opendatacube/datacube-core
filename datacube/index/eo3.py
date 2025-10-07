@@ -437,7 +437,8 @@ def make_grids(
     else:
         for name, m in ds.measurements.items():
             shape, transform = _shape_and_transform(m.get("cell_size"), m.get("shape"))
-            if shape:
+            if shape is not None:
+                assert transform is not None
                 geoboxes[name] = GeoBox(shape, transform, ds.crs)
 
     # no grid info in measurements, see if we can get a default from browse or product
