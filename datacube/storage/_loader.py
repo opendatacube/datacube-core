@@ -179,4 +179,5 @@ def driver_based_load(
     new_data_vars = {
         name: da.assign_attrs(**m_attrs[name]) for name, da in ds.data_vars.items()
     }
-    return ds.update(new_data_vars)
+    ds.update(new_data_vars)
+    return ds
