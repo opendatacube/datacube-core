@@ -184,7 +184,7 @@ def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:
 
 def parse_doc_stream(
     doc_stream: Sequence[tuple[str, str | bytes]],
-    on_error: Callable[[str, str | bytes], None] | None = None,
+    on_error: Callable[[str, str | bytes, str], None] | None = None,
     transform: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> Generator[tuple[str, Mapping[str, Any] | None]]:
     """
@@ -197,7 +197,7 @@ def parse_doc_stream(
     instead of a dictionary.
 
     :param doc_stream: sequence of tuples consisting of uri and document body
-    :param on_error: error callback that gets the uri and doc as parameters
+    :param on_error: error callback that gets the uri, doc, and exception string as parameters
     :param transform: if given, transforms the parsed document
 
     """
@@ -206,9 +206,9 @@ def parse_doc_stream(
             metadata = json.loads(doc) if uri.endswith(".json") else parse_yaml(doc)
             if transform is not None:
                 metadata = transform(metadata)
-        except Exception:  # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             if on_error is not None:
-                on_error(uri, doc)
+                on_error(uri, doc, str(e))
             metadata = None
         yield uri, metadata
 
