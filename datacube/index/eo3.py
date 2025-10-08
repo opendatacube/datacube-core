@@ -28,7 +28,7 @@ from toolz.dicttoolz import get_in
 from datacube.model import Dataset, Product, Range
 from datacube.storage import BandInfo
 from datacube.storage._rio import RasterDatasetDataSource
-from datacube.utils import DocReader
+from datacube.utils import DatacubeException, DocReader
 
 EO3_SCHEMA = "https://schemas.opendatacube.org/dataset"
 
@@ -285,6 +285,10 @@ def prep_eo3(
     return doc
 
 
+class EOConversionError(DatacubeException):
+    """An ODC Exception raised when unable to convert a legacy EO dataset to EO3"""
+
+
 def _accessories_from_eo1(metadata_doc: dict) -> dict[str, Any]:
     """Create an EO3 accessories section from an EO1 document"""
     accessories = {}
@@ -466,8 +470,9 @@ def make_grids(
                 None,
             )
         else:
-            raise ValueError(
-                "Unable to retrieve resolution or shape values necessary for calculating the dataset grids.\n"
+            raise EOConversionError(
+                "Unable to retrieve resolution or shape values necessary to calculate the dataset grids for "
+                f"dataset {ds.id} \n"
                 "You may want to try again with open_datafiles=True to retrieve the information from the band files, "
                 "but be warned that it may be very slow.",
             )
@@ -502,11 +507,14 @@ def convert_eo_dataset(eo_ds: Dataset, open_datafiles: bool = False) -> Dataset:
         return eo_ds
 
     if eo_ds._gs is None or "extent" not in eo_ds.metadata_doc:
-        raise ValueError(
-            "Dataset must have spatial information to be converted to EO3."
+        raise EOConversionError(
+            f"Dataset {eo_ds.id} is missing spatial information and cannot be converted to EO3."
         )
     if not eo_ds._gs.get("geo_ref_points"):
-        raise ValueError("Dataset must have geo_ref_points to be converted to EO3.")
+        raise EOConversionError(
+            f"Dataset {eo_ds.id} spatial information does not include geo_ref_points, "
+            "necessary for conversion to EO3."
+        )
 
     if eo_ds.crs is None:
         if "map_projection" in eo_ds._gs:
@@ -518,7 +526,9 @@ def convert_eo_dataset(eo_ds: Dataset, open_datafiles: bool = False) -> Dataset:
                 crs
             )
         else:
-            raise ValueError("Dataset must have CRS to be converted to EO3.")
+            raise EOConversionError(
+                f"Dataset {eo_ds.id} does not have a CRS value and cannot be converted to EO3."
+            )
 
     grids, grid_mappings = make_grids(eo_ds, open_datafiles)
 
@@ -567,7 +577,11 @@ def convert_eo_dataset(eo_ds: Dataset, open_datafiles: bool = False) -> Dataset:
     if location:
         eo3_doc["location"] = location
 
-    return Dataset(convert_eo_product(eo_ds.product), eo3_doc, uri=location)
+    # TODO: better handling of sources/source_tree
+    # method could accept an Index, or else return only eo3_doc to handle Dataset init elsewhere
+    return Dataset(
+        convert_eo_product(eo_ds.product), eo3_doc, uri=location, sources=eo_ds.sources
+    )
 
 
 def convert_eo_product(eo_product: Product) -> Product:

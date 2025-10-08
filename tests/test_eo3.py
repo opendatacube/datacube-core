@@ -9,6 +9,7 @@ from affine import Affine
 
 from datacube.index.eo3 import (
     EO3Grid,
+    EOConversionError,
     add_eo3_parts,
     convert_eo_dataset,
     convert_eo_product,
@@ -497,7 +498,7 @@ def test_eo1_dataset_conversion(
         },
     }
     eo_ds = Dataset(ls5_nbar_product, new_doc)
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(EOConversionError) as e:
         convert_eo_dataset(eo_ds)
     assert "Unable to retrieve resolution or shape values" in str(e.value)
 
