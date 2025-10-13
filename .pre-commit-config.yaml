@@ -18,17 +18,17 @@ repos:
         - id: check-added-large-files
         - id: check-merge-conflict
     -   repo: https://github.com/pylint-dev/pylint
-        rev: v3.3.9  # Use the sha / tag you want to point at
+        rev: v4.0.0  # Use the sha / tag you want to point at
         hooks:
         -   id: pylint
     - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.13.3
+      rev: v0.14.0
       hooks:
       - id: ruff-check
         args: [--fix, --show-fixes, --output-format, grouped]
       - id: ruff-format
     - repo: https://github.com/astral-sh/uv-pre-commit
-      rev: 0.8.23
+      rev: 0.9.2
       hooks:
         # Ensure uv.lock is up-to-date if pyproject.toml has changed
         - id: uv-lock
