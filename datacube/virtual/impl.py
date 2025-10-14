@@ -1193,8 +1193,9 @@ def reproject_band(
 
 def reproject_array(src, nodata, s_geobox, d_geobox, resampling):
     """Reproject a numpy array."""
-    # add time dimension to the shape to match src dims
-    dst = numpy.full((1, *d_geobox.shape), fill_value=nodata, dtype=src.dtype)
+    # add time dimension to the shape to match src dims if needed
+    dst_shape = (1, *d_geobox.shape) if src.ndim == 3 else d_geobox.shape
+    dst = numpy.full(dst_shape, fill_value=nodata, dtype=src.dtype)
     rio_reproject(
         src=src,
         dst=dst,
