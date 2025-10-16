@@ -65,6 +65,12 @@ def _value_to_stac_type(key: str, value):
     # Convert the non-default datetimes to a string
     if isinstance(value, datetime) and key != "datetime":
         return datetime_to_str(value)
+    if isinstance(value, str) and "datetime" in key:
+        try:
+            return datetime_to_str(datetime.fromisoformat(value))
+        except ValueError:
+            # fromisoformat doesn't play nice with "Z" at the end of the timestamp in 3.10
+            return datetime_to_str(datetime.fromisoformat(value[:-1]))
     return value
 
 
