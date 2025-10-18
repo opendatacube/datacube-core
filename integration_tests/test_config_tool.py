@@ -51,7 +51,7 @@ def test_add_example_dataset_types(
             print(f"Adding mapping {mapping_path}")
 
             result = clirunner(["-v", "product", "add", mapping_path])
-            assert result.exit_code == 0
+            assert result.exit_code == 0, f"Output: {result.output}"
 
             mappings_count = _dataset_type_count(index)
             assert mappings_count > existing_mappings, (
@@ -60,15 +60,15 @@ def test_add_example_dataset_types(
             existing_mappings = mappings_count
 
         result = clirunner(["-v", "metadata", "show", "-f", "json", "eo"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Output: {result.output}"
 
     # EO3 test examples
     result = clirunner(["-v", "metadata", "add", ext_eo3_mdt_path])
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
     for path in eo3_product_paths:
         result = clirunner(["-v", "product", "add", path])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Output: {result.output}"
 
         mappings_count = _dataset_type_count(index)
         assert mappings_count > existing_mappings, (
@@ -77,16 +77,16 @@ def test_add_example_dataset_types(
         existing_mappings = mappings_count
 
     result = clirunner(["-v", "metadata", "show", "-f", "json", "eo3"])
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
     result = clirunner(["-v", "metadata", "list"])
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
     result = clirunner(["-v", "metadata", "show"])
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
     result = clirunner(["-v", "product", "list"])
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
     expect_result = 0 if existing_mappings > 0 else 1
     result = clirunner(["-v", "product", "show"], expect_success=(expect_result == 0))
@@ -96,13 +96,13 @@ def test_add_example_dataset_types(
         result = clirunner(
             ["-v", "product", "show", "-f", "json"], expect_success=False
         )
-        assert result.exit_code == 1
+        assert result.exit_code == 1, f"Output: {result.output}"
 
         result = clirunner(["-v", "product", "show", "-f", "json", "ga_ls8c_ard_3"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Output: {result.output}"
 
         result = clirunner(["-v", "product", "show", "-f", "yaml", "ga_ls8c_ard_3"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Output: {result.output}"
 
 
 def test_error_returned_on_invalid(clirunner, index) -> None:
@@ -135,7 +135,7 @@ def test_list_users_does_not_fail(clirunner, cfg_env, index) -> None:
     # (They are host-global, not specific to the database)
     # So we're just checking that it doesn't fail (and the SQL etc is well formed)
     result = clirunner(["user", "list"])
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
 
 def test_db_init_noop(clirunner, cfg_env, ls8_eo3_product) -> None:
@@ -201,7 +201,7 @@ def test_add_no_such_product(clirunner, index) -> None:
     result = clirunner(
         ["dataset", "add", "--dtype", "no_such_product", "/tmp"], expect_success=False
     )
-    assert result.exit_code != 0
+    assert result.exit_code != 0, f"Output: {result.output}"
     assert "DEPRECATED option detected" in result.output
     assert "ERROR Supplied product name" in result.output
 
