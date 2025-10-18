@@ -370,7 +370,7 @@ def test_product_update_cli(
     assert str(f'Updated "{extended_eo3_product_doc["name"]}"') in result.output
     fresh = get_current(index, extended_eo3_product_doc)
     assert documents_equal(fresh, extended_eo3_product_doc)
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
     # Try to add an unknown property: this should be forbidden by validation of dataset-type-schema.yaml
     modified_doc = copy.deepcopy(extended_eo3_product_doc)
@@ -382,7 +382,7 @@ def test_product_update_cli(
     # The error message differs between jsonschema versions, but should always mention the invalid property name.
     assert "newly_added_property" in result.output
     # Return error code for failure!
-    assert result.exit_code == 1
+    assert result.exit_code == 1, f"Output: {result.output}"
     fresh = get_current(index, extended_eo3_product_doc)
     assert documents_equal(fresh, extended_eo3_product_doc)
 
@@ -396,7 +396,7 @@ def test_product_update_cli(
     result = run_update_product(file_path, expect_success=False)
     assert "Unsafe change in metadata.42 from missing to 'hello'" in result.output
     # Return error code for failure!
-    assert result.exit_code == 1
+    assert result.exit_code == 1, f"Output: {result.output}"
     # Unchanged
     fresh = get_current(index, extended_eo3_product_doc)
     assert documents_equal(fresh, extended_eo3_product_doc)
@@ -404,7 +404,7 @@ def test_product_update_cli(
     # But if we set allow-unsafe==True, this one will work.
     result = run_update_product(file_path, allow_unsafe=True)
     assert "Unsafe change in metadata.42 from missing to 'hello'" in result.output
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
     # Has changed, and our key is now a string (json only allows string keys)
     modified_doc = copy.deepcopy(extended_eo3_product_doc)
     modified_doc["metadata"]["42"] = "hello"
@@ -447,7 +447,7 @@ def test_product_delete_cli(
     assert "1 out of 2 products successfully deleted" in runner.output
     assert "ga_ls_wo_3 could not be deleted" not in runner.output
     assert "ga_ls8c_ard_3 could not be deleted" in runner.output
-    assert runner.exit_code == 0
+    assert runner.exit_code == 0, f"Output: {runner.output}"
 
     index.products.get_by_name_unsafe.cache_clear()  # type: ignore[attr-defined]
     assert index.products.get_by_name("ga_ls8c_ard_3") is not None
@@ -462,7 +462,7 @@ def test_product_delete_cli(
         ["product", "delete", "ga_ls8c_ard_3", "--force"], verbose_flag=False
     )
     assert "Completed product deletion" in runner.output
-    assert runner.exit_code == 0
+    assert runner.exit_code == 0, f"Output: {runner.output}"
 
     runner = clirunner(
         ["dataset", "archive", "4a30d008-4e82-4d67-99af-28bc1629f766"],
