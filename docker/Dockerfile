@@ -6,6 +6,8 @@
 ##
 # gdal:ubuntu-small no longer comes with netcdf support compiled into gdal
 # syntax=docker/dockerfile:1
+FROM ghcr.io/astral-sh/uv:0.9.3@sha256:ecfea7316b266ba82a5e9efb052339ca410dd774dc01e134a30890e6b85c7cd1 AS uv
+
 FROM ghcr.io/osgeo/gdal:ubuntu-full-3.10.3 AS base
 
 ENV LC_ALL=C.UTF-8 \
@@ -36,8 +38,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 FROM base AS builder
 
-ARG UV=https://github.com/astral-sh/uv/releases/download/0.8.6/uv-x86_64-unknown-linux-gnu.tar.gz
-
 ENV UV_COMPILE_BYTECODE=0 \
     UV_PROJECT_ENVIRONMENT=/app \
     UV_PYTHON_DOWNLOADS=never \
@@ -45,9 +45,7 @@ ENV UV_COMPILE_BYTECODE=0 \
 
 WORKDIR /build
 
-ADD --checksum=sha256:5429c9b96cab65198c2e5bfe83e933329aa16303a0369d5beedc71785a4a2f36 --chown=root:root --chmod=644 --link $UV uv.tar.gz
-
-RUN tar xf uv.tar.gz -C /usr/local/bin --strip-components=1 --no-same-owner
+COPY --link --from=uv /uv /uvx /usr/local/bin/
 
 COPY --link pyproject.toml uv.lock /build/
 
