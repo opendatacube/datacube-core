@@ -162,7 +162,7 @@ def driver_based_load(
 
     rdr = reader_driver(driver)
 
-    return chunked_load(
+    ds = chunked_load(
         load_cfg,
         template,
         srcs,
@@ -174,3 +174,10 @@ def driver_based_load(
         chunks=dask_chunks,
         progress=progress_cbk,
     )
+    # TODO: provide attributes through RasterLoadParams.meta with loader 0.6.0
+    m_attrs = {m.name: m.dataarray_attrs() for m in measurements}
+    new_data_vars = {
+        name: da.assign_attrs(**m_attrs[name]) for name, da in ds.data_vars.items()
+    }
+    ds.update(new_data_vars)
+    return ds

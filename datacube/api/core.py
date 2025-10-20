@@ -45,7 +45,7 @@ from ..index import Index, extract_geom_from_query, index_connect
 from ..migration import ODC2DeprecationWarning
 from ..model import QueryField
 from ..storage._load import FuserFunction, ProgressFunction
-from .query import GroupBy, Query, _normalise_geobox, query_group_by
+from .query import GroupBy, Query, query_group_by
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -659,9 +659,6 @@ class Datacube:
 
         .. seealso:: :meth:`group_datasets` :meth:`load_data` :meth:`find_datasets`
         """
-        if like is not None:
-            like = _normalise_geobox(like)
-
         query = Query(self.index, like=like, **kwargs)  # type: ignore[arg-type]
         if not query.product:
             raise ValueError("must specify a product")
@@ -1238,7 +1235,9 @@ def select_datasets_inside_polygon(
     # (Only needed for index drivers without spatial index support)
     query_crs = polygon.crs
     for dataset in datasets:
-        if dataset.extent and intersects(polygon, dataset.extent.to_crs(query_crs)):
+        if dataset.extent and intersects(
+            polygon, dataset.extent.to_crs(query_crs, resolution="auto")
+        ):
             yield dataset
 
 
@@ -1497,3 +1496,27 @@ def _handle_legacy_resolution(
     if resolution[0] == -resolution[1]:
         return res_(resolution[1])
     return resyx_(*resolution)
+
+
+def _normalise_geobox(
+    gbox: GeoBox | LegacyGeoBox | xarray.Dataset | xarray.DataArray,
+) -> GeoBox:
+    """Retain support for legacy geoboxes by converting them to odc.geo GeoBoxes."""
+    if isinstance(gbox, GeoBox):
+        # Is already a GeoBox
+        return gbox
+
+    if isinstance(gbox, xarray.Dataset | xarray.DataArray):
+        # Is an Xarray object
+        return gbox.odc.geobox
+
+    # Is a legacy GeoBox: convert to odc.geo.geobox.GeoBox.
+    warnings.warn(
+        "The use of datacube.utils.geometry.GeoBox objects is deprecated, "
+        "and support will be removed in a future release.\n"
+        "Now converting to an odc.geo GeoBox.",
+        ODC2DeprecationWarning,
+        stacklevel=3,
+    )
+    crs = None if gbox.crs is None else gbox.crs._str
+    return GeoBox(shape=gbox.shape, affine=gbox.affine, crs=crs)
