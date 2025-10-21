@@ -273,9 +273,10 @@ def _write_tab(products: list) -> None:
         "spatial_dimensions",
     )
     # If the intersection of desired columns with available columns is empty, just use whatever IS in df
-    output_columns = (
-        tuple(col for col in output_columns if col in df.columns) or df.columns
-    )
+    output_columns = tuple(col for col in output_columns if col in df.columns)
+    if not output_columns:
+        output_columns = tuple(df.columns)
+
     echo(df.to_string(columns=output_columns, justify="left", index=False))
 
 
