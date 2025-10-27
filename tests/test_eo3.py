@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from copy import deepcopy
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 from affine import Affine
@@ -543,22 +544,21 @@ def test_eo1_dataset_conversion(
     }
 
     # open data to get info from there
-    # monkeypatch DataSource to avoid opening s3 files
-    from datacube.drivers.datasource import DataSource
+    # patch RasterDatasetDataSource to avoid opening s3 files
+    class RDRMock:
+        shape = (4000, 4000)
+        transform = Affine(25.00, 0.00, -1000000.00, 0.00, -25.00, -1800000.00)
+        crs = "EPSG:3577"
 
-    monkeypatch.setattr(
-        DataSource,
-        "open",
-        {
-            "shape": (4000, 4000),
-            "transform": Affine(
-                25.00, 0.00, -1000000.00, 0.00, -25.00, -1800000.00, 0.00, 0.00, 1.00
-            ),
-            "crs": "EPSG:3577",
-        },
-    )
+    mock_ctxm = MagicMock()
+    mock_ctxm.__enter__.return_value = RDRMock()
+    mock_open = MagicMock()
+    mock_open.return_value = mock_ctxm
+
+    # ensure grid_spatial isn't required
     del ls8_fc_albers_dataset.metadata_doc["grid_spatial"]
-    converted_ds = convert_eo_dataset(ls8_fc_albers_dataset, True)
+    with patch("datacube.storage._rio.RasterDatasetDataSource.open", mock_open):
+        converted_ds = convert_eo_dataset(ls8_fc_albers_dataset, True)
     assert converted_ds.metadata_doc["grids"] == {
         "default": {
             "shape": (4000, 4000),
