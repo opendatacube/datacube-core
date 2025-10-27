@@ -63,14 +63,22 @@ FROM base
 
 COPY --from=builder --link /usr/local/bin/uv* /usr/local/bin/
 
-ARG V_PG=16
+ARG V_PG=18
 
 # Update and install Ubuntu packages
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     export DEBIAN_FRONTEND=noninteractive \
-    && apt-get update \
+    && apt-get -qq update \
     && apt-get upgrade -y \
+    && apt-get -qq -y --no-install-recommends install dirmngr gpg-agent  > /dev/null \
+    && export GNUPGHOME="$(mktemp -d)" \
+    && pg_key="B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8" \
+    && gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$pg_key" \
+    && gpg --batch --export --armor "$pg_key" > /etc/apt/keyrings/postgres.gpg.asc \
+    && gpgconf --kill all \
+    && echo "deb [signed-by=/etc/apt/keyrings/postgres.gpg.asc] http://apt.postgresql.org/pub/repos/apt noble-pgdg main $PG_VERSION" | tee /etc/apt/sources.list.d/postgres.list \
+    && apt-get -qq update \
     && apt-get install -y --no-install-recommends \
         gosu \
         graphviz \
