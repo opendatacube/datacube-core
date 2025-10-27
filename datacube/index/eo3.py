@@ -289,6 +289,10 @@ class EOConversionError(DatacubeException):
     """An ODC Exception raised when unable to convert a legacy EO dataset to EO3"""
 
 
+class EOGridsError(EOConversionError):
+    """An exception raised when unable to determine grids from an EO dataset"""
+
+
 def _accessories_from_eo1(metadata_doc: dict) -> dict[str, Any]:
     """Create an EO3 accessories section from an EO1 document"""
     accessories = {}
@@ -396,10 +400,9 @@ def make_grids(
     Return grids dict and (optionally) mapping of measurement name to grid name.
     """
     geoboxes = {}
-    assert ds._gs is not None
-    ref_points: dict = ds._gs["geo_ref_points"]
 
     def _shape_and_transform(
+        ref_points: dict,
         res: int | float | dict | None,
         shape: dict | None,
         adjust: bool = False,
@@ -439,44 +442,51 @@ def make_grids(
             with source.open() as rdr:
                 geoboxes[name] = GeoBox(rdr.shape, rdr.transform, CRS(str(rdr.crs)))
     else:
+        assert ds._gs is not None
+        ref_points = ds._gs["geo_ref_points"]
+
         for name, m in ds.measurements.items():
-            shape, transform = _shape_and_transform(m.get("cell_size"), m.get("shape"))
+            shape, transform = _shape_and_transform(
+                ref_points, m.get("cell_size"), m.get("shape")
+            )
             if shape is not None:
                 assert transform is not None
                 geoboxes[name] = GeoBox(shape, transform, ds.crs)
 
-    # no grid info in measurements, see if we can get a default from browse or product
-    if geoboxes == {}:
-        full = get_in(["browse", "full"], ds.metadata_doc, default={})
-        if "cell_size" in full or "shape" in full:
-            shape, transform = _shape_and_transform(
-                full.get("cell_size"), full.get("shape"), True
-            )
-        elif ds.product.default_resolution:
-            shape, transform = _shape_and_transform(
-                {
-                    "x": ds.product.default_resolution.x,
-                    "y": ds.product.default_resolution.y,
-                },
-                None,
-            )
-        elif ds.product.grid_spec:
-            # assumes we'll get a legacy GridSpec since we're dealing with legacy datasets
-            shape, transform = _shape_and_transform(
-                {
-                    "x": ds.product.grid_spec.resolution[1],
-                    "y": ds.product.grid_spec.resolution[0],
-                },
-                None,
-            )
-        else:
-            raise EOConversionError(
-                "Unable to retrieve resolution or shape values necessary to calculate the dataset grids for "
-                f"dataset {ds.id} \n"
-                "You may want to try again with open_datafiles=True to retrieve the information from the band files, "
-                "but be warned that it may be very slow.",
-            )
-        return {"default": {"shape": shape, "transform": transform[:6]}}, {}  # type: ignore[index]
+        # no grid info in measurements, see if we can get a default from browse or product
+        if geoboxes == {}:
+            full = get_in(["browse", "full"], ds.metadata_doc, default={})
+            if "cell_size" in full or "shape" in full:
+                shape, transform = _shape_and_transform(
+                    ref_points, full.get("cell_size"), full.get("shape"), True
+                )
+            elif ds.product.default_resolution:
+                shape, transform = _shape_and_transform(
+                    ref_points,
+                    {
+                        "x": ds.product.default_resolution.x,
+                        "y": ds.product.default_resolution.y,
+                    },
+                    None,
+                )
+            elif ds.product.grid_spec:
+                # assumes we'll get a legacy GridSpec since we're dealing with legacy datasets
+                shape, transform = _shape_and_transform(
+                    ref_points,
+                    {
+                        "x": ds.product.grid_spec.resolution[1],
+                        "y": ds.product.grid_spec.resolution[0],
+                    },
+                    None,
+                )
+            else:
+                raise EOGridsError(
+                    "Unable to retrieve resolution or shape values necessary to calculate the dataset grids for "
+                    f"dataset {ds.id} \n"
+                    "You may want to try again with open_datafiles=True to retrieve the information from the band "
+                    "files, but be warned that it may be very slow.",
+                )
+            return {"default": {"shape": shape, "transform": transform[:6]}}, {}  # type: ignore[index]
 
     named_gboxes, band2grid = _group_geoboxes(geoboxes)
     grids = {
@@ -506,31 +516,51 @@ def convert_eo_dataset(eo_ds: Dataset, open_datafiles: bool = False) -> Dataset:
     if eo_ds.is_eo3:
         return eo_ds
 
-    if eo_ds._gs is None or "extent" not in eo_ds.metadata_doc:
+    if "extent" not in eo_ds.metadata_doc:
         raise EOConversionError(
-            f"Dataset {eo_ds.id} is missing spatial information and cannot be converted to EO3."
+            f"Dataset {eo_ds.id} is missing extent and cannot be converted to EO3."
         )
-    if not eo_ds._gs.get("geo_ref_points"):
-        raise EOConversionError(
-            f"Dataset {eo_ds.id} spatial information does not include geo_ref_points, "
-            "necessary for conversion to EO3."
-        )
-
-    if eo_ds.crs is None:
-        if "map_projection" in eo_ds._gs:
-            crs = norm_crs(
-                eo_ds._gs.get("map_projection"),
-                xy_(eo_ds.metadata.lon.begin, eo_ds.metadata.lat.end),
-            )
-            eo_ds.metadata_doc["grid_spatial"]["projection"]["spatial_reference"] = str(
-                crs
-            )
-        else:
+    if not open_datafiles:
+        if eo_ds._gs is None:
             raise EOConversionError(
-                f"Dataset {eo_ds.id} does not have a CRS value and cannot be converted to EO3."
+                f"Dataset {eo_ds.id} is missing spatial information and cannot be converted to EO3."
             )
+        if not eo_ds._gs.get("geo_ref_points"):
+            raise EOConversionError(
+                f"Dataset {eo_ds.id} spatial information does not include geo_ref_points, "
+                "necessary for conversion to EO3."
+            )
+        if eo_ds.crs is None:
+            if "map_projection" in eo_ds._gs:
+                crs = norm_crs(
+                    eo_ds._gs.get("map_projection"),
+                    xy_(eo_ds.metadata.lon.begin, eo_ds.metadata.lat.end),
+                )
+                eo_ds.metadata_doc["grid_spatial"]["projection"][
+                    "spatial_reference"
+                ] = str(crs)
+            else:
+                raise EOConversionError(
+                    f"Dataset {eo_ds.id} does not have a CRS value and cannot be converted to EO3."
+                )
 
     grids, grid_mappings = make_grids(eo_ds, open_datafiles)
+
+    if eo_ds._gs is None:
+        grid = EO3Grid(grids["default"])
+        crs = str(grid.polygon().crs)
+        valid_data = grid.polygon().json
+        grid_spatial = {
+            "projection": {
+                "spatial_reference": crs,
+                "geo_ref_points": grid.ref_points(),
+                "valid_data": valid_data,
+            }
+        }
+    else:
+        crs = str(eo_ds.crs)
+        valid_data = eo_ds._gs.get("valid_data")
+        grid_spatial = eo_ds.metadata_doc["grid_spatial"]
 
     eo3_doc = {
         "$schema": "https://schemas.opendatacube.org/dataset",
@@ -544,7 +574,7 @@ def convert_eo_dataset(eo_ds: Dataset, open_datafiles: bool = False) -> Dataset:
             "odc:processing_datetime": eo_ds.metadata.creation_dt or eo_ds.indexed_time,
             **(dict(_build_properties(eo_ds.metadata))),
         },
-        "crs": str(eo_ds.crs),
+        "crs": crs,
         "grids": grids,
         "extent": {
             "lon": {
@@ -556,8 +586,8 @@ def convert_eo_dataset(eo_ds: Dataset, open_datafiles: bool = False) -> Dataset:
                 "end": eo_ds.metadata.lat.end,
             },
         },
-        "geometry": eo_ds._gs.get("valid_data"),
-        "grid_spatial": eo_ds.metadata_doc["grid_spatial"],
+        "geometry": valid_data,
+        "grid_spatial": grid_spatial,
         "measurements": convert_bands(eo_ds, grid_mappings),
         "accessories": _accessories_from_eo1(eo_ds.metadata_doc),
         "lineage": {

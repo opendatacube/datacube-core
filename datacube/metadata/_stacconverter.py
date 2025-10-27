@@ -25,7 +25,7 @@ from pystac.extensions.view import ViewExtension
 
 import datacube.utils.uris as dc_uris
 from datacube.index.eo3 import (
-    EOConversionError,
+    EOGridsError,
     convert_eo_dataset,
     is_doc_eo3,
     prep_eo3,
@@ -201,11 +201,8 @@ def ds2stac(
         )
         try:
             dataset = convert_eo_dataset(dataset)
-        except EOConversionError as e:
-            if "open_datafiles" in e:  # should we make a more specific exception type?
-                dataset = convert_eo_dataset(dataset, open_datafiles=True)
-            else:
-                raise e
+        except EOGridsError:
+            dataset = convert_eo_dataset(dataset, open_datafiles=True)
 
     if dataset.extent is None:
         geometry = None

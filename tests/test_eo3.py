@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from copy import deepcopy
 from typing import Any
 
 import pytest
@@ -10,6 +11,7 @@ from affine import Affine
 from datacube.index.eo3 import (
     EO3Grid,
     EOConversionError,
+    EOGridsError,
     add_eo3_parts,
     convert_eo_dataset,
     convert_eo_product,
@@ -386,7 +388,11 @@ def test_geom_from_eo3_proj() -> None:
 
 
 def test_eo1_dataset_conversion(
-    eo_dataset_doc, ls5_nbar_product, ls8_fc_albers_dataset, ls5_nbar_dataset
+    eo_dataset_doc,
+    ls5_nbar_product,
+    ls8_fc_albers_dataset,
+    ls5_nbar_dataset,
+    monkeypatch,
 ) -> None:
     eo_ds = Dataset(infer_eo_product(eo_dataset_doc), eo_dataset_doc)
     assert not eo_ds.is_eo3
@@ -484,8 +490,15 @@ def test_eo1_dataset_conversion(
     }
     assert convert_eo_dataset(eo_ds).metadata_doc == expected_ds_doc
 
+    no_gs_doc = deepcopy(eo_dataset_doc)
+    no_gs_doc["grid_spatial"] = {}
+    no_gs_ds = Dataset(ls5_nbar_product, no_gs_doc)
+    with pytest.raises(EOConversionError) as e:
+        convert_eo_dataset(no_gs_ds)
+    assert "is missing spatial information" in str(e.value)
+
     # remove grid information from measurements to seek from browse
-    new_doc = eo_dataset_doc
+    new_doc = deepcopy(eo_dataset_doc)
     new_doc["image"]["bands"] = {
         "1": {
             "path": "product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B10.tif"
@@ -498,9 +511,8 @@ def test_eo1_dataset_conversion(
         },
     }
     eo_ds = Dataset(ls5_nbar_product, new_doc)
-    with pytest.raises(EOConversionError) as e:
+    with pytest.raises(EOGridsError):
         convert_eo_dataset(eo_ds)
-    assert "Unable to retrieve resolution or shape values" in str(e.value)
 
     new_doc["browse"] = {
         "full": {"path": "browse.fr.jpg", "cell_size": 25.0, "file_type": "image/jpg"}
@@ -531,18 +543,21 @@ def test_eo1_dataset_conversion(
     }
 
     # open data to get info from there
-    from datacube.utils.rio import activate_rio_env
+    # monkeypatch DataSource to avoid opening s3 files
+    from datacube.drivers.datasource import DataSource
 
-    activate_rio_env(
-        cloud_defaults=True,
-        aws={
-            "aws_unsigned": True,
-            "aws_secret_access_key": "fake-secret",
-            "aws_access_key_id": "fake-key-id",
-            "aws_session_token": "fake-token",
-            "region_name": "us-west-1",
+    monkeypatch.setattr(
+        DataSource,
+        "open",
+        {
+            "shape": (4000, 4000),
+            "transform": Affine(
+                25.00, 0.00, -1000000.00, 0.00, -25.00, -1800000.00, 0.00, 0.00, 1.00
+            ),
+            "crs": "EPSG:3577",
         },
     )
+    del ls8_fc_albers_dataset.metadata_doc["grid_spatial"]
     converted_ds = convert_eo_dataset(ls8_fc_albers_dataset, True)
     assert converted_ds.metadata_doc["grids"] == {
         "default": {
