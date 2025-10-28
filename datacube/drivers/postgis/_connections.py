@@ -236,11 +236,14 @@ class PostGisDb:
             assert self._spindexes is not None  # for type checker
         return self._spindexes
 
-    def create_spatial_index(self, crs: CRS) -> type[SpatialIndex] | None:
+    def create_spatial_index(
+        self, crs: CRS, with_permissions: bool
+    ) -> type[SpatialIndex] | None:
         """
         Create a spatial index across the database, for the named CRS.
 
         :param crs:
+        :param with_permissions: Whether to create db permissions.
         :return:
         """
         try:
@@ -248,7 +251,7 @@ class PostGisDb:
             spidx = self.spindexes.get(crs_id)
             if spidx is None:
                 spidx = spindex_for_crs(crs)
-                ensure_spindex(self._engine, spidx, crs_id)
+                ensure_spindex(self._engine, spidx, crs_id, with_permissions)
                 self._refresh_spindexes()
         except ValueError:
             _LOG.warning("Could not dynamically model an index for CRS %s", crs._str)

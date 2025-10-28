@@ -138,7 +138,7 @@ class Index(AbstractIndex):
         pass
 
     @override
-    def create_spatial_index(self, crs: CRS) -> bool:
+    def create_spatial_index(self, crs: CRS, with_permissions: bool) -> bool:
         _LOG.warning("memory index driver does not support spatio-temporal indexes")
         return False
 
