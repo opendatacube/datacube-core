@@ -25,11 +25,12 @@ def test_create_drop_spatial_index(index: Index) -> None:
         CRS(
             'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]]'
             ',PRIMEM["Weird",22.3],UNIT["Degree",0.017453292519943295]]'
-        )
+        ),
+        True,
     )
     assert list(index.spatial_indexes()) == [CRS("epsg:4326")]
-    assert index.create_spatial_index(CRS("epsg:3577"))
-    assert index.create_spatial_index(CRS("WGS-84"))
+    assert index.create_spatial_index(CRS("epsg:3577"), True)
+    assert index.create_spatial_index(CRS("WGS-84"), True)
     assert set(index.spatial_indexes()) == {CRS("epsg:3577"), CRS("epsg:4326")}
     assert set(index.spatial_indexes(refresh=True)) == {
         CRS("epsg:3577"),
@@ -45,7 +46,7 @@ def test_create_drop_spatial_index(index: Index) -> None:
 def test_spatial_index_maintain(
     index: Index, ls8_eo3_product, eo3_ls8_dataset_doc
 ) -> None:
-    index.create_spatial_index(CRS("EPSG:3577"))
+    index.create_spatial_index(CRS("EPSG:3577"), True)
     assert set(index.spatial_indexes(refresh=True)) == {
         CRS("EPSG:3577"),
         CRS("EPSG:4326"),
@@ -74,7 +75,7 @@ def test_spatial_index_populate(
     ls8_eo3_dataset4,
     wo_eo3_dataset,
 ) -> None:
-    index.create_spatial_index(CRS("EPSG:3577"))
+    index.create_spatial_index(CRS("EPSG:3577"), True)
     assert set(index.spatial_indexes(refresh=True)) == {
         CRS("EPSG:3577"),
         CRS("EPSG:4326"),
@@ -115,7 +116,7 @@ def test_spatial_index_crs_validity(
     # TODO: potentially include africa_eo3_dataset2 in this test
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
-    index.create_spatial_index(epsg3577)
+    index.create_spatial_index(epsg3577, True)
     assert set(index.spatial_indexes(refresh=True)) == {epsg4326, epsg3577}
     assert index.update_spatial_index(crses=[epsg3577]) == 2
 
@@ -249,7 +250,7 @@ def test_spatial_extent(
     # TODO: include africa_eo3_dataset2 in this test
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
-    index.create_spatial_index(epsg3577)
+    index.create_spatial_index(epsg3577, True)
     index.update_spatial_index(crses=[epsg3577])
 
     with pytest.raises(KeyError):
@@ -301,7 +302,7 @@ def test_spatial_search(
 ) -> None:
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
-    index.create_spatial_index(epsg3577)
+    index.create_spatial_index(epsg3577, True)
     index.update_spatial_index(crses=[epsg3577])
     # Test old style lat/lon search
     dss = index.datasets.search(

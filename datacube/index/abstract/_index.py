@@ -143,7 +143,7 @@ class AbstractIndex(ABC):
 
     # Spatial Index API
 
-    def create_spatial_index(self, crs: CRS) -> bool:
+    def create_spatial_index(self, crs: CRS, with_permissions: bool) -> bool:
         """
         Create a spatial index for a CRS.
 
@@ -154,6 +154,7 @@ class AbstractIndex(ABC):
         Only implemented by index drivers with supports_spatial_indexes set to True.
 
         :param crs: The coordinate reference system to create a spatial index for.
+        :param with_permissions: Whether to create db permissions.
         :return: True if the spatial index was successfully created (or already exists)
         """
         if not self.supports_spatial_indexes:
@@ -234,6 +235,7 @@ class AbstractIndex(ABC):
         batch_size: int = 1000,
         skip_lineage: bool = False,
         lineage_only: bool = False,
+        with_permissions: bool = True,
     ) -> Mapping[str, BatchStatus]:
         """
         Clone an existing index into this one.
@@ -270,6 +272,7 @@ class AbstractIndex(ABC):
         :param batch_size: Maximum number of objects to write to the database in one go.
         :param skip_lineage: Skip lineage in cloned result.
         :param lineage_only: Only clone lineage.
+        :param with_permissions: Whether to create db permissions.
         :return: Dictionary containing a BatchStatus named tuple for "metadata_types", "products"
                  and "datasets", and optionally "lineage".
         """
@@ -278,7 +281,7 @@ class AbstractIndex(ABC):
             if self.supports_spatial_indexes and origin_index.supports_spatial_indexes:
                 for crs in origin_index.spatial_indexes(refresh=True):
                     report_to_user(f"Creating spatial index for CRS {crs}")
-                    self.create_spatial_index(crs)
+                    self.create_spatial_index(crs, with_permissions)
                 self.update_spatial_index(
                     list(origin_index.spatial_indexes(refresh=False))
                 )

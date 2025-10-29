@@ -26,6 +26,12 @@ def system() -> None:
 
 @system.command("create", help="Create unpopulated spatial index for particular CRSes")
 @click.option(
+    "--init-users/--no-init-users",
+    is_flag=True,
+    default=True,
+    help="Include user roles and grants. (default: true)",
+)
+@click.option(
     "--update/--no-update",
     "-u",
     is_flag=True,
@@ -35,7 +41,7 @@ def system() -> None:
 )
 @click.argument("srids", nargs=-1)
 @ui.pass_index()
-def create(index: Index, update: bool, srids: Sequence[str]) -> None:
+def create(index: Index, init_users: bool, update: bool, srids: Sequence[str]) -> None:
     if not index.supports_spatial_indexes:
         echo(
             "The active index driver does not support spatial indexes. "
@@ -64,7 +70,7 @@ def create(index: Index, update: bool, srids: Sequence[str]) -> None:
         if crs in index.spatial_indexes():
             # A spatial index for crs already exists: skip silently
             confirmed.append(crs)
-        elif index.create_spatial_index(crs):
+        elif index.create_spatial_index(crs, with_permissions=init_users):
             # Creation succeeded
             confirmed.append(crs)
         else:
