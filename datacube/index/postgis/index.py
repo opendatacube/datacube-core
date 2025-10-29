@@ -176,7 +176,7 @@ class Index(AbstractIndex):
         This is good practice if you are keeping the Index instance in scope
         but won't be using it for a while.
 
-        (Connections are normally closed automatically when this object is deleted: ie. no references exist)
+        (Connections are normally closed automatically when this object is deleted: i.e. no references exist)
         """
         self._db.close()
 

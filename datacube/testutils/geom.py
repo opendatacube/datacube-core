@@ -12,8 +12,6 @@ from odc.geo.geobox import GeoBox
 from odc.geo.gridspec import GridSpec
 from odc.geo.math import apply_affine
 
-# from datacube.model import GridSpec
-
 # pylint: disable=invalid-name
 
 epsg4326 = CRS("EPSG:4326")

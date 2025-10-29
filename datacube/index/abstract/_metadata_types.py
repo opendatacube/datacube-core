@@ -215,7 +215,7 @@ class AbstractMetadataTypeResource(ABC):
 
     def get_with_fields(self, field_names: Iterable[str]) -> Iterable[MetadataType]:
         """
-        Return all metadata types that have all of the named search fields.
+        Return all metadata types that have all the named search fields.
 
         :param field_names: Iterable of search field names
         :return: Iterable of matching metadata types.
@@ -283,8 +283,8 @@ class AbstractMetadataTypeResource(ABC):
             This will halt other user's requests until completed.
 
             If false, creation will be slightly slower and cannot be done in a transaction.
-        :param rebuild_views: whether or not views should be rebuilt
-        :param rebuild_indexes: whether or not views should be rebuilt
+        :param rebuild_views: whether views should be rebuilt
+        :param rebuild_indexes: whether indexes should be rebuilt
         """
 
     @abstractmethod

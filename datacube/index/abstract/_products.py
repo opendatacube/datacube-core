@@ -149,7 +149,7 @@ class AbstractProductResource(ABC):
         :param batch_size: Number of products to add per batch (default 1000)
         :param metadata_types: Optional dictionary cache of MetadataType objects.
                                Used for product metadata validation, and for filtering.
-                               (Metadata types not in in this list are skipped.)
+                               (Metadata types not in this list are skipped.)
         :return: BatchStatus named tuple, with `safe` containing a list of
                  product names that are safe to include in a subsequent dataset bulk add.
         """
@@ -352,7 +352,7 @@ class AbstractProductResource(ABC):
 
     def get_with_fields(self, field_names: Iterable[str]) -> Iterable[Product]:
         """
-        Return products that have all of the given fields.
+        Return products that have all the given fields.
 
         :param field_names: names of fields that returned products must have
         :returns: Matching product models
