@@ -425,11 +425,11 @@ class Dataset:
 
     @property
     def grids(self) -> dict[str, Any]:
-        return self.metadata_doc["grids"]
+        return self.metadata_doc.get("grids", {})
 
     @property
     def properties(self) -> dict[str, Any]:
-        return self.metadata_doc["properties"]
+        return self.metadata_doc.get("properties", {})
 
     @override
     def __eq__(self, other) -> bool:
