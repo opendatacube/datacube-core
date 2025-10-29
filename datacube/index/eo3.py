@@ -520,7 +520,7 @@ def convert_eo_dataset(eo_ds: Dataset, open_datafiles: bool = False) -> Dataset:
     :param eo_ds: input dataset. If it is already EO3, it is silently returned without modifications
     :param open_datafiles: If False (default) use the dataset information to calculate grids.
                            If True, open the band files to retrieve the relevant values.
-                           This approached is slow, so should only be used if known to be necessary.
+                           This approach is slow, so should only be used if known to be necessary.
     """
     if eo_ds.is_eo3:
         return eo_ds
