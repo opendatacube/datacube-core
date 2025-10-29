@@ -252,7 +252,7 @@ def validate_document(
     import referencing
     from referencing import Resource
     from referencing.exceptions import NoSuchResource
-    from referencing.jsonschema import DRAFT4
+    from referencing.jsonschema import DRAFT202012
     from referencing.typing import URI
 
     # Allow schemas to reference other schemas in the given folder.
@@ -262,7 +262,7 @@ def validate_document(
         if not path.exists():
             raise NoSuchResource(f"Reference not found: {uri}")
         referenced_schema = next(iter(read_documents(path)))[1]
-        return DRAFT4.create_resource(referenced_schema)
+        return DRAFT202012.create_resource(referenced_schema)
 
     try:
         registry = (
@@ -270,8 +270,8 @@ def validate_document(
             if schema_folder is None
             else referencing.Registry(retrieve=doc_reference)  # type: ignore[call-arg]
         )
-        jsonschema.Draft4Validator.check_schema(schema)
-        validator = jsonschema.Draft4Validator(schema, registry=registry)
+        jsonschema.Draft202012Validator.check_schema(schema)
+        validator = jsonschema.Draft202012Validator(schema, registry=registry)
         validator.validate(document)
     except jsonschema.ValidationError as e:
         raise InvalidDocException(e) from None
