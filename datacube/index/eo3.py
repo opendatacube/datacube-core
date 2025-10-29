@@ -512,14 +512,25 @@ def convert_bands(
 
 
 def convert_eo_dataset(eo_ds: Dataset, open_datafiles: bool = False) -> Dataset:
-    # Update the metadata doc of an eo-type Dataset to be eo3-compatible
+    """
+    Convert an EO Dataset to EO3.
+    The metadata fields are restructured and renamed, and grids are calculated to align with
+    the expected structure of an EO3 metadata doc. The Product is also converted to EO3.
+
+    :param eo_ds: input dataset. If it is already EO3, it is silently returned without modifications
+    :param open_datafiles: If False (default) use the dataset information to calculate grids.
+                           If True, open the band files to retrieve the relevant values.
+                           This approached is slow, so should only be used if known to be necessary.
+    """
     if eo_ds.is_eo3:
         return eo_ds
 
+    # we always require extent since it includes time info that cannot be extracted from the datafiles
     if "extent" not in eo_ds.metadata_doc:
         raise EOConversionError(
             f"Dataset {eo_ds.id} is missing extent and cannot be converted to EO3."
         )
+    # on the other hand, grid_spatial is not required if we are retrieving info from the datafiles
     if not open_datafiles:
         if eo_ds._gs is None:
             raise EOConversionError(
@@ -546,6 +557,7 @@ def convert_eo_dataset(eo_ds: Dataset, open_datafiles: bool = False) -> Dataset:
 
     grids, grid_mappings = make_grids(eo_ds, open_datafiles)
 
+    # since grid_spatial is optional with open_datafiles but required for EO3 datasets, compute it now if needed
     if eo_ds._gs is None:
         grid = EO3Grid(grids["default"])
         crs = str(grid.polygon().crs)
@@ -615,6 +627,9 @@ def convert_eo_dataset(eo_ds: Dataset, open_datafiles: bool = False) -> Dataset:
 
 
 def convert_eo_product(eo_product: Product) -> Product:
+    """
+    Convert an EO product to EO3, with the base EO3 metadata type
+    """
     # import here to avoid circular import error
     # the default md types should probably find another place to live anyway
     from datacube.metadata._utils import EO3_MD_TYPE
