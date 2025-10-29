@@ -98,7 +98,7 @@ description: |
 
     Expected metadata structure produced by the eodatasets library, as used internally at GA.
 
-    https://github.com/GeoscienceAustralia/eo-datasets
+    https://github.com/opendatacube/eo-datasets
 
 dataset:
     # Where to find certain fields in dataset objects:
@@ -215,7 +215,7 @@ description: |
 
     Expected metadata structure produced by telemetry datasets from the eodatasets library, as used internally at GA.
 
-    https://github.com/GeoscienceAustralia/eo-datasets
+    https://github.com/opendatacube/eo-datasets
 
 dataset:
     # Where to find certain fields in dataset objects:

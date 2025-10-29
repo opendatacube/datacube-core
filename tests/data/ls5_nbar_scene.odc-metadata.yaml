@@ -203,7 +203,7 @@ lineage:
         repo_url: http://www.ontar.com/software/productdetails.aspx?item=modtran
       eodatasets:
         version: 0.8
-        repo_url: https://github.com/GeoscienceAustralia/eo-datasets.git
+        repo_url: https://github.com/opendatacube/eo-datasets.git
   ancillary:
     ozone:
       uri: /g/data/v10/eoancillarydata/lookup_tables/ozone/mar.tif
