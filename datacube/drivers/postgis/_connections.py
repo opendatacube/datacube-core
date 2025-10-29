@@ -293,7 +293,7 @@ class PostGisDb:
         to the pool beforehand.
 
         The connection can raise errors if not following this advice ("server closed the connection unexpectedly"),
-        as some servers will aggressively close idle connections (eg. DEA's NCI servers). It also prevents the
+        as some servers will aggressively close idle connections (e.g. DEA's NCI servers). It also prevents the
         connection from being reused while borrowed.
 
         Low level context manager, use <index_resource>._db_connection instead

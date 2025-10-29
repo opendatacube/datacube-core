@@ -143,7 +143,7 @@ def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:
     Note that a single yaml file can contain multiple documents.
 
     This function will load any dates in the documents as strings. In
-    Data Cube we store JSONB in PostgreSQL and it will turn our dates
+    Data Cube we store JSONB in PostgreSQL, and it will turn our dates
     into strings anyway.
 
     :param uri: When True yield URIs instead of Paths
