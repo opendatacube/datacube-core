@@ -271,7 +271,11 @@ def validate_document(
             else referencing.Registry(retrieve=doc_reference)  # type: ignore[call-arg]
         )
         jsonschema.Draft202012Validator.check_schema(schema)
-        validator = jsonschema.Draft202012Validator(schema, registry=registry)
+        validator = jsonschema.Draft202012Validator(
+            schema,
+            registry=registry,
+            format_checker=jsonschema.Draft202012Validator.FORMAT_CHECKER,
+        )
         validator.validate(document)
     except jsonschema.ValidationError as e:
         raise InvalidDocException(e) from None
