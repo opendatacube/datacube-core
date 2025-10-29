@@ -781,7 +781,6 @@ class Product:
         """
         Dictionary of measurements in this product
         """
-        # from copy import deepcopy
         if self._canonical_measurements is None:
 
             def fix_nodata(m: dict[str, Any]) -> dict[str, Any]:
