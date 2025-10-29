@@ -616,7 +616,7 @@ def schema_validated(schema: Path):
     """
 
     def validate(cls, document) -> None:
-        return validate_document(document, cls.schema, schema.parent)
+        validate_document(document, cls.schema, schema.parent)
 
     def decorate(cls):
         cls.schema = next(iter(read_documents(schema)))[1]
