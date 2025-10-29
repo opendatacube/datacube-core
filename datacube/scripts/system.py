@@ -172,4 +172,3 @@ def clone(
         skip_lineage=skip_lineage,
         lineage_only=lineage_only,
     )
-    exit(0)
