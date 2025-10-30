@@ -207,15 +207,6 @@ def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Generator[tu
     default=False,
 )
 @click.option(
-    "--confirm-ignore-lineage",
-    help=(
-        "WARNING: this flag has been deprecated and will be removed in datacube v1.9.\n"
-        "Pretend that there is no lineage data in the datasets being indexed, without confirmation"
-    ),
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--archive-less-mature",
     help="Archive less mature versions of the dataset",
     is_flag=True,
@@ -231,7 +222,6 @@ def index_cmd(
     verify_lineage: bool,
     dry_run: bool,
     ignore_lineage: bool,
-    confirm_ignore_lineage: bool,
     archive_less_mature: bool,
     dataset_paths: list[str],
 ) -> None:
@@ -240,14 +230,12 @@ def index_cmd(
         print_help_msg(index_cmd)
         sys.exit(1)
 
-    confirm_ignore_lineage = ignore_lineage
-
     try:
         ds_resolve = Doc2Dataset(
             index,
             product_names,
             exclude_products=exclude_product_names,
-            skip_lineage=confirm_ignore_lineage,
+            skip_lineage=ignore_lineage,
             fail_on_missing_lineage=not auto_add_lineage,
             verify_lineage=verify_lineage,
         )
@@ -262,7 +250,7 @@ def index_cmd(
         index_datasets(
             dss,
             index,
-            auto_add_lineage=auto_add_lineage and not confirm_ignore_lineage,
+            auto_add_lineage=auto_add_lineage and not ignore_lineage,
             dry_run=dry_run,
             archive_less_mature=archive_less_mature,
         )
