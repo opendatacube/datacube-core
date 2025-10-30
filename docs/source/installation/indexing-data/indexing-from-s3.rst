@@ -27,7 +27,7 @@ and further detailed documentation for the tools used below in the
 
 .. code-block:: bash
 
-    pip install --extra-index-url="https://packages.dea.ga.gov.au" odc_apps_dc_tools
+    pip install odc-apps-dc-tools
 
 S3 Indexing Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~
