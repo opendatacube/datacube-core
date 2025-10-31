@@ -57,7 +57,7 @@ def report_old_options(mapping):
     return maybe_remap
 
 
-def _resolve_uri(uri: str, doc) -> str:
+def _resolve_uri(uri: str, doc: SimpleDocNav) -> str:
     loc = doc.location
     if loc is None:
         return uri
@@ -73,7 +73,7 @@ def _resolve_uri(uri: str, doc) -> str:
 
 def remap_uri_from_doc(doc_stream) -> Iterator:
     """
-    Given a stream of `uri: str, doc: dict` tuples, replace `uri` with `doc.location` if it is set.
+    Given a stream of `uri: str, doc: SimpleDocNav` tuples, replace `uri` with `doc.location` if it is set.
     """
     for uri, doc in doc_stream:
         real_uri = _resolve_uri(uri, doc)
@@ -221,12 +221,6 @@ def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Generator[tu
     is_flag=True,
     default=False,
 )
-@click.option(
-    "--stac",
-    help="Provide datasets as from STAC item documents",
-    is_flag=True,
-    default=False,
-)
 @click.argument("dataset-paths", type=str, nargs=-1)
 @ui.pass_index()
 def index_cmd(
@@ -239,7 +233,6 @@ def index_cmd(
     ignore_lineage: bool,
     confirm_ignore_lineage: bool,
     archive_less_mature: bool,
-    stac: bool,
     dataset_paths: list[str],
 ) -> None:
     if not dataset_paths:
@@ -263,7 +256,7 @@ def index_cmd(
         sys.exit(2)
 
     def run_it(dataset_paths: Iterable) -> None:
-        doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True, raw=stac)
+        doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
         doc_stream = remap_uri_from_doc(doc_stream)
         dss = dataset_stream(doc_stream, ds_resolve)
         index_datasets(

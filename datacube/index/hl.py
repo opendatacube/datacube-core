@@ -481,32 +481,34 @@ class Doc2Dataset:
         if isinstance(doc_in, SimpleDocNav):
             doc: SimpleDocNav = doc_in
         else:
-            if doc_in.get("type") == "Feature":
-                # it's a stac item document, convert it to eo3
-                item = Item.from_dict(doc_in, href=uri)
-                # stac2ds returns a Dataset, so in theory we could return here.
-                # However, it does not currently handle lineage properly nor conduct consistency checks,
-                # so we retrieve the eo3 dict and proceed as usual.
-                # TODO: add conversion cfg to doc2ds params if needed
-                try:
-                    doc_in = next(
-                        iter(
-                            stac2ds(
-                                [item],
-                                cfg={
-                                    "only_known_products": True,
-                                    "remap_lineage": not self.index.supports_external_lineage,
-                                },
-                                product_cache={
-                                    product.name: product
-                                    for product in self.index.products.get_all()
-                                },
-                            )
-                        )
-                    ).metadata_doc
-                except ValueError as e:
-                    return None, e
             doc = SimpleDocNav(doc_in)
+
+        if doc.is_stac:
+            # it's a stac item document, convert it to eo3
+            item = Item.from_dict(doc.doc, href=uri)
+            # stac2ds returns a Dataset, so in theory we could return here.
+            # However, it does not currently handle lineage properly nor conduct consistency checks,
+            # so we retrieve the eo3 dict and proceed as usual.
+            # TODO: add conversion cfg to doc2ds params if needed
+            try:
+                eo3_doc = next(
+                    iter(
+                        stac2ds(
+                            [item],
+                            cfg={
+                                "only_known_products": True,
+                                "remap_lineage": not self.index.supports_external_lineage,
+                            },
+                            product_cache={
+                                product.name: product
+                                for product in self.index.products.get_all()
+                            },
+                        )
+                    )
+                ).metadata_doc
+            except ValueError as e:
+                return None, e
+            doc = SimpleDocNav(eo3_doc)
 
         if self._eo3:
             auto_skip = self._eo3 == "auto"
