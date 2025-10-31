@@ -12,7 +12,6 @@ When connected to an ODC Database, these methods are available for searching and
 .. currentmodule:: datacube.index.abstract.AbstractDatasetResource
 
 .. autosummary::
-   :toctree: generate/
 
    get
    search

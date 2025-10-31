@@ -13,7 +13,6 @@ When connected to an ODC Database, these methods are available for discovering i
 
 .. autosummary::
    :nosignatures:
-   :toctree: generate/
 
    can_update
    get

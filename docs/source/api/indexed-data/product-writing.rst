@@ -14,7 +14,6 @@ When connected to an ODC Database, these methods are available for altering info
 
 .. autosummary::
    :nosignatures:
-   :toctree: generate/
 
    from_doc
    add
