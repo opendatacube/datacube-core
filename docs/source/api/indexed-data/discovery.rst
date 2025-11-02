@@ -7,7 +7,7 @@ When connected to an ODC Database, these methods are available for discovering i
 .. currentmodule:: datacube
 
 .. autosummary::
-   :nosignatures:
+   :signatures: none
    :toctree: generate/
 
    Datacube.list_products

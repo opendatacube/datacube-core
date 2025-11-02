@@ -10,7 +10,7 @@ Executive Summary
 .. currentmodule:: datacube.cfg
 
 .. autosummary::
-   :nosignatures:
+   :signatures: none
    :toctree: generate/
 
    ODCConfig.get_environment
