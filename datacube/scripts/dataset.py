@@ -252,7 +252,7 @@ def index_cmd(
             index,
             auto_add_lineage=auto_add_lineage and not ignore_lineage,
             dry_run=dry_run,
-            archive_less_mature=archive_less_mature,
+            archive_less_mature=500 if archive_less_mature else False
         )
 
     # If outputting directly to terminal, show a progress bar.
