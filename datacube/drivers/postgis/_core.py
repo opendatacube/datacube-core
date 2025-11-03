@@ -131,13 +131,14 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
             sqla_txn.commit()
-            if with_permissions:
-                c.execute(text(f"set role {quoted_user}"))
             c.commit()
             # Stamp with latest Alembic revision
             alembic_cfg = config.Config(ALEMBIC_INI_LOCATION)
             alembic_cfg.attributes["connection"] = c
             command.stamp(alembic_cfg, "head")
+            if with_permissions:
+                c.execute(text(f"set role {quoted_user}"))
+        # If not new, caller updates with alembic
 
         if with_permissions:
             _LOG.info("Adding role grants.")
@@ -145,7 +146,7 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             c.execute(
                 text(f"grant select on all tables in schema {SCHEMA_NAME} to odc_user")
             )
-
+            c.execute(text("grant odc_user to odc_manage"))
             c.execute(
                 text(
                     f"grant insert on {SCHEMA_NAME}.dataset,"
@@ -167,6 +168,8 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             )
             # Allow creation of indexes, views
             c.execute(text(f"grant create on schema {SCHEMA_NAME} to odc_manage"))
+            # Belt and braces to cover corner cases
+            c.execute(text("grant odc_manage to odc_admin"))
             c.commit()
 
     return is_new
