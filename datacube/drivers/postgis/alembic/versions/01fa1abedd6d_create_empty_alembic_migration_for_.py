@@ -72,10 +72,16 @@ def upgrade() -> None:
     for table in tables:
         conn.execute(sa.text(f"alter table {SCHEMA_NAME}.{table} owner to odc_admin"))
 
+    # Enforce hierarchical permissions
+    conn.execute(sa.text("grant odc_user to odc_manage"))
+    conn.execute(sa.text("grant odc_manage to odc_admin"))
+
 
 def downgrade() -> None:
     # Ownership of the affected tables was previously "uncontrolled" and simply belonged
     # to the user who first ran `datacube system init`.
-    # The downgrade process could not guarantee previous ownership was restored, so leave
-    # as a no-op.
-    pass
+    # The downgrade process could not guarantee previous ownership was restored, so skip.
+    # Remove hierarchical permissions
+    conn = op.get_bind()
+    conn.execute(sa.text("revoke odc_manage from odc_admin"))
+    conn.execute(sa.text("revoke odc_user from odc_manage"))
