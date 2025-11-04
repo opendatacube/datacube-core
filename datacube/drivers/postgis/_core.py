@@ -8,6 +8,7 @@ Core SQL schema settings.
 
 import logging
 import os
+from typing import Iterable
 
 from alembic import command, config
 from alembic.migration import MigrationContext
@@ -74,14 +75,21 @@ def schema_qualified(name: str) -> str:
     return f"{SCHEMA_NAME}.{name}"
 
 
-def _get_quoted_connection_info(connection) -> tuple:
-    db, user = connection.execute(
+def get_connection_info(connection: Connection) -> tuple[str, str]:
+    """
+    Obtain information about an open database connection
+    :param connection: An SQLAlchemy connection
+    :return: A tuple consisting of the database name and the user name of the connection
+    """
+    row = connection.execute(
         text("select quote_ident(current_database()), quote_ident(current_user)")
     ).fetchone()
+    assert row is not None  # Mypy doesn't understand that the above SQL always returns a row.
+    db, user = row
     return db, user
 
 
-def ensure_db(engine, with_permissions: bool = True) -> bool:
+def ensure_db(engine: Engine, with_permissions: bool = True) -> bool:
     """
     Initialise the db if needed.
 
@@ -92,7 +100,7 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
     is_new = not has_schema(engine)
     with engine.connect() as c:
         #  NB. Using default SQLA2.0 auto-begin commit-as-you-go behaviour
-        quoted_db_name, quoted_user = _get_quoted_connection_info(c)
+        quoted_db_name, quoted_user = get_connection_info(c)
 
         _ensure_extension(c, "POSTGIS")
         c.commit()
@@ -175,7 +183,7 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
     return is_new
 
 
-def database_exists(engine) -> bool:
+def database_exists(engine: Engine) -> bool:
     """
     Have they init'd this database?
     """
@@ -239,13 +247,13 @@ def update_schema(engine: Engine) -> None:
         command.upgrade(cfg, "head")
 
 
-def _ensure_extension(conn, extension_name: str = "POSTGIS") -> None:
+def _ensure_extension(conn: Connection, extension_name: str = "POSTGIS") -> None:
     sql = text(f"create extension if not exists {extension_name}")
     conn.execute(sql)
 
 
 def _ensure_role(
-    conn, name: str, inherits_from=None, add_user: bool = False, create_db: bool = False
+    conn: Connection, name: str, inherits_from: str | None = None, add_user: bool = False, create_db: bool = False
 ) -> None:
     if has_role(conn, name):
         _LOG.debug("Role exists: %s", name)
@@ -261,7 +269,7 @@ def _ensure_role(
     conn.execute(text(" ".join(sql)))
 
 
-def grant_role(conn, role, users) -> None:
+def grant_role(conn: Connection, role: str, users: Iterable[str]) -> None:
     if role not in USER_ROLES:
         raise ValueError(f"Unknown role {role!r}. Expected one of {USER_ROLES!r}")
 
@@ -278,7 +286,7 @@ def grant_role(conn, role, users) -> None:
     )
 
 
-def has_role(conn, role_name: str) -> bool:
+def has_role(conn: Connection, role_name: str) -> bool:
     return bool(
         conn.execute(
             text(f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'")
@@ -304,7 +312,7 @@ def drop_db(connection: Connection) -> None:
     drop_schema(connection)
 
 
-def to_pg_role(role) -> str:
+def to_pg_role(role: str) -> str:
     """
     Convert a role name to a name for use in PostgreSQL
 

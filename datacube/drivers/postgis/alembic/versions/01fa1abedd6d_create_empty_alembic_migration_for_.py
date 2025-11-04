@@ -28,11 +28,13 @@ def confirm_user_can_transfer(
         conn: sa.Connection,
         schema: str,
         tables: list[str]) -> str:
-    from datacube.drivers.postgis._core import _get_quoted_connection_info
-    _, user = _get_quoted_connection_info(conn)
-    _, is_super = conn.execute(
+    from datacube.drivers.postgis._core import get_connection_info
+    _, user = get_connection_info(conn)
+    row = conn.execute(
         sa.text(f"select rolname , rolsuper from pg_roles WHERE rolname = '{user}'")
     ).fetchone()
+    assert row is not None  # Mypy doesn't understand that the above SQL always returns a row.
+    _, is_super = row
     if is_super:
         # We are a superuser, we can do anything.
         return user
@@ -80,7 +82,8 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Ownership of the affected tables was previously "uncontrolled" and simply belonged
     # to the user who first ran `datacube system init`.
-    # The downgrade process could not guarantee previous ownership was restored, so skip.
+    # The downgrade process therefore cannot guarantee previous ownership was restored, so skip.
+    #
     # Remove hierarchical permissions
     conn = op.get_bind()
     conn.execute(sa.text("revoke odc_manage from odc_admin"))

@@ -21,7 +21,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, mapped_column
 from sqlalchemy.sql.ddl import DropTable
 
-from ._core import METADATA, _get_quoted_connection_info
+from ._core import METADATA, get_connection_info
 from ._schema import Base, Dataset, SpatialIndex, SpatialIndexRecord, orm_registry
 from .sql import SCHEMA_NAME
 
@@ -153,7 +153,7 @@ def ensure_spindex(
         for _ in results:
             # SpatialIndexRecord exists - actual index assumed to exist too.
             return
-        _, quoted_user = _get_quoted_connection_info(session.connection())
+        _, quoted_user = get_connection_info(session.connection())
         if with_permissions:
             session.execute(text("set role odc_admin"))
             session.commit()
