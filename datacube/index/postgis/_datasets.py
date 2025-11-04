@@ -910,7 +910,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 raise ValueError(f"No such product: {product}")
 
         for q, product in product_queries:
-            _LOG.warning("Querying product %s", product)
             # Extract Geospatial search geometry
             geom = extract_geom_from_query(**q)
             q = strip_all_spatial_fields_from_query(q)
