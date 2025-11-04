@@ -8,7 +8,7 @@ Core SQL schema settings.
 
 import logging
 import os
-from typing import Iterable
+from collections.abc import Iterable
 
 from alembic import command, config
 from alembic.migration import MigrationContext
@@ -84,7 +84,9 @@ def get_connection_info(connection: Connection) -> tuple[str, str]:
     row = connection.execute(
         text("select quote_ident(current_database()), quote_ident(current_user)")
     ).fetchone()
-    assert row is not None  # Mypy doesn't understand that the above SQL always returns a row.
+    assert (
+        row is not None
+    )  # Mypy doesn't understand that the above SQL always returns a row.
     db, user = row
     return db, user
 
@@ -253,7 +255,11 @@ def _ensure_extension(conn: Connection, extension_name: str = "POSTGIS") -> None
 
 
 def _ensure_role(
-    conn: Connection, name: str, inherits_from: str | None = None, add_user: bool = False, create_db: bool = False
+    conn: Connection,
+    name: str,
+    inherits_from: str | None = None,
+    add_user: bool = False,
+    create_db: bool = False,
 ) -> None:
     if has_role(conn, name):
         _LOG.debug("Role exists: %s", name)
