@@ -790,7 +790,7 @@ def count_cmd(
 @click.option(
     "--all",
     "all_ds",
-    help="Ignore id list - archive ALL non-archived datasets  (warning: may be slow on large databases)",
+    help="archive all non-archived datasets (warning: may be slow on large databases)",
     is_flag=True,
     default=False,
 )
@@ -867,7 +867,7 @@ def archive_cmd(
 @click.option(
     "--all",
     "all_ds",
-    help="Ignore id list - restore ALL archived datasets  (warning: may be slow on large databases)",
+    help="restore all archived datasets (warning: may be slow on large databases)",
     is_flag=True,
     default=False,
 )
@@ -934,7 +934,7 @@ def restore_cmd(
 @click.option(
     "--all",
     "all_ds",
-    help="Ignore id list - purge ALL archived datasets  (warning: may be slow on large databases)",
+    help="purge all archived datasets (warning: may be slow on large databases)",
     is_flag=True,
     default=False,
 )
