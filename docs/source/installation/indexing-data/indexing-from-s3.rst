@@ -2,7 +2,7 @@ Indexing data from Amazon (AWS S3)
 ======================================
 
 Options currently exist that allow for a user to store, index, and retrieve data
-from cloud object stores, such as Amazon S3 buckets, using the open ODC.
+from cloud object stores, such as Amazon S3 buckets, using ODC.
 While the process is largely the same as the step by step guide there are a few additional requirements outline below.
 
 Configuring AWS CLI Credentials
