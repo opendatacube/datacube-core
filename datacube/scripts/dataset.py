@@ -968,10 +968,10 @@ def purge_cmd(
                     echo(f"No dataset found with id: {dataset_id}", err=True)
             sys.exit(-1)
 
-    if sys.stdin.isatty() and force:
-        click.confirm(
-            "Warning: you may be deleting active datasets. Proceed?", abort=True
-        )
+        if sys.stdin.isatty() and force:
+            click.confirm(
+                "Warning: you may be deleting active datasets. Proceed?", abort=True
+            )
 
     if not dry_run:
         # Perform purge
