@@ -194,7 +194,7 @@ def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> boo
                     SpatialIndexRecord.srid == spidx_record.srid
                 )
             )
-            record_del_result = del_res.rowcount == 1
+            record_del_result = del_res.rowcount == 1  # type: ignore[attr-defined]
 
         drop_res = session.execute(
             DropTable(sp_idx.__table__, if_exists=True)  # type: ignore[attr-defined]
