@@ -396,7 +396,7 @@ def test_rio_slurp_with_geobox(tmpdir) -> None:
     mm = write_gtiff(pp / "rio-slurp-aa.tif", aa, nodata=nodata, overwrite=True)
     assert mm.count == 2
 
-    aa, mm = rio_slurp(mm.path, mm.geobox, dst_nodata=nodata)
+    aa, mm = rio_slurp(mm.path, mm.geobox, dst_nodata=nodata, src_nodata=nodata)
     assert aa.shape == aa0.shape
     np.testing.assert_array_equal(aa, aa0)
 
