@@ -84,9 +84,8 @@ def get_connection_info(connection: Connection) -> tuple[str, str]:
     row = connection.execute(
         text("select quote_ident(current_database()), quote_ident(current_user)")
     ).fetchone()
-    assert (
-        row is not None
-    )  # Mypy doesn't understand that the above SQL always returns a row.
+    # Mypy doesn't understand that the above SQL always returns a row.
+    assert row is not None
     db, user = row
     return db, user
 
@@ -121,6 +120,7 @@ def ensure_db(engine: Engine, with_permissions: bool = True) -> bool:
             c.commit()
 
         if is_new:
+            # If NOT new, it is up to the caller to update with alembic
             sqla_txn = c.begin()
             if with_permissions:
                 # Switch to 'odc_admin', so that all items are owned by them.
@@ -148,7 +148,6 @@ def ensure_db(engine: Engine, with_permissions: bool = True) -> bool:
             command.stamp(alembic_cfg, "head")
             if with_permissions:
                 c.execute(text(f"set role {quoted_user}"))
-        # If not new, caller updates with alembic
 
         if with_permissions:
             _LOG.info("Adding role grants.")

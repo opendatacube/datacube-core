@@ -52,7 +52,7 @@ def confirm_user_can_transfer(
 
 def tables_to_transfer(conn: sa.Connection, schema: str) -> list[str]:
     """
-    Return list of tables (in the odc schema) to ensure belong to odc_admin
+    Return list of tables in the odc schema that may not yet belong to odc_admin
 
     :param conn:
     :return: list of table names
