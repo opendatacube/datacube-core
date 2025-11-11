@@ -112,17 +112,17 @@ def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
     return match
 
 
-def check_dataset_consistent(dataset: Dataset) -> tuple[bool, str | None]:
+def check_dataset_consistent(dataset: Dataset) -> str | None:
     """
-    :return: (Is consistent, [error message|None])
+    :return: error message or None
     """
     product_measurements = set(dataset.product.measurements.keys())
 
     if len(product_measurements) == 0:
-        return True, None
+        return None
 
     if dataset.measurements is None:
-        return False, "No measurements defined for a dataset"
+        return "No measurements defined for a dataset"
 
     # It the type expects measurements, ensure our dataset contains them all.
     if not product_measurements.issubset(dataset.measurements.keys()):
@@ -136,9 +136,9 @@ def check_dataset_consistent(dataset: Dataset) -> tuple[bool, str | None]:
         if not_measured:
             msg = "The dataset is not specifying all of the measurements in this product.\n"
             msg += "Missing fields are;\n" + str(not_measured)
-            return False, msg
+            return msg
 
-    return True, None
+    return None
 
 
 def check_consistent(
@@ -498,8 +498,8 @@ class Doc2Dataset:
         if dataset is None:
             return None, cast(str | Exception, err)
 
-        is_consistent, reason = check_dataset_consistent(dataset)
-        if not is_consistent:
-            return None, cast(str | Exception, reason)
+        reason = check_dataset_consistent(dataset)
+        if reason is None:
+            return dataset, None
 
-        return dataset, None
+        return None, reason

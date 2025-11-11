@@ -140,8 +140,8 @@ def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Generator[tu
         if dataset is None:
             _LOG.error("Failure while processing: %s\n > Reason: %s", uri, error_msg)
         else:
-            is_consistent, reason = check_dataset_consistent(dataset)
-            if is_consistent:
+            reason = check_dataset_consistent(dataset)
+            if reason is None:
                 yield dataset, existing
             else:
                 _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
