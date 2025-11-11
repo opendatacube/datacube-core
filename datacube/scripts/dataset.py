@@ -256,12 +256,10 @@ def index_cmd(
             archive_less_mature=500 if archive_less_mature else None,
         )
 
-    # If outputting directly to terminal, show a progress bar.
-    if sys.stdout.isatty():
-        with click.progressbar(dataset_paths, label="Indexing datasets") as pp:
-            run_it(pp)
-    else:
-        run_it(dataset_paths)
+    with click.progressbar(
+        dataset_paths, label="Indexing datasets", file=sys.stdout
+    ) as pp:
+        run_it(pp)
 
 
 def index_datasets(
