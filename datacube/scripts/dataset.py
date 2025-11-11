@@ -384,48 +384,32 @@ def update_cmd(
             # TODO:
             pass
 
-        if not dry_run:
-            try:
+        try:
+            if dry_run:
+                update, safe, unsafe = index.datasets.can_update(
+                    dataset, updates_allowed=updates_allowed
+                )
+                echo(
+                    f"Can{'' if update else 'not'} update {dataset.id}: "
+                    f"{len(unsafe)} unsafe changes, {len(safe)} safe changes"
+                )
+            else:
                 index.datasets.update(
                     dataset,
                     updates_allowed=updates_allowed,
                     archive_less_mature=archive_less_mature,
                 )
+                update = True
+            if update:
                 update_loc(dataset, existing_ds)
-                success += 1
                 echo(f"Updated {dataset.id}")
-            except ValueError as e:
-                fail += 1
-                echo(f"Failed to update {dataset.id}: {e}")
-        else:
-            if update_dry_run(index, updates_allowed, dataset):
-                update_loc(dataset, existing_ds)
                 success += 1
             else:
                 fail += 1
+        except ValueError as e:
+            fail += 1
+            echo(f"{'Cannot' if dry_run else 'Failed to'} update {dataset.id}: {e}")
     echo(f"{success} successful, {fail} failed")
-
-
-def update_dry_run(
-    index: Index, updates_allowed: Mapping[Offset, AllowPolicy] | None, dataset: Dataset
-) -> bool:
-    try:
-        can_update, safe_changes, unsafe_changes = index.datasets.can_update(
-            dataset, updates_allowed=updates_allowed
-        )
-    except ValueError as e:
-        echo(f"Cannot update {dataset.id}: {e}")
-        return False
-
-    if can_update:
-        echo(
-            f"Can update {dataset.id}: {len(unsafe_changes)} unsafe changes, {len(safe_changes)} safe changes"
-        )
-    else:
-        echo(
-            f"Cannot update {dataset.id}: {len(unsafe_changes)} unsafe changes, {len(safe_changes)} safe changes"
-        )
-    return can_update
 
 
 def build_dataset_info(
