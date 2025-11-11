@@ -243,23 +243,18 @@ def index_cmd(
         _LOG.error(e)
         sys.exit(2)
 
-    def run_it(dataset_paths: Iterable) -> None:
-        doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
-        doc_stream = remap_uri_from_doc(doc_stream)
-        dss = dataset_stream(doc_stream, ds_resolve)
+    with click.progressbar(
+        dataset_paths, label="Indexing datasets", file=sys.stdout
+    ) as pp:
+        doc_stream = ui_path_doc_stream(pp, logger=_LOG, uri=True)
         index_datasets(
-            dss,
+            dataset_stream(remap_uri_from_doc(doc_stream), ds_resolve),
             index,
             auto_add_lineage=auto_add_lineage and not ignore_lineage,
             dry_run=dry_run,
             # Convert from bool to int to avoid warnings
             archive_less_mature=500 if archive_less_mature else None,
         )
-
-    with click.progressbar(
-        dataset_paths, label="Indexing datasets", file=sys.stdout
-    ) as pp:
-        run_it(pp)
 
 
 def index_datasets(
