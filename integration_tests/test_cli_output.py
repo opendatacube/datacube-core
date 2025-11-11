@@ -321,7 +321,9 @@ def test_read_and_update_metadata_product_dataset_command(
         assert "WARNING Dataset" in rerun_add.output
         assert "is already in the database" in rerun_add.output
 
-    update = clirunner(["dataset", "update", eo3_dataset_update_path])
+    update = clirunner(
+        ["dataset", "update", eo3_dataset_update_path], expect_success=False
+    )
     assert "Unsafe changes in" in update.output
     assert "0 successful, 1 failed" in update.output
 

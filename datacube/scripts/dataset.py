@@ -415,6 +415,7 @@ def update_cmd(
             fail += 1
             echo(f"{'Cannot' if dry_run else 'Failed to'} update {ds.id}: {e}")
     echo(f"{success} successful, {fail} failed")
+    sys.exit(0 if fail == 0 else 1)
 
 
 def build_dataset_info(
