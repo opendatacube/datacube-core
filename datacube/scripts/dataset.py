@@ -382,10 +382,11 @@ def update_cmd(
 
     success, fail = 0, 0
     doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
-    doc_stream = remap_uri_from_doc(doc_stream)
 
-    for dataset, existing_ds in load_datasets_for_update(doc_stream, index):
-        _LOG.info("Matched %s", dataset)
+    for ds, existing_ds in load_datasets_for_update(
+        remap_uri_from_doc(doc_stream), index
+    ):
+        _LOG.info("Matched %s", ds)
 
         if location_policy != "keep" and existing_ds.has_multiple_uris():
             # TODO:
@@ -394,28 +395,28 @@ def update_cmd(
         try:
             if dry_run:
                 update, safe, unsafe = index.datasets.can_update(
-                    dataset, updates_allowed=updates_allowed
+                    ds, updates_allowed=updates_allowed
                 )
                 echo(
-                    f"Can{'' if update else 'not'} update {dataset.id}: "
+                    f"Can{'' if update else 'not'} update {ds.id}: "
                     f"{len(unsafe)} unsafe changes, {len(safe)} safe changes"
                 )
             else:
                 index.datasets.update(
-                    dataset,
+                    ds,
                     updates_allowed=updates_allowed,
                     archive_less_mature=archive_less_mature,
                 )
                 update = True
             if update:
-                update_loc(dataset, existing_ds)
-                echo(f"Updated {dataset.id}")
+                update_loc(ds, existing_ds)
+                echo(f"Updated {ds.id}")
                 success += 1
             else:
                 fail += 1
         except ValueError as e:
             fail += 1
-            echo(f"{'Cannot' if dry_run else 'Failed to'} update {dataset.id}: {e}")
+            echo(f"{'Cannot' if dry_run else 'Failed to'} update {ds.id}: {e}")
     echo(f"{success} successful, {fail} failed")
 
 
