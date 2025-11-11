@@ -337,7 +337,7 @@ def update_cmd(
 
         if existing_ds.has_multiple_uris():
             _LOG.warning("Refusing to %s old location, there are several", action_name)
-            return None
+            return False
 
         if new_ds.has_multiple_uris():
             raise ValueError("More than one uri in new dataset")
@@ -402,9 +402,13 @@ def update_cmd(
                 )
                 update = True
             if update:
-                update_loc(ds, existing_ds)
-                echo(f"Updated {ds.id}")
-                success += 1
+                updated = update_loc(ds, existing_ds)
+                if updated is False:
+                    echo(f"Could not update location for dataset: {ds.id}")
+                    fail += 1
+                else:
+                    echo(f"Updated {ds.id}")
+                    success += 1
             else:
                 fail += 1
         except ValueError as e:
