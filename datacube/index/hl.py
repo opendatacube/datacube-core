@@ -116,27 +116,35 @@ def check_dataset_consistent(dataset: Dataset) -> tuple[bool, str | None]:
     """
     :return: (Is consistent, [error message|None])
     """
-    product_measurements = set(dataset.product.measurements.keys())
+    product_measurements = dataset.product.measurements
 
     if len(product_measurements) == 0:
         return True, None
 
-    if dataset.measurements is None:
-        return False, "No measurements defined for a dataset"
+    req_measurements, cond_measurements = set(), set()
+    for name, measurement in product_measurements.items():
+        if (
+            "extra_dim" in measurement
+        ):  # Exclude 3D measurements since it's just a mapping to 2D measurements
+            continue
+        if (opt := measurement.get("optional", "no")) == "no":
+            req_measurements.add(name)
+        if opt == "maybe":
+            cond_measurements.add(name)
 
-    # It the type expects measurements, ensure our dataset contains them all.
-    if not product_measurements.issubset(dataset.measurements.keys()):
-        # Exclude 3D measurements since it's just a mapping to 2D measurements
-        not_measured = {
-            m
-            for m in product_measurements - set(dataset.measurements.keys())
-            if "extra_dim" not in dataset.product.measurements.get(m, [])
-        }
-
-        if not_measured:
-            msg = "The dataset is not specifying all of the measurements in this product.\n"
-            msg += "Missing fields are;\n" + str(not_measured)
-            return False, msg
+    if len(req_measurements) != 0 and dataset.measurements is None:
+        return False, "The dataset does not define any of the required measurements."
+    if not req_measurements.issubset(dataset.measurements.keys()):
+        not_measured = req_measurements - set(dataset.measurements.keys())
+        return (
+            False,
+            f"The dataset does not specify the following required measurements: {', '.join(not_measured)}",
+        )
+    if not any(m in dataset.measurements for m in cond_measurements):
+        return (
+            False,
+            f"The dataset must define at least one of the following measurements: {', '.join(cond_measurements)}",
+        )
 
     return True, None
 
