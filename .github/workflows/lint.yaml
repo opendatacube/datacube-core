@@ -2,19 +2,18 @@ name: lint
 
 on:
   pull_request:
-    paths:
-      - '**'
-
-  push:
-    branches:
-      - develop
-    paths:
+    paths: &paths
       - '**'
       - '!.github/**'
       - '.github/workflows/lint.yaml'
       - '!docker/**'
       - '!docs/**'
       - '!contrib/**'
+
+  push:
+    branches:
+      - develop
+    paths: *paths
   workflow_dispatch:
 
 permissions: {}
