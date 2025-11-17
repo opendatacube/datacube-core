@@ -453,6 +453,8 @@ class SimpleDocNav:
 
         self._doc = doc
         self._is_stac = "stac_version" in doc
+        if self._is_stac and doc.get("type") != "Feature":
+            raise ValueError("SimpleDocNav requires STAC documents to be Items")
         self._doc_without = None
         self._sources_path = (
             sources_path
@@ -502,7 +504,7 @@ class SimpleDocNav:
 
     @property
     def location(self):
-        if self._is_stac:
+        if self.is_stac:
             for link in self._doc.get("link", []):
                 if link.get("rel") == "self":
                     return link.get("href")
@@ -513,7 +515,7 @@ class SimpleDocNav:
         return self._is_stac
 
     def without_location(self) -> SimpleDocNav:
-        if self.location is None or self._is_stac:
+        if self.location is None or self.is_stac:
             return self
         return SimpleDocNav(toolz.dissoc(self._doc, "location"))
 

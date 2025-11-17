@@ -91,6 +91,11 @@ def dataset_stream(doc_stream, ds_resolve) -> Iterator:
     skips failures with logging
     """
     for uri, ds in doc_stream:
+        if getattr(ds, "is_stac", False):
+            _LOG.warning(
+                f"Dataset {ds.id} has been provided as a STAC Item, "
+                "but will be converted to and stored as EO3 in the database."
+            )
         dataset, err = ds_resolve(ds, uri)
 
         if dataset is None:
