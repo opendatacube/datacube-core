@@ -249,7 +249,9 @@ def _item_to_ds(
     ds_uuid = _compute_uuid(
         item, mode=uuid_cfg.get("mode", "auto"), extras=uuid_cfg.get("extras", [])
     )
-    _item = parse_item(item, md)
+    _item = parse_item(
+        item, md, asset_absolute_paths=cfg.get("asset_absolute_paths", True)
+    )
 
     return _to_dataset(_item, item.properties, ds_uuid, product, item.geometry)
 
