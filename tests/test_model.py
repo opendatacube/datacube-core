@@ -217,6 +217,21 @@ def test_product_nodata_nan() -> None:
     assert product.measurements["_neg_inf"].nodata == -numpy.inf
 
 
+def test_product_nodata_validation() -> None:
+    product_def = mk_sample_product(
+        "test",
+        measurements=[
+            {"name": "_nan", "dtype": "uint8", "nodata": "NaN"},
+        ],
+    ).definition
+    with pytest.raises(ValueError):
+        Product.validate_measurements(product_def)
+    product_def["measurements"] = [
+        {"name": "_nan", "dtype": "float32", "nodata": "NaN"}
+    ]
+    assert Product.validate_measurements(product_def) is None
+
+
 def test_product_scale_factor() -> None:
     product = mk_sample_product(
         "test", measurements=[{"name": "red", "scale_factor": 33, "add_offset": -5}]

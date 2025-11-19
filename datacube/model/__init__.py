@@ -18,6 +18,7 @@ from typing import Any, TypeAlias
 from urllib.parse import urlparse
 from uuid import UUID
 
+import numpy as np
 from affine import Affine
 from typing_extensions import override
 
@@ -870,6 +871,17 @@ class Product:
 
         del gs_params["tile_shape"]
         return GridSpec(crs=crs, **gs_params)
+
+    @staticmethod
+    def validate_measurements(definition: Mapping[str, Any]) -> None:
+        for m in definition.get("measurements", []):
+            try:
+                np.dtype(m["dtype"]).type(m["nodata"])
+            except ValueError:
+                raise ValueError(
+                    f"The Product defines a Measurement {m['name']} with a nodata value "
+                    "that does not correspond with its dtype."
+                ) from None
 
     @staticmethod
     def validate_extra_dims(definition: Mapping[str, Any]) -> None:
