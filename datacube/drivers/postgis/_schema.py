@@ -238,7 +238,7 @@ class DatasetHome(Base):
         _core.METADATA,
         {
             "schema": sql.SCHEMA_NAME,
-            "comment": "Represents an optional 'home index' for an external datasets",
+            "comment": "Represents an optional 'home index' for an external dataset",
         },
     )
     dataset_ref: Mapped[UUID] = mapped_column(
