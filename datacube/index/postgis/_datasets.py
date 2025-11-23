@@ -50,7 +50,7 @@ from datacube.index.abstract import (
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, LineageTree, Product, Range
-from datacube.model._base import QueryField
+from datacube.model._base import QueryDict, QueryField
 from datacube.model.fields import Field
 from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import Change, Offset, get_doc_changes
@@ -710,6 +710,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def search(
         self,
         limit: int | None = None,
+        source_filter: QueryDict | None = None,
         archived: bool | None = False,
         order_by: Iterable | None = None,
         **query: QueryField,
@@ -722,7 +723,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param order_by:
         :param query:
         """
-        source_filter = query.pop("source_filter", None)
+        if source_filter is not None:
+            _LOG.error("Source filter is not supported by PostGIS driver")
+            return
         for product, datasets in self._do_search_by_product(
             query,
             source_filter=source_filter,
