@@ -312,7 +312,8 @@ def grant_role(conn: Connection, role: UserRole, users: Iterable[str]) -> None:
         conn.execute(
             text(
                 "revoke {roles} from {users}".format(
-                    users=", ".join(users), roles=", ".join(UserRole.all_roles())
+                    users=", ".join(users),
+                    roles=", ".join(r.value for r in UserRole.higher_roles(role)),
                 )
             )
         )
