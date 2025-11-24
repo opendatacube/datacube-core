@@ -41,7 +41,7 @@ dependencies = [
     'numpy>=1.26.0',
     'odc-geo>=0.4.8',
     'odc-loader<=0.5.1',  # Raster metadata API changes in 0.6.0
-    'odc-stac>=0.4.0',
+    'odc-stac>=0.4.1',
     'packaging',
     'pandas',
     'pyproj>=2.5',
