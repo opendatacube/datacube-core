@@ -22,13 +22,13 @@ repos:
         hooks:
         -   id: pylint
     - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.14.5
+      rev: v0.14.6
       hooks:
       - id: ruff-check
         args: [--fix, --show-fixes, --output-format, grouped]
       - id: ruff-format
     - repo: https://github.com/astral-sh/uv-pre-commit
-      rev: 0.9.9
+      rev: 0.9.11
       hooks:
         # Ensure uv.lock is up-to-date if pyproject.toml has changed
         - id: uv-lock
