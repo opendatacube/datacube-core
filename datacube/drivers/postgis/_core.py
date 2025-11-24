@@ -6,10 +6,14 @@
 Core SQL schema settings.
 """
 
+import contextlib
+import enum
 import logging
 import os
 from collections.abc import Iterable
+from typing import Union
 
+import sqlalchemy
 from alembic import command, config
 from alembic.migration import MigrationContext
 from alembic.runtime.environment import EnvironmentContext
@@ -29,7 +33,41 @@ from datacube.drivers.postgis.sql import (
 )
 from datacube.migration import ODC2DeprecationWarning
 
-USER_ROLES = ("odc_user", "odc_manage", "odc_admin")
+
+class UserRole(enum.Enum):
+    USER = "odc_user"
+    MANAGE = "odc_manage"
+    ADMIN = "odc_admin"
+
+    @classmethod
+    def to_pg_role(cls, role_str: str) -> "UserRole":
+        return cls("odc_" + role_str.lower())
+
+    def simple_str(self) -> str:
+        return self.value.split("_")[1]
+
+    @classmethod
+    def all_roles(cls) -> Iterable[str]:
+        for role in cls:
+            yield role.value
+
+    def higher_roles(self) -> Iterable["UserRole"]:
+        if self == UserRole.USER:
+            return [UserRole.MANAGE, UserRole.ADMIN]
+        if self == UserRole.MANAGE:
+            return [UserRole.ADMIN]
+        return []
+
+    def inherits_from(self) -> Union["UserRole", None]:
+        if self == UserRole.ADMIN:
+            return UserRole.MANAGE
+        if self == UserRole.MANAGE:
+            return UserRole.USER
+        return None
+
+    def create_user(self) -> bool:
+        return self == UserRole.ADMIN
+
 
 SQL_NAMING_CONVENTIONS = {
     "ix": "ix_%(column_0_label)s",
@@ -108,9 +146,8 @@ def ensure_db(engine: Engine, with_permissions: bool = True) -> bool:
 
         if with_permissions:
             _LOG.info("Ensuring user roles.")
-            _ensure_role(c, "odc_user")
-            _ensure_role(c, "odc_manage", inherits_from="odc_user")
-            _ensure_role(c, "odc_admin", inherits_from="odc_manage", add_user=True)
+            for role in UserRole:
+                _ensure_role(c, role)
 
             c.execute(
                 text(f"""
@@ -253,45 +290,39 @@ def _ensure_extension(conn: Connection, extension_name: str = "POSTGIS") -> None
     conn.execute(sql)
 
 
-def _ensure_role(
-    conn: Connection,
-    name: str,
-    inherits_from: str | None = None,
-    add_user: bool = False,
-    create_db: bool = False,
-) -> None:
-    if has_role(conn, name):
-        _LOG.debug("Role exists: %s", name)
+def _ensure_role(conn: Connection, role: UserRole) -> None:
+    if has_user(conn, role.value):
+        _LOG.debug("Role exists: %s", role.value)
         return
 
     sql = [
-        f"create role {name} nologin inherit",
-        "createrole" if add_user else "nocreaterole",
-        "createdb" if create_db else "nocreatedb",
+        f"create role {role.value} nologin inherit",
+        "createrole" if role.create_user() else "nocreaterole",
     ]
-    if inherits_from:
-        sql.append("in role " + inherits_from)
+    if (inherit := role.inherits_from()) is not None:
+        sql.append("in role " + inherit.value)
     conn.execute(text(" ".join(sql)))
 
 
-def grant_role(conn: Connection, role: str, users: Iterable[str]) -> None:
-    if role not in USER_ROLES:
-        raise ValueError(f"Unknown role {role!r}. Expected one of {USER_ROLES!r}")
-
+def grant_role(conn: Connection, role: UserRole, users: Iterable[str]) -> None:
     users = [escape_pg_identifier(conn, user) for user in users]
-    conn.execute(
-        text(
-            "revoke {roles} from {users}".format(
-                users=", ".join(users), roles=", ".join(USER_ROLES)
+    with contextlib.suppress(sqlalchemy.exc.ProgrammingError):
+        # Ignore failure to revoke roles that we don't have permission to revoke.
+        # e.g. because they were granted by a superuser.
+        conn.execute(
+            text(
+                "revoke {roles} from {users}".format(
+                    users=", ".join(users), roles=", ".join(UserRole.all_roles())
+                )
             )
         )
-    )
+
     conn.execute(
-        text("grant {role} to {users}".format(users=", ".join(users), role=role))
+        text("grant {role} to {users}".format(users=", ".join(users), role=role.value))
     )
 
 
-def has_role(conn: Connection, role_name: str) -> bool:
+def has_user(conn: Connection, role_name: str) -> bool:
     return bool(
         conn.execute(
             text(f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'")
@@ -315,44 +346,3 @@ def drop_schema(connection: Connection, schema_name: str = SCHEMA_NAME) -> None:
 )
 def drop_db(connection: Connection) -> None:
     drop_schema(connection)
-
-
-def to_pg_role(role: str) -> str:
-    """
-    Convert a role name to a name for use in PostgreSQL
-
-    There is a short list of valid ODC role names, and they are given
-    a prefix inside of PostgreSQL.
-
-    Why are we even doing this? Can't we use the same names internally and externally?
-
-    >>> to_pg_role("user")
-    'odc_user'
-    >>> to_pg_role("fake")
-    Traceback (most recent call last):
-    ...
-    ValueError: Unknown role 'fake'. Expected one of ...
-    """
-    pg_role = "odc_" + role.lower()
-    if pg_role not in USER_ROLES:
-        raise ValueError(
-            f"Unknown role {role!r}. Expected one of {[r.split('_')[1] for r in USER_ROLES]!r}"
-        )
-    return pg_role
-
-
-def from_pg_role(pg_role: str) -> str:
-    """
-    Convert a PostgreSQL role name back to an ODC name.
-
-    >>> from_pg_role("odc_admin")
-    'admin'
-    >>> from_pg_role("fake")
-    Traceback (most recent call last):
-    ...
-    ValueError: Not a pg role: 'fake'. Expected one of ...
-    """
-    if pg_role not in USER_ROLES:
-        raise ValueError(f"Not a pg role: {pg_role!r}. Expected one of {USER_ROLES!r}")
-
-    return pg_role.split("_")[1]

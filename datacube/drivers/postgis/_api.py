@@ -47,6 +47,7 @@ from datacube.utils.uris import split_uri
 
 from ...utils.changes import Offset
 from . import _core
+from ._core import UserRole
 from ._fields import (
     DateDocField,
     DateRangeDocField,
@@ -1176,14 +1177,18 @@ class PostgisDbAPI:
         """)
         )
         for row in result:
-            yield _core.from_pg_role(row.role_name), row.user_name, row.description
+            yield UserRole(row.role_name).simple_str(), row.user_name, row.description
 
     def create_user(
-        self, username: str, password: str, role, description: str | None = None
+        self,
+        username: str,
+        password: str,
+        role_str: str,
+        description: str | None = None,
     ) -> None:
-        pg_role = _core.to_pg_role(role)
+        role = UserRole.to_pg_role(role_str)
         username = escape_pg_identifier(self._connection, username)
-        sql = text(f"create user {username} password :password in role {pg_role}")
+        sql = text(f"create user {username} password :password in role {role.value}")
         self._connection.execute(sql, {"password": password})
         if description:
             sql = text(f"comment on role {username} is :description")
@@ -1194,14 +1199,14 @@ class PostgisDbAPI:
             sql = text(f"drop role {escape_pg_identifier(self._connection, username)}")
             self._connection.execute(sql)
 
-    def grant_role(self, role: str, users: Iterable[str]) -> None:
+    def grant_role(self, role_str: str, users: Iterable[str]) -> None:
         """
         Grant a role to a user.
         """
-        pg_role = _core.to_pg_role(role)
+        pg_role = UserRole.to_pg_role(role_str)
 
         for user in users:
-            if not _core.has_role(self._connection, user):
+            if not _core.has_user(self._connection, user):
                 raise ValueError(f"Unknown user {user!r}")
 
         _core.grant_role(self._connection, pg_role, users)
