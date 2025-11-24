@@ -948,7 +948,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     ),
                 )
 
-    def _do_count_by_product(self, query, archived: bool | None = False) -> Iterator:
+    def _do_count_by_product(
+        self, query, archived: bool | None = False
+    ) -> Generator[tuple[Product, int]]:
         product_queries = self._get_product_queries(query)
 
         for q, product in product_queries:
