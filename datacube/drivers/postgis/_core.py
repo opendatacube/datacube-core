@@ -11,7 +11,7 @@ import logging
 import os
 from collections.abc import Iterable
 from enum import Enum
-from typing import Generator, Literal, Union
+from typing import Literal, Union
 
 from alembic import command, config
 from alembic.migration import MigrationContext
@@ -47,7 +47,7 @@ class UserRole(Enum):
         return self.value.split("_")[1]
 
     @classmethod
-    def all_roles(cls) -> Generator[str]:
+    def all_roles(cls) -> Iterable[str]:
         for role in cls:
             yield role.value
 

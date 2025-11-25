@@ -10,7 +10,7 @@ import contextlib
 import logging
 from collections.abc import Iterable
 from enum import Enum
-from typing import Generator, Literal, Union
+from typing import Literal, Union
 
 from deprecat import deprecat
 from sqlalchemy import Connection, MetaData, inspect, text
@@ -50,7 +50,7 @@ class UserRole(Enum):
         return self.value.split("_")[1]
 
     @classmethod
-    def all_roles(cls) -> Generator[str]:
+    def all_roles(cls) -> Iterable[str]:
         for role in cls:
             yield role.value
 
