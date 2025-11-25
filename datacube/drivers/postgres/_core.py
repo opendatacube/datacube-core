@@ -72,7 +72,7 @@ class UserRole(enum.Enum):
             return UserRole.USER
         return None
 
-    def create_user(self) -> bool:
+    def can_create_user(self) -> bool:
         return self == UserRole.ADMIN
 
 
@@ -305,7 +305,7 @@ def _ensure_role(conn, role: UserRole) -> None:
 
     sql = [
         f"create role {role.value} nologin inherit",
-        "createrole" if role.create_user() else "nocreaterole",
+        "createrole" if role.can_create_user() else "nocreaterole",
     ]
     if (inherit := role.inherits_from()) is not None:
         sql.append("in role " + inherit.value)
