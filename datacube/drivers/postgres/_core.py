@@ -8,7 +8,7 @@ Core SQL schema settings.
 
 import contextlib
 import logging
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
 from enum import Enum
 from typing import Literal, Union
 
@@ -49,7 +49,7 @@ class UserRole(Enum):
         return self.value.split("_")[1]
 
     @classmethod
-    def all_roles(cls) -> Iterable[str]:
+    def all_roles(cls) -> Generator[str]:
         for role in cls:
             yield role.simple_str()
 
