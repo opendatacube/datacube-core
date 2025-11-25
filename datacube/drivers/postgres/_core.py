@@ -41,8 +41,7 @@ class UserRole(Enum):
 
     @classmethod
     def to_pg_role(
-            cls,
-            role_str: Literal["user", "ingest", "manage", "admin"]
+        cls, role_str: Literal["user", "ingest", "manage", "admin"]
     ) -> "UserRole":
         return cls("agdc_" + role_str.lower())
 
