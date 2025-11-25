@@ -1186,7 +1186,9 @@ class PostgisDbAPI:
         role_str: str,
         description: str | None = None,
     ) -> None:
-        role = UserRole.to_pg_role(role_str)
+        if role_str not in UserRole.all_roles():
+            raise ValueError(f"Invalid role: {role_str}")
+        role = UserRole.to_pg_role(role_str)  # type: ignore[arg-type]
         username = escape_pg_identifier(self._connection, username)
         sql = text(f"create user {username} password :password in role {role.value}")
         self._connection.execute(sql, {"password": password})
@@ -1203,7 +1205,7 @@ class PostgisDbAPI:
         """
         Grant a role to a user.
         """
-        pg_role = UserRole.to_pg_role(role_str)
+        pg_role = UserRole.to_pg_role(role_str)  # type: ignore[arg-type]
 
         for user in users:
             if not _core.has_user(self._connection, user):

@@ -49,7 +49,7 @@ class UserRole(Enum):
     @classmethod
     def all_roles(cls) -> Iterable[str]:
         for role in cls:
-            yield role.value
+            yield role.simple_str()
 
     def higher_roles(self) -> list["UserRole"]:
         if self == UserRole.USER:
