@@ -44,7 +44,7 @@ class UserRole(Enum):
         return cls("odc_" + role_str.lower())
 
     def simple_str(self) -> str:
-        return self.value.split("_")[1]
+        return self.value.split("_", 1)[1]
 
     @classmethod
     def all_roles(cls) -> Generator[str]:
