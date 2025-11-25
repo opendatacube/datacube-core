@@ -7,15 +7,15 @@ Core SQL schema settings.
 """
 
 import contextlib
-import enum
 import logging
 from collections.abc import Iterable
+from enum import Enum
 from typing import Generator, Literal, Union
 
-import sqlalchemy
 from deprecat import deprecat
 from sqlalchemy import Connection, MetaData, inspect, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from datacube.drivers.postgres.sql import (
@@ -33,7 +33,7 @@ from datacube.drivers.postgres.sql import (
 from datacube.migration import ODC2DeprecationWarning
 
 
-class UserRole(enum.Enum):
+class UserRole(Enum):
     USER = "agdc_user"
     INGEST = "agdc_ingest"
     MANAGE = "agdc_manage"
@@ -312,9 +312,9 @@ def _ensure_role(conn, role: UserRole) -> None:
     conn.execute(text(" ".join(sql)))
 
 
-def grant_role(conn, role: UserRole, users) -> None:
+def grant_role(conn: Connection, role: UserRole, users: Iterable[str]) -> None:
     users = [escape_pg_identifier(conn, user) for user in users]
-    with contextlib.suppress(sqlalchemy.exc.ProgrammingError):
+    with contextlib.suppress(ProgrammingError):
         conn.execute(
             text(
                 "revoke {roles} from {users}".format(

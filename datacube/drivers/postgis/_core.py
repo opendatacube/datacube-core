@@ -7,13 +7,12 @@ Core SQL schema settings.
 """
 
 import contextlib
-import enum
 import logging
 import os
 from collections.abc import Iterable
+from enum import Enum
 from typing import Generator, Literal, Union
 
-import sqlalchemy
 from alembic import command, config
 from alembic.migration import MigrationContext
 from alembic.runtime.environment import EnvironmentContext
@@ -21,6 +20,7 @@ from alembic.script import ScriptDirectory
 from deprecat import deprecat
 from sqlalchemy import Connection, MetaData, inspect, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.sql.ddl import DropSchema
 
@@ -34,7 +34,7 @@ from datacube.drivers.postgis.sql import (
 from datacube.migration import ODC2DeprecationWarning
 
 
-class UserRole(enum.Enum):
+class UserRole(Enum):
     USER = "odc_user"
     MANAGE = "odc_manage"
     ADMIN = "odc_admin"
@@ -306,7 +306,7 @@ def _ensure_role(conn: Connection, role: UserRole) -> None:
 
 def grant_role(conn: Connection, role: UserRole, users: Iterable[str]) -> None:
     users = [escape_pg_identifier(conn, user) for user in users]
-    with contextlib.suppress(sqlalchemy.exc.ProgrammingError):
+    with contextlib.suppress(ProgrammingError):
         # Ignore failure to revoke roles that we don't have permission to revoke.
         # e.g. because they were granted by a superuser.
         conn.execute(
