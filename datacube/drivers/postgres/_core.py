@@ -10,7 +10,7 @@ import contextlib
 import enum
 import logging
 from collections.abc import Iterable
-from typing import Union
+from typing import Generator, Literal, Union
 
 import sqlalchemy
 from deprecat import deprecat
@@ -40,18 +40,21 @@ class UserRole(enum.Enum):
     ADMIN = "agdc_admin"
 
     @classmethod
-    def to_pg_role(cls, role_str: str) -> "UserRole":
+    def to_pg_role(
+            cls,
+            role_str: Literal["user", "ingest", "manage", "admin"]
+    ) -> "UserRole":
         return cls("agdc_" + role_str.lower())
 
     def simple_str(self) -> str:
         return self.value.split("_")[1]
 
     @classmethod
-    def all_roles(cls) -> Iterable[str]:
+    def all_roles(cls) -> Generator[str]:
         for role in cls:
             yield role.value
 
-    def higher_roles(self) -> Iterable["UserRole"]:
+    def higher_roles(self) -> list["UserRole"]:
         if self == UserRole.USER:
             return [UserRole.INGEST, UserRole.MANAGE, UserRole.ADMIN]
         if self == UserRole.INGEST:
