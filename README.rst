@@ -1,7 +1,7 @@
 Open Data Cube Core
 ===================
 
-.. image:: https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
+.. image:: https://github.com/opendatacube/datacube-core/actions/workflows/main.yml/badge.svg
     :alt: Build Status
     :target: https://github.com/opendatacube/datacube-core/actions
 
