@@ -8,6 +8,177 @@ What's New
 Next Release
 ============
 
+v1.9.10 (21 October 2025)
+=========================
+
+This release fixes issues with the load function and resolves an incompatibility with odc-geo reprojection. It
+also introduces initial psycopg3 support, migrates some functionality from odc-tools, and includes cleanup to
+code, tests, docs, and CI setup.
+
+What's Changed
+--------------
+
+ - Group dependabot updates to GHA Actions Versions by @omad in https://github.com/opendatacube/datacube-core/pull/2164
+ - storage: rework function for MyPy by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2158
+ - pytest: output test times by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2165
+ - storage: move num2numpy call by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2157
+ - product: add missing space by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2166
+ - tests: always import boto3/moto by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2159
+ - Add more type signatures by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2154
+ - Fix docs rendering on configuration page by @omad in https://github.com/opendatacube/datacube-core/pull/2167
+ - drivers: remove SQLAlchemy 1.4 workaround by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2168
+ - drivers: use has_schema method by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2172
+ - CI: speed up Conda workflows by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2169
+ - Update fallback version by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2170
+ - Add experimental psycopg3 support by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2120
+ - drivers: deprecate drop_db function by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2174
+ - Migrate code from odc-cloud: Sync AWS Functions by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2175
+ - Migrate code from odc-io modules by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2176
+ - Tests: Speed up eo3converter test by mocking AWS services by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2177
+ - Miscellaneous docs and pre-commit fixes by @omad in https://github.com/opendatacube/datacube-core/pull/2180
+ - Update Ruff version in pre-commit by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2184
+ - Remove f-strings without placeholders by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2185
+ - Reduce product.grid_spec warning volume by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2191
+ - Make dateutil an optional dependency by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2199
+ - CI: remove pyspell job by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2201
+ - CI: stop building with Conda by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2200
+ - drivers: use SQLAlchemy inspector by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2195
+ - tests: test with single time zone by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2194
+ - Revert "Make dateutil an optional dependency" by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2206
+ - Pass Exception to error callback by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2208
+ - tests: include error message for cli by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2211
+ - Resolve unexpected load behaviours by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2192
+ - Dockerfile: update to latest uv by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2212
+ - Resolve virtual product odc-geo reprojection incompatibility by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2202
+
+Automated Updates
+-----------------
+
+ - https://github.com/opendatacube/datacube-core/pull/2161
+ - https://github.com/opendatacube/datacube-core/pull/2162
+ - https://github.com/opendatacube/datacube-core/pull/2163
+ - https://github.com/opendatacube/datacube-core/pull/2171
+ - https://github.com/opendatacube/datacube-core/pull/2173
+ - https://github.com/opendatacube/datacube-core/pull/2182
+ - https://github.com/opendatacube/datacube-core/pull/2181
+ - https://github.com/opendatacube/datacube-core/pull/2197
+ - https://github.com/opendatacube/datacube-core/pull/2198
+ - https://github.com/opendatacube/datacube-core/pull/2203
+ - https://github.com/opendatacube/datacube-core/pull/2204
+ - https://github.com/opendatacube/datacube-core/pull/2209
+ - https://github.com/opendatacube/datacube-core/pull/2210
+ - https://github.com/opendatacube/datacube-core/pull/2214
+ - https://github.com/opendatacube/datacube-core/pull/2215
+ - https://github.com/opendatacube/datacube-core/pull/2213
+
+Full Changelog: https://github.com/opendatacube/datacube-core/compare/1.9.9...1.9.10
+
+Includes contributions from @pjonsson, @omad, and @Ariana-B
+
+The Open Data Cube Steering Council thanks and acknowledges the ongoing support of Geoscience Australia, CSIRO, and RISE.
+
+v1.9.9 (2 September 2025)
+=========================
+
+his release includes more fixes and improvements to STAC/EO3 conversion, documentation updates, and various code,
+testing, and CI cleanup.
+
+What's Changed
+--------------
+
+ -  CI: make twine check strict by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2133
+ -  Tutorial for odc-stac by @caitlinadams in https://github.com/opendatacube/datacube-core/pull/2055
+ -  Add cyprus datacube by @whatnick in https://github.com/opendatacube/datacube-core/pull/2092
+ -  Add some more type signatures by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2128
+ -  cli: use UUID for dataset IDs by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2131
+ -  index: use dsid_to_uuid function by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2132
+ -  drivers: pass regular parameters by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2134
+ -  drivers: set preserve_rowcount by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2135
+ -  lineage: add type annotation by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2136
+ -  Replace the automatic spell checker tool. by @omad in https://github.com/opendatacube/datacube-core/pull/2097
+ -  test_config_docs: remove Python 2 support by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2139
+ -  STAC/EO3 conversion improvements by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2146
+ -  MANIFEST.in: graft model/schemas by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2148
+ -  More STAC/EO3 logic fixes by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2150
+ -  test_search_eo3: expect right type by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2138
+ -  postgis: validate doc definition by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2141
+ -  test_config_tool: enable test for postgis by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2140
+ -  documents: add parse_doc_stream by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2147
+ -  Use stacklevel on warnings to expose their call site and make sure they're displayed by @omad in https://github.com/opendatacube/datacube-core/pull/2151
+ -  postgis: use parse_time for dates by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2152
+ -  Add some type annotations by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2153
+ -  Tweak STAC link handling by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2156
+
+Automated Updates
+-----------------
+
+ - https://github.com/opendatacube/datacube-core/pull/2137
+ - https://github.com/opendatacube/datacube-core/pull/2144
+ - https://github.com/opendatacube/datacube-core/pull/2143
+ - https://github.com/opendatacube/datacube-core/pull/2142
+ - https://github.com/opendatacube/datacube-core/pull/2155
+
+Full Changelog: https://github.com/opendatacube/datacube-core/compare/1.9.8...1.9.9
+
+Includes contributions from @pjonsson, @omad, @caitlinadams, @whatnick, and @Ariana-B
+
+The Open Data Cube Steering Council thanks and acknowledges the ongoing support of Geoscience Australia, CSIRO, and RISE.
+
+v1.9.8 (22 August 2025)
+=======================
+
+This release improves upon the STAC to EO3 conversion logic, and moves EO3 to STAC conversion code out of
+eo-datasets into datacube-core as the next step in the ongoing cross-repo consolidation and refactor of STAC
+handling logic.
+
+It also contains some code improvements and cleanup.
+
+What's Changed
+--------------
+
+ -  Update broken installation docs. by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2091
+ -  CI: fixate time stamp for image layers (reproducible docker builds) by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2094
+ -  Fix some typos by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2098
+ -  Dockerfile: upgrade to uv 0.8.6 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2102
+ -  ruff: format code in doc strings by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2096
+ -  fields: type check field names by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2100
+ -  model: give Range types by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2101
+ -  testutils: adjust for type checker by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2112
+ -  model: give Not a type by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2103
+ -  Add/fix more type annotations by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2110
+ -  query: fail when center_time is None by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2111
+ -  Use datetime instead of dateutil by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2114
+ -  tests: fix faulty path by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2117
+ -  docs: remove requirements.txt by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2115
+ -  opt: fix error printout by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2118
+ -  postgis: remove type ignores by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2121
+ -  Fix some lint issues by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2125
+ -  query_group_by: improve type signature by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2119
+ -  Enable more lint rules by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2105
+ -  Make handling of coords in create_storage backwards compatible by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2126
+ -  postgis: tweak type signatures by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2129
+ -  Consolidate stac/eo3 conversion logic by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2077
+ -  Fix pre-commit errors by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2130
+
+Automated updates
+-----------------
+
+ - https://github.com/opendatacube/datacube-core/pull/2095
+ - https://github.com/opendatacube/datacube-core/pull/2104,
+ - https://github.com/opendatacube/datacube-core/pull/2106
+ - https://github.com/opendatacube/datacube-core/pull/2107
+ - https://github.com/opendatacube/datacube-core/pull/2108
+ - https://github.com/opendatacube/datacube-core/pull/2109
+ - https://github.com/opendatacube/datacube-core/pull/2122
+ - https://github.com/opendatacube/datacube-core/pull/2123
+ - https://github.com/opendatacube/datacube-core/pull/2124
+
+Full Changelog: https://github.com/opendatacube/datacube-core/compare/1.9.7...1.9.8
+
+Includes contributions from @SpacemanPaul, @pjonsson, and @Ariana-B
+
+The Open Data Cube Steering Council thanks and acknowledges the ongoing support of Geoscience Australia and RISE.
+
 v1.9.7 (5 August 2025)
 ======================
 
