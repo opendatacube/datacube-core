@@ -43,11 +43,9 @@ What's Changed
 * Update fallback version by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2216
 * CI: fetch tags for release by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2217
 * Dockerfile: install psql 18 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2222
-* build(deps): bump the actions-deps group with 2 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2223
 * Convert EO datasets and products to EO3 by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2179
 * postgis: create spatial_* as odc_admin by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2224
 * Update eo-datasets repo URL by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2225
-* build(deps): bump astral-sh/uv from 0.9.5 to 0.9.6 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2229
 * Update to latest JSON schema version by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2226
 * Various minor cleanups by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2227
 * metadata-type-schema: improve validation by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2228
@@ -72,7 +70,6 @@ What's Changed
 * eo3converter: pass along asset_absolute_paths by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2264
 * drivers: add/fix type signatures by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2266
 * postgis: fix search parameters by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2267
-* build(deps): bump the actions-deps group with 3 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2270
 * Cleanup user role granting by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2268
 * Fix status badge links by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2273
 * Bump fallback version and update whats_new.rst for 1.9.11 release @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2278
@@ -82,6 +79,8 @@ Automated updates
 
 * [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2221
 * build(deps): bump astral-sh/uv from 0.9.4 to 0.9.5 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2218
+* build(deps): bump the actions-deps group with 2 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2223
+* build(deps): bump astral-sh/uv from 0.9.5 to 0.9.6 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2229
 * build(deps): bump astral-sh/uv from 0.9.6 to 0.9.7 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2233
 * [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2239
 * build(deps): bump github/codeql-action from 4.31.0 to 4.31.2 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2240
@@ -94,6 +93,7 @@ Automated updates
 * build(deps): bump astral-sh/uv from 0.9.9 to 0.9.10 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2261
 * build(deps): bump astral-sh/uv from 0.9.10 to 0.9.11 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2263
 * [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2269
+* build(deps): bump the actions-deps group with 3 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2270
 * build(deps): bump astral-sh/uv from 0.9.11 to 0.9.12 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2271
 * build(deps): bump astral-sh/uv from 0.9.12 to 0.9.13 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2272
 * [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2274
