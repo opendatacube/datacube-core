@@ -116,3 +116,17 @@ def test_rejects_invalid_measurements(invalid_product_measurement) -> None:
     mapping["measurements"] = {"10": invalid_product_measurement}
     with pytest.raises(InvalidDocException):
         Product.validate(mapping)  # type: ignore[attr-defined]
+
+
+def test_nodata_validation() -> None:
+    product = deepcopy(only_mandatory_fields)
+    product["measurements"] = [{"name": "_nan", "dtype": "uint8", "nodata": "NaN"}]
+    with pytest.raises(ValueError):
+        Product.validate_measurements(product)
+
+    product["measurements"] = [{"name": "_nan", "dtype": "uint8", "nodata": -100}]
+    with pytest.raises(ValueError):
+        Product.validate_measurements(product)
+
+    product["measurements"] = [{"name": "_nan", "dtype": "float32", "nodata": "NaN"}]
+    assert Product.validate_measurements(product) is None

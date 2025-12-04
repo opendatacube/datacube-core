@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import math
+import warnings
 from collections import OrderedDict
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
 from datetime import datetime
@@ -875,13 +876,16 @@ class Product:
     @staticmethod
     def validate_measurements(definition: Mapping[str, Any]) -> None:
         for m in definition.get("measurements", []):
-            try:
-                np.dtype(m["dtype"]).type(m["nodata"])
-            except ValueError:
-                raise ValueError(
-                    f"The Product defines a Measurement {m['name']} with a nodata value "
-                    "that does not correspond with its dtype."
-                ) from None
+            with warnings.catch_warnings():
+                # numpy has deprecated the conversion of out-of-bound integers but does not yet error
+                warnings.simplefilter("error", DeprecationWarning)
+                try:
+                    np.dtype(m["dtype"]).type(m["nodata"])
+                except (ValueError, DeprecationWarning):
+                    raise ValueError(
+                        f"The Product defines a Measurement {m['name']} with a nodata value "
+                        "that does not correspond with its dtype."
+                    ) from None
 
     @staticmethod
     def validate_extra_dims(definition: Mapping[str, Any]) -> None:
