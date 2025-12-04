@@ -877,11 +877,11 @@ class Product:
     def validate_measurements(definition: Mapping[str, Any]) -> None:
         for m in definition.get("measurements", []):
             with warnings.catch_warnings():
-                # numpy has deprecated the conversion of out-of-bound integers but does not yet error
+                # numpy<2 deprecates but doesn't error on conversion of out-of-bound integers
                 warnings.simplefilter("error", DeprecationWarning)
                 try:
                     np.dtype(m["dtype"]).type(m["nodata"])
-                except (ValueError, DeprecationWarning):
+                except (ValueError, OverflowError, DeprecationWarning):
                     raise ValueError(
                         f"The Product defines a Measurement {m['name']} with a nodata value "
                         "that does not correspond with its dtype."
