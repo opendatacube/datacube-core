@@ -7,13 +7,14 @@ Module
 """
 
 from copy import deepcopy
+from typing import Any
 
 import pytest
 
 from datacube.model import Product
 from datacube.utils import InvalidDocException
 
-only_mandatory_fields = {
+only_mandatory_fields: dict[str, Any] = {
     "name": "ls7_nbar",
     "description": "description",
     "metadata_type": "eo",
