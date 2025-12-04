@@ -298,6 +298,7 @@ def test_ds2stac(eo3_dataset: Dataset) -> None:
     assert set(output_stac["assets"].keys()) == set(
         list(eo3_dataset.measurements.keys()) + list(eo3_dataset.accessories.keys())
     )
+    assert output_stac["assets"]["nbart_blue"]["raster:bands"][0]["nodata"] == -999
     assert output_stac["links"] == [
         {
             "rel": "self",

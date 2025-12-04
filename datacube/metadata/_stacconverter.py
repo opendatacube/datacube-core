@@ -19,6 +19,7 @@ from urllib.parse import urljoin
 from pystac import Asset, Item, Link, MediaType
 from pystac.extensions.eo import Band, EOExtension
 from pystac.extensions.projection import ProjectionExtension
+from pystac.extensions.raster import DataType, RasterBand, RasterExtension
 from pystac.extensions.sar import SarExtension
 from pystac.extensions.sat import SatExtension
 from pystac.extensions.view import ViewExtension
@@ -233,6 +234,8 @@ def ds2stac(
         item.links.append(link)
 
     EOExtension.ext(item, add_if_missing=True)
+    # Error: RasterExtension does not apply to type Item ???
+    # RasterExtension.ext(item, add_if_missing=True)
 
     if dataset.extent:
         proj = ProjectionExtension.ext(item, add_if_missing=True)
@@ -259,6 +262,7 @@ def ds2stac(
             # No URL to link to. URL is mandatory for Stac validation.
             continue
 
+        # TODO: migrate to new bands array - https://github.com/radiantearth/stac-spec/blob/master/best-practices.md#band-migration
         asset = Asset(
             href=_uri_resolve(asset_location, measurement["path"]),
             media_type=_media_type(Path(measurement["path"])),
@@ -282,6 +286,23 @@ def ds2stac(
                     transform=proj_fields["transform"],
                     epsg=dataset.crs.epsg,
                 )
+
+        try:
+            product = dataset.product
+            m = product.measurements[product.canonical_measurement(name)]
+            raster = RasterExtension.ext(asset)
+            rband = RasterBand.create(
+                nodata=m["nodata"],
+                data_type=DataType(m["dtype"]),
+                unit=m["units"],
+            )
+            raster.apply([rband])
+        except ValueError:
+            warnings.warn(
+                f"Cannot determine raster extension properties for asset {name} "
+                "as it is not defined in the Product.",
+                stacklevel=2,
+            )
 
         item.add_asset(name, asset=asset)
 
