@@ -53,6 +53,7 @@ class AbstractProductResource(ABC):
         """
         # This column duplication is getting out of hand:
         Product.validate(definition)  # type: ignore[attr-defined]   # validate method added by decorator
+        Product.validate_measurements(definition)
         # Validate extra dimension metadata
         Product.validate_extra_dims(definition)
 

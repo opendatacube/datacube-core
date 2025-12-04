@@ -41,6 +41,9 @@ class ProductResource(AbstractProductResource):
     @override
     def add(self, product: Product, allow_table_lock: bool = False) -> Product | None:
         Product.validate(product.definition)  # type: ignore[attr-defined]
+        Product.validate_measurements(product.definition)
+        Product.validate_extra_dims(product.definition)
+
         existing = self.get_by_name(product.name)
         if existing:
             _LOG.warning(
@@ -75,6 +78,8 @@ class ProductResource(AbstractProductResource):
         allow_table_lock: bool = False,
     ) -> tuple[bool, Iterable[Change], Iterable[Change]]:
         Product.validate(product.definition)  # type: ignore[attr-defined]
+        Product.validate_measurements(product.definition)
+        Product.validate_extra_dims(product.definition)
 
         existing = self.get_by_name(product.name)
         if not existing:
