@@ -298,6 +298,17 @@ def test_ds2stac(eo3_dataset: Dataset) -> None:
     assert set(output_stac["assets"].keys()) == set(
         list(eo3_dataset.measurements.keys()) + list(eo3_dataset.accessories.keys())
     )
+    assert all(
+        p in output_stac["assets"]["nbart_blue"]
+        for p in (
+            "eo:bands",
+            "proj:code",
+            "proj:shape",
+            "proj:transform",
+            "raster:bands",
+        )
+    )
+    assert "raster:bands" not in output_stac["assets"]["nbar_blue"]
     assert output_stac["links"] == [
         {
             "rel": "self",
@@ -423,9 +434,13 @@ def test_infer_eo3_product(odc_dataset_doc) -> None:
 
 
 def test_dsdoc_to_stac(odc_dataset_doc, eo3_dataset) -> None:
-    from_doc = ds_doc_to_stac(odc_dataset_doc)
-    from_ds = ds2stac(eo3_dataset)
-    assert from_doc.to_dict() == from_ds.to_dict()
+    from_doc = ds_doc_to_stac(odc_dataset_doc).to_dict()
+    from_ds = ds2stac(eo3_dataset).to_dict()
+    # from_doc assets will be missing the raster ext, so compare them separately
+    from_doc_assets = from_doc.pop("assets")
+    from_ds_assets = from_ds.pop("assets")
+    assert from_doc == from_ds
+    assert from_doc_assets.keys() == from_ds_assets.keys()
 
 
 def test_s1_nrb(s1_nrb_stac, s1_nrb_product, without_aws_env) -> None:
