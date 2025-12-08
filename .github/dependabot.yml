@@ -14,7 +14,7 @@ updates:
         patterns:
           - "*"
     cooldown:
-      default-days: "10"
+      default-days: 10
   - package-ecosystem: docker
     directory: "/docker"
     schedule:
