@@ -246,17 +246,20 @@ def schema_is_latest(engine: Engine) -> bool:
     scriptdir = ScriptDirectory.from_config(cfg)
     # NB this assumes a single unbranched migration branch
     # Get Head revision from Alembic environment
-    with EnvironmentContext(cfg, scriptdir) as env_ctx:
-        latest_rev = env_ctx.get_head_revision()
-        # Get current revision from database
-        with engine.connect() as conn:
-            context = MigrationContext.configure(
-                connection=conn,
-                environment_context=env_ctx,
-                opts={"version_table_schema": "odc"},
-            )
-            current_rev = context.get_current_revision()
-
+    try:
+        with EnvironmentContext(cfg, scriptdir) as env_ctx:
+            latest_rev = env_ctx.get_head_revision()
+            # Get current revision from database
+            with engine.connect() as conn:
+                context = MigrationContext.configure(
+                    connection=conn,
+                    environment_context=env_ctx,
+                    opts={"version_table_schema": "odc"},
+                )
+                current_rev = context.get_current_revision()
+    except KeyError as e:
+        _LOG.error(f"Alembic key error: {e}\nIs your database schema up to date?")
+        return False
     # Do they match?
     if latest_rev == current_rev:
         return True
