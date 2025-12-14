@@ -129,81 +129,81 @@ def spatial_index_crs_sanitise_helper() -> None:
 
     # 4326, crossing the Prime-Meridian, wound clockwise
     pm_4326_cw = polygon(
-        (
+        [
             (-2.0, 25.0),
             (2.0, 25.0),
             (2.0, 23.0),
             (-2.0, 23.0),
             (-2.0, 25.0),
-        ),
+        ],
         crs=epsg4326,
     )
 
     # 4326, crossing the Prime-Meridian, wound counter-clockwise
     pm_4326_ccw = polygon(
-        (
+        [
             (-2.0, 25.0),
             (-2.0, 23.0),
             (2.0, 23.0),
             (2.0, 25.0),
             (-2.0, 25.0),
-        ),
+        ],
         crs=epsg4326,
     )
 
     # 4326, crossing the Prime-Meridian, wound clockwise
     am_4326_ccw = polygon(
-        (
+        [
             (178.0, 25.0),
             (178.0, 23.0),
             (-178.0, 23.0),
             (-178.0, 25.0),
             (178.0, 25.0),
-        ),
+        ],
         crs=epsg4326,
     )
 
     # FIXME: assert on something for this item.
     # 4326, crossing the Prime-Meridian, wound counter-clockwise
     am_4326_cw = polygon(  # noqa: F841
-        (
+        [
             (178.0, 25.0),
             (-178.0, 25.0),
             (-178.0, 23.0),
             (178.0, 23.0),
             (178.0, 25.0),
-        ),
+        ],
         crs=epsg4326,
     )
 
     pm_3857 = polygon(
-        (
+        [
             (-222638, 2875744),
             (-222638, 2632018),
             (222638, 2632018),
             (222638, 2632018),
             (-222638, 2875744),
-        ),
+        ],
         crs=epsg3857,
     )
 
     am_3857 = polygon(
-        (
+        [
             (-19814869, 2875744),
             (19814869, 2632018),
             (-19814869, 2875744),
-        ),
+        ],
         crs=epsg3857,
     )
 
     am_3832 = polygon(
-        (
+        [
             (3116945, 2857692),
             (3562223, 2857692),
             (3562223, 2615329),
             (3116945, 2615329),
             (3116945, 2857692),
-        ),
+        ],
         crs=epsg3832,
     )
 
