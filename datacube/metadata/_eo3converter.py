@@ -16,9 +16,10 @@ from typing import Any
 
 from odc.geo import CRS, Geometry
 from odc.geo.geobox import GeoBox
-from odc.loader.types import (  # TODO: after loader 0.6.0 - add RasterSource
+from odc.loader.types import (
     BandKey,
     RasterBandMetadata,
+    RasterSource,
 )
 from odc.stac._mdtools import (
     EPSG4326,
@@ -76,7 +77,7 @@ def _to_product(md: RasterCollectionMetadata) -> Product:
         "metadata": {"product": {"name": md.name}},
         "measurements": [
             make_band(band_key, band, band_aliases)
-            for band_key, band in md.meta.bands.items()  # TODO: use .raster_bands() after loader 0.6.0
+            for band_key, band in md.meta.raster_bands.items()
         ],
     }
     return Product(EO3_MD_TYPE, doc, stac=md)
@@ -176,9 +177,8 @@ def _to_dataset(
         if not md.has_proj:
             continue
 
-        # TODO: After loader 0.6.0
-        # if not isinstance(src, RasterSource):
-        #    continue
+        if not isinstance(src, RasterSource):
+            continue
 
         grid_name = band2grid.get(name, "default")
         if grid_name != "default":
