@@ -217,7 +217,9 @@ def _to_dataset(
         "grids": grids,
         "measurements": measurements,
         "properties": stac_to_eo3_properties(properties),
-        "accessories": {a: _asset_to_eo3_accessory(acc) for a, acc in item.accessories.items()},
+        "accessories": {
+            a: _asset_to_eo3_accessory(acc) for a, acc in item.accessories.items()
+        },
         "lineage": {},  # TODO: properly handling lineage requires an Index
     }
 
