@@ -13,8 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Generator, Mapping, Sequence
 from datetime import datetime
-from types import SimpleNamespace
-from typing import Literal
+from typing import Literal, cast
 
 import xarray as xr
 from odc.geo.geobox import GeoBox, GeoboxTiles
@@ -99,6 +98,7 @@ def driver_based_load(
             resampling=m.get("resampling", "nearest"),
             fail_on_error=fail_on_error,
             dims=tuple(m.get("dims", ())),
+            meta=RasterBandMetadata(attrs=m.dataarray_attrs()),
         )
         for m in measurements
     }
@@ -139,7 +139,7 @@ def driver_based_load(
                 band=band_idx,
                 subdataset=bi.layer,
                 geobox=ds_geobox(ds, band=n),
-                meta=template.bands[(n, band_idx or 1)],
+                meta=cast(RasterBandMetadata, template.bands[(n, band_idx or 1)]),
                 driver_data=bi.driver_data,
             )
 
@@ -150,19 +150,9 @@ def driver_based_load(
         for iy, ix in gbt.tiles(ds.extent):
             tyx_bins.setdefault((tidx, iy, ix), []).append(len(srcs) - 1)
 
-    if driver == "kk-debug":
-        return SimpleNamespace(  # type: ignore[return-value]
-            load_cfg=load_cfg,
-            template=template,
-            srcs=srcs,
-            tyx_bins=tyx_bins,
-            gbt=gbt,
-            tss=tss,
-        )
-
     rdr = reader_driver(driver)
 
-    ds = chunked_load(
+    return chunked_load(
         load_cfg,
         template,
         srcs,
@@ -174,10 +164,3 @@ def driver_based_load(
         chunks=dask_chunks,
         progress=progress_cbk,
     )
-    # TODO: provide attributes through RasterLoadParams.meta with loader 0.6.0
-    m_attrs = {m.name: m.dataarray_attrs() for m in measurements}
-    new_data_vars = {
-        name: da.assign_attrs(**m_attrs[name]) for name, da in ds.data_vars.items()
-    }
-    ds.update(new_data_vars)
-    return ds

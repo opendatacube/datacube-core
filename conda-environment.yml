@@ -40,5 +40,5 @@ dependencies:
   - xarray >=0.9
   - toolz
   - odc-geo >=0.4.8
-  - odc-loader <=0.5.1
-  - odc-stac >= 0.4.0
+  - odc-loader >=0.6.0
+  - odc-stac >= 0.5.0
