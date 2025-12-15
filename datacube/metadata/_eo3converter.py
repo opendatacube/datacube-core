@@ -217,7 +217,7 @@ def _to_dataset(
         "grids": grids,
         "measurements": measurements,
         "properties": stac_to_eo3_properties(properties),
-        "accessories": item.accessories,
+        "accessories": {a: _asset_to_eo3_accessory(acc) for a, acc in item.accessories.items()},
         "lineage": {},  # TODO: properly handling lineage requires an Index
     }
 
@@ -254,6 +254,10 @@ def _item_to_ds(
     )
 
     return _to_dataset(_item, item.properties, ds_uuid, product, item.geometry)
+
+
+def _asset_to_eo3_accessory(stac_asset: dict) -> dict:
+    return {"path": stac_asset["href"]}
 
 
 def stac2ds(
