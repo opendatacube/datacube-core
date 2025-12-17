@@ -32,9 +32,9 @@ db_hostname: alt-db.opendatacube.test
     # Make sure the correct config is passed through the API
     # Parsed config:
     prefix = f"postgresql+psycopg{'' if psycopg_version == 3 else '2'}"
-    db_url = f"{prefix}://{cfg_env.db_username}@db.opendatacube.test:5432/datacube"
+    db_url = f"{prefix}://{cfg_env.db_username}@db.opendatacube.test/datacube"
     alt_db_url = (
-        f"{prefix}://{alt_env.db_username}@alt-db.opendatacube.test:5432/datacube"
+        f"{prefix}://{alt_env.db_username}@alt-db.opendatacube.test/datacube"
     )
 
     with Datacube(env=cfg_env, validate_connection=False) as dc:
