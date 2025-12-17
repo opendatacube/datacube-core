@@ -285,7 +285,6 @@ class PostgresURLOptionHandler(ODCOptionHandler):
                 IntOptionHandler(
                     "db_port",
                     self.env,
-                    default=5432,
                     legacy_env_aliases=["DB_PORT"],
                     minval=1,
                     maxval=65535,
@@ -369,5 +368,10 @@ def psql_url_from_config(env: "ODCEnvironment"):
             url += f"{env.db_username}:{escaped_password}@"
         else:
             url += f"{env.db_username}@"
-    url += f"{env.db_hostname}:{env.db_port}/{env.db_database}"
+    if env.db_hostname is not None:
+        url += f"{env.db_hostname}"
+    if env.db_port is not None:
+        url += f":{env.db_port}"
+    if env.db_database is not None:
+        url += f"/{env.db_database}"
     return url
