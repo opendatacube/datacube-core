@@ -421,6 +421,8 @@ ODC_PRODUCT_FILE: str = "ard_ls8.odc-product.yaml"
 S1_NRB_STAC: str = "ga_s1a_nrb_0-1-0_T002-003270-IW2_20180306T203033Z_stac-item.json"
 S1_NRB_PRODUCT: str = "ga_s1_nrb_iw_hh_0.odc-product.yaml"
 S1_NRB_METADATA_FILE: str = "eo3_s1_nrb.odc-type.yaml"
+S3_SYN_PRODUCT: str = "s3_syn_2_vg1.odc-product.yaml"
+S3_SYN_STAC: str = "s3_syn_2_vg1.stac-metadata.json"
 
 
 @pytest.fixture
@@ -553,3 +555,15 @@ def s1_nrb_product(s1_nrb_metadata_type) -> Product:
     filepath = TEST_DATA_FOLDER.joinpath(S1_NRB_PRODUCT)
     (_, doc), *_ = read_documents(filepath)
     return Product(s1_nrb_metadata_type, doc)
+
+
+@pytest.fixture
+def s3_syn_product(eo3_metadata_type) -> Product:
+    filepath = TEST_DATA_FOLDER.joinpath(S3_SYN_PRODUCT)
+    (_, doc), *_ = read_documents(filepath)
+    return Product(eo3_metadata_type, doc)
+
+
+@pytest.fixture()
+def s3_syn_stac() -> pystac.Item:
+    return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(S3_SYN_STAC)))

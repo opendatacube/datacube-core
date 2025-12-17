@@ -21,7 +21,7 @@ from odc.geo import (
 )
 from odc.geo.crs import norm_crs
 from odc.geo.geobox import GeoBox
-from odc.geo.geom import lonlat_bounds, polygon
+from odc.geo.geom import lonlat_bounds, multipolygon, polygon
 from odc.stac._mdtools import _group_geoboxes
 from toolz.dicttoolz import get_in
 
@@ -139,9 +139,14 @@ def eo3_grid_spatial(
     geometry = doc.get("geometry")
     if geometry is not None:
         valid_data: dict[str, Any] = {"valid_data": geometry}
-        valid_geom: Geometry | None = polygon(
-            valid_data["valid_data"]["coordinates"][0], crs=crs
-        )
+        if geometry["type"] == "Polygon":
+            valid_geom: Geometry | None = polygon(
+                valid_data["valid_data"]["coordinates"][0], crs=crs
+            )
+        elif geometry["type"] == "MultiPolygon":
+            valid_geom = multipolygon(geometry["coordinates"], crs=crs)
+        else:
+            raise ValueError(f"Unknown geometry type {geometry['type']}")
     else:
         valid_data = {"valid_data": grid.polygon().json}
         valid_geom = None

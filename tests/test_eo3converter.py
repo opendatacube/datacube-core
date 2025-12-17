@@ -467,3 +467,8 @@ def test_s1_nrb(s1_nrb_stac, s1_nrb_product, without_aws_env) -> None:
             bbox=(137.26307, -7.45486, 137.32457, -7.41362),
         )
     assert not math.isnan(stac_ds.VV_gamma0.data[0][0][0])
+
+
+def test_stac_multipolygon(s3_syn_product, s3_syn_stac) -> None:
+    to_ds = next(stac2ds([s3_syn_stac], product_cache={"s3_syn_2_vgi": s3_syn_product}))
+    assert to_ds._gs["valid_data"]["type"] == "MultiPolygon"
