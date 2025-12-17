@@ -28,7 +28,7 @@ from typing_extensions import override
 
 import datacube
 from datacube.drivers.postgis._fields import PgField
-from datacube.index.exceptions import NoIndexError, IndexSetupError
+from datacube.index.exceptions import IndexSetupError, NoIndexError
 from datacube.utils import jsonify_document
 
 from ...cfg import ODCEnvironment, psql_url_from_config

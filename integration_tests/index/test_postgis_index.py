@@ -1,3 +1,7 @@
+# This file is part of the Open Data Cube, see https://opendatacube.org for more information
+#
+# Copyright (c) 2015-2025 ODC Contributors
+# SPDX-License-Identifier: Apache-2.0
 # This file is part of the Open Data Cube, see https://opendatacube.org for more information #
 # Copyright (c) 2015-2025 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
@@ -18,9 +22,13 @@ def test_index_environment(index: Index) -> None:
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_alembic_migrations(index: Index) -> None:
     from alembic import config
-    from alembic.command import upgrade, downgrade
-    from datacube.drivers.postgis._core import ALEMBIC_INI_LOCATION, COMPATIBLE_MIGRATIONS, _current_and_latest
-    from datacube.cfg import psql_url_from_config
+    from alembic.command import downgrade, upgrade
+
+    from datacube.drivers.postgis._core import (
+        ALEMBIC_INI_LOCATION,
+        COMPATIBLE_MIGRATIONS,
+        _current_and_latest,
+    )
 
     current, latest = _current_and_latest(index._db._engine)
     cfg = config.Config(ALEMBIC_INI_LOCATION)

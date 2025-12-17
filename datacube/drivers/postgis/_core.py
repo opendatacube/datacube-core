@@ -227,6 +227,7 @@ def database_exists(engine: Engine) -> bool:
     """
     return has_schema(engine)
 
+
 # MIGRATIONS that are mutually compatible.
 # This should become an empty set when the latest migration is not compatible with the previous
 COMPATIBLE_MIGRATIONS: set[str] = {"01fa1abedd6d", "d27eed82e1f6"}
@@ -244,6 +245,7 @@ def _current_and_latest(engine: Engine) -> tuple[str, str]:
     # Get Head revision from Alembic environment
     with EnvironmentContext(cfg, scriptdir) as env_ctx:
         latest_rev = env_ctx.get_head_revision()
+        assert isinstance(latest_rev, str)
         # Get current revision from database
         with engine.connect() as conn:
             context = MigrationContext.configure(
@@ -252,6 +254,7 @@ def _current_and_latest(engine: Engine) -> tuple[str, str]:
                 opts={"version_table_schema": "odc"},
             )
             current_rev = context.get_current_revision()
+            assert isinstance(current_rev, str)
     return latest_rev, current_rev
 
 
@@ -285,14 +288,15 @@ def schema_is_latest(engine: Engine, compatible=False) -> bool:
             )
             current_rev = context.get_current_revision()
 
-
-    is_compatible = (current_rev == latest_rev) or (current_rev in COMPATIBLE_MIGRATIONS
-                                                    and latest_rev in COMPATIBLE_MIGRATIONS )
+    is_compatible = (current_rev == latest_rev) or (
+        current_rev in COMPATIBLE_MIGRATIONS and latest_rev in COMPATIBLE_MIGRATIONS
+    )
     # Do they match?
     if latest_rev == current_rev:
         return True
 
     import warnings
+
     warnings.warn(
         f"Current Alembic schema revision is {current_rev} {'recommend' if compatible else 'expecting'} {latest_rev}",
         stacklevel=2,
