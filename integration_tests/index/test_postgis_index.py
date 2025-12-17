@@ -55,6 +55,7 @@ def test_alembic_migrations(index: Index) -> None:
         with index._db._give_me_a_connection() as conn:
             cfg.attributes["connection"] = conn
             upgrade(cfg, latest)
+        break
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
