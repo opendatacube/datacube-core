@@ -12,6 +12,10 @@ class MissingRecordError(Exception):
     pass
 
 
+class NoIndexError(Exception):
+    pass
+
+
 class IndexSetupError(Exception):
     pass
 

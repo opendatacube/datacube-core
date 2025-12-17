@@ -227,8 +227,35 @@ def database_exists(engine: Engine) -> bool:
     """
     return has_schema(engine)
 
+# MIGRATIONS that are mutually compatible.
+# This should become an empty set when the latest migration is not compatible with the previous
+COMPATIBLE_MIGRATIONS: set[str] = {"01fa1abedd6d", "d27eed82e1f6"}
 
-def schema_is_latest(engine: Engine) -> bool:
+
+def _current_and_latest(engine: Engine) -> tuple[str, str]:
+    """
+    Return latest schema migration and current migration for engine.
+    :param engine: A SQLAlchemy engine
+    :return: latest revision, current revision
+    """
+    cfg = config.Config(ALEMBIC_INI_LOCATION)
+    scriptdir = ScriptDirectory.from_config(cfg)
+    # NB this assumes a single unbranched migration branch
+    # Get Head revision from Alembic environment
+    with EnvironmentContext(cfg, scriptdir) as env_ctx:
+        latest_rev = env_ctx.get_head_revision()
+        # Get current revision from database
+        with engine.connect() as conn:
+            context = MigrationContext.configure(
+                connection=conn,
+                environment_context=env_ctx,
+                opts={"version_table_schema": "odc"},
+            )
+            current_rev = context.get_current_revision()
+    return latest_rev, current_rev
+
+
+def schema_is_latest(engine: Engine, compatible=False) -> bool:
     """
     Is the current schema up-to-date?
 
@@ -239,6 +266,7 @@ def schema_is_latest(engine: Engine) -> bool:
     to apply updates.
 
     See the ``update_schema()`` function below for actually applying the updates.
+    :arg compatible: If True, return True if the codebase is compatible with the latest revision.
     """
     # No schema changes recently. Everything is perfect.
 
@@ -257,16 +285,19 @@ def schema_is_latest(engine: Engine) -> bool:
             )
             current_rev = context.get_current_revision()
 
+
+    is_compatible = (current_rev == latest_rev) or (current_rev in COMPATIBLE_MIGRATIONS
+                                                    and latest_rev in COMPATIBLE_MIGRATIONS )
     # Do they match?
     if latest_rev == current_rev:
         return True
-    import warnings
 
+    import warnings
     warnings.warn(
-        f"Current Alembic schema revision is {current_rev} expected {latest_rev}",
+        f"Current Alembic schema revision is {current_rev} {'recommend' if compatible else 'expecting'} {latest_rev}",
         stacklevel=2,
     )
-    return False
+    return is_compatible if compatible else False
 
 
 def update_schema(engine: Engine) -> None:
