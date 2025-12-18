@@ -1,0 +1,136 @@
+---
+# Product
+# url: https://explorer.digitalearth.africa/products/s3_syn_2_vg1.odc-product.yaml
+name: s3_syn_2_vg1
+license: CC-BY-4.0
+metadata_type: eo3
+description: Sentinel-3 Level-2 VG1 SYN product
+metadata:
+  product:
+    name: s3_syn_2_vg1
+measurements:
+  - name: AG_VG1
+    dtype: uint8
+    units: '1'
+    nodata: 255
+    aliases:
+    - aerosol_optical_thickness
+    add_offset: 0.e+00
+    scale_factor: 1.e+00
+  - name: B0_VG1
+    dtype: int16
+    units: '1'
+    nodata: 32767
+    add_offset: 0.e+00
+    scale_factor: 1.e-04
+  - name: B2_VG1
+    dtype: int16
+    units: '1'
+    nodata: 32767
+    add_offset: 0.e+00
+    scale_factor: 1.e-04
+  - name: B3_VG1
+    dtype: int16
+    units: '1'
+    nodata: 32767
+    add_offset: 0.e+00
+    scale_factor: 1.e-04
+  - name: MIR_VG1
+    dtype: int16
+    units: '1'
+    nodata: 32767
+    aliases:
+    - middle_infrared
+    add_offset: 0.e+00
+    scale_factor: 1.e-04
+  - name: NDVI_VG1
+    dtype: int16
+    units: '1'
+    nodata: 32767
+    add_offset: 0.e+00
+    scale_factor: 1.e-04
+  - name: OG_VG1
+    dtype: uint8
+    units: atm.cm
+    nodata: 255
+    aliases:
+    - total_column_ozone
+    add_offset: 0.e+00
+    scale_factor: 1.e+00
+  - name: SAA_VG1
+    dtype: int16
+    units: degrees
+    nodata: 32767
+    aliases:
+    - solar_azimuth_angle
+    add_offset: 0.e+00
+    scale_factor: 1.e+00
+  - name: SZA_VG1
+    dtype: uint8
+    units: degrees
+    nodata: 255
+    aliases:
+    - solar_zenith_angle
+    add_offset: 0.e+00
+    scale_factor: 1.e+00
+    flags_definition:
+      mask:
+        bits:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 8
+        - 16
+        - 32
+        - 64
+        - 128
+        values:
+          '0': clear
+          '1': shadow
+          '2': uncertain
+          '3': cloud
+          '4': ice_or_snow
+          '8': land
+          '16': MIR_good
+          '32': B3_good
+          '64': B2_good
+          '128': B0_good
+        description: Sentinel-3 Core Status Flag
+  - name: TOA_NDVI_VG1
+    dtype: int16
+    units: '1'
+    nodata: 32767
+    add_offset: 0.e+00
+    scale_factor: 1.e-04
+  - name: VAA_VG1
+    dtype: int16
+    units: degrees
+    nodata: 32767
+    aliases:
+    - view_azimuth_angle
+    add_offset: 0.e+00
+    scale_factor: 1.e+00
+  - name: VZA_VG1
+    dtype: uint8
+    units: degrees
+    nodata: 255
+    aliases:
+    - view_zenith_angle
+    add_offset: 0.e+00
+    scale_factor: 1.e+00
+  - name: WVG_VG1
+    dtype: uint8
+    units: g/cm^2
+    nodata: 255
+    aliases:
+    - total_column_water_vapour
+    add_offset: 0.e+00
+    scale_factor: 1.e+00
+storage:
+  crs: EPSG:4326
+  resolution:
+    latitude: -3.e-03
+    longitude: 3.e-03
+...
