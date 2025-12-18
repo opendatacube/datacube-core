@@ -471,4 +471,5 @@ def test_s1_nrb(s1_nrb_stac, s1_nrb_product, without_aws_env) -> None:
 
 def test_stac_multipolygon(s3_syn_product, s3_syn_stac) -> None:
     to_ds = next(stac2ds([s3_syn_stac], product_cache={"s3_syn_2_vgi": s3_syn_product}))
+    assert to_ds._gs is not None
     assert to_ds._gs["valid_data"]["type"] == "MultiPolygon"
