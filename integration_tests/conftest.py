@@ -296,6 +296,11 @@ def ls8_stac_doc() -> tuple[dict, str]:
     )
 
 
+@pytest.fixture
+def ls8_stac_update_path() -> str:
+    return str(EO3_TESTDIR / "ga_ls8c_ard_3_stac_update.json")
+
+
 def doc_to_ds(
     index: Index,
     product_name: str,

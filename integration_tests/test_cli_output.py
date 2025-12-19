@@ -335,3 +335,44 @@ def test_read_and_update_metadata_product_dataset_command(
         ]
     )
     assert "1 successful, 0 failed" in update.output
+
+
+@pytest.mark.filterwarnings("ignore::antimeridian.FixWindingWarning")
+def test_cli_dataset_update_stac(
+    index,
+    clirunner,
+    ls8_stac_doc,
+    ls8_stac_update_path,
+    eo3_products,
+) -> None:
+    _, path = ls8_stac_doc
+    r = clirunner(["dataset", "add", "--ignore-lineage", path])
+    assert r.exit_code == 0
+
+    r = clirunner(["dataset", "update", ls8_stac_update_path])
+    assert "Unsafe changes in" in r.output
+    assert "0 successful, 1 failed" in r.output
+
+    r = clirunner(
+        ["dataset", "update", "--allow-any", "properties.gsd", ls8_stac_update_path]
+    )
+    assert "Unsafe changes in" in r.output
+
+    r = clirunner(
+        [
+            "dataset",
+            "update",
+            "--allow-any",
+            "properties.gsd",
+            "--allow-any",
+            "properties.start_datetime",
+            ls8_stac_update_path,
+        ]
+    )
+    assert "Unsafe changes in" not in r.output
+
+    r = clirunner(
+        ["dataset", "update", "--allow-any", "collection", ls8_stac_update_path],
+        expect_success=False,
+    )
+    assert r.exit_code == 2

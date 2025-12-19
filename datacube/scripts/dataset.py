@@ -28,9 +28,8 @@ import yaml.resolver
 from click import echo
 
 from datacube.index import Index
-from datacube.index.eo3 import prep_eo3
 from datacube.index.exceptions import MissingRecordError
-from datacube.index.hl import Doc2Dataset, check_dataset_consistent
+from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli, print_help_msg
@@ -92,7 +91,7 @@ def dataset_stream(doc_stream, ds_resolve) -> Iterator:
     """
     for uri, ds in doc_stream:
         if getattr(ds, "is_stac", False):
-            _LOG.warning(
+            _LOG.info(
                 f"Dataset {ds.id} has been provided as a STAC Item, "
                 "but will be converted to and stored as EO3 in the database."
             )
@@ -119,37 +118,24 @@ def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Generator[tu
         uuid = ds.id
 
         if uuid is None:
-            return None, None, "Metadata document it missing id field"
+            return None, None, "Metadata document is missing id field"
 
         existing = index.datasets.get(uuid)
         if existing is None:
             return None, None, f"No such dataset in the database: {uuid}"
 
-        ds = SimpleDocNav(
-            prep_eo3(ds.doc, auto_skip=True),
-            sources_path=("lineage",)
-            if index.supports_external_lineage
-            else ("lineage", "source_datasets"),
-        )
-
         # TODO: what about lineage?
-        return (
-            Dataset(existing.product, ds.doc_without_lineage_sources, uri=uri),
-            existing,
-            None,
-        )
+        doc2ds = Doc2Dataset(index, [existing.product.name], skip_lineage=True)
+        ds, err = doc2ds(ds, uri)
+        return (ds, existing, err)
 
     for uri, doc in doc_stream:
         dataset, existing, error_msg = mk_dataset(doc, uri)
 
         if dataset is None:
-            _LOG.error("Failure while processing: %s\n > Reason: %s", uri, error_msg)
+            _LOG.error(f"Failure while processing: {uri}\n > Reason: {error_msg}")
         else:
-            is_consistent, reason = check_dataset_consistent(dataset)
-            if is_consistent:
-                yield dataset, existing
-            else:
-                _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
+            yield dataset, existing
 
 
 @dataset_cmd.command(
@@ -303,8 +289,30 @@ def index_datasets(
 def parse_update_rules(
     keys_that_can_change: Sequence[str],
 ) -> Mapping[Offset, AllowPolicy]:
+    from datacube.metadata._utils import STAC_TO_EO3_RENAMES
+
+    remaps = {
+        "properties.proj:transform": "grids.default.transform",
+        "properties.proj:shape": "grids.default.shape",
+        "properties.odc:lineage": "lineage",
+        **{f"properties.proj:{code}": "crs" for code in ["code", "epsg", "wkt2"]},
+        **{
+            f"properties.{key}": f"properties.{val}"
+            for key, val in STAC_TO_EO3_RENAMES.items()
+        },
+    }
     updates_allowed: dict[Offset, AllowPolicy] = {}
     for key_str in keys_that_can_change:
+        if key_str == "collection":
+            _LOG.error("Changing collection is not supported")
+            sys.exit(2)
+        if key_str.startswith(("properties.proj:", "geometry")):
+            # account for changes made to properties added by prep_eo3
+            for key in ["extent", "grid_spatial.projection"]:
+                updates_allowed[tuple(key.split("."))] = changes.allow_any
+        key_str = remaps.get(key_str, key_str)
+        # How to handle assets?
+        # Warn if STAC-only fields are provided?
         updates_allowed[tuple(key_str.split("."))] = changes.allow_any
     return updates_allowed
 
