@@ -28,7 +28,7 @@ from typing_extensions import override
 
 import datacube
 from datacube.drivers.postgis._fields import PgField
-from datacube.index.exceptions import IndexSetupError
+from datacube.index.exceptions import IndexSetupError, NoIndexError
 from datacube.utils import jsonify_document
 
 from ...cfg import ODCEnvironment, psql_url_from_config
@@ -100,16 +100,16 @@ class PostGisDb:
         )
         if validate:
             if not _core.database_exists(engine):
-                raise IndexSetupError(
+                raise NoIndexError(
                     "\n\nNo DB schema exists. Have you run init?\n\t{init_command}".format(
                         init_command="datacube system init"
                     )
                 )
 
-            if not _core.schema_is_latest(engine):
+            if not _core.schema_is_latest(engine, compatible=True):
                 raise IndexSetupError(
                     "\n\nDB schema is out of date. "
-                    "An administrator must run init:\n\t{init_command}".format(
+                    "An administrator should run init:\n\t{init_command}".format(
                         init_command="datacube -v system init"
                     )
                 )

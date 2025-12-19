@@ -7,13 +7,52 @@ import datetime
 import pytest
 from odc.geo import CRS
 
-from datacube.index import Index
+from datacube.index.postgis.index import Index
 from datacube.model import Range
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_index_environment(index: Index) -> None:
     assert index.environment.index_driver in ("postgis")
+
+
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+def test_alembic_migrations(index: Index) -> None:
+    from alembic import config
+    from alembic.command import downgrade, upgrade
+
+    from datacube.drivers.postgis._core import (
+        ALEMBIC_INI_LOCATION,
+        COMPATIBLE_MIGRATIONS,
+        _current_and_latest,
+    )
+
+    current, latest = _current_and_latest(index._db._engine)
+    cfg = config.Config(ALEMBIC_INI_LOCATION)
+    with index._db._give_me_a_connection() as conn:
+        cfg.attributes["connection"] = conn
+    if not COMPATIBLE_MIGRATIONS:
+        # doesn't need testing.
+        return
+    assert current in COMPATIBLE_MIGRATIONS
+    assert current == latest
+    for migration in COMPATIBLE_MIGRATIONS:
+        if migration == latest:
+            continue
+        with index._db._give_me_a_connection() as conn:
+            cfg.attributes["connection"] = conn
+            downgrade(cfg, migration)
+        current, latest = _current_and_latest(index._db._engine)
+        assert current in COMPATIBLE_MIGRATIONS
+        assert current != latest
+
+        # Test can open a connection with compatible schemas
+        index._db.create(index.environment, "nested_test", validate=True)
+
+        with index._db._give_me_a_connection() as conn:
+            cfg.attributes["connection"] = conn
+            upgrade(cfg, latest)
+        break
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
