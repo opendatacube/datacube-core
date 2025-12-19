@@ -277,7 +277,9 @@ def schema_is_latest(engine: Engine, compatible=False) -> bool:
         return True
 
     # Don't match, check for compatibility.
-    is_compatible = current_rev in COMPATIBLE_MIGRATIONS and latest_rev in COMPATIBLE_MIGRATIONS
+    is_compatible = (
+        current_rev in COMPATIBLE_MIGRATIONS and latest_rev in COMPATIBLE_MIGRATIONS
+    )
 
     import warnings
 
