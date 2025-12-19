@@ -271,29 +271,13 @@ def schema_is_latest(engine: Engine, compatible=False) -> bool:
     See the ``update_schema()`` function below for actually applying the updates.
     :arg compatible: If True, return True if the codebase is compatible with the latest revision.
     """
-    # No schema changes recently. Everything is perfect.
-
-    cfg = config.Config(ALEMBIC_INI_LOCATION)
-    scriptdir = ScriptDirectory.from_config(cfg)
-    # NB this assumes a single unbranched migration branch
-    # Get Head revision from Alembic environment
-    with EnvironmentContext(cfg, scriptdir) as env_ctx:
-        latest_rev = env_ctx.get_head_revision()
-        # Get current revision from database
-        with engine.connect() as conn:
-            context = MigrationContext.configure(
-                connection=conn,
-                environment_context=env_ctx,
-                opts={"version_table_schema": "odc"},
-            )
-            current_rev = context.get_current_revision()
-
-    is_compatible = (current_rev == latest_rev) or (
-        current_rev in COMPATIBLE_MIGRATIONS and latest_rev in COMPATIBLE_MIGRATIONS
-    )
-    # Do they match?
+    latest_rev, current_rev = _current_and_latest(engine)
+    # Do they match exactly?
     if latest_rev == current_rev:
         return True
+
+    # Don't match, check for compatibility.
+    is_compatible = current_rev in COMPATIBLE_MIGRATIONS and latest_rev in COMPATIBLE_MIGRATIONS
 
     import warnings
 
