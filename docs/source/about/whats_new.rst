@@ -8,6 +8,52 @@ What's New
 Next Release
 ============
 
+1.9.12 (19 December 2025)
+=========================
+
+Notable Changes
+---------------
+
+* The previous release (1.9.11) included a database schema upgrade for the postgis index driver and refused to operate
+  if the upgrade was not applied. This was unnecessarily strict and caused deployment issues in complicated
+  environments.  v1.9.12 works with databases both with and without the upgrade.  (The upgrade is now treated as
+  recommended, not required, and can safely be held back until only core versions >=1.9.12 are deployed.
+* v1.9.12 works with odc-loader >=0.6.0, which included an internal API change.
+* Multi-polygon extent geometries in EO3 documents are now supported.
+* Better error reporting and less confusing/unnecessary warning messages.
+
+What's Changed
+--------------
+
+* Validate Product measurement nodata type by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2277
+* CI: do not fail fast by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2279
+* Add RasterExtension to STAC conversion by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2281
+* uv.lock: update to urllib3 2.6.0 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2284
+* dependabot: add 10 day cooldown by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2285
+* postgis: catch alembic key error by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2283
+* Suppress driver warnings on optional dependencies (e.g. netcdf). by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2288
+* Revert "postgis: catch alembic key error" by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2289
+* Update dependencies to Rasterio 1.4.4 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2291
+* Loader 0.6 support by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2292
+* Add support for MultiPolygon geometry by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2297
+* Handle compatible database versions by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2296
+* Update fallback version and release notes for 1.9.12 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2297
+
+Automated updates
+-----------------
+
+* build(deps): bump astral-sh/uv from 0.9.14 to 0.9.15 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2280
+* build(deps): bump astral-sh/uv from 0.9.15 to 0.9.16 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2286
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2287
+* build(deps): bump astral-sh/uv from 0.9.16 to 0.9.17 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2290
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2293
+* build(deps): bump actions/checkout from 6.0.0 to 6.0.1 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2294
+* build(deps): bump astral-sh/uv from 0.9.17 to 0.9.18 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2295
+
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.11...1.9.12
+
+The Open Data Cube Steering Council thanks and acknowledges the ongoing support of Geoscience Australia, CSIRO, and RISE.
 
 v1.9.11 (4 December 2025)
 =========================
