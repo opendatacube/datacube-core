@@ -983,7 +983,7 @@ doc = [
 requires-dist = [
     { name = "affine" },
     { name = "alembic" },
-    { name = "antimeridian" },
+    { name = "antimeridian", specifier = "<0.4.5" },
     { name = "attrs", specifier = ">=18.1" },
     { name = "boto3", marker = "extra == 's3'" },
     { name = "botocore", marker = "extra == 's3'" },
