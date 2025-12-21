@@ -8,7 +8,7 @@ What's New
 Next Release
 ============
 
-1.9.12 (19 December 2025)
+1.9.12 (22 December 2025)
 =========================
 
 Notable Changes
