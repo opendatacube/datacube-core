@@ -27,7 +27,7 @@ classifiers = [
 dependencies = [
     'affine',
     'alembic',
-    'antimeridian',
+    'antimeridian<0.4.5', # All test_index_cloning tests fail with 0.4.5.
     'attrs>=18.1',
     'cachetools',
     'click>=8',
