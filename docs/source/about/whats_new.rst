@@ -37,6 +37,7 @@ What's Changed
 * Loader 0.6 support by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2292
 * Add support for MultiPolygon geometry by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2297
 * Handle compatible database versions by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2296
+* Restrict antimeridian < 0.4.5 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2300
 * Update fallback version and release notes for 1.9.12 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2298
 
 Automated updates
