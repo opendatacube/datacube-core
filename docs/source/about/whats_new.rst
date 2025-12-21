@@ -20,7 +20,7 @@ Notable Changes
   recommended, not required, and can safely be held back until only core versions >=1.9.12 are deployed.
 * v1.9.12 works with odc-loader >=0.6.0, which included an internal API change.
 * Multi-polygon extent geometries in EO3 documents are now supported.
-* Better error reporting and less confusing/unnecessary warning messages.
+* Better error reporting and less confusing and fewer unnecessary warning messages.
 
 What's Changed
 --------------
