@@ -36,7 +36,7 @@ from datacube.index.abstract import (
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, Product, Range
-from datacube.model._base import QueryField
+from datacube.model._base import QueryDict, QueryField
 from datacube.model.fields import Expression, Field
 from datacube.model.utils import flatten_datasets
 from datacube.utils import _readable_offset, changes, jsonify_document
@@ -700,9 +700,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def search(
         self,
         limit: int | None = None,
-        source_filter: int | None = None,
+        source_filter: QueryDict | None = None,
         archived: bool | None = False,
-        order_by=None,
+        order_by: Iterable[Any] | None = None,
         **query: QueryField,
     ) -> Iterable[Dataset]:
         """
@@ -965,7 +965,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     ),
                 )
 
-    def _do_count_by_product(self, query, archived: bool | None = False) -> Iterator:
+    def _do_count_by_product(
+        self, query, archived: bool | None = False
+    ) -> Generator[tuple[Product, int]]:
         if "geopolygon" in query:
             raise NotImplementedError("Spatial index API not supported by this index.")
         product_queries = self._get_product_queries(query)

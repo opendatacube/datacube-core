@@ -1,0 +1,50 @@
+---
+# Product
+# url: https://explorer.dev.dea.ga.gov.au/products/ls8_fc_albers.odc-product.yaml
+name: ls8_fc_albers
+metadata_type: eo
+description: Landsat 8 Fractional Cover 25 metre, 100km tile, Australian Albers 
+  Equal Area projection (EPSG:3577)
+metadata:
+  product_type: fractional_cover
+  platform:
+    code: LANDSAT_8
+  instrument:
+    name: OLI_TIRS
+  format:
+    name: GeoTIFF
+measurements:
+- name: BS
+  dtype: int16
+  units: percent
+  nodata: -1
+  aliases:
+  - bare
+- name: PV
+  dtype: int16
+  units: percent
+  nodata: -1
+  aliases:
+  - green_veg
+- name: NPV
+  dtype: int16
+  units: percent
+  nodata: -1
+  aliases:
+  - dead_veg
+- name: UE
+  dtype: int16
+  units: '1'
+  nodata: -1
+  aliases:
+  - err
+storage:
+  crs: EPSG:3577
+  resolution:
+    x: 25
+    y: -25
+  dimension_order:
+  - time
+  - y
+  - x
+...

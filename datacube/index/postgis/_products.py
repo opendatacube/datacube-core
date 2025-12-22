@@ -68,6 +68,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         :param product: Product to add
         """
         Product.validate(product.definition)  # type: ignore[attr-defined]
+        Product.validate_measurements(product.definition)
+        Product.validate_extra_dims(product.definition)
 
         existing = self.get_by_name(product.name)
         if existing:
@@ -147,6 +149,8 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             If false, creation will be slower and cannot be done in a transaction.
         """
         Product.validate(product.definition)  # type: ignore[attr-defined]
+        Product.validate_measurements(product.definition)
+        Product.validate_extra_dims(product.definition)
 
         existing = self.get_by_name(product.name)
         if not existing:

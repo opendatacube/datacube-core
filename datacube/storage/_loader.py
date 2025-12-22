@@ -13,8 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Generator, Mapping, Sequence
 from datetime import datetime
-from types import SimpleNamespace
-from typing import Literal
+from typing import Literal, cast
 
 import xarray as xr
 from odc.geo.geobox import GeoBox, GeoboxTiles
@@ -99,6 +98,7 @@ def driver_based_load(
             resampling=m.get("resampling", "nearest"),
             fail_on_error=fail_on_error,
             dims=tuple(m.get("dims", ())),
+            meta=RasterBandMetadata(attrs=m.dataarray_attrs()),
         )
         for m in measurements
     }
@@ -139,7 +139,7 @@ def driver_based_load(
                 band=band_idx,
                 subdataset=bi.layer,
                 geobox=ds_geobox(ds, band=n),
-                meta=template.bands[(n, band_idx or 1)],
+                meta=cast(RasterBandMetadata, template.bands[(n, band_idx or 1)]),
                 driver_data=bi.driver_data,
             )
 
@@ -149,16 +149,6 @@ def driver_based_load(
         srcs.append(_ds_extract(ds))
         for iy, ix in gbt.tiles(ds.extent):
             tyx_bins.setdefault((tidx, iy, ix), []).append(len(srcs) - 1)
-
-    if driver == "kk-debug":
-        return SimpleNamespace(  # type: ignore[return-value]
-            load_cfg=load_cfg,
-            template=template,
-            srcs=srcs,
-            tyx_bins=tyx_bins,
-            gbt=gbt,
-            tss=tss,
-        )
 
     rdr = reader_driver(driver)
 

@@ -162,7 +162,9 @@ class Index(AbstractIndex):
                 )
 
         if is_new and with_default_spatial_index:
-            self.create_spatial_index(CRS("EPSG:4326"))
+            self.create_spatial_index(
+                CRS("EPSG:4326"), with_permissions=with_permissions
+            )
 
         return is_new
 
@@ -174,7 +176,7 @@ class Index(AbstractIndex):
         This is good practice if you are keeping the Index instance in scope
         but won't be using it for a while.
 
-        (Connections are normally closed automatically when this object is deleted: ie. no references exist)
+        (Connections are normally closed automatically when this object is deleted: i.e. no references exist)
         """
         self._db.close()
 
@@ -188,8 +190,8 @@ class Index(AbstractIndex):
         return PostgisTransaction(self._db, self.index_id)
 
     @override
-    def create_spatial_index(self, crs: CRS) -> bool:
-        sp_idx = self._db.create_spatial_index(crs)
+    def create_spatial_index(self, crs: CRS, with_permissions: bool) -> bool:
+        sp_idx = self._db.create_spatial_index(crs, with_permissions)
         return sp_idx is not None
 
     @override

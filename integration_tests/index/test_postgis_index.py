@@ -7,13 +7,52 @@ import datetime
 import pytest
 from odc.geo import CRS
 
-from datacube.index import Index
+from datacube.index.postgis.index import Index
 from datacube.model import Range
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_index_environment(index: Index) -> None:
     assert index.environment.index_driver in ("postgis")
+
+
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+def test_alembic_migrations(index: Index) -> None:
+    from alembic import config
+    from alembic.command import downgrade, upgrade
+
+    from datacube.drivers.postgis._core import (
+        ALEMBIC_INI_LOCATION,
+        COMPATIBLE_MIGRATIONS,
+        _current_and_latest,
+    )
+
+    current, latest = _current_and_latest(index._db._engine)
+    cfg = config.Config(ALEMBIC_INI_LOCATION)
+    with index._db._give_me_a_connection() as conn:
+        cfg.attributes["connection"] = conn
+    if not COMPATIBLE_MIGRATIONS:
+        # doesn't need testing.
+        return
+    assert current in COMPATIBLE_MIGRATIONS
+    assert current == latest
+    for migration in COMPATIBLE_MIGRATIONS:
+        if migration == latest:
+            continue
+        with index._db._give_me_a_connection() as conn:
+            cfg.attributes["connection"] = conn
+            downgrade(cfg, migration)
+        current, latest = _current_and_latest(index._db._engine)
+        assert current in COMPATIBLE_MIGRATIONS
+        assert current != latest
+
+        # Test can open a connection with compatible schemas
+        index._db.create(index.environment, "nested_test", validate=True)
+
+        with index._db._give_me_a_connection() as conn:
+            cfg.attributes["connection"] = conn
+            upgrade(cfg, latest)
+        break
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
@@ -25,11 +64,12 @@ def test_create_drop_spatial_index(index: Index) -> None:
         CRS(
             'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]]'
             ',PRIMEM["Weird",22.3],UNIT["Degree",0.017453292519943295]]'
-        )
+        ),
+        True,
     )
     assert list(index.spatial_indexes()) == [CRS("epsg:4326")]
-    assert index.create_spatial_index(CRS("epsg:3577"))
-    assert index.create_spatial_index(CRS("WGS-84"))
+    assert index.create_spatial_index(CRS("epsg:3577"), True)
+    assert index.create_spatial_index(CRS("WGS-84"), True)
     assert set(index.spatial_indexes()) == {CRS("epsg:3577"), CRS("epsg:4326")}
     assert set(index.spatial_indexes(refresh=True)) == {
         CRS("epsg:3577"),
@@ -45,7 +85,7 @@ def test_create_drop_spatial_index(index: Index) -> None:
 def test_spatial_index_maintain(
     index: Index, ls8_eo3_product, eo3_ls8_dataset_doc
 ) -> None:
-    index.create_spatial_index(CRS("EPSG:3577"))
+    index.create_spatial_index(CRS("EPSG:3577"), True)
     assert set(index.spatial_indexes(refresh=True)) == {
         CRS("EPSG:3577"),
         CRS("EPSG:4326"),
@@ -74,7 +114,7 @@ def test_spatial_index_populate(
     ls8_eo3_dataset4,
     wo_eo3_dataset,
 ) -> None:
-    index.create_spatial_index(CRS("EPSG:3577"))
+    index.create_spatial_index(CRS("EPSG:3577"), True)
     assert set(index.spatial_indexes(refresh=True)) == {
         CRS("EPSG:3577"),
         CRS("EPSG:4326"),
@@ -115,7 +155,7 @@ def test_spatial_index_crs_validity(
     # TODO: potentially include africa_eo3_dataset2 in this test
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
-    index.create_spatial_index(epsg3577)
+    index.create_spatial_index(epsg3577, True)
     assert set(index.spatial_indexes(refresh=True)) == {epsg4326, epsg3577}
     assert index.update_spatial_index(crses=[epsg3577]) == 2
 
@@ -128,81 +168,81 @@ def spatial_index_crs_sanitise_helper() -> None:
 
     # 4326, crossing the Prime-Meridian, wound clockwise
     pm_4326_cw = polygon(
-        (
+        [
             (-2.0, 25.0),
             (2.0, 25.0),
             (2.0, 23.0),
             (-2.0, 23.0),
             (-2.0, 25.0),
-        ),
+        ],
         crs=epsg4326,
     )
 
     # 4326, crossing the Prime-Meridian, wound counter-clockwise
     pm_4326_ccw = polygon(
-        (
+        [
             (-2.0, 25.0),
             (-2.0, 23.0),
             (2.0, 23.0),
             (2.0, 25.0),
             (-2.0, 25.0),
-        ),
+        ],
         crs=epsg4326,
     )
 
     # 4326, crossing the Prime-Meridian, wound clockwise
     am_4326_ccw = polygon(
-        (
+        [
             (178.0, 25.0),
             (178.0, 23.0),
             (-178.0, 23.0),
             (-178.0, 25.0),
             (178.0, 25.0),
-        ),
+        ],
         crs=epsg4326,
     )
 
     # FIXME: assert on something for this item.
     # 4326, crossing the Prime-Meridian, wound counter-clockwise
     am_4326_cw = polygon(  # noqa: F841
-        (
+        [
             (178.0, 25.0),
             (-178.0, 25.0),
             (-178.0, 23.0),
             (178.0, 23.0),
             (178.0, 25.0),
-        ),
+        ],
         crs=epsg4326,
     )
 
     pm_3857 = polygon(
-        (
+        [
             (-222638, 2875744),
             (-222638, 2632018),
             (222638, 2632018),
             (222638, 2632018),
             (-222638, 2875744),
-        ),
+        ],
         crs=epsg3857,
     )
 
     am_3857 = polygon(
-        (
+        [
             (-19814869, 2875744),
             (19814869, 2632018),
             (-19814869, 2875744),
-        ),
+        ],
         crs=epsg3857,
     )
 
     am_3832 = polygon(
-        (
+        [
             (3116945, 2857692),
             (3562223, 2857692),
             (3562223, 2615329),
             (3116945, 2615329),
             (3116945, 2857692),
-        ),
+        ],
         crs=epsg3832,
     )
 
@@ -249,7 +289,7 @@ def test_spatial_extent(
     # TODO: include africa_eo3_dataset2 in this test
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
-    index.create_spatial_index(epsg3577)
+    index.create_spatial_index(epsg3577, True)
     index.update_spatial_index(crses=[epsg3577])
 
     with pytest.raises(KeyError):
@@ -301,7 +341,7 @@ def test_spatial_search(
 ) -> None:
     epsg4326 = CRS("EPSG:4326")
     epsg3577 = CRS("EPSG:3577")
-    index.create_spatial_index(epsg3577)
+    index.create_spatial_index(epsg3577, True)
     index.update_spatial_index(crses=[epsg3577])
     # Test old style lat/lon search
     dss = index.datasets.search(

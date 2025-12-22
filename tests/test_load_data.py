@@ -96,6 +96,9 @@ def test_load_data(tmpdir) -> None:
     assert ds_data.aa.nodata == nodata
     np.testing.assert_array_equal(aa, ds_data.aa.values[0])
 
+    ds_data = Datacube.load_data(sources, geobox, mm, dask_chunks={}, driver="rio")
+    assert ds_data.aa.attrs == {"nodata": nodata, "units": "1"}
+
 
 def test_load_data_dask(tmp_path) -> None:
     spatial = {

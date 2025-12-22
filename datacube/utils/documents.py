@@ -143,7 +143,7 @@ def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:
     Note that a single yaml file can contain multiple documents.
 
     This function will load any dates in the documents as strings. In
-    Data Cube we store JSONB in PostgreSQL and it will turn our dates
+    Data Cube we store JSONB in PostgreSQL, and it will turn our dates
     into strings anyway.
 
     :param uri: When True yield URIs instead of Paths
@@ -184,7 +184,7 @@ def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:
 
 def parse_doc_stream(
     doc_stream: Sequence[tuple[str, str | bytes]],
-    on_error: Callable[[str, str | bytes], None] | None = None,
+    on_error: Callable[[str, str | bytes, Exception], None] | None = None,
     transform: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> Generator[tuple[str, Mapping[str, Any] | None]]:
     """
@@ -197,7 +197,7 @@ def parse_doc_stream(
     instead of a dictionary.
 
     :param doc_stream: sequence of tuples consisting of uri and document body
-    :param on_error: error callback that gets the uri and doc as parameters
+    :param on_error: error callback that gets the uri, doc, and exception as parameters
     :param transform: if given, transforms the parsed document
 
     """
@@ -206,9 +206,9 @@ def parse_doc_stream(
             metadata = json.loads(doc) if uri.endswith(".json") else parse_yaml(doc)
             if transform is not None:
                 metadata = transform(metadata)
-        except Exception:  # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             if on_error is not None:
-                on_error(uri, doc)
+                on_error(uri, doc, e)
             metadata = None
         yield uri, metadata
 
@@ -252,7 +252,7 @@ def validate_document(
     import referencing
     from referencing import Resource
     from referencing.exceptions import NoSuchResource
-    from referencing.jsonschema import DRAFT4
+    from referencing.jsonschema import DRAFT202012
     from referencing.typing import URI
 
     # Allow schemas to reference other schemas in the given folder.
@@ -262,7 +262,7 @@ def validate_document(
         if not path.exists():
             raise NoSuchResource(f"Reference not found: {uri}")
         referenced_schema = next(iter(read_documents(path)))[1]
-        return DRAFT4.create_resource(referenced_schema)
+        return DRAFT202012.create_resource(referenced_schema)
 
     try:
         registry = (
@@ -270,8 +270,8 @@ def validate_document(
             if schema_folder is None
             else referencing.Registry(retrieve=doc_reference)  # type: ignore[call-arg]
         )
-        jsonschema.Draft4Validator.check_schema(schema)
-        validator = jsonschema.Draft4Validator(schema, registry=registry)
+        jsonschema.Draft202012Validator.check_schema(schema)
+        validator = jsonschema.Draft202012Validator(schema, registry=registry)
         validator.validate(document)
     except jsonschema.ValidationError as e:
         raise InvalidDocException(e) from None
@@ -633,7 +633,7 @@ def schema_validated(schema: Path):
     """
 
     def validate(cls, document) -> None:
-        return validate_document(document, cls.schema, schema.parent)
+        validate_document(document, cls.schema, schema.parent)
 
     def decorate(cls):
         cls.schema = next(iter(read_documents(schema)))[1]

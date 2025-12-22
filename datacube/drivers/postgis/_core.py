@@ -6,8 +6,12 @@
 Core SQL schema settings.
 """
 
+import contextlib
 import logging
 import os
+from collections.abc import Generator, Iterable
+from enum import Enum
+from typing import Literal, Union
 
 from alembic import command, config
 from alembic.migration import MigrationContext
@@ -16,6 +20,7 @@ from alembic.script import ScriptDirectory
 from deprecat import deprecat
 from sqlalchemy import Connection, MetaData, inspect, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.sql.ddl import DropSchema
 
@@ -28,7 +33,41 @@ from datacube.drivers.postgis.sql import (
 )
 from datacube.migration import ODC2DeprecationWarning
 
-USER_ROLES = ("odc_user", "odc_manage", "odc_admin")
+
+class UserRole(Enum):
+    USER = "odc_user"
+    MANAGE = "odc_manage"
+    ADMIN = "odc_admin"
+
+    @classmethod
+    def to_pg_role(cls, role_str: Literal["user", "manage", "admin"]) -> "UserRole":
+        return cls("odc_" + role_str.lower())
+
+    def simple_str(self) -> str:
+        return self.value.split("_", 1)[1]
+
+    @classmethod
+    def all_roles(cls) -> Generator[str]:
+        for role in cls:
+            yield role.simple_str()
+
+    def higher_roles(self) -> list["UserRole"]:
+        if self == UserRole.USER:
+            return [UserRole.MANAGE, UserRole.ADMIN]
+        if self == UserRole.MANAGE:
+            return [UserRole.ADMIN]
+        return []
+
+    def inherits_from(self) -> Union["UserRole", None]:
+        if self == UserRole.ADMIN:
+            return UserRole.MANAGE
+        if self == UserRole.MANAGE:
+            return UserRole.USER
+        return None
+
+    def can_create_user(self) -> bool:
+        return self == UserRole.ADMIN
+
 
 SQL_NAMING_CONVENTIONS = {
     "ix": "ix_%(column_0_label)s",
@@ -74,14 +113,22 @@ def schema_qualified(name: str) -> str:
     return f"{SCHEMA_NAME}.{name}"
 
 
-def _get_quoted_connection_info(connection) -> tuple:
-    db, user = connection.execute(
+def get_connection_info(connection: Connection) -> tuple[str, str]:
+    """
+    Obtain information about an open database connection
+    :param connection: An SQLAlchemy connection
+    :return: A tuple consisting of the database name and the user name of the connection
+    """
+    row = connection.execute(
         text("select quote_ident(current_database()), quote_ident(current_user)")
     ).fetchone()
+    # Mypy doesn't understand that the above SQL always returns a row.
+    assert row is not None
+    db, user = row
     return db, user
 
 
-def ensure_db(engine, with_permissions: bool = True) -> bool:
+def ensure_db(engine: Engine, with_permissions: bool = True) -> bool:
     """
     Initialise the db if needed.
 
@@ -92,16 +139,15 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
     is_new = not has_schema(engine)
     with engine.connect() as c:
         #  NB. Using default SQLA2.0 auto-begin commit-as-you-go behaviour
-        quoted_db_name, quoted_user = _get_quoted_connection_info(c)
+        quoted_db_name, quoted_user = get_connection_info(c)
 
         _ensure_extension(c, "POSTGIS")
         c.commit()
 
         if with_permissions:
             _LOG.info("Ensuring user roles.")
-            _ensure_role(c, "odc_user")
-            _ensure_role(c, "odc_manage", inherits_from="odc_user")
-            _ensure_role(c, "odc_admin", inherits_from="odc_manage", add_user=True)
+            for role in UserRole:
+                _ensure_role(c, role)
 
             c.execute(
                 text(f"""
@@ -111,6 +157,7 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             c.commit()
 
         if is_new:
+            # If NOT new, it is up to the caller to update with alembic
             sqla_txn = c.begin()
             if with_permissions:
                 # Switch to 'odc_admin', so that all items are owned by them.
@@ -131,13 +178,13 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             _LOG.info("Creating triggers.")
             install_timestamp_trigger(c)
             sqla_txn.commit()
-            if with_permissions:
-                c.execute(text(f"set role {quoted_user}"))
             c.commit()
             # Stamp with latest Alembic revision
             alembic_cfg = config.Config(ALEMBIC_INI_LOCATION)
             alembic_cfg.attributes["connection"] = c
             command.stamp(alembic_cfg, "head")
+            if with_permissions:
+                c.execute(text(f"set role {quoted_user}"))
 
         if with_permissions:
             _LOG.info("Adding role grants.")
@@ -145,7 +192,7 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             c.execute(
                 text(f"grant select on all tables in schema {SCHEMA_NAME} to odc_user")
             )
-
+            c.execute(text("grant odc_user to odc_manage"))
             c.execute(
                 text(
                     f"grant insert on {SCHEMA_NAME}.dataset,"
@@ -167,19 +214,51 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             )
             # Allow creation of indexes, views
             c.execute(text(f"grant create on schema {SCHEMA_NAME} to odc_manage"))
+            # Belt and braces to cover corner cases
+            c.execute(text("grant odc_manage to odc_admin"))
             c.commit()
 
     return is_new
 
 
-def database_exists(engine) -> bool:
+def database_exists(engine: Engine) -> bool:
     """
     Have they init'd this database?
     """
     return has_schema(engine)
 
 
-def schema_is_latest(engine: Engine) -> bool:
+# MIGRATIONS that are mutually compatible.
+# This should become an empty set when the latest migration is not compatible with the previous
+COMPATIBLE_MIGRATIONS: set[str] = {"01fa1abedd6d", "d27eed82e1f6"}
+
+
+def _current_and_latest(engine: Engine) -> tuple[str, str]:
+    """
+    Return latest schema migration and current migration for engine.
+    :param engine: A SQLAlchemy engine
+    :return: latest revision, current revision
+    """
+    cfg = config.Config(ALEMBIC_INI_LOCATION)
+    scriptdir = ScriptDirectory.from_config(cfg)
+    # NB this assumes a single unbranched migration branch
+    # Get Head revision from Alembic environment
+    with EnvironmentContext(cfg, scriptdir) as env_ctx:
+        latest_rev = env_ctx.get_head_revision()
+        assert isinstance(latest_rev, str)
+        # Get current revision from database
+        with engine.connect() as conn:
+            context = MigrationContext.configure(
+                connection=conn,
+                environment_context=env_ctx,
+                opts={"version_table_schema": "odc"},
+            )
+            current_rev = context.get_current_revision()
+            assert isinstance(current_rev, str)
+    return latest_rev, current_rev
+
+
+def schema_is_latest(engine: Engine, compatible=False) -> bool:
     """
     Is the current schema up-to-date?
 
@@ -190,34 +269,25 @@ def schema_is_latest(engine: Engine) -> bool:
     to apply updates.
 
     See the ``update_schema()`` function below for actually applying the updates.
+    :arg compatible: If True, return True if the codebase is compatible with the latest revision.
     """
-    # No schema changes recently. Everything is perfect.
-
-    cfg = config.Config(ALEMBIC_INI_LOCATION)
-    scriptdir = ScriptDirectory.from_config(cfg)
-    # NB this assumes a single unbranched migration branch
-    # Get Head revision from Alembic environment
-    with EnvironmentContext(cfg, scriptdir) as env_ctx:
-        latest_rev = env_ctx.get_head_revision()
-        # Get current revision from database
-        with engine.connect() as conn:
-            context = MigrationContext.configure(
-                connection=conn,
-                environment_context=env_ctx,
-                opts={"version_table_schema": "odc"},
-            )
-            current_rev = context.get_current_revision()
-
-    # Do they match?
+    latest_rev, current_rev = _current_and_latest(engine)
+    # Do they match exactly?
     if latest_rev == current_rev:
         return True
+
+    # Don't match, check for compatibility.
+    is_compatible = (
+        current_rev in COMPATIBLE_MIGRATIONS and latest_rev in COMPATIBLE_MIGRATIONS
+    )
+
     import warnings
 
     warnings.warn(
-        f"Current Alembic schema revision is {current_rev} expected {latest_rev}",
+        f"Current Alembic schema revision is {current_rev} {'recommend' if compatible else 'expecting'} {latest_rev}",
         stacklevel=2,
     )
-    return False
+    return is_compatible if compatible else False
 
 
 def update_schema(engine: Engine) -> None:
@@ -236,46 +306,45 @@ def update_schema(engine: Engine) -> None:
         command.upgrade(cfg, "head")
 
 
-def _ensure_extension(conn, extension_name: str = "POSTGIS") -> None:
+def _ensure_extension(conn: Connection, extension_name: str = "POSTGIS") -> None:
     sql = text(f"create extension if not exists {extension_name}")
     conn.execute(sql)
 
 
-def _ensure_role(
-    conn, name: str, inherits_from=None, add_user: bool = False, create_db: bool = False
-) -> None:
-    if has_role(conn, name):
-        _LOG.debug("Role exists: %s", name)
+def _ensure_role(conn: Connection, role: UserRole) -> None:
+    if has_user(conn, role.value):
+        _LOG.debug("Role exists: %s", role.value)
         return
 
     sql = [
-        f"create role {name} nologin inherit",
-        "createrole" if add_user else "nocreaterole",
-        "createdb" if create_db else "nocreatedb",
+        f"create role {role.value} nologin inherit",
+        "createrole" if role.can_create_user() else "nocreaterole",
     ]
-    if inherits_from:
-        sql.append("in role " + inherits_from)
+    if (inherit := role.inherits_from()) is not None:
+        sql.append("in role " + inherit.value)
     conn.execute(text(" ".join(sql)))
 
 
-def grant_role(conn, role, users) -> None:
-    if role not in USER_ROLES:
-        raise ValueError(f"Unknown role {role!r}. Expected one of {USER_ROLES!r}")
-
+def grant_role(conn: Connection, role: UserRole, users: Iterable[str]) -> None:
     users = [escape_pg_identifier(conn, user) for user in users]
-    conn.execute(
-        text(
-            "revoke {roles} from {users}".format(
-                users=", ".join(users), roles=", ".join(USER_ROLES)
+    with contextlib.suppress(ProgrammingError):
+        # Ignore failure to revoke roles that we don't have permission to revoke.
+        # e.g. because they were granted by a superuser.
+        conn.execute(
+            text(
+                "revoke {roles} from {users}".format(
+                    users=", ".join(users),
+                    roles=", ".join(r.value for r in UserRole.higher_roles(role)),
+                )
             )
         )
-    )
+
     conn.execute(
-        text("grant {role} to {users}".format(users=", ".join(users), role=role))
+        text("grant {role} to {users}".format(users=", ".join(users), role=role.value))
     )
 
 
-def has_role(conn, role_name: str) -> bool:
+def has_user(conn: Connection, role_name: str) -> bool:
     return bool(
         conn.execute(
             text(f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'")
@@ -299,44 +368,3 @@ def drop_schema(connection: Connection, schema_name: str = SCHEMA_NAME) -> None:
 )
 def drop_db(connection: Connection) -> None:
     drop_schema(connection)
-
-
-def to_pg_role(role) -> str:
-    """
-    Convert a role name to a name for use in PostgreSQL
-
-    There is a short list of valid ODC role names, and they are given
-    a prefix inside of PostgreSQL.
-
-    Why are we even doing this? Can't we use the same names internally and externally?
-
-    >>> to_pg_role("user")
-    'odc_user'
-    >>> to_pg_role("fake")
-    Traceback (most recent call last):
-    ...
-    ValueError: Unknown role 'fake'. Expected one of ...
-    """
-    pg_role = "odc_" + role.lower()
-    if pg_role not in USER_ROLES:
-        raise ValueError(
-            f"Unknown role {role!r}. Expected one of {[r.split('_')[1] for r in USER_ROLES]!r}"
-        )
-    return pg_role
-
-
-def from_pg_role(pg_role: str) -> str:
-    """
-    Convert a PostgreSQL role name back to an ODC name.
-
-    >>> from_pg_role("odc_admin")
-    'admin'
-    >>> from_pg_role("fake")
-    Traceback (most recent call last):
-    ...
-    ValueError: Not a pg role: 'fake'. Expected one of ...
-    """
-    if pg_role not in USER_ROLES:
-        raise ValueError(f"Not a pg role: {pg_role!r}. Expected one of {USER_ROLES!r}")
-
-    return pg_role.split("_")[1]

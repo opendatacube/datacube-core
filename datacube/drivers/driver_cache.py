@@ -31,8 +31,14 @@ def load_drivers(group: str) -> dict[str, Any]:
         try:
             driver_init = ep.load()
         except Exception as e:
-            _LOG.warning("Failed to resolve driver %s::%s", group, ep.name)
-            _LOG.warning("Error was: %s", repr(e))
+            if isinstance(e, ModuleNotFoundError):
+                # Driver cannot be loaded because it's missing a dependency
+                # e.g. netcdf reader/writer drivers when NetCDF4 is not installed.
+                _LOG.info("Failed to resolve driver %s::%s", group, ep.name)
+                _LOG.info("Error was: %s", repr(e))
+            else:
+                _LOG.warning("Failed to resolve driver %s::%s", group, ep.name)
+                _LOG.warning("Error was: %s", repr(e))
             return None
 
         try:

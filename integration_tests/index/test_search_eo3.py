@@ -999,7 +999,7 @@ def test_search_cli_basic(clirunner: Any, ls8_eo3_dataset: Dataset) -> None:
     )
     assert str(ls8_eo3_dataset.id) in result.output
     assert str(ls8_eo3_dataset.metadata_type.name) in result.output
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
     result = clirunner(
         ["dataset", "search"],
@@ -1007,7 +1007,7 @@ def test_search_cli_basic(clirunner: Any, ls8_eo3_dataset: Dataset) -> None:
     )
     assert str(ls8_eo3_dataset.id) in result.output
     assert str(ls8_eo3_dataset.product.name) in result.output
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
 
 def test_cli_info_eo3(

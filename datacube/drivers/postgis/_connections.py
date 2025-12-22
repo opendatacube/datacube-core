@@ -28,7 +28,7 @@ from typing_extensions import override
 
 import datacube
 from datacube.drivers.postgis._fields import PgField
-from datacube.index.exceptions import IndexSetupError
+from datacube.index.exceptions import IndexSetupError, NoIndexError
 from datacube.utils import jsonify_document
 
 from ...cfg import ODCEnvironment, psql_url_from_config
@@ -100,16 +100,16 @@ class PostGisDb:
         )
         if validate:
             if not _core.database_exists(engine):
-                raise IndexSetupError(
+                raise NoIndexError(
                     "\n\nNo DB schema exists. Have you run init?\n\t{init_command}".format(
                         init_command="datacube system init"
                     )
                 )
 
-            if not _core.schema_is_latest(engine):
+            if not _core.schema_is_latest(engine, compatible=True):
                 raise IndexSetupError(
                     "\n\nDB schema is out of date. "
-                    "An administrator must run init:\n\t{init_command}".format(
+                    "An administrator should run init:\n\t{init_command}".format(
                         init_command="datacube -v system init"
                     )
                 )
@@ -236,11 +236,14 @@ class PostGisDb:
             assert self._spindexes is not None  # for type checker
         return self._spindexes
 
-    def create_spatial_index(self, crs: CRS) -> type[SpatialIndex] | None:
+    def create_spatial_index(
+        self, crs: CRS, with_permissions: bool
+    ) -> type[SpatialIndex] | None:
         """
         Create a spatial index across the database, for the named CRS.
 
         :param crs:
+        :param with_permissions: Whether to create db permissions.
         :return:
         """
         try:
@@ -248,7 +251,7 @@ class PostGisDb:
             spidx = self.spindexes.get(crs_id)
             if spidx is None:
                 spidx = spindex_for_crs(crs)
-                ensure_spindex(self._engine, spidx, crs_id)
+                ensure_spindex(self._engine, spidx, crs_id, with_permissions)
                 self._refresh_spindexes()
         except ValueError:
             _LOG.warning("Could not dynamically model an index for CRS %s", crs._str)
@@ -290,7 +293,7 @@ class PostGisDb:
         to the pool beforehand.
 
         The connection can raise errors if not following this advice ("server closed the connection unexpectedly"),
-        as some servers will aggressively close idle connections (eg. DEA's NCI servers). It also prevents the
+        as some servers will aggressively close idle connections (e.g. DEA's NCI servers). It also prevents the
         connection from being reused while borrowed.
 
         Low level context manager, use <index_resource>._db_connection instead

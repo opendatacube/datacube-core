@@ -7,13 +7,14 @@ Module
 """
 
 from copy import deepcopy
+from typing import Any
 
 import pytest
 
 from datacube.model import Product
 from datacube.utils import InvalidDocException
 
-only_mandatory_fields = {
+only_mandatory_fields: dict[str, Any] = {
     "name": "ls7_nbar",
     "description": "description",
     "metadata_type": "eo",
@@ -116,3 +117,17 @@ def test_rejects_invalid_measurements(invalid_product_measurement) -> None:
     mapping["measurements"] = {"10": invalid_product_measurement}
     with pytest.raises(InvalidDocException):
         Product.validate(mapping)  # type: ignore[attr-defined]
+
+
+def test_nodata_validation() -> None:
+    product = deepcopy(only_mandatory_fields)
+    product["measurements"] = [{"name": "_nan", "dtype": "uint8", "nodata": "NaN"}]
+    with pytest.raises(ValueError):
+        Product.validate_measurements(product)
+
+    product["measurements"] = [{"name": "_nan", "dtype": "uint8", "nodata": -100}]
+    with pytest.raises(ValueError):
+        Product.validate_measurements(product)
+
+    product["measurements"] = [{"name": "_nan", "dtype": "float32", "nodata": "NaN"}]
+    assert Product.validate_measurements(product) is None

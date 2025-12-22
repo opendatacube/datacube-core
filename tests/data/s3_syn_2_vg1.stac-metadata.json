@@ -1,0 +1,209 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/product/v0.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/eo/v1.1.0/schema.json"
+  ],
+  "id": "Sentinel-3_SYN_SY_2_VG1_2025_01_01_27PWP_0_0",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [-21.000184187236, 12.6645495985796],
+          [-20.909757271228, 12.6643930938533],
+          [-21.0001841436493, 12.6013928572266],
+          [-21.000184187236, 12.6645495985796]
+        ]
+      ],
+      [
+        [
+          [-20.0785531334076, 12.6629545025374],
+          [-20.0815251173083, 11.8021200244978],
+          [-20.1500723876129, 12.19077082251],
+          [-20.1507201954469, 12.1974894576116],
+          [-20.1588429424373, 12.6630934626518],
+          [-20.0785531334076, 12.6629545025374]
+        ]
+      ]
+    ]
+  },
+  "bbox": [-21.000184187236, 11.8021200244978, -20.0785531334076, 12.6645495985796],
+  "properties": {
+    "title": "Sentinel-3_SYN_SY_2_VG1_2025_01_01_27PWP_0_0",
+    "description": "Sentinel-3 product SY_2_VG1 for 27PWP_0_0",
+    "platform": "Sentinel-3",
+    "product:type": "SY_2_VG1",
+    "instruments": [
+      "SYN"
+    ],
+    "odc:region_code": "27PWP",
+    "odc:product": "s3_syn_2_vg1",
+    "license": "CC-BY-4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/deed.en",
+    "proj:code": "EPSG:32627",
+    "eo:cloud_cover": 6.46,
+    "start_datetime": "2025-01-01T00:00:00Z",
+    "end_datetime": "2025-01-01T00:00:00Z",
+    "odc:processing_datetime": "2025-01-03T14:25:46Z",
+    "datetime": "2025-01-01T00:00:00Z"
+  },
+  "links": [
+    {
+      "rel": "self",
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/metadata.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "creo://EODATA/Sentinel-3/SYNERGY/SY_2_VG1___/2025/01/01/S3B_SY_2_VG1____20250101T000000_20250101T235959_20250103T142546_AFRICA____________PS2_O_NT_002.SEN3"
+    }
+  ],
+  "assets": {
+    "B0_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/B0_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "B0_VG1",
+      "nodata": 32767,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "B2_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/B2_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "B2_VG1",
+      "nodata": 32767,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "B3_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/B3_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "B3_VG1",
+      "nodata": 32767,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "MIR_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/MIR_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "MIR_VG1",
+      "nodata": 32767,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "NDVI_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/NDVI_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "NDVI_VG1",
+      "nodata": 32767,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "TOA_NDVI_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/TOA_NDVI_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "TOA_NDVI_VG1",
+      "nodata": 32767,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "OG_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/OG_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "OG_VG1",
+      "nodata": 255,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "SAA_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/SAA_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "SAA_VG1",
+      "nodata": 32767,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "SZA_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/SZA_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "SZA_VG1",
+      "nodata": 255,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "VAA_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/VAA_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "VAA_VG1",
+      "nodata": 32767,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "VZA_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/VZA_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "VZA_VG1",
+      "nodata": 255,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "WVG_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/WVG_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "WVG_VG1",
+      "nodata": 255,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    },
+    "AG_VG1": {
+      "href": "s3://deafrica-sentinel-3-synergy-vegetation/Sentinel-3/SYN/SY_2_VG1/2025/01/S3_SY_2_VG1_20250101_NT_27PWP_0_0/AG_VG1.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "AG_VG1",
+      "nodata": 255,
+      "proj:shape": [100, 100],
+      "proj:transform": [1000.80000000029, 0, 499979.999999999, 0, -1000.79999997869, 1400039.99996982, 0, 0, 1],
+      "roles": [
+        "data"
+      ]
+    }
+  }
+}

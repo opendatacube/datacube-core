@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import math
+import warnings
 from collections import OrderedDict
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
 from datetime import datetime
@@ -18,6 +19,7 @@ from typing import Any, TypeAlias
 from urllib.parse import urlparse
 from uuid import UUID
 
+import numpy as np
 from affine import Affine
 from typing_extensions import override
 
@@ -425,11 +427,11 @@ class Dataset:
 
     @property
     def grids(self) -> dict[str, Any]:
-        return self.metadata_doc["grids"]
+        return self.metadata_doc.get("grids", {})
 
     @property
     def properties(self) -> dict[str, Any]:
-        return self.metadata_doc["properties"]
+        return self.metadata_doc.get("properties", {})
 
     @override
     def __eq__(self, other) -> bool:
@@ -781,7 +783,6 @@ class Product:
         """
         Dictionary of measurements in this product
         """
-        # from copy import deepcopy
         if self._canonical_measurements is None:
 
             def fix_nodata(m: dict[str, Any]) -> dict[str, Any]:
@@ -873,6 +874,20 @@ class Product:
         return GridSpec(crs=crs, **gs_params)
 
     @staticmethod
+    def validate_measurements(definition: Mapping[str, Any]) -> None:
+        for m in definition.get("measurements", []):
+            with warnings.catch_warnings():
+                # numpy<2 deprecates but doesn't error on conversion of out-of-bound integers
+                warnings.simplefilter("error", DeprecationWarning)
+                try:
+                    np.dtype(m["dtype"]).type(m["nodata"])
+                except (ValueError, OverflowError, DeprecationWarning):
+                    raise ValueError(
+                        f"The Product defines a Measurement {m['name']} with a nodata value "
+                        "that does not correspond with its dtype."
+                    ) from None
+
+    @staticmethod
     def validate_extra_dims(definition: Mapping[str, Any]) -> None:
         """Validate 3D metadata in the product definition.
 
@@ -929,7 +944,7 @@ class Product:
                         spectral_definition.get("response")
                     ):
                         raise ValueError(
-                            f"spectral_definition_map: wavelength should be the same length as response "
+                            "spectral_definition_map: wavelength should be the same length as response "
                             f"in the product definition for spectral definition at index {idx}."
                         )
 
@@ -1087,7 +1102,10 @@ DatasetType = Product
 
 
 @deprecat(
-    reason="This version of GridSpec has been deprecated. Please use the GridSpec class defined in odc-geo.",
+    reason="This version of GridSpec has been deprecated. Please use the GridSpec class defined in odc-geo.\n"
+    "Note that in odc-geo GridSpec, tile_size has been renamed tile_shape and should be provided in pixels, "
+    "resolution is expected in (X, Y) order or simply X if using square pixels with inverted Y axis, "
+    "and origin (if provided) must be an instance of odc.geo.XY",
     version="1.9.0",
     category=ODC2DeprecationWarning,
 )
@@ -1125,17 +1143,8 @@ class GridSpec:
         origin: tuple[float, float] | None = None,
     ) -> None:
         self.crs = crs
-        _LOG.warning(
-            "In odc-geo GridSpec, tile_size has been renamed tile_shape and should be provided in pixels."
-        )
         self.tile_size = tile_size
-        _LOG.warning(
-            "In odc-geo GridSpec, resolution is expected in (X, Y) order, "
-            "or simply X if using square pixels with inverted Y axis."
-        )
         self.resolution = resolution
-        if origin is not None:
-            _LOG.warning("In odc-geo GridSpec, origin is expected in (X, Y) order.")
         self.origin = origin or (0.0, 0.0)
 
     @override
@@ -1434,7 +1443,7 @@ class ExtraDimensions:
         """Returns the index for slicing on a dimension
 
         :param dim: The name of the dimension
-        :return: A slice for the the requested dimension.
+        :return: A slice for the requested dimension.
         """
         dim_slice = self.measurements_index(dim)
         return slice(*dim_slice)
@@ -1443,7 +1452,7 @@ class ExtraDimensions:
         """Returns the index for slicing on a dimension as a tuple.
 
         :param dim: The name of the dimension
-        :return: A tuple for the the requested dimension.
+        :return: A tuple for the requested dimension.
         """
         if dim not in self._dim_slice:
             raise ValueError(f"Dimension {dim} not found.")
@@ -1496,8 +1505,7 @@ class ExtraDimensions:
     def __str__(self) -> str:
         return (
             f"ExtraDimensions(extra_dim={dict(self._dims)}, dim_slice={self._dim_slice} "
-            f"coords={self._coords} "
-            f")"
+            f"coords={self._coords})"
         )
 
     @override

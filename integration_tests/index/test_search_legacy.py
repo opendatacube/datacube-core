@@ -980,7 +980,9 @@ def test_cli_missing_info(clirunner, index) -> None:
         expect_success=False,
         verbose_flag=False,
     )
-    assert result.exit_code == 1, "Should return exit status when dataset is missing"
+    assert result.exit_code == 1, (
+        f"Should return exit status when dataset is missing. Output: {result.output}"
+    )
     assert result.stderr.endswith(f"{id_} missing\n")
 
 
@@ -1191,7 +1193,7 @@ def test_spatial_index_api_defaults(index: Index) -> None:
         index.spatial_indexes()
     assert "does not support the Spatial Index API" in str(e.value)
     with pytest.raises(NotImplementedError) as e:
-        index.create_spatial_index(CRS("epsg:3577"))
+        index.create_spatial_index(CRS("epsg:3577"), True)
     assert "does not support the Spatial Index API" in str(e.value)
     with pytest.raises(NotImplementedError) as e:
         index.update_spatial_index([CRS("epsg:3577")])

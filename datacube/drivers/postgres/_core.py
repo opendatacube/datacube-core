@@ -6,11 +6,16 @@
 Core SQL schema settings.
 """
 
+import contextlib
 import logging
+from collections.abc import Generator, Iterable
+from enum import Enum
+from typing import Literal, Union
 
 from deprecat import deprecat
 from sqlalchemy import Connection, MetaData, inspect, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from datacube.drivers.postgres.sql import (
@@ -27,7 +32,48 @@ from datacube.drivers.postgres.sql import (
 )
 from datacube.migration import ODC2DeprecationWarning
 
-USER_ROLES = ("agdc_user", "agdc_ingest", "agdc_manage", "agdc_admin")
+
+class UserRole(Enum):
+    USER = "agdc_user"
+    INGEST = "agdc_ingest"
+    MANAGE = "agdc_manage"
+    ADMIN = "agdc_admin"
+
+    @classmethod
+    def to_pg_role(
+        cls, role_str: Literal["user", "ingest", "manage", "admin"]
+    ) -> "UserRole":
+        return cls("agdc_" + role_str.lower())
+
+    def simple_str(self) -> str:
+        return self.value.split("_", 1)[1]
+
+    @classmethod
+    def all_roles(cls) -> Generator[str]:
+        for role in cls:
+            yield role.simple_str()
+
+    def higher_roles(self) -> list["UserRole"]:
+        if self == UserRole.USER:
+            return [UserRole.INGEST, UserRole.MANAGE, UserRole.ADMIN]
+        if self == UserRole.INGEST:
+            return [UserRole.MANAGE, UserRole.ADMIN]
+        if self == UserRole.MANAGE:
+            return [UserRole.ADMIN]
+        return []
+
+    def inherits_from(self) -> Union["UserRole", None]:
+        if self == UserRole.ADMIN:
+            return UserRole.MANAGE
+        if self == UserRole.MANAGE:
+            return UserRole.INGEST
+        if self == UserRole.INGEST:
+            return UserRole.USER
+        return None
+
+    def can_create_user(self) -> bool:
+        return self == UserRole.ADMIN
+
 
 SQL_NAMING_CONVENTIONS = {
     "ix": "ix_%(column_0_label)s",
@@ -123,10 +169,8 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
 
         if with_permissions:
             _LOG.info("Ensuring user roles.")
-            _ensure_role(c, "agdc_user")
-            _ensure_role(c, "agdc_ingest", inherits_from="agdc_user")
-            _ensure_role(c, "agdc_manage", inherits_from="agdc_ingest")
-            _ensure_role(c, "agdc_admin", inherits_from="agdc_manage", add_user=True)
+            for role in UserRole:
+                _ensure_role(c, role)
 
             c.execute(
                 text(f"""
@@ -207,7 +251,7 @@ def schema_is_latest(engine: Engine) -> bool:
     This is run when a new connection is established to see if it's compatible.
 
     It should be runnable by unprivileged users. If it returns false, their
-    connection will be rejected and they will be told to get an administrator
+    connection will be rejected, and they will be told to get an administrator
     to apply updates.
 
     See the ``update_schema()`` function below for actually applying the updates.
@@ -215,10 +259,11 @@ def schema_is_latest(engine: Engine) -> bool:
     # In lieu of a versioned schema, we typically check by seeing if one of the objects
     # from the change exists.
     #
-    # Eg.
-    #     return pg_column_exists(engine, schema_qualified('dataset_location'), 'archived')
+    # E.g.
+    #     return pg_column_exists(engine, 'dataset_location', 'archived')
     #
-    # ie. Does the 'archived' column exist? If so, we know the related schema was applied.
+    # i.e. Does the 'archived' column exist? If so, we know the related schema
+    # was applied.
 
     # No schema changes recently. Everything is perfect.
     return True
@@ -242,7 +287,7 @@ def update_schema(engine: Engine) -> None:
 
     # Post 1.8 DB Incremental Sync triggers
     with engine.connect() as connection:
-        if not pg_column_exists(connection, schema_qualified("dataset"), "updated"):
+        if not pg_column_exists(connection, "dataset", "updated"):
             _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
             connection.execute(text("begin"))
             install_timestamp_trigger(connection)
@@ -252,41 +297,37 @@ def update_schema(engine: Engine) -> None:
             _LOG.info("No schema updates required.")
 
 
-def _ensure_role(
-    conn, name: str, inherits_from=None, add_user: bool = False, create_db: bool = False
-) -> None:
-    if has_role(conn, name):
-        _LOG.debug("Role exists: %s", name)
+def _ensure_role(conn, role: UserRole) -> None:
+    if has_user(conn, role.value):
+        _LOG.debug("Role exists: %s", role.value)
         return
 
     sql = [
-        f"create role {name} nologin inherit",
-        "createrole" if add_user else "nocreaterole",
-        "createdb" if create_db else "nocreatedb",
+        f"create role {role.value} nologin inherit",
+        "createrole" if role.can_create_user() else "nocreaterole",
     ]
-    if inherits_from:
-        sql.append("in role " + inherits_from)
+    if (inherit := role.inherits_from()) is not None:
+        sql.append("in role " + inherit.value)
     conn.execute(text(" ".join(sql)))
 
 
-def grant_role(conn, role, users) -> None:
-    if role not in USER_ROLES:
-        raise ValueError(f"Unknown role {role!r}. Expected one of {USER_ROLES!r}")
-
+def grant_role(conn: Connection, role: UserRole, users: Iterable[str]) -> None:
     users = [escape_pg_identifier(conn, user) for user in users]
-    conn.execute(
-        text(
-            "revoke {roles} from {users}".format(
-                users=", ".join(users), roles=", ".join(USER_ROLES)
+    with contextlib.suppress(ProgrammingError):
+        conn.execute(
+            text(
+                "revoke {roles} from {users}".format(
+                    users=", ".join(users),
+                    roles=", ".join(r.value for r in UserRole.higher_roles(role)),
+                )
             )
         )
-    )
     conn.execute(
-        text("grant {role} to {users}".format(users=", ".join(users), role=role))
+        text("grant {role} to {users}".format(users=", ".join(users), role=role.value))
     )
 
 
-def has_role(conn, role_name: str) -> bool:
+def has_user(conn, role_name: str) -> bool:
     res = conn.execute(
         text(f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'")
     ).fetchall()
@@ -309,44 +350,3 @@ def drop_schema(connection: Connection, schema_name: str = SCHEMA_NAME) -> None:
 )
 def drop_db(connection: Connection) -> None:
     drop_schema(connection)
-
-
-def to_pg_role(role: str) -> str:
-    """
-    Convert a role name to a name for use in PostgreSQL
-
-    There is a short list of valid ODC role names, and they are given
-    a prefix inside of PostgreSQL.
-
-    Why are we even doing this? Can't we use the same names internally and externally?
-
-    >>> to_pg_role("ingest")
-    'agdc_ingest'
-    >>> to_pg_role("fake")
-    Traceback (most recent call last):
-    ...
-    ValueError: Unknown role 'fake'. Expected one of ...
-    """
-    pg_role = "agdc_" + role.lower()
-    if pg_role not in USER_ROLES:
-        raise ValueError(
-            f"Unknown role {role!r}. Expected one of {[r.split('_')[1] for r in USER_ROLES]!r}"
-        )
-    return pg_role
-
-
-def from_pg_role(pg_role: str) -> str:
-    """
-    Convert a PostgreSQL role name back to an ODC name.
-
-    >>> from_pg_role("agdc_admin")
-    'admin'
-    >>> from_pg_role("fake")
-    Traceback (most recent call last):
-    ...
-    ValueError: Not a pg role: 'fake'. Expected one of ...
-    """
-    if pg_role not in USER_ROLES:
-        raise ValueError(f"Not a pg role: {pg_role!r}. Expected one of {USER_ROLES!r}")
-
-    return pg_role.split("_")[1]

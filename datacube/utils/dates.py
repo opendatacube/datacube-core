@@ -19,6 +19,11 @@ import xarray as xr
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, MONTHLY, YEARLY, rrule
 
+try:
+    from ciso8601 import parse_datetime
+except ImportError:
+    parse_datetime = datetime.fromisoformat
+
 FREQS: dict[str, int] = {"y": YEARLY, "m": MONTHLY, "d": DAILY}
 DURATIONS = {"y": "years", "m": "months", "d": "days"}
 
@@ -114,10 +119,7 @@ def parse_time(time: str | datetime) -> datetime:
     """
     if isinstance(time, str):
         try:
-            from ciso8601 import parse_datetime  # pylint: disable=wrong-import-position
-
             return parse_datetime(time)
-        except (ImportError, ValueError):  # pragma: no cover
+        except ValueError:
             return dateutil.parser.parse(time)
-
     return time

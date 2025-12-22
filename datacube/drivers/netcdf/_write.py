@@ -12,6 +12,7 @@ import netCDF4
 import xarray
 from odc.geo import CRS
 from xarray.core.coordinates import DatasetCoordinates
+from xarray.core.dataset_variables import DataVariables
 
 from datacube.storage._hdf5 import HDF5_LOCK
 from datacube.utils import DatacubeException
@@ -45,7 +46,7 @@ def create_netcdf_storage_unit(
     filename: Path,
     crs: CRS,
     coordinates: DatasetCoordinates,
-    variables: Mapping[str, Any],
+    variables: DataVariables,
     variable_params: Mapping[str, Mapping[str, Any]],
     global_attributes: dict | None = None,
     netcdfparams: dict | None = None,
@@ -83,7 +84,8 @@ def create_netcdf_storage_unit(
     grid_mapping = netcdf_writer.DEFAULT_GRID_MAPPING
     netcdf_writer.create_grid_mapping_variable(nco, crs, name=grid_mapping)
 
-    for name, variable in variables.items():
+    for _name, variable in variables.items():
+        name = str(_name)
         has_crs = all(dim in variable.dims for dim in crs.dimensions)
         var_params = variable_params.get(name, {})
         data_var = netcdf_writer.create_variable(
@@ -149,7 +151,7 @@ def write_dataset_to_netcdf(
         )
 
         for name, variable in dataset.data_vars.items():
-            nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
+            nco[str(name)][:] = netcdf_writer.netcdfy_data(variable.values)
 
         nco.close()
     finally:

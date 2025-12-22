@@ -255,7 +255,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
     p = dataset_add_configs
     index = index_empty
     r = clirunner(["dataset", "add", p.datasets], expect_success=False)
-    assert r.exit_code != 0
+    assert r.exit_code != 0, f"Output: {r.output}"
     assert "Found no matching products" in r.output
 
     clirunner(["metadata", "add", p.metadata])
@@ -318,11 +318,11 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
     )
 
     assert "ERROR Supplied product name" in r.output
-    assert r.exit_code != 0
+    assert r.exit_code != 0, f"Output: {r.output}"
 
     # test dataset add eo3
     r = clirunner(["dataset", "add", p.datasets_eo3])
-    assert r.exit_code == 0
+    assert r.exit_code == 0, f"Output: {r.output}"
 
     ds_eo3 = load_dataset_definition(p.datasets_eo3)
     assert ds_eo3 is not None
@@ -587,7 +587,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) ->
     single_invalid_uuid = clirunner(
         ["dataset", "archive", "--dry-run", non_existent_uuid], expect_success=False
     )
-    assert single_invalid_uuid.exit_code is -1
+    assert single_invalid_uuid.exit_code is -1, f"Output: {single_invalid_uuid.output}"
     assert non_existent_uuid in single_invalid_uuid.output
     assert index.datasets.has(ds.id) is True
 
@@ -598,7 +598,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) ->
         expect_success=False,
     )
     assert non_existent_uuid in valid_and_invalid_uuid.output
-    assert single_invalid_uuid.exit_code is -1
+    assert single_invalid_uuid.exit_code is -1, f"Output: {single_invalid_uuid.output}"
     assert index.datasets.has(ds.id) is True
 
     valid_and_invalid_uuid = clirunner(
@@ -612,7 +612,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) ->
         ],
         expect_success=False,
     )
-    assert single_invalid_uuid.exit_code is -1
+    assert single_invalid_uuid.exit_code is -1, f"Output: {single_invalid_uuid.output}"
     assert non_existent_uuid in valid_and_invalid_uuid.output
     assert index.datasets.has(ds.id) is True
 

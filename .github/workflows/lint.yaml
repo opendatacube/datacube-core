@@ -2,19 +2,18 @@ name: lint
 
 on:
   pull_request:
-    paths:
-      - '**'
-
-  push:
-    branches:
-      - develop
-    paths:
+    paths: &paths
       - '**'
       - '!.github/**'
       - '.github/workflows/lint.yaml'
       - '!docker/**'
       - '!docs/**'
       - '!contrib/**'
+
+  push:
+    branches:
+      - develop
+    paths: *paths
   workflow_dispatch:
 
 permissions: {}
@@ -30,20 +29,21 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.12"]
         lintcommand:
-          - "pylint -j 2 datacube"
+          - "pylint -j 4 datacube"
           - "mypy datacube examples integration_tests tests"
     name: Linting
     steps:
       - name: checkout git
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@b75a909f75acd358c2196fb9a5f1299a9a8868a4 # v6.7.0
+        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
       - name: run linter
         run: |
           uv run ${LINT_COMMAND}

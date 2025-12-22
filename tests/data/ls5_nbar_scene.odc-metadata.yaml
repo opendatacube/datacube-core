@@ -1,0 +1,371 @@
+---
+# EO1 Dataset
+# url: https://explorer.nci.dea.ga.gov.au/products/ls5_nbar_scene/datasets/80fff2b6-d6e9-464a-82b9-540611321b5f
+id: 80fff2b6-d6e9-464a-82b9-540611321b5f
+ga_label: LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
+product_type: nbar
+product_doi: http://dx.doi.org/10.4225/25/5487CC0D4F40B
+creation_dt: 2016-07-11 00:46:14
+size_bytes: 303397853
+checksum_path: package.sha1
+platform:
+code: LANDSAT_5
+instrument:
+  name: TM
+  operation_mode: SAM
+format:
+  name: GeoTIFF
+acquisition:
+groundstation:
+  code: ASA
+  label: Alice Springs
+  eods_domain_code: 002
+extent:
+  coord:
+    ll:
+      lat: -35.606957
+      lon: 148.533101
+    lr:
+      lat: -35.54387
+      lon: 151.188673
+    ul:
+      lat: -33.651641
+      lon: 148.497538
+    ur:
+      lat: -33.592967
+      lon: 151.091798
+  to_dt: 1990-03-02 23:11:29
+  from_dt: 1990-03-02 23:11:02
+  center_dt: 1990-03-02 23:11:15.500094
+grid_spatial:
+  projection:
+    zone: -55
+    datum: GDA94
+    ellipsoid: GRS80
+    valid_data:
+      type: Polygon
+      coordinates:
+      - - - 684716.7950131118
+          - 6275475.0
+        - - 684275.8633090566
+          - 6274131.513075334
+        - - 683000.8633090566
+          - 6269406.513075334
+        - - 676975.8148972442
+          - 6246656.330940269
+        - - 650425.8137841448
+          - 6145206.3266865425
+        - - 638850.8011642174
+          - 6100631.278243924
+        - - 638850.0
+          - 6100526.185748969
+        - - 638850.0
+          - 6098203.539972872
+        - - 642720.0160477941
+          - 6097375.501832305
+        - - 831950.0
+          - 6058900.0
+        - - 833249.186680018
+          - 6063518.675088166
+        - - 877324.1898631568
+          - 6232318.687273136
+        - - 877899.4745104935
+          - 6234694.901143647
+        - - 878074.7234088217
+          - 6235546.291488676
+        - - 878142.6776695297
+          - 6236117.67766953
+        - - 875979.9907369732
+          - 6236599.496786411
+        - - 845054.9901120536
+          - 6242899.496913718
+        - - 684847.9505490204
+          - 6275475.0
+        - - 684716.7950131118
+          - 6275475.0
+    orientation: NORTH_UP
+    geo_ref_points:
+      ll:
+        x: 638862.5
+        y: 6058562.5
+      lr:
+        x: 879787.5
+        y: 6058562.5
+      ul:
+        x: 638862.5
+        y: 6275462.5
+      ur:
+        x: 879787.5
+        y: 6275462.5
+    map_projection: UTM
+    resampling_option: CUBIC_CONVOLUTION
+browse:
+  full:
+    path: browse.fr.jpg
+    shape:
+      x: 9638
+      y: 8677
+    red_band: 7
+    blue_band: 1
+    cell_size: 25.0
+    file_type: image/jpg
+    green_band: 4
+  medium:
+    path: browse.jpg
+    shape:
+      x: 1024
+      y: 922
+    red_band: 7
+    blue_band: 1
+    cell_size: 235.302734375
+    file_type: image/jpg
+    green_band: 4
+image:
+  bands:
+    1:
+      path: product/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B1.tif
+      type: reflective
+      label: Visible Blue
+      number: 1
+      cell_size: 25.0
+    2:
+      path: product/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B2.tif
+      type: reflective
+      label: Visible Green
+      number: 2
+      cell_size: 25.0
+    3:
+      path: product/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B3.tif
+      type: reflective
+      label: Visible Red
+      number: 3
+      cell_size: 25.0
+    4:
+      path: product/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B4.tif
+      type: reflective
+      label: Near Infrared
+      number: 4
+      cell_size: 25.0
+    5:
+      path: product/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B5.tif
+      type: reflective
+      label: Middle Infrared 1
+      number: 5
+      cell_size: 25.0
+    7:
+      path: product/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B7.tif
+      type: reflective
+      label: Middle Infrared 2
+      number: 7
+      cell_size: 25.0
+  satellite_ref_point_start:
+    x: 90
+    y: 84
+lineage:
+  algorithm:
+    doi: http://dx.doi.org/10.1109/JSTARS.2010.2042281
+    name: brdf
+    version: 2.0
+    parameters:
+      ozone: 0.26100001
+      aerosol: 0.04249
+      elevation: 0.40900000000000003
+      water_vapour: 2.5500000000000003
+      solar_distance: 0.99108
+      band_1_brdf_geo: 0.008685082260424828
+      band_1_brdf_iso: 0.04473292831345189
+      band_1_brdf_vol: 0.01788853478391549
+      band_2_brdf_geo: 0.01520317955388686
+      band_2_brdf_iso: 0.0794709523879913
+      band_2_brdf_vol: 0.041271663390045975
+      band_3_brdf_geo: 0.01776755061516706
+      band_3_brdf_iso: 0.08704009450463901
+      band_3_brdf_vol: 0.03736802560198667
+      band_4_brdf_geo: 0.023463062876626608
+      band_4_brdf_iso: 0.27017310855222637
+      band_4_brdf_vol: 0.203770670549339
+      band_5_brdf_geo: 0.044969685099505795
+      band_5_brdf_iso: 0.2833614546224988
+      band_5_brdf_vol: 0.11199136450311155
+      band_7_brdf_geo: 0.03421807758446537
+      band_7_brdf_iso: 0.17029596704655758
+      band_7_brdf_vol: 0.047952958566761766
+  machine:
+    uname: Linux r1949 2.6.32-642.1.1.el6.x86_64 #1 SMP Tue May 31 21:57:07 UTC 2016 x86_64
+    hostname: r1949
+    runtime_id: 515e0586-46ff-11e6-84f7-a0000100fe80
+    software_versions:
+      gaip:
+        version: 4.2.1
+        repo_url: https://github.com/GeoscienceAustralia/ga-neo-landsat-processor.git
+      modtran:
+        version: 5.2.1
+        repo_url: http://www.ontar.com/software/productdetails.aspx?item=modtran
+      eodatasets:
+        version: 0.8
+        repo_url: https://github.com/opendatacube/eo-datasets.git
+  ancillary:
+    ozone:
+      uri: /g/data/v10/eoancillarydata/lookup_tables/ozone/mar.tif
+      name: mar.tif
+      type: ozone
+      access_dt: 2016-07-11 00:36:22
+      file_owner: Roger Edberg
+      modification_dt: 2010-02-23 22:00:21
+    aerosol:
+      uri: /g/data/v10/eoancillarydata/aerosol/AATSR/2.0/aot_mean_Mar_All_Aerosols.cmp
+      name: aot_mean_Mar_All_Aerosols.cmp
+      type: aerosol
+      access_dt: 2016-07-11 00:36:23
+      file_owner: Roger Edberg
+      modification_dt: 2012-07-12 01:19:48
+    elevation:
+      uri: /g/data/v10/eoancillarydata/elevation/world_1deg/DEM_one_deg.tif
+      name: DEM_one_deg.tif
+      type: elevation
+      access_dt: 2016-07-11 00:36:22
+      file_owner: Roger Edberg
+      modification_dt: 2010-02-23 21:59:29
+    water_vapour:
+      uri: /g/data/v10/eoancillarydata/water_vapour/pr_wtr.eatm.1990.tif
+      name: pr_wtr.eatm.1990.tif
+      type: water_vapour
+      access_dt: 2016-07-11 00:36:43
+      file_owner: Landsat Processing
+      modification_dt: 2016-07-09 15:12:59
+    solar_distance:
+      uri: /g/data/v10/eoancillarydata/lookup_tables/earthsun_distance/EarthSun_distanceLUT.txt
+      name: EarthSun_distanceLUT.txt
+      type: solar_distance
+      access_dt: 2016-07-11 00:36:22
+      file_owner: Roger Edberg
+      modification_dt: 2012-05-21 02:04:01
+    band_1_brdf_geo:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b09.500m_0459_0479nm_brdf_par_fgeo.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b09.500m_0459_0479nm_brdf_par_fgeo.hdf
+      type: band_1_brdf_geo
+      access_dt: 2016-07-11 00:36:25
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:37
+    band_1_brdf_iso:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b07.500m_0459_0479nm_brdf_par_fiso.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b07.500m_0459_0479nm_brdf_par_fiso.hdf
+      type: band_1_brdf_iso
+      access_dt: 2016-07-11 00:36:28
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:45
+    band_1_brdf_vol:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b08.500m_0459_0479nm_brdf_par_fvol.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b08.500m_0459_0479nm_brdf_par_fvol.hdf
+      type: band_1_brdf_vol
+      access_dt: 2016-07-11 00:36:31
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:43
+    band_2_brdf_geo:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b12.500m_0545_0565nm_brdf_par_fgeo.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b12.500m_0545_0565nm_brdf_par_fgeo.hdf
+      type: band_2_brdf_geo
+      access_dt: 2016-07-11 00:36:34
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:44
+    band_2_brdf_iso:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b10.500m_0545_0565nm_brdf_par_fiso.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b10.500m_0545_0565nm_brdf_par_fiso.hdf
+      type: band_2_brdf_iso
+      access_dt: 2016-07-11 00:36:37
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:41
+    band_2_brdf_vol:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b11.500m_0545_0565nm_brdf_par_fvol.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b11.500m_0545_0565nm_brdf_par_fvol.hdf
+      type: band_2_brdf_vol
+      access_dt: 2016-07-11 00:36:40
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:40
+    band_3_brdf_geo:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b03.500m_0620_0670nm_brdf_par_fgeo.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b03.500m_0620_0670nm_brdf_par_fgeo.hdf
+      type: band_3_brdf_geo
+      access_dt: 2016-07-11 00:36:42
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:42
+    band_3_brdf_iso:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b01.500m_0620_0670nm_brdf_par_fiso.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b01.500m_0620_0670nm_brdf_par_fiso.hdf
+      type: band_3_brdf_iso
+      access_dt: 2016-07-11 00:36:45
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:47
+    band_3_brdf_vol:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b02.500m_0620_0670nm_brdf_par_fvol.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b02.500m_0620_0670nm_brdf_par_fvol.hdf
+      type: band_3_brdf_vol
+      access_dt: 2016-07-11 00:36:47
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:39
+    band_4_brdf_geo:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b06.500m_0841_0876nm_brdf_par_fgeo.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b06.500m_0841_0876nm_brdf_par_fgeo.hdf
+      type: band_4_brdf_geo
+      access_dt: 2016-07-11 00:36:50
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:35
+    band_4_brdf_iso:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b04.500m_0841_0876nm_brdf_par_fiso.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b04.500m_0841_0876nm_brdf_par_fiso.hdf
+      type: band_4_brdf_iso
+      access_dt: 2016-07-11 00:36:53
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:46
+    band_4_brdf_vol:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b05.500m_0841_0876nm_brdf_par_fvol.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b05.500m_0841_0876nm_brdf_par_fvol.hdf
+      type: band_4_brdf_vol
+      access_dt: 2016-07-11 00:36:55
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:46
+    band_5_brdf_geo:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b18.500m_1628_1652nm_brdf_par_fgeo.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b18.500m_1628_1652nm_brdf_par_fgeo.hdf
+      type: band_5_brdf_geo
+      access_dt: 2016-07-11 00:36:58
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:43
+    band_5_brdf_iso:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b16.500m_1628_1652nm_brdf_par_fiso.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b16.500m_1628_1652nm_brdf_par_fiso.hdf
+      type: band_5_brdf_iso
+      access_dt: 2016-07-11 00:37:01
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:36
+    band_5_brdf_vol:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b17.500m_1628_1652nm_brdf_par_fvol.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b17.500m_1628_1652nm_brdf_par_fvol.hdf
+      type: band_5_brdf_vol
+      access_dt: 2016-07-11 00:37:03
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:40
+    band_7_brdf_geo:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b21.500m_2105_2155nm_brdf_par_fgeo.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b21.500m_2105_2155nm_brdf_par_fgeo.hdf
+      type: band_7_brdf_geo
+      access_dt: 2016-07-11 00:37:06
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:35
+    band_7_brdf_iso:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b19.500m_2105_2155nm_brdf_par_fiso.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b19.500m_2105_2155nm_brdf_par_fiso.hdf
+      type: band_7_brdf_iso
+      access_dt: 2016-07-11 00:37:09
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:38
+    band_7_brdf_vol:
+      uri: /g/data/v10/eoancillarydata/brdf-jl/data/057/MCD43A1.JLWKAV.057.aust.005.b20.500m_2105_2155nm_brdf_par_fvol.hdf
+      name: MCD43A1.JLWKAV.057.aust.005.b20.500m_2105_2155nm_brdf_par_fvol.hdf
+      type: band_7_brdf_vol
+      access_dt: 2016-07-11 00:37:11
+      file_owner: Joshua Sixsmith
+      modification_dt: 2013-11-04 01:44:34
+  source_datasets: {}
+ga_level: P54
+...

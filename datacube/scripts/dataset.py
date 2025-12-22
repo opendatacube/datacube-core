@@ -198,15 +198,6 @@ def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Generator[tu
     default=False,
 )
 @click.option(
-    "--confirm-ignore-lineage",
-    help=(
-        "WARNING: this flag has been deprecated and will be removed in datacube v1.9.\n"
-        "Pretend that there is no lineage data in the datasets being indexed, without confirmation"
-    ),
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--archive-less-mature",
     help="Archive less mature versions of the dataset",
     is_flag=True,
@@ -222,7 +213,6 @@ def index_cmd(
     verify_lineage: bool,
     dry_run: bool,
     ignore_lineage: bool,
-    confirm_ignore_lineage: bool,
     archive_less_mature: bool,
     dataset_paths: list[str],
 ) -> None:
@@ -231,14 +221,12 @@ def index_cmd(
         print_help_msg(index_cmd)
         sys.exit(1)
 
-    confirm_ignore_lineage = ignore_lineage
-
     try:
         ds_resolve = Doc2Dataset(
             index,
             product_names,
             exclude_products=exclude_product_names,
-            skip_lineage=confirm_ignore_lineage,
+            skip_lineage=ignore_lineage,
             fail_on_missing_lineage=not auto_add_lineage,
             verify_lineage=verify_lineage,
         )
@@ -246,24 +234,18 @@ def index_cmd(
         _LOG.error(e)
         sys.exit(2)
 
-    def run_it(dataset_paths: Iterable) -> None:
-        doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
-        doc_stream = remap_uri_from_doc(doc_stream)
-        dss = dataset_stream(doc_stream, ds_resolve)
+    with click.progressbar(
+        dataset_paths, label="Indexing datasets", file=sys.stdout
+    ) as pp:
+        doc_stream = ui_path_doc_stream(pp, logger=_LOG, uri=True)
         index_datasets(
-            dss,
+            dataset_stream(remap_uri_from_doc(doc_stream), ds_resolve),
             index,
-            auto_add_lineage=auto_add_lineage and not confirm_ignore_lineage,
+            auto_add_lineage=auto_add_lineage and not ignore_lineage,
             dry_run=dry_run,
-            archive_less_mature=archive_less_mature,
+            # Convert from bool to int to avoid warnings
+            archive_less_mature=500 if archive_less_mature else None,
         )
-
-    # If outputting directly to terminal, show a progress bar.
-    if sys.stdout.isatty():
-        with click.progressbar(dataset_paths, label="Indexing datasets") as pp:
-            run_it(pp)
-    else:
-        run_it(dataset_paths)
 
 
 def index_datasets(
@@ -368,7 +350,7 @@ def update_cmd(
 
         if existing_ds.has_multiple_uris():
             _LOG.warning("Refusing to %s old location, there are several", action_name)
-            return None
+            return False
 
         if new_ds.has_multiple_uris():
             raise ValueError("More than one uri in new dataset")
@@ -406,57 +388,47 @@ def update_cmd(
 
     success, fail = 0, 0
     doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
-    doc_stream = remap_uri_from_doc(doc_stream)
 
-    for dataset, existing_ds in load_datasets_for_update(doc_stream, index):
-        _LOG.info("Matched %s", dataset)
+    for ds, existing_ds in load_datasets_for_update(
+        remap_uri_from_doc(doc_stream), index
+    ):
+        _LOG.info("Matched %s", ds)
 
         if location_policy != "keep" and existing_ds.has_multiple_uris():
             # TODO:
             pass
 
-        if not dry_run:
-            try:
+        try:
+            if dry_run:
+                update, safe, unsafe = index.datasets.can_update(
+                    ds, updates_allowed=updates_allowed
+                )
+                echo(
+                    f"Can{'' if update else 'not'} update {ds.id}: "
+                    f"{len(unsafe)} unsafe changes, {len(safe)} safe changes"
+                )
+            else:
                 index.datasets.update(
-                    dataset,
+                    ds,
                     updates_allowed=updates_allowed,
                     archive_less_mature=archive_less_mature,
                 )
-                update_loc(dataset, existing_ds)
-                success += 1
-                echo(f"Updated {dataset.id}")
-            except ValueError as e:
-                fail += 1
-                echo(f"Failed to update {dataset.id}: {e}")
-        else:
-            if update_dry_run(index, updates_allowed, dataset):
-                update_loc(dataset, existing_ds)
-                success += 1
+                update = True
+            if update:
+                updated = update_loc(ds, existing_ds)
+                if updated is False:
+                    echo(f"Could not update location for dataset: {ds.id}")
+                    fail += 1
+                else:
+                    echo(f"Updated {ds.id}")
+                    success += 1
             else:
                 fail += 1
+        except ValueError as e:
+            fail += 1
+            echo(f"{'Cannot' if dry_run else 'Failed to'} update {ds.id}: {e}")
     echo(f"{success} successful, {fail} failed")
-
-
-def update_dry_run(
-    index: Index, updates_allowed: Mapping[Offset, AllowPolicy] | None, dataset: Dataset
-) -> bool:
-    try:
-        can_update, safe_changes, unsafe_changes = index.datasets.can_update(
-            dataset, updates_allowed=updates_allowed
-        )
-    except ValueError as e:
-        echo(f"Cannot update {dataset.id}: {e}")
-        return False
-
-    if can_update:
-        echo(
-            f"Can update {dataset.id}: {len(unsafe_changes)} unsafe changes, {len(safe_changes)} safe changes"
-        )
-    else:
-        echo(
-            f"Cannot update {dataset.id}: {len(unsafe_changes)} unsafe changes, {len(safe_changes)} safe changes"
-        )
-    return can_update
+    sys.exit(0 if fail == 0 else 1)
 
 
 def build_dataset_info(
@@ -815,7 +787,7 @@ def count_cmd(
 @click.option(
     "--all",
     "all_ds",
-    help="Ignore id list - archive ALL non-archived datasets  (warning: may be slow on large databases)",
+    help="archive all non-archived datasets (warning: may be slow on large databases)",
     is_flag=True,
     default=False,
 )
@@ -892,7 +864,7 @@ def archive_cmd(
 @click.option(
     "--all",
     "all_ds",
-    help="Ignore id list - restore ALL archived datasets  (warning: may be slow on large databases)",
+    help="restore all archived datasets (warning: may be slow on large databases)",
     is_flag=True,
     default=False,
 )
@@ -959,7 +931,7 @@ def restore_cmd(
 @click.option(
     "--all",
     "all_ds",
-    help="Ignore id list - purge ALL archived datasets  (warning: may be slow on large databases)",
+    help="purge all archived datasets (warning: may be slow on large databases)",
     is_flag=True,
     default=False,
 )
@@ -993,10 +965,10 @@ def purge_cmd(
                     echo(f"No dataset found with id: {dataset_id}", err=True)
             sys.exit(-1)
 
-    if sys.stdin.isatty() and force:
-        click.confirm(
-            "Warning: you may be deleting active datasets. Proceed?", abort=True
-        )
+        if sys.stdin.isatty() and force:
+            click.confirm(
+                "Warning: you may be deleting active datasets. Proceed?", abort=True
+            )
 
     if not dry_run:
         # Perform purge

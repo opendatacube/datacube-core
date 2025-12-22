@@ -4,7 +4,7 @@ description: |
     Earth Observation datasets.
     Type of datasets produced by the eodatasets library.
     (or of similar structure)
-    https://github.com/GeoscienceAustralia/eo-datasets
+    https://github.com/opendatacube/eo-datasets
 dataset:
     id: ['id']
     creation_dt: ['creation_dt']

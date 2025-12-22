@@ -20,13 +20,14 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: GIS",
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
     'affine',
     'alembic',
-    'antimeridian',
+    'antimeridian<0.4.5', # All test_index_cloning tests fail with 0.4.5.
     'attrs>=18.1',
     'cachetools',
     'click>=8',
@@ -38,9 +39,9 @@ dependencies = [
     'jsonschema>=4.18',  # New reference resolution API
     'lark',
     'numpy>=1.26.0',
-    'odc-geo>=0.4.8',
-    'odc-loader<=0.5.1',  # Raster metadata API changes in 0.6.0
-    'odc-stac>=0.4.0',
+    'odc-geo>=0.5.0',
+    'odc-loader>=0.6.0', # Raster metadata API changes in 0.6.0
+    'odc-stac>=0.5.0',   # First release compatible with odc-loader 0.6.0
     'packaging',
     'pandas',
     'pyproj>=2.5',
@@ -108,7 +109,8 @@ doc = [
     'nbsphinx',
     'pydata-sphinx-theme',
     'recommonmark',
-    'Sphinx',
+    "Sphinx>=8.1.3; python_version<'3.11'",
+    "Sphinx>=8.2.3; python_version>='3.11'",
     'sphinx_autodoc_typehints',  # Propagate mypy info into docs
     'sphinx-click',
     'sphinx-design',
@@ -133,7 +135,7 @@ memory = 'datacube.index.memory.index:index_driver_init'
 postgis = 'datacube.index.postgis.index:index_driver_init'
 
 [tool.codespell]
-ignore-words-list = 'Nd,nD'
+ignore-words-list = 'Nd,nD,UE'
 skip = "uv.lock,./build,./docs/build,__pycache__"
 # Ignore base64 encoded strings
 ignore-regex = '[A-Za-z0-9+/]{100,}'
@@ -238,7 +240,7 @@ include = ['datacube*']
 
 [tool.setuptools_scm]
 write_to = 'datacube/_version.py'
-fallback_version = "1.9.9.dev0"
+fallback_version = "1.9.11.dev0"
 
 [tool.mypy]
 python_version = '3.10'

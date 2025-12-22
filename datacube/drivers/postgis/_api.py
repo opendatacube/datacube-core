@@ -23,6 +23,8 @@ from typing import cast as type_cast
 
 from odc.geo import CRS, Geometry
 from sqlalchemy import (
+    Connection,
+    RootTransaction,
     and_,
     cast,
     column,
@@ -47,6 +49,7 @@ from datacube.utils.uris import split_uri
 
 from ...utils.changes import Offset
 from . import _core
+from ._core import UserRole
 from ._fields import (
     DateDocField,
     DateRangeDocField,
@@ -251,13 +254,13 @@ time_max = DateDocField(
 
 
 class PostgisDbAPI:
-    def __init__(self, parentdb, connection) -> None:
+    def __init__(self, parentdb, connection: Connection) -> None:
         self._db = parentdb
         self._connection = connection
-        self._sqla_txn = None
+        self._sqla_txn: RootTransaction | None = None
 
     @property
-    def in_transaction(self):
+    def in_transaction(self) -> bool:
         return self._connection.in_transaction()
 
     def begin(self) -> None:
@@ -269,11 +272,11 @@ class PostgisDbAPI:
         self._connection.execution_options(isolation_level="AUTOCOMMIT")
 
     def commit(self) -> None:
-        self._sqla_txn.commit()  # type: ignore[attr-defined]
+        self._sqla_txn.commit()  # type: ignore[union-attr]
         self._end_transaction()
 
     def rollback(self) -> None:
-        self._sqla_txn.rollback()  # type: ignore[attr-defined]
+        self._sqla_txn.rollback()  # type: ignore[union-attr]
         self._end_transaction()
 
     def execute(self, command):
@@ -427,9 +430,7 @@ class PostgisDbAPI:
             ).fetchall()
         ]
 
-    def get_datasets_for_location(
-        self, uri: str, mode: str | None = None
-    ) -> Sequence[Dataset]:
+    def get_datasets_for_location(self, uri: str, mode: str | None = None) -> Sequence:
         scheme, body = split_uri(uri)
 
         if mode is None:
@@ -502,7 +503,7 @@ class PostgisDbAPI:
 
     def search_datasets_by_metadata(
         self, metadata: dict, archived: bool | None
-    ) -> dict:
+    ) -> Sequence:
         """
         Find any datasets that have the given metadata.
         """
@@ -827,7 +828,8 @@ class PostgisDbAPI:
             query = query.join(*join)
 
         select_query = query.where(where_expressions)
-        return self._connection.scalar(select_query)
+        num = self._connection.scalar(select_query)
+        return 0 if num is None else num
 
     def count_datasets_through_time(
         self,
@@ -1050,7 +1052,9 @@ class PostgisDbAPI:
                 definition=definition,
             )
         )
-        prod_id = res.first()[0]
+        prod = res.first()
+        assert prod is not None
+        prod_id = prod[0]
 
         if update_metadata_type:
             if not self._connection.in_transaction():
@@ -1068,8 +1072,9 @@ class PostgisDbAPI:
         res = self._connection.execute(
             delete(Product).returning(Product.id).where(Product.name == name)
         )
-
-        return res.first()[0]
+        prod = res.first()
+        assert prod is not None
+        return prod[0]
 
     def insert_metadata_type(self, name: str, definition):
         res = self._connection.execute(
@@ -1093,7 +1098,9 @@ class PostgisDbAPI:
             .where(MetadataType.name == name)
             .values(name=name, definition=definition)
         )
-        return res.first()[0]
+        prod = res.first()
+        assert prod is not None
+        return prod[0]
 
     @staticmethod
     def _get_active_field_names(fields, metadata_doc) -> Generator:
@@ -1176,14 +1183,20 @@ class PostgisDbAPI:
         """)
         )
         for row in result:
-            yield _core.from_pg_role(row.role_name), row.user_name, row.description
+            yield UserRole(row.role_name).simple_str(), row.user_name, row.description
 
     def create_user(
-        self, username: str, password: str, role, description: str | None = None
+        self,
+        username: str,
+        password: str,
+        role_str: str,
+        description: str | None = None,
     ) -> None:
-        pg_role = _core.to_pg_role(role)
+        if role_str not in UserRole.all_roles():
+            raise ValueError(f"Invalid role: {role_str}")
+        role = UserRole.to_pg_role(role_str)  # type: ignore[arg-type]
         username = escape_pg_identifier(self._connection, username)
-        sql = text(f"create user {username} password :password in role {pg_role}")
+        sql = text(f"create user {username} password :password in role {role.value}")
         self._connection.execute(sql, {"password": password})
         if description:
             sql = text(f"comment on role {username} is :description")
@@ -1194,14 +1207,14 @@ class PostgisDbAPI:
             sql = text(f"drop role {escape_pg_identifier(self._connection, username)}")
             self._connection.execute(sql)
 
-    def grant_role(self, role: str, users: Iterable[str]) -> None:
+    def grant_role(self, role_str: str, users: Iterable[str]) -> None:
         """
         Grant a role to a user.
         """
-        pg_role = _core.to_pg_role(role)
+        pg_role = UserRole.to_pg_role(role_str)  # type: ignore[arg-type]
 
         for user in users:
-            if not _core.has_role(self._connection, user):
+            if not _core.has_user(self._connection, user):
                 raise ValueError(f"Unknown user {user!r}")
 
         _core.grant_role(self._connection, pg_role, users)

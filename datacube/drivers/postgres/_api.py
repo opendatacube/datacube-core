@@ -16,12 +16,14 @@ Persistence API implementation for postgres.
 import datetime
 import logging
 import uuid  # noqa: F401
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import Any
 from typing import cast as type_cast
 
 from sqlalchemy import (
+    Connection,
     Label,
+    RootTransaction,
     Select,
     String,
     and_,
@@ -51,6 +53,7 @@ from datacube.utils.uris import split_uri
 
 from . import _core
 from . import _dynamic as dynamic
+from ._core import UserRole
 from ._fields import (  # noqa: F401
     DateDocField,
     DateRangeDocField,
@@ -190,12 +193,12 @@ def get_dataset_fields(
 
 
 class PostgresDbAPI:
-    def __init__(self, connection) -> None:
+    def __init__(self, connection: Connection) -> None:
         self._connection = connection
-        self._sqla_txn = None
+        self._sqla_txn: RootTransaction | None = None
 
     @property
-    def in_transaction(self):
+    def in_transaction(self) -> bool:
         return self._connection.in_transaction()
 
     def begin(self) -> None:
@@ -207,11 +210,11 @@ class PostgresDbAPI:
         self._connection.execution_options(isolation_level="AUTOCOMMIT")
 
     def commit(self) -> None:
-        self._sqla_txn.commit()  # type: ignore[attr-defined]
+        self._sqla_txn.commit()  # type: ignore[union-attr]
         self._end_transaction()
 
     def rollback(self) -> None:
-        self._sqla_txn.rollback()  # type: ignore[attr-defined]
+        self._sqla_txn.rollback()  # type: ignore[union-attr]
         self._end_transaction()
 
     def execute(self, command):
@@ -461,7 +464,7 @@ class PostgresDbAPI:
 
     def search_datasets_by_metadata(
         self, metadata: dict, archived: bool | None = False
-    ) -> dict:
+    ) -> Sequence:
         """
         Find any datasets that have the given metadata.
         """
@@ -474,7 +477,7 @@ class PostgresDbAPI:
         query = select(*_DATASET_SELECT_FIELDS).where(where_clause)
         return self._connection.execute(query).fetchall()
 
-    def search_products_by_metadata(self, metadata: dict) -> dict:
+    def search_products_by_metadata(self, metadata: dict) -> Sequence:
         """
         Find any products that have the given metadata.
         """
@@ -643,7 +646,7 @@ class PostgresDbAPI:
         )
         return self._connection.execute(select_query)
 
-    def bulk_simple_dataset_search(self, products=None, batch_size: int = 0) -> list:
+    def bulk_simple_dataset_search(self, products=None, batch_size: int = 0):
         """
         Perform bulk database reads (e.g. for index cloning)
 
@@ -838,8 +841,8 @@ class PostgresDbAPI:
             .select_from(self._from_expression(DATASET, expressions))
             .where(where_exprs)
         )
-
-        return self._connection.scalar(select_query)
+        num = self._connection.scalar(select_query)
+        return 0 if num is None else num
 
     def count_datasets_through_time(
         self,
@@ -997,7 +1000,9 @@ class PostgresDbAPI:
                 definition=definition,
             )
         )
-        type_id = res.first()[0]
+        prod = res.first()
+        assert prod is not None
+        type_id = prod[0]
 
         if update_metadata_type:
             if not self._connection.in_transaction():
@@ -1026,7 +1031,9 @@ class PostgresDbAPI:
         res = self._connection.execute(
             PRODUCT.delete().returning(PRODUCT.c.id).where(PRODUCT.c.name == name)
         )
-        type_id = res.first()[0]
+        prod = res.first()
+        assert prod is not None
+        type_id = prod[0]
 
         # Update dynamic fields to remove deleted product fields
         self._setup_product_fields(
@@ -1059,7 +1066,9 @@ class PostgresDbAPI:
             .where(METADATA_TYPE.c.name == name)
             .values(name=name, definition=definition)
         )
-        type_id = res.first()[0]
+        prod = res.first()
+        assert prod is not None
+        type_id = prod[0]
 
         self._setup_metadata_type_fields(
             type_id,
@@ -1241,7 +1250,7 @@ class PostgresDbAPI:
             raise RuntimeError(
                 "Product has no datasets and therefore no temporal extent"
             )
-        return res
+        return res  # type: ignore[return-value]
 
     def get_locations(self, dataset_id) -> list:
         return [
@@ -1347,14 +1356,20 @@ class PostgresDbAPI:
         """)
         )
         for row in result:
-            yield _core.from_pg_role(row.role_name), row.user_name, row.description
+            yield UserRole(row.role_name).simple_str(), row.user_name, row.description
 
     def create_user(
-        self, username: str, password: str, role: str, description: str | None = None
+        self,
+        username: str,
+        password: str,
+        role_str: str,
+        description: str | None = None,
     ) -> None:
-        pg_role = _core.to_pg_role(role)
+        if role_str not in UserRole.all_roles():
+            raise ValueError(f"Invalid role: {role_str}")
+        role = UserRole.to_pg_role(role_str)  # type: ignore[arg-type]
         username = escape_pg_identifier(self._connection, username)
-        sql = text(f"create user {username} password :password in role {pg_role}")
+        sql = text(f"create user {username} password :password in role {role.value}")
         self._connection.execute(sql, {"password": password})
         if description:
             sql = text(f"comment on role {username} is :description")
@@ -1365,17 +1380,19 @@ class PostgresDbAPI:
             sql = text(f"drop role {escape_pg_identifier(self._connection, username)}")
             self._connection.execute(sql)
 
-    def grant_role(self, role: str, users: Iterable[str]) -> None:
+    def grant_role(self, role_str: str, users: Iterable[str]) -> None:
         """
         Grant a role to a user.
         """
-        pg_role = _core.to_pg_role(role)
+        if role_str not in UserRole.all_roles():
+            raise ValueError(f"Invalid role: {role_str}")
+        role = UserRole.to_pg_role(role_str)  # type: ignore[arg-type]
 
         for user in users:
-            if not _core.has_role(self._connection, user):
+            if not _core.has_user(self._connection, user):
                 raise ValueError(f"Unknown user {user!r}")
 
-        _core.grant_role(self._connection, pg_role, users)
+        _core.grant_role(self._connection, role, users)
 
     def find_most_recent_change(self, product_id: int):
         """

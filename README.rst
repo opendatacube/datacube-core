@@ -1,7 +1,7 @@
 Open Data Cube Core
 ===================
 
-.. image:: https://github.com/opendatacube/datacube-core/workflows/build/badge.svg
+.. image:: https://github.com/opendatacube/datacube-core/actions/workflows/main.yml/badge.svg
     :alt: Build Status
     :target: https://github.com/opendatacube/datacube-core/actions
 
@@ -9,7 +9,7 @@ Open Data Cube Core
     :alt: Coverage Status
     :target: https://codecov.io/gh/opendatacube/datacube-core
 
-.. image:: https://readthedocs.org/projects/datacube-core/badge/?version=latest
+.. image:: https://app.readthedocs.org/projects/opendatacube/badge/?version=latest
     :alt: Documentation Status
     :target: https://opendatacube.readthedocs.org/en/latest/
 

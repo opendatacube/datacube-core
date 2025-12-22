@@ -1,0 +1,175 @@
+---
+# Metadata Type
+# url: https://explorer-direct-01.nci.dea.ga.gov.au/metadata-types/landsat_scene.odc-type.yaml
+name: landsat_scene
+description: "Scene-based Landsat data\n"
+dataset:
+  id:
+  - id
+  label:
+  - ga_label
+  format:
+  - format
+  - name
+  sources:
+  - lineage
+  - source_datasets
+  creation_dt:
+  - creation_dt
+  grid_spatial:
+  - grid_spatial
+  - projection
+  measurements:
+  - image
+  - bands
+  search_fields:
+    gsi:
+      offset:
+      - acquisition
+      - groundstation
+      - code
+      indexed: false
+      description: Ground Station Identifier (eg. ASA)
+    lat:
+      type: double-range
+      max_offset:
+      - - extent
+        - coord
+        - ur
+        - lat
+      - - extent
+        - coord
+        - lr
+        - lat
+      - - extent
+        - coord
+        - ul
+        - lat
+      - - extent
+        - coord
+        - ll
+        - lat
+      min_offset:
+      - - extent
+        - coord
+        - ur
+        - lat
+      - - extent
+        - coord
+        - lr
+        - lat
+      - - extent
+        - coord
+        - ul
+        - lat
+      - - extent
+        - coord
+        - ll
+        - lat
+      description: Latitude range
+    lon:
+      type: double-range
+      max_offset:
+      - - extent
+        - coord
+        - ul
+        - lon
+      - - extent
+        - coord
+        - ur
+        - lon
+      - - extent
+        - coord
+        - ll
+        - lon
+      - - extent
+        - coord
+        - lr
+        - lon
+      min_offset:
+      - - extent
+        - coord
+        - ul
+        - lon
+      - - extent
+        - coord
+        - ur
+        - lon
+      - - extent
+        - coord
+        - ll
+        - lon
+      - - extent
+        - coord
+        - lr
+        - lon
+      description: Longitude range
+    time:
+      type: datetime-range
+      max_offset:
+      - - extent
+        - to_dt
+      - - extent
+        - center_dt
+      min_offset:
+      - - extent
+        - from_dt
+      - - extent
+        - center_dt
+      description: Acquisition time
+    orbit:
+      offset:
+      - acquisition
+      - platform_orbit
+      indexed: false
+      description: Orbit number
+    format:
+      offset:
+      - format
+      - name
+      indexed: false
+      description: File format (GeoTIFF, NetCDF)
+    sat_row:
+      type: numeric-range
+      max_offset:
+      - - image
+        - satellite_ref_point_end
+        - y
+      - - image
+        - satellite_ref_point_start
+        - y
+      min_offset:
+      - - image
+        - satellite_ref_point_start
+        - y
+      description: Landsat row
+    platform:
+      offset:
+      - platform
+      - code
+      description: Platform code
+    sat_path:
+      type: numeric-range
+      max_offset:
+      - - image
+        - satellite_ref_point_end
+        - x
+      - - image
+        - satellite_ref_point_start
+        - x
+      min_offset:
+      - - image
+        - satellite_ref_point_start
+        - x
+      description: Landsat path
+    instrument:
+      offset:
+      - instrument
+      - name
+      description: Instrument name
+    product_type:
+      offset:
+      - product_type
+      indexed: false
+      description: Product code
+...

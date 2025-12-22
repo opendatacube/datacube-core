@@ -54,7 +54,7 @@ def assert_click_command(command, args) -> None:
     result = CliRunner().invoke(command, args=args, catch_exceptions=False)
     print(result.output)
     assert not result.exception
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
 
 def limit_num_measurements(dataset_type):

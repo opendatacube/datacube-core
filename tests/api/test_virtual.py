@@ -533,7 +533,6 @@ def test_register(dc, query) -> None:
     assert "bluegreen" in data
 
 
-@pytest.mark.skip(reason="odc-geo implementation of rio_reproject is a breaking change")
 def test_reproject(dc, query, catalog) -> None:
     reproject_utm = catalog["reproject_utm"]
 

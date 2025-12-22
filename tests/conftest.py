@@ -23,6 +23,7 @@ from odc.geo.geobox import GeoBox
 
 from datacube import Datacube
 from datacube.index.eo3 import prep_eo3
+from datacube.metadata._utils import EO_MD_TYPE
 from datacube.model import (
     Dataset,
     LineageTree,
@@ -303,6 +304,50 @@ def eo3_dataset_s2(eo3_metadata):
     return Dataset(Product(eo3_metadata, product_doc), prep_eo3(ds_doc))
 
 
+@pytest.fixture
+def ls_scene_metadata(data_folder) -> MetadataType:
+    (_, doc), *_ = read_documents(
+        os.path.join(data_folder, "landsat_scene.odc-type.yaml")
+    )
+    return MetadataType(doc)
+
+
+@pytest.fixture
+def ls5_nbar_product(data_folder, ls_scene_metadata) -> Product:
+    (_, doc), *_ = read_documents(
+        os.path.join(data_folder, "ls5_nbar_scene.odc-product.yaml")
+    )
+    return Product(ls_scene_metadata, doc)
+
+
+@pytest.fixture
+def ls5_nbar_dataset(data_folder, ls5_nbar_product) -> Dataset:
+    (_, doc), *_ = read_documents(
+        os.path.join(data_folder, "ls5_nbar_scene.odc-metadata.yaml")
+    )
+    return Dataset(ls5_nbar_product, doc)
+
+
+@pytest.fixture
+def ls8_fc_albers_product(data_folder) -> Product:
+    (_, doc), *_ = read_documents(
+        os.path.join(data_folder, "ls8_fc_albers.odc-product.yaml")
+    )
+    return Product(EO_MD_TYPE, doc)
+
+
+@pytest.fixture
+def ls8_fc_albers_dataset(data_folder, ls8_fc_albers_product) -> Dataset:
+    (_, doc), *_ = read_documents(
+        os.path.join(data_folder, "ls8_fc_albers.odc-metadata.yaml")
+    )
+    return Dataset(
+        ls8_fc_albers_product,
+        doc,
+        uri="s3://dea-public-data-dev/fractional-cover/fc/v2.2.1/ls8/x_-10/y_-19/2015/07/10/LS8_OLI_FC_3577_-10_-19_20150710014836.yaml",
+    )
+
+
 netcdf_num = 1
 
 
@@ -376,6 +421,8 @@ ODC_PRODUCT_FILE: str = "ard_ls8.odc-product.yaml"
 S1_NRB_STAC: str = "ga_s1a_nrb_0-1-0_T002-003270-IW2_20180306T203033Z_stac-item.json"
 S1_NRB_PRODUCT: str = "ga_s1_nrb_iw_hh_0.odc-product.yaml"
 S1_NRB_METADATA_FILE: str = "eo3_s1_nrb.odc-type.yaml"
+S3_SYN_PRODUCT: str = "s3_syn_2_vg1.odc-product.yaml"
+S3_SYN_STAC: str = "s3_syn_2_vg1.stac-metadata.json"
 
 
 @pytest.fixture
@@ -508,3 +555,15 @@ def s1_nrb_product(s1_nrb_metadata_type) -> Product:
     filepath = TEST_DATA_FOLDER.joinpath(S1_NRB_PRODUCT)
     (_, doc), *_ = read_documents(filepath)
     return Product(s1_nrb_metadata_type, doc)
+
+
+@pytest.fixture
+def s3_syn_product(eo3_metadata_type) -> Product:
+    filepath = TEST_DATA_FOLDER.joinpath(S3_SYN_PRODUCT)
+    (_, doc), *_ = read_documents(filepath)
+    return Product(eo3_metadata_type, doc)
+
+
+@pytest.fixture()
+def s3_syn_stac() -> pystac.Item:
+    return pystac.item.Item.from_file(str(TEST_DATA_FOLDER.joinpath(S3_SYN_STAC)))

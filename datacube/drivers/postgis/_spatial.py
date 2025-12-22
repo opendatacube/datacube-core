@@ -21,7 +21,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, mapped_column
 from sqlalchemy.sql.ddl import DropTable
 
-from ._core import METADATA
+from ._core import METADATA, get_connection_info
 from ._schema import Base, Dataset, SpatialIndex, SpatialIndexRecord, orm_registry
 from .sql import SCHEMA_NAME
 
@@ -142,7 +142,9 @@ def spindex_for_record(rec: SpatialIndexRecord) -> type[SpatialIndex]:
     return spindex_for_epsg(rec.srid)
 
 
-def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> None:
+def ensure_spindex(
+    engine: Engine, sp_idx: type[SpatialIndex], crs_id: int, with_permissions: bool
+) -> None:
     """Ensure a Spatial Index exists in a particular database."""
     with Session(engine) as session:
         results = session.execute(
@@ -151,24 +153,29 @@ def ensure_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> N
         for _ in results:
             # SpatialIndexRecord exists - actual index assumed to exist too.
             return
+        _, quoted_user = get_connection_info(session.connection())
+        if with_permissions:
+            session.execute(text("set role odc_admin"))
+            session.commit()
         # SpatialIndexRecord doesn't exist - create the index table...
         orm_registry.metadata.create_all(engine, [sp_idx.__table__])  # type: ignore[attr-defined]
         # ... and add a SpatialIndexRecord
         session.add(SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__))  # type: ignore[attr-defined]
         session.commit()
         session.flush()
-        # Permissions Management
-        for command in [
-            # Read access to odc_user
-            f"grant select on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_user;",  # type: ignore[attr-defined]
-            # Insert access to odc_manage
-            f"grant insert on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_manage;",  # type: ignore[attr-defined]
-            # Full access to odc_admin
-            f"grant all on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_admin;",  # type: ignore[attr-defined]
-        ]:
-            session.execute(text(command))
-        # Grant statements in PostgreSQL behave like transactions, so commit them.
-        session.commit()
+        if with_permissions:
+            for command in [
+                # Read access to odc_user
+                f"grant select on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_user;",  # type: ignore[attr-defined]
+                # Insert access to odc_manage
+                f"grant insert on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_manage;",  # type: ignore[attr-defined]
+                # Full access to odc_admin
+                f"grant all on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_admin;",  # type: ignore[attr-defined]
+            ]:
+                session.execute(text(command))
+            session.execute(text(f"set role {quoted_user}"))
+            # Grant statements in PostgreSQL behave like transactions, so commit them.
+            session.commit()
 
 
 def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> bool:
@@ -187,7 +194,7 @@ def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> boo
                     SpatialIndexRecord.srid == spidx_record.srid
                 )
             )
-            record_del_result = del_res.rowcount == 1
+            record_del_result = del_res.rowcount == 1  # type: ignore[attr-defined]
 
         drop_res = session.execute(
             DropTable(sp_idx.__table__, if_exists=True)  # type: ignore[attr-defined]
