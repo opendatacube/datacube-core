@@ -14,6 +14,8 @@ Next Release
 Notable Changes
 ---------------
 
+* Support for direct indexing of STAC items with ``datacube dataset add`.  STAC documents are converted to EO3
+  before being indexed.
 * The previous release (1.9.11) included a database schema upgrade for the postgis index driver and refused to operate
   if the upgrade was not applied. This was unnecessarily strict and caused deployment issues in complicated
   environments.  v1.9.12 works with databases both with and without the upgrade.  (The upgrade is now treated as
@@ -38,6 +40,7 @@ What's Changed
 * Add support for MultiPolygon geometry by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2297
 * Handle compatible database versions by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2296
 * Restrict antimeridian < 0.4.5 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2300
+* Native STAC indexing by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2298
 * Update fallback version and release notes for 1.9.12 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2298
 
 Automated updates
