@@ -149,6 +149,7 @@ def _to_dataset(
     ds_uuid: uuid.UUID,
     product: Product,
     geometry: dict[str, Any] | None,
+    remap_lineage: bool = False,
 ) -> Dataset:
     # pylint: disable=too-many-locals
 
@@ -207,7 +208,7 @@ def _to_dataset(
     if crs is None:
         crs = EPSG4326
 
-    # lineage = properties.pop("odc:lineage", {})
+    lineage = properties.pop("odc:lineage", {})
 
     ds_doc = {
         "$schema": "https://schemas.opendatacube.org/dataset",
@@ -220,32 +221,28 @@ def _to_dataset(
         "accessories": {
             a: _asset_to_eo3_accessory(acc) for a, acc in item.accessories.items()
         },
-        "lineage": {},  # TODO: properly handling lineage requires an Index
+        "lineage": lineage,
     }
 
     if geometry is not None:
         ds_doc["geometry"] = Geometry(geometry, 4326).to_crs(crs).json
 
-    title = ds_doc["properties"].pop("title", None)  # type: ignore[attr-defined]
+    title = ds_doc["properties"].pop("title", None)
     if title is not None:
         ds_doc["label"] = title
 
     # TODO: this needs to use Doc2Ds for consistency checks and lineage handling
-    return Dataset(product, prep_eo3(ds_doc), uri=item.href)
+    return Dataset(
+        product, prep_eo3(ds_doc, remap_lineage=remap_lineage), uri=item.href
+    )
 
 
-def _item_to_ds(
-    item: Item, product: Product, cfg: ConversionConfig | None = None
-) -> Dataset:
+def _item_to_ds(item: Item, product: Product, cfg: ConversionConfig) -> Dataset:
     """
     Construct Dataset object from STAC Item and previously constructed Product.
 
     :raises ValueError: when not all assets share the same CRS
     """
-    # pylint: disable=too-many-locals
-    if cfg is None:
-        cfg = {}
-
     md = product.stac
     uuid_cfg = cfg.get("uuid", {})
     ds_uuid = _compute_uuid(
@@ -254,8 +251,12 @@ def _item_to_ds(
     _item = parse_item(
         item, md, asset_absolute_paths=cfg.get("asset_absolute_paths", True)
     )
+    # Since we don't yet have access to an Index, specify lineage remapping in the config
+    remap_lineage = cfg.get("remap_lineage", False)
 
-    return _to_dataset(_item, item.properties, ds_uuid, product, item.geometry)
+    return _to_dataset(
+        _item, item.properties, ds_uuid, product, item.geometry, remap_lineage
+    )
 
 
 def _asset_to_eo3_accessory(stac_asset: dict) -> dict:
@@ -326,13 +327,25 @@ def stac2ds(
          warnings: ignore
 
     """
+    if cfg is None:
+        cfg = {}
+
     products: dict[str, Product] = {} if product_cache is None else product_cache
+    only_known_products = cfg.get("only_known_products", False)
+    if only_known_products and not products:
+        raise ValueError(
+            "Cannot provide empty product cache if requiring known products"
+        )
     for item in items:
         collection_id = _collection_id(item)
         product = products.get(collection_id)
 
         # Have not seen this collection yet, figure it out
         if product is None:
+            if only_known_products:
+                raise ValueError(
+                    f"Collection {collection_id} not included in product cache"
+                )
             product = infer_dc_product(item, cfg)
             products[collection_id] = product
 

@@ -338,6 +338,29 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
     assert "location" not in _ds.metadata_doc
 
 
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+def test_dataset_add_stac(index, clirunner, ls8_stac_doc, eo3_products) -> None:
+    stac_doc, path = ls8_stac_doc
+    doc2ds = Doc2Dataset(index)
+    ds, err = doc2ds(stac_doc, "file:///something")
+    assert err is None
+    assert ds is not None
+    assert str(ds.id) == stac_doc.get("id")
+    assert ds.product.name == "ga_ls8c_ard_3"
+    assert ds.source_tree is not None
+    assert (
+        str(ds.source_tree.child_datasets().pop())
+        == "b5f234fe-bba8-5483-9bc0-250360d429cf"
+    )
+
+    r = clirunner(["dataset", "add", path])
+    assert r.exit_code == 0
+
+    stac_doc["collection"] = "foo"
+    ds, err = doc2ds(stac_doc, "file://something")
+    assert err is not None
+
+
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
 def test_dataset_add_ambiguous_products(

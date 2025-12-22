@@ -86,3 +86,9 @@ datasets into our Cube
     datacube dataset add <path-to-dataset-document-yaml>
 
 Note that this path can be a URI, such as the path to a document on S3.
+
+The Cube currently supports the indexing of STAC datasets but does not natively support them. 
+This means that ``dataset add`` command accepts both EO3 and STAC datasets, but STAC datasets will be converted
+to and stored as EO3. Likewise, ``dataset update`` accepts both EO3 and STAC datasets and allowed update keys, but
+only changes pertaining to the EO3 metadata document will be registered. Other operations on the dataset will deal
+with the EO3 version of the dataset definition.

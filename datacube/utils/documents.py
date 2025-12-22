@@ -452,9 +452,18 @@ class SimpleDocNav:
             raise ValueError("SimpleDocNav requires a Mapping")
 
         self._doc = doc
+        self._is_stac = "stac_version" in doc
+        if self._is_stac and doc.get("type") != "Feature":
+            raise ValueError("SimpleDocNav requires STAC documents to be Items")
         self._doc_without = None
         self._sources_path = (
-            sources_path if sources_path else ("lineage", "source_datasets")
+            sources_path
+            if sources_path
+            else (
+                ("properties", "odc:lineage")
+                if self._is_stac
+                else ("lineage", "source_datasets")
+            )
         )
         self._sources = None
         self._doc_uuid: UUID | None = None
@@ -495,10 +504,18 @@ class SimpleDocNav:
 
     @property
     def location(self):
+        if self.is_stac:
+            for link in self._doc.get("link", []):
+                if link.get("rel") == "self":
+                    return link.get("href")
         return self._doc.get("location", None)
 
+    @property
+    def is_stac(self):
+        return self._is_stac
+
     def without_location(self) -> SimpleDocNav:
-        if self.location is None:
+        if self.location is None or self.is_stac:
             return self
         return SimpleDocNav(toolz.dissoc(self._doc, "location"))
 

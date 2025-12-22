@@ -58,7 +58,7 @@ def test_infer_product_collection(
     # Check that we can use product derived this way on an Item
     item = sentinel_stac_ms_with_raster_ext.clone()
 
-    ds = _item_to_ds(item, product)
+    ds = _item_to_ds(item, product, {})
     geobox = native_geobox(ds, basis="B02")
     assert geobox.shape == (10980, 10980)
     assert geobox.crs == "EPSG:32606"
@@ -140,7 +140,7 @@ def test_item_to_ds(sentinel_stac_ms: pystac.Item) -> None:
     assert item.collection_id in STAC_CFG
 
     product = infer_dc_product(item, STAC_CFG)
-    ds = _item_to_ds(item, product)
+    ds = _item_to_ds(item, product, STAC_CFG)
 
     assert set(ds.measurements) == set(product.measurements)
     assert ds.crs is not None
@@ -352,7 +352,7 @@ def test_sources(ds_legacy_sources: Dataset, ds_ext_lineage: Dataset) -> None:
 def test_roundtrip(eo3_dataset: Dataset, eo3_product: Product) -> None:
     original = eo3_dataset
     roundtrip = _item_to_ds(
-        ds2stac(eo3_dataset, base_url="https://localhost/"), eo3_product
+        ds2stac(eo3_dataset, base_url="https://localhost/"), eo3_product, {}
     )
     orig_doc = original.metadata_doc
     rt_doc = roundtrip.metadata_doc
