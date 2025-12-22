@@ -114,7 +114,9 @@ def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Generator[tu
     Generates tuples in the form (new_dataset, existing_dataset)
     """
 
-    def mk_dataset(ds, uri: str) -> tuple[Dataset | None, Dataset | None, str | None]:
+    def mk_dataset(
+        ds, uri: str
+    ) -> tuple[Dataset | None, Dataset | None, str | Exception | None]:
         uuid = ds.id
 
         if uuid is None:
@@ -293,8 +295,10 @@ def parse_update_rules(
             for key in ["extent", "grid_spatial.projection"]:
                 updates_allowed[tuple(key.split("."))] = changes.allow_any
         key_str = remaps.get(key_str, key_str)
-        # How to handle assets?
-        # Warn if STAC-only fields are provided?
+        # Inform that changes to STAC-specific fields will not be reflected in EO3
+        # This includes assets since there's no easy way to determine which are measurements and which are accessories
+        if key_str.startswith(("assets", "type", "links", "bbox", "stac_")):
+            _LOG.warning(f"Updates to STAC-only field {key_str} are not yet supported.")
         updates_allowed[tuple(key_str.split("."))] = changes.allow_any
     return updates_allowed
 

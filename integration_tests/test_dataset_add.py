@@ -347,6 +347,7 @@ def test_dataset_add_stac(index, clirunner, ls8_stac_doc, eo3_products) -> None:
     assert ds is not None
     assert str(ds.id) == stac_doc.get("id")
     assert ds.product.name == "ga_ls8c_ard_3"
+    assert ds.source_tree is not None
     assert (
         str(ds.source_tree.child_datasets().pop())
         == "b5f234fe-bba8-5483-9bc0-250360d429cf"

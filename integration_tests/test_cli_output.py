@@ -378,3 +378,14 @@ def test_cli_dataset_update_stac(
         expect_success=False,
     )
     assert r.exit_code == 2
+
+    r = clirunner(
+        [
+            "dataset",
+            "update",
+            "--allow-any",
+            "assets.oa_fmask.href",
+            ls8_stac_update_path,
+        ]
+    )
+    assert "not yet supported" in r.output
