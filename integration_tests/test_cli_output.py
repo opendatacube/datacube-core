@@ -351,12 +351,13 @@ def test_cli_dataset_update_stac(
     r = clirunner(["dataset", "add", "--ignore-lineage", path])
     assert r.exit_code == 0
 
-    r = clirunner(["dataset", "update", ls8_stac_update_path])
+    r = clirunner(["dataset", "update", ls8_stac_update_path], expect_success=False)
     assert "Unsafe changes in" in r.output
     assert "0 successful, 1 failed" in r.output
 
     r = clirunner(
-        ["dataset", "update", "--allow-any", "properties.gsd", ls8_stac_update_path]
+        ["dataset", "update", "--allow-any", "properties.gsd", ls8_stac_update_path],
+        expect_success=False,
     )
     assert "Unsafe changes in" in r.output
 
@@ -368,24 +369,16 @@ def test_cli_dataset_update_stac(
             "properties.gsd",
             "--allow-any",
             "properties.start_datetime",
+            "--allow-any",
+            "stac_version",
             ls8_stac_update_path,
         ]
     )
     assert "Unsafe changes in" not in r.output
+    assert "not yet supported" in r.output
 
     r = clirunner(
         ["dataset", "update", "--allow-any", "collection", ls8_stac_update_path],
         expect_success=False,
     )
     assert r.exit_code == 2
-
-    r = clirunner(
-        [
-            "dataset",
-            "update",
-            "--allow-any",
-            "assets.oa_fmask.href",
-            ls8_stac_update_path,
-        ]
-    )
-    assert "not yet supported" in r.output

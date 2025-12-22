@@ -290,14 +290,17 @@ def parse_update_rules(
         if key_str == "collection":
             _LOG.error("Changing collection is not supported")
             sys.exit(2)
+        # Don't support assets since there's no easy way to determine which are measurements and which are accessories
+        if key_str.startswith("assets"):
+            _LOG.error("Updating assets is not yet supported.")
+            sys.exit(2)
         if key_str.startswith(("properties.proj:", "geometry")):
             # account for changes made to properties added by prep_eo3
             for key in ["extent", "grid_spatial.projection"]:
                 updates_allowed[tuple(key.split("."))] = changes.allow_any
         key_str = remaps.get(key_str, key_str)
         # Inform that changes to STAC-specific fields will not be reflected in EO3
-        # This includes assets since there's no easy way to determine which are measurements and which are accessories
-        if key_str.startswith(("assets", "type", "links", "bbox", "stac_")):
+        if key_str.startswith(("type", "links", "bbox", "stac_")):
             _LOG.warning(f"Updates to STAC-only field {key_str} are not yet supported.")
         updates_allowed[tuple(key_str.split("."))] = changes.allow_any
     return updates_allowed

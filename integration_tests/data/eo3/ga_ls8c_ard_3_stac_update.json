@@ -1,6 +1,6 @@
 {
   "type": "Feature",
-  "stac_version": "1.0.0",
+  "stac_version": "1.1.0",
   "id": "2aa69fcf-aa55-4747-9d95-3652f9fe79b0",
   "properties": {
       "title": "ga_ls8c_ard_3-1-0_088080_2020-05-25_final",
