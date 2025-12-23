@@ -10,8 +10,6 @@ import xarray as xr
 from datacube.storage._rio import RasterDatasetDataSource
 from datacube.utils.uris import normalise_path
 
-from ._write import write_dataset_to_netcdf
-
 PROTOCOL = "file"
 FORMAT = "NetCDF"
 
@@ -29,7 +27,11 @@ class NetcdfReaderDriver:
         return RasterDatasetDataSource(band)
 
 
-def reader_driver_init() -> NetcdfReaderDriver:
+def reader_driver_init() -> NetcdfReaderDriver | None:
+    try:
+        import netCDF4
+    except ImportError:
+        return None
     return NetcdfReaderDriver()
 
 
@@ -73,6 +75,8 @@ class NetcdfWriterDriver:
         variable_params=None,
         **kwargs,
     ) -> dict:
+        from ._write import write_dataset_to_netcdf
+
         write_dataset_to_netcdf(
             dataset,
             urlsplit(file_uri).path,
@@ -84,5 +88,9 @@ class NetcdfWriterDriver:
         return {}
 
 
-def writer_driver_init() -> NetcdfWriterDriver:
+def writer_driver_init() -> NetcdfWriterDriver | None:
+    try:
+        import netCDF4
+    except ImportError:
+        return None
     return NetcdfWriterDriver()

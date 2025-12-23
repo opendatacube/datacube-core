@@ -12,12 +12,10 @@ from collections import namedtuple
 from collections.abc import Sequence
 from datetime import datetime, timezone
 from os import PathLike
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import netCDF4
 import numpy
 import numpy as np
-from netCDF4 import Dataset
 from odc.geo import CRS
 from odc.geo.geom import box
 from odc.geo.math import data_resolution_and_offset
@@ -25,6 +23,10 @@ from xarray import DataArray
 
 from datacube import __version__
 from datacube.utils.masking import describe_flags_def
+
+if TYPE_CHECKING:
+    import netCDF4
+    from netCDF4 import Dataset
 
 UTC: timezone = timezone.utc
 
@@ -54,7 +56,7 @@ _STANDARD_COORDINATES = {
 }
 
 
-def create_netcdf(netcdf_path: str | PathLike, **kwargs) -> Dataset:
+def create_netcdf(netcdf_path: str | PathLike, **kwargs) -> "Dataset":
     """
     Create and return an empty NetCDF file
 
@@ -62,6 +64,8 @@ def create_netcdf(netcdf_path: str | PathLike, **kwargs) -> Dataset:
     :param kwargs: See :class:`Dataset` for more information
     :return: open NetCDF Dataset
     """
+    from netCDF4 import Dataset
+
     nco = Dataset(netcdf_path, "w", **kwargs)
     nco.date_created = datetime.today().isoformat()
     nco.setncattr("Conventions", "CF-1.6, ACDD-1.3")
@@ -72,22 +76,24 @@ def create_netcdf(netcdf_path: str | PathLike, **kwargs) -> Dataset:
     return nco
 
 
-def append_netcdf(netcdf_path: PathLike) -> Dataset:
+def append_netcdf(netcdf_path: PathLike) -> "Dataset":
     """
     Open a NetCDF file in append mode
 
     :param netcdf_path:
     :return: open NetCDF Dataset
     """
+    from netCDF4 import Dataset
+
     return Dataset(netcdf_path, "a")
 
 
 def create_coordinate(
-    nco: Dataset,
+    nco: "Dataset",
     name: str,
     labels: np.ndarray[tuple[Any, ...], np.dtype[Any]],
     units: str,
-) -> netCDF4.Variable:
+) -> "netCDF4.Variable":
     labels = netcdfy_coord(labels)
 
     nco.createDimension(name, labels.size)
@@ -103,7 +109,7 @@ def create_coordinate(
 
 def create_variable(
     nco, name: str, var: Variable | DataArray, grid_mapping=None, attrs=None, **kwargs
-) -> netCDF4.Variable:
+) -> "netCDF4.Variable":
     assert var.dtype.kind != "U"  # Creates Non CF-Compliant NetCDF File
 
     def clamp_chunksizes(chunksizes: Sequence[int] | None, dim_names: Sequence[str]):
