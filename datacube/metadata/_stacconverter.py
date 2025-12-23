@@ -308,7 +308,7 @@ def ds2stac(
 
         item.add_asset(name, asset=asset)
 
-    if len(undefined_measurements):
+    if undefined_measurements:
         # TODO: make the phrasing of this warning more helpful
         # It could be that the Product doesn't include the measurements at all
         # or that it's missing the required keys due to being inferred
