@@ -14,8 +14,7 @@ from hypothesis.strategies import text
 from odc.geo import CRS
 from odc.geo.geobox import Coordinate
 
-from datacube.drivers.netcdf import write_dataset_to_netcdf
-from datacube.drivers.netcdf._write import _get_units
+from datacube.drivers.netcdf._write import _get_units, write_dataset_to_netcdf
 from datacube.drivers.netcdf.writer import (
     DEFAULT_GRID_MAPPING,
     Variable,

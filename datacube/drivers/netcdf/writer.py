@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy
 import numpy as np
+from netCDF4 import Dataset
 from odc.geo import CRS
 from odc.geo.geom import box
 from odc.geo.math import data_resolution_and_offset
@@ -26,7 +27,6 @@ from datacube.utils.masking import describe_flags_def
 
 if TYPE_CHECKING:
     import netCDF4
-    from netCDF4 import Dataset
 
 UTC: timezone = timezone.utc
 
@@ -56,7 +56,7 @@ _STANDARD_COORDINATES = {
 }
 
 
-def create_netcdf(netcdf_path: str | PathLike, **kwargs) -> "Dataset":
+def create_netcdf(netcdf_path: str | PathLike, **kwargs) -> Dataset:
     """
     Create and return an empty NetCDF file
 
@@ -64,7 +64,6 @@ def create_netcdf(netcdf_path: str | PathLike, **kwargs) -> "Dataset":
     :param kwargs: See :class:`Dataset` for more information
     :return: open NetCDF Dataset
     """
-    from netCDF4 import Dataset
 
     nco = Dataset(netcdf_path, "w", **kwargs)
     nco.date_created = datetime.today().isoformat()
@@ -76,20 +75,18 @@ def create_netcdf(netcdf_path: str | PathLike, **kwargs) -> "Dataset":
     return nco
 
 
-def append_netcdf(netcdf_path: PathLike) -> "Dataset":
+def append_netcdf(netcdf_path: PathLike) -> Dataset:
     """
     Open a NetCDF file in append mode
 
     :param netcdf_path:
     :return: open NetCDF Dataset
     """
-    from netCDF4 import Dataset
-
     return Dataset(netcdf_path, "a")
 
 
 def create_coordinate(
-    nco: "Dataset",
+    nco: Dataset,
     name: str,
     labels: np.ndarray[tuple[Any, ...], np.dtype[Any]],
     units: str,
