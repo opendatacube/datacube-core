@@ -139,7 +139,9 @@ def _stac_links(
             ),
         )
     else:
-        warnings.warn("Unable to determine self link for STAC Item.", stacklevel=2)
+        warnings.warn(
+            "Unable to determine a 'self' link for the STAC Item.", stacklevel=2
+        )
 
     if ds_yaml_url:
         yield Link(
@@ -174,7 +176,9 @@ def _stac_links(
             target=urljoin(base_url, f"dataset/{dataset.id}"),
         )
     else:
-        warnings.warn("No collection provided for STAC Item.", stacklevel=2)
+        warnings.warn(
+            "Unable to determine a 'collection' link for the STAC Item.", stacklevel=2
+        )
 
 
 def ds2stac(
@@ -234,8 +238,8 @@ def ds2stac(
         item.links.append(link)
 
     EOExtension.ext(item, add_if_missing=True)
-    # Error: RasterExtension does not apply to type Item ???
-    # RasterExtension.ext(item, add_if_missing=True)
+
+    item.ext.add("raster")
 
     if dataset.extent:
         proj = ProjectionExtension.ext(item, add_if_missing=True)
@@ -256,6 +260,8 @@ def ds2stac(
 
     # url against which asset href can be resolved
     asset_location = asset_location or dataset.uri
+    # Track measurements not defined in the product
+    undefined_measurements = []
     # Add assets that are data
     for name, measurement in dataset.measurements.items():
         if not asset_location and not measurement.get("path"):
@@ -298,13 +304,18 @@ def ds2stac(
             )
             raster.apply([rband])
         except ValueError:
-            warnings.warn(
-                f"Cannot determine raster extension properties for asset {name} "
-                "as it is not defined in the Product.",
-                stacklevel=2,
-            )
+            undefined_measurements.append(name)
 
         item.add_asset(name, asset=asset)
+
+    if len(undefined_measurements):
+        # TODO: make the phrasing of this warning more helpful
+        # It could be that the Product doesn't include the measurements at all
+        # or that it's missing the required keys due to being inferred
+        warnings.warn(
+            f"Cannot determine raster extension properties for assets: {', '.join(undefined_measurements)}",
+            stacklevel=2,
+        )
 
     # Add assets that are accessories
     for name, accessory in dataset.accessories.items():

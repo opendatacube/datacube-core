@@ -338,6 +338,18 @@ def test_ds2stac(eo3_dataset: Dataset) -> None:
             "href": f"https://localhost/dataset/{eo3_dataset.id}",
         },
     ]
+    assert (
+        "https://stac-extensions.github.io/raster/v1.1.0/schema.json"
+        in output_stac["stac_extensions"]
+    )
+    assert (
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+        in output_stac["stac_extensions"]
+    )
+    assert (
+        "https://stac-extensions.github.io/view/v1.0.0/schema.json"
+        in output_stac["stac_extensions"]
+    )
 
 
 def test_sources(ds_legacy_sources: Dataset, ds_ext_lineage: Dataset) -> None:
