@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from importlib.util import find_spec
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -28,9 +29,7 @@ class NetcdfReaderDriver:
 
 
 def reader_driver_init() -> NetcdfReaderDriver | None:
-    try:
-        import netCDF4
-    except ImportError:
+    if not find_spec("netCDF4"):
         return None
     return NetcdfReaderDriver()
 
@@ -89,8 +88,6 @@ class NetcdfWriterDriver:
 
 
 def writer_driver_init() -> NetcdfWriterDriver | None:
-    try:
-        import netCDF4
-    except ImportError:
+    if not find_spec("netCDF4"):
         return None
     return NetcdfWriterDriver()
