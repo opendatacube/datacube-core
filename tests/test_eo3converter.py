@@ -7,6 +7,7 @@
 
 import math
 import uuid
+import warnings
 from typing import Any
 
 import moto
@@ -289,11 +290,13 @@ def test_accessories(sentinel_stac_ms: pystac.Item) -> None:
 
 
 def test_ds2stac(eo3_dataset: Dataset) -> None:
-    output_stac = ds2stac(
-        eo3_dataset,
-        self_url="https://localhost/stac/eo3_dataset.json",
-        base_url="https://localhost/",
-    ).to_dict()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        output_stac = ds2stac(
+            eo3_dataset,
+            self_url="https://localhost/stac/eo3_dataset.json",
+            base_url="https://localhost/",
+        ).to_dict()
     assert output_stac["properties"]["instruments"] == ["oli", "tirs"]
     assert set(output_stac["assets"].keys()) == set(
         list(eo3_dataset.measurements.keys()) + list(eo3_dataset.accessories.keys())
@@ -338,22 +341,38 @@ def test_ds2stac(eo3_dataset: Dataset) -> None:
             "href": f"https://localhost/dataset/{eo3_dataset.id}",
         },
     ]
+    assert (
+        "https://stac-extensions.github.io/raster/v1.1.0/schema.json"
+        in output_stac["stac_extensions"]
+    )
+    assert (
+        "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+        in output_stac["stac_extensions"]
+    )
+    assert (
+        "https://stac-extensions.github.io/view/v1.0.0/schema.json"
+        in output_stac["stac_extensions"]
+    )
 
 
 def test_sources(ds_legacy_sources: Dataset, ds_ext_lineage: Dataset) -> None:
-    assert ds2stac(ds_legacy_sources).to_dict()["properties"]["odc:lineage"] == {
-        "level1": ["b5f234fe-bba8-5483-9bc0-250360d429cf"]
-    }
-    assert ds2stac(ds_ext_lineage).to_dict()["properties"]["odc:lineage"] == {
-        "level1": ["b5f234fe-bba8-5483-9bc0-250360d429cf"]
-    }
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        assert ds2stac(ds_legacy_sources).to_dict()["properties"]["odc:lineage"] == {
+            "level1": ["b5f234fe-bba8-5483-9bc0-250360d429cf"]
+        }
+        assert ds2stac(ds_ext_lineage).to_dict()["properties"]["odc:lineage"] == {
+            "level1": ["b5f234fe-bba8-5483-9bc0-250360d429cf"]
+        }
 
 
 def test_roundtrip(eo3_dataset: Dataset, eo3_product: Product) -> None:
     original = eo3_dataset
-    roundtrip = _item_to_ds(
-        ds2stac(eo3_dataset, base_url="https://localhost/"), eo3_product, {}
-    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        roundtrip = _item_to_ds(
+            ds2stac(eo3_dataset, base_url="https://localhost/"), eo3_product, {}
+        )
     orig_doc = original.metadata_doc
     rt_doc = roundtrip.metadata_doc
 
@@ -434,8 +453,10 @@ def test_infer_eo3_product(odc_dataset_doc) -> None:
 
 
 def test_dsdoc_to_stac(odc_dataset_doc, eo3_dataset) -> None:
-    from_doc = ds_doc_to_stac(odc_dataset_doc).to_dict()
-    from_ds = ds2stac(eo3_dataset).to_dict()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        from_doc = ds_doc_to_stac(odc_dataset_doc).to_dict()
+        from_ds = ds2stac(eo3_dataset).to_dict()
     # from_doc assets will be missing the raster ext, so compare them separately
     from_doc_assets = from_doc.pop("assets")
     from_ds_assets = from_ds.pop("assets")
@@ -450,7 +471,9 @@ def test_s1_nrb(s1_nrb_stac, s1_nrb_product, without_aws_env) -> None:
             stac2ds([s1_nrb_stac], product_cache={"ga_s1_nrb_iw_hh_0": s1_nrb_product})
         )
     )
-    dc_stac = ds2stac(eo3_ds)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        dc_stac = ds2stac(eo3_ds)
     assert (
         "https://stac-extensions.github.io/sat/v1.0.0/schema.json"
         in dc_stac.stac_extensions
