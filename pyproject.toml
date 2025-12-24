@@ -93,6 +93,7 @@ dev = [
     "botocore-stubs",
     "mypy",
     "pandas-stubs",
+    "ty",
     "types-affine",
     "types-cachetools",
     "types-jsonschema",
@@ -241,6 +242,9 @@ include = ['datacube*']
 [tool.setuptools_scm]
 write_to = 'datacube/_version.py'
 fallback_version = "1.9.12"
+
+[tool.ty.src]
+include = ["datacube", "examples", "integration_tests", "tests"]
 
 [tool.mypy]
 python_version = '3.10'
