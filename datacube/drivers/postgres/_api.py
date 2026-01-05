@@ -1212,9 +1212,7 @@ class PostgresDbAPI:
         return [
             r[0]
             for r in self._connection.execute(
-                METADATA_TYPE.select(METADATA_TYPE.c.definition).order_by(
-                    METADATA_TYPE.c.name.asc()
-                )
+                select(METADATA_TYPE.c.definition).order_by(METADATA_TYPE.c.name.asc())
             ).fetchall()
         ]
 
