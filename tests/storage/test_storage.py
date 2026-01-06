@@ -17,7 +17,8 @@ from rasterio.warp import Resampling
 from typing_extensions import override
 
 from datacube.drivers.datasource import DataSource
-from datacube.drivers.netcdf import Variable, create_netcdf_storage_unit
+from datacube.drivers.netcdf._write import create_netcdf_storage_unit
+from datacube.drivers.netcdf.writer import Variable
 from datacube.model import Dataset, MetadataType, Product
 from datacube.storage import BandInfo, reproject_and_fuse
 from datacube.storage._read import read_time_slice

@@ -12,9 +12,8 @@ from collections import namedtuple
 from collections.abc import Sequence
 from datetime import datetime, timezone
 from os import PathLike
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import netCDF4
 import numpy
 import numpy as np
 from netCDF4 import Dataset
@@ -25,6 +24,9 @@ from xarray import DataArray
 
 from datacube import __version__
 from datacube.utils.masking import describe_flags_def
+
+if TYPE_CHECKING:
+    import netCDF4
 
 UTC: timezone = timezone.utc
 
@@ -62,6 +64,7 @@ def create_netcdf(netcdf_path: str | PathLike, **kwargs) -> Dataset:
     :param kwargs: See :class:`Dataset` for more information
     :return: open NetCDF Dataset
     """
+
     nco = Dataset(netcdf_path, "w", **kwargs)
     nco.date_created = datetime.today().isoformat()
     nco.setncattr("Conventions", "CF-1.6, ACDD-1.3")
@@ -87,7 +90,7 @@ def create_coordinate(
     name: str,
     labels: np.ndarray[tuple[Any, ...], np.dtype[Any]],
     units: str,
-) -> netCDF4.Variable:
+) -> "netCDF4.Variable":
     labels = netcdfy_coord(labels)
 
     nco.createDimension(name, labels.size)
@@ -103,7 +106,7 @@ def create_coordinate(
 
 def create_variable(
     nco, name: str, var: Variable | DataArray, grid_mapping=None, attrs=None, **kwargs
-) -> netCDF4.Variable:
+) -> "netCDF4.Variable":
     assert var.dtype.kind != "U"  # Creates Non CF-Compliant NetCDF File
 
     def clamp_chunksizes(chunksizes: Sequence[int] | None, dim_names: Sequence[str]):
