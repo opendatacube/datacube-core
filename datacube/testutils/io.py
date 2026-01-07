@@ -458,12 +458,11 @@ def rio_slurp_reproject(fname, geobox, dtype=None, dst_nodata=None, **kw):
     _fix_resampling(kw)
 
     with rasterio.open(str(fname), "r") as src:
+        shape = geobox.shape
         if src.count == 1:
-            shape = geobox.shape
-            src_band = rasterio.band(src, 1)
+            src_bands = [rasterio.band(src, 1)]
         else:
-            shape = (src.count, *geobox.shape)
-            src_band = rasterio.band(src, tuple(range(1, src.count + 1)))
+            src_bands = [rasterio.band(src, i) for i in range(1, src.count + 1)]
 
         if dtype is None:
             dtype = src.dtypes[0]
@@ -472,16 +471,21 @@ def rio_slurp_reproject(fname, geobox, dtype=None, dst_nodata=None, **kw):
         if dst_nodata is None:
             dst_nodata = 0
 
-        pix = np.full(shape, dst_nodata, dtype=dtype)
+        out_bands = [np.full(shape, dst_nodata, dtype=dtype) for i in range(src.count)]
 
-        reproject(
-            src_band,
-            pix,
-            dst_nodata=dst_nodata,
-            dst_transform=geobox.transform,
-            dst_crs=str(geobox.crs),
-            **kw,
-        )
+        # reproject band by band as rasterio warp is broken for multiband input in GDAL 3.12
+        for src_band, out_band in zip(src_bands, out_bands):
+            reproject(
+                src_band,
+                out_band,
+                dst_nodata=dst_nodata,
+                dst_transform=geobox.transform,
+                dst_crs=str(geobox.crs),
+                **kw,
+            )
+
+        # Reassemble out_bands into a single output array
+        pix = np.stack(out_bands, axis=0) if src.count > 1 else out_bands[0]
 
         meta = src.meta
         meta["src_geobox"] = rio_geobox(meta)
