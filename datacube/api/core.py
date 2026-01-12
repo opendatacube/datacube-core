@@ -23,6 +23,8 @@ from odc.geo.geobox import GeoBox, GeoboxTiles
 from odc.geo.geom import Geometry, bbox_union, box, intersects
 from odc.geo.warp import Resampling
 from odc.geo.xr import xr_coords
+from odc.loader import FuserFunc
+from odc.loader.types import ReaderDriverSpec
 from typing_extensions import override
 from xarray.core.coordinates import DataArrayCoordinates
 
@@ -44,7 +46,7 @@ from ..drivers import new_datasource
 from ..index import Index, extract_geom_from_query, index_connect
 from ..migration import ODC2DeprecationWarning
 from ..model import QueryField
-from ..storage._load import FuserFunction, ProgressFunction
+from ..storage import ProgressFunction
 from .query import GroupBy, Query, query_group_by
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -285,13 +287,13 @@ class Datacube:
         skip_broken_datasets: bool | None = None,
         dask_chunks: Mapping[str, int | Literal["auto"]] | None = None,
         like: GeoBox | xarray.Dataset | xarray.DataArray | None = None,
-        fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None,
+        fuse_func: FuserFunc | str | Mapping[str, FuserFunc | None | str] | None = None,
         datasets: Sequence[Dataset] | None = None,
         dataset_predicate: Callable[[Dataset], bool] | None = None,
         progress_cbk: ProgressFunction | None = None,
         patch_url: Callable[[str], str] | None = None,
         limit: int | None = None,
-        driver: Any | None = None,
+        driver: ReaderDriverSpec | None = None,
         **query: QueryField,
     ) -> xarray.Dataset:
         # Ruff reformats the legal resampling values into a tuple, so disable
@@ -988,13 +990,13 @@ class Datacube:
         geobox: GeoBox | xarray.Dataset | xarray.DataArray,
         measurements: Mapping[str, Measurement] | list[Measurement],
         resampling: Resampling | dict[str, Resampling] | None = None,
-        fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None,
+        fuse_func: FuserFunc | str | Mapping[str, FuserFunc | None | str] | None = None,
         dask_chunks: Mapping[str, int | Literal["auto"]] | None = None,
         skip_broken_datasets: bool = False,
         progress_cbk: ProgressFunction | None = None,
         extra_dims: ExtraDimensions | None = None,
         patch_url: Callable[[str], str] | None = None,
-        driver: Any | None = None,
+        driver: ReaderDriverSpec | None = None,
         **extra,
     ) -> xarray.Dataset:
         """
@@ -1119,7 +1121,8 @@ class Datacube:
 def per_band_load_data_settings(
     measurements: list[Measurement] | Mapping[str, Measurement],
     resampling: Resampling | Mapping[str, Resampling] | None = None,
-    fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None,
+    fuse_func: FuserFunc | str | Mapping[str, FuserFunc | None | str] | None = None,
+    legacy_load: bool = True,
 ) -> list[Measurement]:
     def with_resampling(m, resampling, default=None):
         m = m.copy()
