@@ -482,9 +482,32 @@ class Datacube:
                 pq = dc.load(product="ls5_pq_albers", like=nbar_dataset)
 
         :param fuse_func: Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
-            data is simply copied over the top of each other in a relatively undefined manner. This function can
-            perform a specific combining step. This can be a dictionary if different
+            valid (i.e. not "nodata") pixels are copied over the top of pixels copied from previous datasets.
+            This function can perform a specific combining step. This can be a dictionary if different
             fusers are needed per band (similar format to the resampling dict described above).
+
+            Fuse functions should be defined as follows::
+
+                    def my_fuser(dst: np.ndarray, src: np.ndarray) -> None:
+                        # Create a boolean mask array of pixels from this src array to copy.
+                        mask = pixels_to_copy(src)
+
+                        # Copy only masked pixels to dst.
+                        np.copyto(dst, src, where=mask)
+
+            For an example of a more sophisticated fuser function, see
+            https://github.com/GeoscienceAustralia/dea-notebooks/blob/77e9e3a05c104f4a0de91857905acce5853975b6/Tools/dea_tools/datahandling.py#L713
+
+            Fuser functions should be importable top-level functions passed by fully qualified name
+            so that they can be serialised to dask workers. When using the legacy loader Fuser functions may be
+            passed as function objects, but this will be deprecated in a future release. E.g.::
+
+                data = dc.load(..., fuse_func="mymodule.my_fuser")
+
+            is preferred over::
+
+                from mymodule import my_fuser
+                data = dc.load(..., fuse_func=my_fuser)
 
         :param datasets: Optional. If this is a non-empty list of :class:`datacube.model.Dataset` objects,
             these will be loaded instead of performing a database lookup.
@@ -1023,7 +1046,36 @@ class Datacube:
             Default is to use ``nearest`` for all bands.
 
         :param fuse_func:
-            function to merge successive arrays as an output. Can be a dictionary just like resampling.
+            Function used to fuse/combine/reduce data with the ``group_by`` parameter.
+
+            By default, valid (i.e. not "nodata") pixels are copied over the top of pixels copied from
+            previous datasets.
+            This function can perform specific combining steps. This can be a dictionary if different
+            fusers are needed per band (similar format to the resampling dict described above).
+
+            Fuse functions should be defined as follows::
+
+                    def my_fuser(dst: np.ndarray, src: np.ndarray) -> None:
+                        # Create a boolean mask array of pixels from this src array to copy.
+                        mask = pixels_to_copy(src)
+
+                        # Efficiently copy only masked pixels to dst.
+                        np.copyto(dst, src, where=mask)
+
+            For an example of a more sophisticated fuser function, see
+            https://github.com/GeoscienceAustralia/dea-notebooks/blob/77e9e3a05c104f4a0de91857905acce5853975b6/Tools/dea_tools/datahandling.py#L713
+
+            Fuser functions should be importable top-level functions passed by fully qualified name
+            so that they can be serialised to dask workers. When using the legacy loader Fuser functions may be
+            passed as function objects, but this will be deprecated in a future release. E.g.::
+
+                data = dc.load(..., fuse_func="mymodule.my_fuser")
+
+            is preferred over::
+
+                from mymodule import my_fuser
+
+                data = dc.load(..., fuse_func=my_fuser)
 
         :param dask_chunks:
             If provided, the data will be loaded on demand using :class:`dask.array.Array`.
