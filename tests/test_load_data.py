@@ -19,6 +19,7 @@ from datacube.testutils import (
     mk_test_image,
 )
 from datacube.testutils.io import (
+    adder_fuser,
     get_raster_info,
     native_geobox,
     native_load,
@@ -76,7 +77,7 @@ def test_load_data(tmpdir) -> None:
     def custom_fuser(dest: np.ndarray[Any, Any], delta) -> None:
         nonlocal custom_fuser_call_count
         custom_fuser_call_count += 1
-        dest[:] += delta
+        adder_fuser(dest, delta)
 
     progress_call_data = []
 
@@ -98,6 +99,23 @@ def test_load_data(tmpdir) -> None:
 
     ds_data = Datacube.load_data(sources, geobox, mm, dask_chunks={}, driver="rio")
     assert ds_data.aa.attrs == {"nodata": nodata, "units": "1"}
+
+    # custom_fuser above cannot be used directly for driver-based loads as it is not serialisable to dask.
+    with pytest.raises(ValueError):
+        ds_data = Datacube.load_data(
+            sources2, geobox, mm, fuse_func=custom_fuser, dask_chunks={}, driver="rio"
+        )
+    # custom_fuser must be passed to driver-based loads by fully qualified Python name.
+    ds_data = Datacube.load_data(
+        sources2,
+        geobox,
+        mm,
+        fuse_func="datacube.testutils.io.adder_fuser",
+        dask_chunks={},
+        driver="rio",
+    )
+    assert ds_data.aa.nodata == nodata
+    np.testing.assert_array_equal(nodata + aa + aa, ds_data.aa.values[0])
 
 
 def test_load_data_dask(tmp_path) -> None:

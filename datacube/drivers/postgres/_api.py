@@ -968,7 +968,7 @@ class PostgresDbAPI:
             )
         )
 
-        type_id = res.inserted_primary_key[0]
+        type_id = res.inserted_primary_key[0]  # type: ignore[index]
 
         # Initialise search fields.
         self._setup_product_fields(
@@ -1053,7 +1053,7 @@ class PostgresDbAPI:
         res = self._connection.execute(
             METADATA_TYPE.insert().values(name=name, definition=definition)
         )
-        type_id = res.inserted_primary_key[0]
+        type_id = res.inserted_primary_key[0]  # type: ignore[index]
 
         self._setup_metadata_type_fields(
             type_id, name, definition, concurrently=concurrently

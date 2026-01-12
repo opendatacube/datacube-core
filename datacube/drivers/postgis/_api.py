@@ -1027,7 +1027,7 @@ class PostgisDbAPI:
             )
         )
 
-        return res.inserted_primary_key[0]
+        return res.inserted_primary_key[0]  # type: ignore[index]
 
     def insert_product_bulk(self, values) -> tuple[int, int]:
         requested = len(values)
@@ -1080,7 +1080,7 @@ class PostgisDbAPI:
         res = self._connection.execute(
             insert(MetadataType).values(name=name, definition=definition)
         )
-        return res.inserted_primary_key[0]
+        return res.inserted_primary_key[0]  # type: ignore[index]
 
     def insert_metadata_bulk(self, values) -> tuple[int, int]:
         requested = len(values)

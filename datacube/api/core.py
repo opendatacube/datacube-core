@@ -1117,6 +1117,7 @@ class Datacube:
 
         if not legacy_load:
             from ..storage._loader import driver_based_load
+
             assert driver is not None  # Mypy is confused by legacy_load.
             return driver_based_load(
                 driver,

@@ -564,3 +564,7 @@ def rio_slurp_xarray(fname, *args, rgb: str = "auto", **kw) -> xr.DataArray:
     return xr.DataArray(
         im, dims=dims, coords=xr_coords(mm.geobox), attrs={"nodata": mm.nodata}
     )
+
+
+def adder_fuser(dst, src):
+    dst[:] += src
