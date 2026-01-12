@@ -76,6 +76,8 @@ def reproject_and_fuse(
     def copyto_fuser(dest: np.ndarray, src: np.ndarray) -> None:
         _default_fuser(dest, src, dst_nodata)
 
+    if isinstance(fuse_func, str):
+        fuse_func = resolve_fuser(fuse_func)
     fuse_func = fuse_func or copyto_fuser
 
     destination.fill(dst_nodata)

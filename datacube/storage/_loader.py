@@ -98,6 +98,7 @@ def driver_based_load(
             fail_on_error=fail_on_error,
             dims=tuple(m.get("dims", ())),
             meta=RasterBandMetadata(attrs=m.dataarray_attrs()),
+            fuser_fqn=m.fuser,
         )
         for m in measurements
     }

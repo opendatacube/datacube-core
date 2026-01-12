@@ -1052,15 +1052,20 @@ class Datacube:
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
+        legacy_load = driver is None or driver == "legacy"
+
         measurements = per_band_load_data_settings(
-            measurements, resampling=resampling, fuse_func=fuse_func
+            measurements,
+            resampling=resampling,
+            fuse_func=fuse_func,
+            legacy_load=legacy_load,
         )
 
         geobox = _normalise_geobox(geobox)
 
-        if driver is not None:
+        if not legacy_load:
             from ..storage._loader import driver_based_load
-
+            assert driver is not None  # Mypy is confused by legacy_load.
             return driver_based_load(
                 driver,
                 sources,
@@ -1130,6 +1135,12 @@ def per_band_load_data_settings(
         return m
 
     def with_fuser(m, fuser, default=None):
+        m_fuser = fuser.get(m.name, default)
+        # TODO deprecate callable fusers before making the rio loader driver the default loader.
+        if callable(m_fuser) and not legacy_load:
+            raise ValueError(
+                "For driver-based loads, fuser functions must be passed as fully qualified names."
+            )
         m = m.copy()
         m["fuser"] = fuser.get(m.name, default)
         return m
@@ -1137,7 +1148,7 @@ def per_band_load_data_settings(
     if resampling is not None and not isinstance(resampling, dict):
         resampling = {"*": resampling}
 
-    if fuse_func is None or callable(fuse_func):
+    if fuse_func is None or isinstance(fuse_func, str) or callable(fuse_func):
         fuse_func = {"*": fuse_func}
 
     if isinstance(measurements, dict):
