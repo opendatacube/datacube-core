@@ -23,6 +23,7 @@ from odc.geo.geobox import GeoBox, GeoboxTiles
 from odc.geo.geom import Geometry, bbox_union, box, intersects
 from odc.geo.warp import Resampling
 from odc.geo.xr import xr_coords
+from odc.loader.types import FuserFunc, ReaderDriverSpec
 from typing_extensions import override
 from xarray.core.coordinates import DataArrayCoordinates
 
@@ -44,7 +45,7 @@ from ..drivers import new_datasource
 from ..index import Index, extract_geom_from_query, index_connect
 from ..migration import ODC2DeprecationWarning
 from ..model import QueryField
-from ..storage._load import FuserFunction, ProgressFunction
+from ..storage import ProgressFunction
 from .query import GroupBy, Query, query_group_by
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -285,13 +286,13 @@ class Datacube:
         skip_broken_datasets: bool | None = None,
         dask_chunks: Mapping[str, int | Literal["auto"]] | None = None,
         like: GeoBox | xarray.Dataset | xarray.DataArray | None = None,
-        fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None,
+        fuse_func: FuserFunc | str | Mapping[str, FuserFunc | str | None] | None = None,
         datasets: Sequence[Dataset] | None = None,
         dataset_predicate: Callable[[Dataset], bool] | None = None,
         progress_cbk: ProgressFunction | None = None,
         patch_url: Callable[[str], str] | None = None,
         limit: int | None = None,
-        driver: Any | None = None,
+        driver: ReaderDriverSpec | None = None,
         **query: QueryField,
     ) -> xarray.Dataset:
         # Ruff reformats the legal resampling values into a tuple, so disable
@@ -479,10 +480,51 @@ class Datacube:
 
                 pq = dc.load(product="ls5_pq_albers", like=nbar_dataset)
 
-        :param fuse_func: Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
-            data is simply copied over the top of each other in a relatively undefined manner. This function can
-            perform a specific combining step. This can be a dictionary if different
-            fusers are needed per band (similar format to the resampling dict described above).
+        :param fuse_func:
+            Function used to fuse/combine/reduce data with the ``group_by`` parameter.
+
+            By default, pixels are only copied where valid (i.e. not nodata) pixels
+            have not yet been copied from previous datasets.
+
+            If data (especially categorical data) appears wrong or unexpected in
+            areas where datasets overlap, then an appropriate fuse_func may help.
+
+            The fuse_func can perform a specific combining step and can be a
+            dictionary if different fusers are needed per band (similar format to
+            the resampling dict described above).
+
+            Fuse functions should be defined as follows::
+
+                    def my_fuser(dst: np.ndarray, src: np.ndarray) -> None:
+                        # Create a boolean mask array of pixels from this src array to copy.
+                        mask = pixels_to_copy(src)
+
+                        # Copy only masked pixels to dst.
+                        np.copyto(dst, src, where=mask)
+
+            For an example of a more sophisticated fuser function, see
+            https://github.com/GeoscienceAustralia/dea-notebooks/blob/77e9e3a05c104f4a0de91857905acce5853975b6/Tools/dea_tools/datahandling.py#L713
+
+            Fuser functions should be importable top-level functions passed by fully
+            qualified name so that they can be serialised to dask workers. For
+            driver-based loads, fuser functions MUST be passed as fully qualified
+            names.  For legacy loads Fuser functions may be passed as generic function
+            objects, but this will be deprecated and eventually removed in future
+            releases.
+
+            E.g.::
+
+                data = dc.load(..., fuse_func="mymodule.my_fuser")
+
+            is preferred over::
+
+                from mymodule import my_fuser
+                data = dc.load(..., fuse_func=my_fuser)
+
+            and this will raise an error::
+
+                from mymodule import my_fuser
+                data = dc.load(..., fuse_func=my_fuser, driver="rio")
 
         :param datasets: Optional. If this is a non-empty list of :class:`datacube.model.Dataset` objects,
             these will be loaded instead of performing a database lookup.
@@ -988,13 +1030,13 @@ class Datacube:
         geobox: GeoBox | xarray.Dataset | xarray.DataArray,
         measurements: Mapping[str, Measurement] | list[Measurement],
         resampling: Resampling | dict[str, Resampling] | None = None,
-        fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None,
+        fuse_func: FuserFunc | str | Mapping[str, FuserFunc | str | None] | None = None,
         dask_chunks: Mapping[str, int | Literal["auto"]] | None = None,
         skip_broken_datasets: bool = False,
         progress_cbk: ProgressFunction | None = None,
         extra_dims: ExtraDimensions | None = None,
         patch_url: Callable[[str], str] | None = None,
-        driver: Any | None = None,
+        driver: ReaderDriverSpec | None = None,
         **extra,
     ) -> xarray.Dataset:
         """
@@ -1016,12 +1058,56 @@ class Datacube:
             use `cubic` for all bands except ``fmask`` for which `nearest` will be used.
 
             Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average',
-            'mode', 'gauss',  'max', 'min', 'med', 'q1', 'q3'``
+            'mode', 'gauss', 'max', 'min', 'med', 'q1', 'q3'``
 
             Default is to use ``nearest`` for all bands.
 
         :param fuse_func:
-            function to merge successive arrays as an output. Can be a dictionary just like resampling.
+            Function used to fuse/combine/reduce data with the ``group_by`` parameter.
+
+            By default, pixels are only copied where valid (i.e. not nodata) pixels
+            have not yet been copied from previous datasets.
+
+            If data (especially categorical data) appears wrong or unexpected in areas
+            where datasets overlap, then an appropriate fuse_func may help.
+
+            The fuse_func can perform specific combining steps and can be a
+            dictionary if different fusers are needed per band (similar format to the
+            resampling dict described above).
+
+            Fuse functions should be defined as follows::
+
+                    def my_fuser(dst: np.ndarray, src: np.ndarray) -> None:
+                        # Create a boolean mask array of pixels from this src array to copy.
+                        mask = pixels_to_copy(src)
+
+                        # Efficiently copy only masked pixels to dst.
+                        np.copyto(dst, src, where=mask)
+
+            For an example of a more sophisticated fuser function, see
+            https://github.com/GeoscienceAustralia/dea-notebooks/blob/77e9e3a05c104f4a0de91857905acce5853975b6/Tools/dea_tools/datahandling.py#L713
+
+            Fuser functions should be importable top-level functions passed by fully
+            qualified name so that they can be serialised to dask workers. For
+            driver-based loads, fuser functions MUST be passed as fully qualified names.
+            For legacy loads Fuser functions may be passed as generic function objects,
+            but this will be deprecated and eventually removed in future releases.
+
+            E.g.::
+
+                data = dc.load(..., fuse_func="mymodule.my_fuser")
+
+            is preferred over::
+
+                from mymodule import my_fuser
+
+                data = dc.load(..., fuse_func=my_fuser)
+
+            and this will raise an error::
+
+                from mymodule import my_fuser
+
+                data = dc.load(..., fuse_func=my_fuser, driver="rio")
 
         :param dask_chunks:
             If provided, the data will be loaded on demand using :class:`dask.array.Array`.
@@ -1050,15 +1136,21 @@ class Datacube:
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
+        legacy_load = driver is None or driver == "legacy"
+
         measurements = per_band_load_data_settings(
-            measurements, resampling=resampling, fuse_func=fuse_func
+            measurements,
+            resampling=resampling,
+            fuse_func=fuse_func,
+            legacy_load=legacy_load,
         )
 
         geobox = _normalise_geobox(geobox)
 
-        if driver is not None:
+        if not legacy_load:
             from ..storage._loader import driver_based_load
 
+            assert driver is not None  # Mypy is confused by legacy_load.
             return driver_based_load(
                 driver,
                 sources,
@@ -1119,14 +1211,35 @@ class Datacube:
 def per_band_load_data_settings(
     measurements: list[Measurement] | Mapping[str, Measurement],
     resampling: Resampling | Mapping[str, Resampling] | None = None,
-    fuse_func: FuserFunction | Mapping[str, FuserFunction | None] | None = None,
+    fuse_func: FuserFunc | str | Mapping[str, FuserFunc | None | str] | None = None,
+    legacy_load: bool = True,
 ) -> list[Measurement]:
     def with_resampling(m, resampling, default=None):
         m = m.copy()
         m["resampling_method"] = resampling.get(m.name, default)
         return m
 
+    # Prevent re-raising the same warning message for every band loaded
+    generic_function_warning_issued = False
+
     def with_fuser(m, fuser, default=None):
+        nonlocal generic_function_warning_issued
+        m_fuser = fuser.get(m.name, default)
+        if callable(m_fuser):
+            if legacy_load:
+                # TODO Promote to deprecation warning, then enforce FQNs for all loads.
+                if not generic_function_warning_issued:
+                    _LOG.info(
+                        "Fuser function called as generic function object. "
+                        "This will be deprecated in future releases. "
+                        "Please pass fully qualified function name instead."
+                    )
+                    generic_function_warning_issued = True
+            else:
+                raise ValueError(
+                    "For driver-based loads, fuser functions must be passed as fully qualified names."
+                )
+
         m = m.copy()
         m["fuser"] = fuser.get(m.name, default)
         return m
@@ -1134,7 +1247,7 @@ def per_band_load_data_settings(
     if resampling is not None and not isinstance(resampling, dict):
         resampling = {"*": resampling}
 
-    if fuse_func is None or callable(fuse_func):
+    if fuse_func is None or not isinstance(fuse_func, Mapping):
         fuse_func = {"*": fuse_func}
 
     if isinstance(measurements, dict):

@@ -20,6 +20,7 @@ from odc.geo.geobox import GeoBox
 from odc.geo.roi import roi_is_empty
 from odc.geo.warp import Resampling
 from odc.geo.xr import xr_coords
+from odc.loader import FuserFunc, resolve_fuser
 from xarray.core.coordinates import DataArrayCoordinates
 from xarray.core.dataarray import DataArray as XrDataArray
 from xarray.core.dataset import Dataset as XrDataset
@@ -34,7 +35,6 @@ from ._base import BandInfo
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
-FuserFunction: TypeAlias = Callable[[np.ndarray, np.ndarray], Any]  # pylint: disable=invalid-name
 ProgressFunction: TypeAlias = Callable[[int, int], Any]  # pylint: disable=invalid-name
 
 
@@ -53,7 +53,7 @@ def reproject_and_fuse(
     dst_geobox: GeoBox,
     dst_nodata: int | float | None,
     resampling: Resampling = "nearest",
-    fuse_func: FuserFunction | None = None,
+    fuse_func: FuserFunc | str | None = None,
     skip_broken_datasets: bool = False,
     progress_cbk: ProgressFunction | None = None,
     extra_dim_index: int | None = None,
@@ -76,6 +76,8 @@ def reproject_and_fuse(
     def copyto_fuser(dest: np.ndarray, src: np.ndarray) -> None:
         _default_fuser(dest, src, dst_nodata)
 
+    if isinstance(fuse_func, str):
+        fuse_func = resolve_fuser(fuse_func)
     fuse_func = fuse_func or copyto_fuser
 
     destination.fill(dst_nodata)

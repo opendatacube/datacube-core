@@ -29,10 +29,8 @@ from odc.loader import (
 )
 from odc.loader.types import ReaderDriverSpec
 
-from datacube.storage._load import ProgressFunction
-
 from ..model import Dataset, ExtraDimensions, Measurement
-from . import BandInfo
+from . import BandInfo, ProgressFunction
 
 
 def ds_geobox(ds: Dataset, **kw) -> GeoBox | None:
@@ -99,6 +97,7 @@ def driver_based_load(
             fail_on_error=fail_on_error,
             dims=tuple(m.get("dims", ())),
             meta=RasterBandMetadata(attrs=m.dataarray_attrs()),
+            fuser_fqn=m.fuser,
         )
         for m in measurements
     }
