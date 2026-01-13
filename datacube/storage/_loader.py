@@ -30,8 +30,7 @@ from odc.loader import (
 from odc.loader.types import ReaderDriverSpec
 
 from ..model import Dataset, ExtraDimensions, Measurement
-from . import BandInfo
-from ._load import ProgressFunction
+from . import BandInfo, ProgressFunction
 
 
 def ds_geobox(ds: Dataset, **kw) -> GeoBox | None:

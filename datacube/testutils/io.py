@@ -566,5 +566,5 @@ def rio_slurp_xarray(fname, *args, rgb: str = "auto", **kw) -> xr.DataArray:
     )
 
 
-def adder_fuser(dst, src):
+def adder_fuser(dst: np.ndarray, src: np.ndarray) -> None:
     dst[:] += src
