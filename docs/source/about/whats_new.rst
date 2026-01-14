@@ -8,6 +8,64 @@ What's New
 Next Release
 ============
 
+1.9.13 (14 January 2026)
+=========================
+
+This release adds support for custom fuse functions in driver based loads.
+
+Custom fuse functions can now be set as importable strings (fully qualified Python names).
+This is required for driver based loads and will be enforced for legacy loads in a future
+release.
+
+E.g.::
+   dc.load(..., fuse_func="my_module.my_fuser")
+
+is required for driver-based loads and is now preferred for legacy loads over::
+   from my_module import my_fuser
+   dc.load(..., fuse_func=my_fuser)
+
+Please start to update your code and notebooks accordingly.
+
+Notable Changes
+---------------
+
+* Support for custom fuse functions in driver based loads.
+* Compatibility with recent releases of GDAL and rasterio.
+
+What's Changed
+--------------
+
+* Reduce asset raster ext warnings volume by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2306
+* Add scikit-image dependency by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2307
+* drivers/postgres: use right select by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2308
+* Validate JSON schema columns by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2310
+* Add ty to dev dependencies by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2309
+* Ensure truly safe loading of netcdf drivers. by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2305
+* Bypass rasterio/gdal compatibility issue by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2316
+* Clean up from resolved rasterio/gdal compatibility issues. by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2317
+* uv.lock: update to urllib3 2.6.3 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2318
+* Custom fusers for driver based loads by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2321
+* Bump fallback version number and update whats_new.rst for 1.9.13 release in https://github.com/opendatacube/datacube-core/pull/2323
+
+Automated updates
+-----------------
+
+* build(deps): bump the actions-deps group with 2 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2304
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2303
+* build(deps): bump the actions-deps group with 3 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2311
+* build(deps): bump astral-sh/uv from 0.9.18 to 0.9.20 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2312
+* build(deps): bump astral-sh/uv from 0.9.20 to 0.9.21 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2313
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2314
+* build(deps): bump astral-sh/uv from 0.9.21 to 0.9.22 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2315
+* build(deps): bump osgeo/gdal from ubuntu-full-3.10.3 to ubuntu-full-3.12.1 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2301
+* build(deps): bump astral-sh/uv from 0.9.22 to 0.9.24 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2319
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2320
+* build(deps): bump astral-sh/uv from 0.9.24 to 0.9.25 in /docker in https://github.com/opendatacube/datacube-core/pull/2322
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.12...1.9.13
+
+The Open Data Cube Steering Council thanks and acknowledges the ongoing support of Geoscience Australia, CSIRO, and RISE.
+
 1.9.12 (22 December 2025)
 =========================
 
