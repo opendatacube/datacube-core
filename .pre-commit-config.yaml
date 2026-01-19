@@ -1,6 +1,6 @@
 repos:
     - repo: https://github.com/adrienverge/yamllint.git
-      rev: v1.37.1
+      rev: v1.38.0
       hooks:
         - id: yamllint
     - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -22,13 +22,13 @@ repos:
         hooks:
         -   id: pylint
     - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.14.11
+      rev: v0.14.13
       hooks:
       - id: ruff-check
         args: [--fix, --show-fixes, --output-format, grouped]
       - id: ruff-format
     - repo: https://github.com/astral-sh/uv-pre-commit
-      rev: 0.9.24
+      rev: 0.9.26
       hooks:
         # Ensure uv.lock is up-to-date if pyproject.toml has changed
         - id: uv-lock
@@ -41,7 +41,7 @@ repos:
         additional_dependencies:
           - tomli
     - repo: https://github.com/Lucas-C/pre-commit-hooks
-      rev: v1.5.5
+      rev: v1.5.6
       hooks:
         - id: forbid-crlf
         - id: remove-crlf
