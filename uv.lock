@@ -923,8 +923,6 @@ dependencies = [
     { name = "rasterio", version = "1.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "rasterio", version = "1.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "ruamel-yaml" },
-    { name = "scikit-image", version = "0.25.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scikit-image", version = "0.26.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "shapely" },
     { name = "sqlalchemy" },
     { name = "toolz" },
@@ -954,6 +952,10 @@ psycopg3 = [
 s3 = [
     { name = "boto3" },
     { name = "botocore" },
+]
+scikit-image = [
+    { name = "scikit-image", version = "0.25.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scikit-image", version = "0.26.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
 
 [package.dev-dependencies]
@@ -1046,13 +1048,13 @@ requires-dist = [
     { name = "pyyaml" },
     { name = "rasterio", specifier = ">=1.4.4" },
     { name = "ruamel-yaml" },
-    { name = "scikit-image" },
+    { name = "scikit-image", marker = "extra == 'scikit-image'" },
     { name = "shapely", specifier = ">=2.0" },
     { name = "sqlalchemy", specifier = ">=2.0" },
     { name = "toolz" },
     { name = "xarray", specifier = ">=0.9" },
 ]
-provides-extras = ["performance", "distributed", "s3", "netcdf", "postgres", "psycopg3"]
+provides-extras = ["performance", "distributed", "s3", "netcdf", "postgres", "psycopg3", "scikit-image"]
 
 [package.metadata.requires-dev]
 dev = [

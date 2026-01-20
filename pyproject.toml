@@ -49,7 +49,6 @@ dependencies = [
     'pyyaml',
     'rasterio>=1.4.4',  # Handle changes in recent versions of GDAL
     'ruamel.yaml',
-    "scikit-image",
     'shapely>=2.0',
     'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.
     'toolz',
@@ -75,6 +74,7 @@ s3 = ['boto3', 'botocore']
 netcdf = ['netcdf4']
 postgres = ['psycopg2']
 psycopg3 = ['psycopg']
+scikit-image = ['scikit-image']
 
 [dependency-groups]
 dev = [
