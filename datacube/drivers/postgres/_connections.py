@@ -211,7 +211,7 @@ class PostgresDb:
         """
         is_new = _core.ensure_db(self._engine, with_permissions=with_permissions)
         if not is_new:
-            _core.update_schema(self._engine)
+            _core.update_schema(self._engine, with_permissions=with_permissions)
 
         return is_new
 

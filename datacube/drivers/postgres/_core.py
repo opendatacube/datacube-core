@@ -10,7 +10,7 @@ import contextlib
 import logging
 from collections.abc import Generator, Iterable
 from enum import Enum
-from typing import cast, Literal, Union
+from typing import Literal, Union, cast
 
 from deprecat import deprecat
 from sqlalchemy import Connection, MetaData, inspect, text
@@ -270,16 +270,15 @@ def schema_is_latest(engine: Engine) -> bool:
 
 
 def get_current_user(conn: Connection) -> str:
-    return cast(
-        str,
-        conn.execute(text("select quote_ident(current_user)")).scalar()
-    )
+    return cast(str, conn.execute(text("select quote_ident(current_user)")).scalar())
 
 
 def user_is_super(conn: Connection, user: str) -> bool:
-    return bool(conn.execute(
-        text(f"select rolsuper from pg_roles WHERE rolname = '{user}'")
-    ).scalar())
+    return bool(
+        conn.execute(
+            text(f"select rolsuper from pg_roles WHERE rolname = '{user}'")
+        ).scalar()
+    )
 
 
 def user_is_admin(conn: Connection, user: str) -> bool:
@@ -328,7 +327,7 @@ def view_transfers_required(
     return transfers
 
 
-def update_schema(engine: Engine) -> None:
+def update_schema(engine: Engine, with_permissions: bool) -> None:
     """
     Check and apply any missing schema changes to the database.
 
@@ -355,49 +354,53 @@ def update_schema(engine: Engine) -> None:
             connection.execute(text("commit"))
             updated = True
 
-        transfers = table_transfers_required(
-            connection,
-            SCHEMA_NAME,
-            [
-                "metadata_type",
-                "dataset_type",
-                "dataset",
-                "dataset_location",
-                "dataset_source",
-            ],
-        )
-        if transfers:
-            user = get_current_user(connection)
-            is_super = user_is_super(connection, user)
-            for table, current_owner in transfers:
-                if is_super or current_owner == user:
-                    _LOG.info(f"Transferring ownership of {table} to agdc_admin")
-                    connection.execute(
-                        text(f"alter table {SCHEMA_NAME}.{table} owner to agdc_admin")
-                    )
-                    updated = True
-                else:
-                    _LOG.warning(
-                        f"Cannot transfer ownership of {table} from {current_owner} to agdc_admin: "
-                        f"user {user} is not a superuser or current owner"
-                    )
+        if with_permissions:
+            # ensure tables and dynamic views are all owned by agdc_admin
+            transfers = table_transfers_required(
+                connection,
+                SCHEMA_NAME,
+                [
+                    "metadata_type",
+                    "dataset_type",
+                    "dataset",
+                    "dataset_location",
+                    "dataset_source",
+                ],
+            )
+            if transfers:
+                user = get_current_user(connection)
+                is_super = user_is_super(connection, user)
+                for table, current_owner in transfers:
+                    if is_super or current_owner == user:
+                        _LOG.info(f"Transferring ownership of {table} to agdc_admin")
+                        connection.execute(
+                            text(
+                                f"alter table {SCHEMA_NAME}.{table} owner to agdc_admin"
+                            )
+                        )
+                        updated = True
+                    else:
+                        _LOG.warning(
+                            f"Cannot transfer ownership of {table} from {current_owner} to agdc_admin: "
+                            f"user {user} is not a superuser or current owner"
+                        )
 
-        transfers = view_transfers_required(connection, SCHEMA_NAME, "dv_")
-        if transfers:
-            user = get_current_user(connection)
-            is_super = user_is_super(connection, user)
-            for view, current_owner in transfers:
-                if is_super or current_owner == user:
-                    _LOG.info(f"Transferring ownership of {view} to agdc_admin")
-                    connection.execute(
-                        text(f"alter view {SCHEMA_NAME}.{view} owner to agdc_admin")
-                    )
-                    updated = True
-                else:
-                    _LOG.warning(
-                        f"Cannot transfer ownership of {view} from {current_owner} to agdc_admin: "
-                        f"user {user} is not a superuser or current owner"
-                    )
+            transfers = view_transfers_required(connection, SCHEMA_NAME, "dv_")
+            if transfers:
+                user = get_current_user(connection)
+                is_super = user_is_super(connection, user)
+                for view, current_owner in transfers:
+                    if is_super or current_owner == user:
+                        _LOG.info(f"Transferring ownership of {view} to agdc_admin")
+                        connection.execute(
+                            text(f"alter view {SCHEMA_NAME}.{view} owner to agdc_admin")
+                        )
+                        updated = True
+                    else:
+                        _LOG.warning(
+                            f"Cannot transfer ownership of {view} from {current_owner} to agdc_admin: "
+                            f"user {user} is not a superuser or current owner"
+                        )
 
         if not updated:
             _LOG.info("No schema updates required.")
