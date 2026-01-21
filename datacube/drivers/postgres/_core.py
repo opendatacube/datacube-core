@@ -10,7 +10,7 @@ import contextlib
 import logging
 from collections.abc import Generator, Iterable
 from enum import Enum
-from typing import Literal, Union, cast
+from typing import Literal, Union
 
 from deprecat import deprecat
 from sqlalchemy import Connection, MetaData, inspect, text
@@ -147,7 +147,7 @@ def schema_qualified(name: str) -> str:
     return f"{SCHEMA_NAME}.{name}"
 
 
-def _get_quoted_connection_info(connection) -> tuple:
+def get_connection_info(connection) -> tuple:
     db, user = connection.execute(
         text("select quote_ident(current_database()), quote_ident(current_user)")
     ).fetchone()
@@ -165,7 +165,7 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
     is_new = not has_schema(engine)
     with engine.connect() as c:
         #  NB. Using default SQLA2.0 auto-begin commit-as-you-go behaviour
-        quoted_db_name, quoted_user = _get_quoted_connection_info(c)
+        db_name, db_user = get_connection_info(c)
 
         if with_permissions:
             _LOG.info("Ensuring user roles.")
@@ -174,7 +174,7 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
 
             c.execute(
                 text(f"""
-            grant all on database {quoted_db_name} to agdc_admin;
+            grant all on database {db_name} to agdc_admin;
             """)
             )
             c.commit()
@@ -195,11 +195,12 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             _LOG.info("Creating added column.")
             install_added_column(c)
             if with_permissions:
-                c.execute(text(f"set role {quoted_user}"))
+                c.execute(text(f"set role {db_user}"))
             c.commit()
 
         if with_permissions:
             _LOG.info("Adding role grants.")
+            c.execute(text("set role agdc_admin"))
             c.execute(text(f"grant usage on schema {SCHEMA_NAME} to agdc_user"))
             c.execute(
                 text(f"grant select on all tables in schema {SCHEMA_NAME} to agdc_user")
@@ -232,6 +233,7 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             )
             # Allow creation of indexes, views
             c.execute(text(f"grant create on schema {SCHEMA_NAME} to agdc_manage"))
+            c.execute(text(f"set role {db_user}"))
             c.commit()
 
     return is_new
@@ -269,10 +271,6 @@ def schema_is_latest(engine: Engine) -> bool:
     return True
 
 
-def get_current_user(conn: Connection) -> str:
-    return cast(str, conn.execute(text("select quote_ident(current_user)")).scalar())
-
-
 def user_is_super(conn: Connection, user: str) -> bool:
     return bool(
         conn.execute(
@@ -282,7 +280,7 @@ def user_is_super(conn: Connection, user: str) -> bool:
 
 
 def table_transfers_required(
-    conn: Connection, schema: str, tables: list[str]
+    conn: Connection, new_owner: str, schema: str, tables: list[str]
 ) -> list[tuple[str, str]]:
     """
     :return: List of tuples of tablename, current_owner of tables requiring transfer
@@ -294,13 +292,13 @@ def table_transfers_required(
             f"and tablename in {tuple(tables)}"
         )
     ):
-        if row.tableowner != "agdc_admin":
+        if row.tableowner != new_owner:
             transfers.append((row.tablename, row.tableowner))
     return transfers
 
 
 def view_transfers_required(
-    conn: Connection, schema: str, prefix: str
+    conn: Connection, new_owner: str, schema: str, prefix: str
 ) -> list[tuple[str, str]]:
     """
     :return: List of tuples of viewname, current_owner of views requiring transfer
@@ -312,7 +310,7 @@ def view_transfers_required(
             f"and viewname like '{prefix}%'"
         )
     ):
-        if row.viewowner != "agdc_admin":
+        if row.viewowner != new_owner:
             transfers.append((row.viewname, row.viewowner))
     return transfers
 
@@ -336,18 +334,14 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
     # Post 1.8 DB Incremental Sync triggers
     with engine.connect() as connection:
         updated = False
-        if not pg_column_exists(connection, "dataset", "updated"):
-            _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
-            connection.execute(text("begin"))
-            install_timestamp_trigger(connection)
-            install_added_column(connection)
-            connection.execute(text("commit"))
-            updated = True
+        _, user = get_connection_info(connection)
 
         if with_permissions:
-            # ensure tables and dynamic views are all owned by agdc_admin
+            is_super = user_is_super(connection, user)
+            # ensure tables are all owned by agdc_admin
             transfers = table_transfers_required(
                 connection,
+                "agdc_admin",
                 SCHEMA_NAME,
                 [
                     "metadata_type",
@@ -358,8 +352,6 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
                 ],
             )
             if transfers:
-                user = get_current_user(connection)
-                is_super = user_is_super(connection, user)
                 for table, current_owner in transfers:
                     if is_super or current_owner == user:
                         _LOG.info(f"Transferring ownership of {table} to agdc_admin")
@@ -375,10 +367,11 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
                             f"user {user} is not a superuser or current owner"
                         )
 
-            transfers = view_transfers_required(connection, SCHEMA_NAME, "dv_")
+            # ensure dynamic views are all owned by agdc_manage
+            transfers = view_transfers_required(
+                connection, "agdc_manage", SCHEMA_NAME, "dv_"
+            )
             if transfers:
-                user = get_current_user(connection)
-                is_super = user_is_super(connection, user)
                 for view, current_owner in transfers:
                     if is_super or current_owner == user:
                         _LOG.info(f"Transferring ownership of {view} to agdc_manage")
@@ -393,6 +386,16 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
                             f"Cannot transfer ownership of {view} from {current_owner} to agdc_manage: "
                             f"user {user} is not a superuser or current owner"
                         )
+
+        if not pg_column_exists(connection, "dataset", "updated"):
+            _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
+            connection.execute(text("begin"))
+            connection.execute(text("set role agdc_admin"))
+            install_timestamp_trigger(connection)
+            install_added_column(connection)
+            connection.execute(text(f"set role {user}"))
+            connection.execute(text("commit"))
+            updated = True
 
         if not updated:
             _LOG.info("No schema updates required.")
