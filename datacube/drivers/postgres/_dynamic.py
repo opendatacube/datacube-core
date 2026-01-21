@@ -92,7 +92,7 @@ def check_dynamic_fields(
     Check that we have expected indexes and views for the given fields
     """
     user = get_current_user(conn)
-    conn.execute(text("set role agdc_admin"))
+    conn.execute(text("set role agdc_manage"))
     # If this type has time/space fields, create composite indexes (as they are often searched together)
     # We will probably move these into product configuration in the future.
     composite_indexes = (

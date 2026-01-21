@@ -281,16 +281,6 @@ def user_is_super(conn: Connection, user: str) -> bool:
     )
 
 
-def user_is_admin(conn: Connection, user: str) -> bool:
-    try:
-        conn.execute(text("set role odc_admin"))
-        conn.execute(text(f"set role {user}"))
-        return True
-    except ProgrammingError:
-        _LOG.warning(f"User {user} is not a member of agdc_admin role")
-        return False
-
-
 def table_transfers_required(
     conn: Connection, schema: str, tables: list[str]
 ) -> list[tuple[str, str]]:
@@ -391,14 +381,16 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
                 is_super = user_is_super(connection, user)
                 for view, current_owner in transfers:
                     if is_super or current_owner == user:
-                        _LOG.info(f"Transferring ownership of {view} to agdc_admin")
+                        _LOG.info(f"Transferring ownership of {view} to agdc_manage")
                         connection.execute(
-                            text(f"alter view {SCHEMA_NAME}.{view} owner to agdc_admin")
+                            text(
+                                f"alter view {SCHEMA_NAME}.{view} owner to agdc_manage"
+                            )
                         )
                         updated = True
                     else:
                         _LOG.warning(
-                            f"Cannot transfer ownership of {view} from {current_owner} to agdc_admin: "
+                            f"Cannot transfer ownership of {view} from {current_owner} to agdc_manage: "
                             f"user {user} is not a superuser or current owner"
                         )
 
@@ -407,6 +399,7 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
 
 
 def role_has_role(conn: Connection, grant_role: UserRole, to_role: UserRole) -> bool:
+    # Identical to function in posgis driver, but expects posgres UserRoles
     return bool(
         conn.execute(
             text(
