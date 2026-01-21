@@ -10,7 +10,7 @@ import contextlib
 import logging
 from collections.abc import Generator, Iterable
 from enum import Enum
-from typing import Literal, Union
+from typing import cast, Literal, Union
 
 from deprecat import deprecat
 from sqlalchemy import Connection, MetaData, inspect, text
@@ -269,6 +269,65 @@ def schema_is_latest(engine: Engine) -> bool:
     return True
 
 
+def get_current_user(conn: Connection) -> str:
+    return cast(
+        str,
+        conn.execute(text("select quote_ident(current_user)")).scalar()
+    )
+
+
+def user_is_super(conn: Connection, user: str) -> bool:
+    return bool(conn.execute(
+        text(f"select rolsuper from pg_roles WHERE rolname = '{user}'")
+    ).scalar())
+
+
+def user_is_admin(conn: Connection, user: str) -> bool:
+    try:
+        conn.execute(text("set role odc_admin"))
+        conn.execute(text(f"set role {user}"))
+        return True
+    except ProgrammingError:
+        _LOG.warning(f"User {user} is not a member of agdc_admin role")
+        return False
+
+
+def table_transfers_required(
+    conn: Connection, schema: str, tables: list[str]
+) -> list[tuple[str, str]]:
+    """
+    :return: List of tuples of tablename, current_owner of tables requiring transfer
+    """
+    transfers: list[tuple[str, str]] = []
+    for row in conn.execute(
+        text(
+            f"select tablename, tableowner from pg_tables where schemaname = '{schema}' "
+            f"and tablename in {tuple(tables)}"
+        )
+    ):
+        if row.tableowner != "agdc_admin":
+            transfers.append((row.tablename, row.tableowner))
+    return transfers
+
+
+def view_transfers_required(
+    conn: Connection, schema: str, prefix: str
+) -> list[tuple[str, str]]:
+    """
+    :return: List of tuples of viewname, current_owner of views requiring transfer
+    """
+    transfers: list[tuple[str, str]] = []
+    for row in conn.execute(
+        text(
+            f"select viewname, viewowner from pg_views where schemaname = '{schema}' "
+            f"and viewname like '{prefix}%'"
+        )
+    ):
+        if row.viewowner != "agdc_admin":
+            transfers.append((row.viewname, row.viewowner))
+    return transfers
+
+
 def update_schema(engine: Engine) -> None:
     """
     Check and apply any missing schema changes to the database.
@@ -287,19 +346,87 @@ def update_schema(engine: Engine) -> None:
 
     # Post 1.8 DB Incremental Sync triggers
     with engine.connect() as connection:
+        updated = False
         if not pg_column_exists(connection, "dataset", "updated"):
             _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
             connection.execute(text("begin"))
             install_timestamp_trigger(connection)
             install_added_column(connection)
             connection.execute(text("commit"))
-        else:
+            updated = True
+
+        transfers = table_transfers_required(
+            connection,
+            SCHEMA_NAME,
+            [
+                "metadata_type",
+                "dataset_type",
+                "dataset",
+                "dataset_location",
+                "dataset_source",
+            ],
+        )
+        if transfers:
+            user = get_current_user(connection)
+            is_super = user_is_super(connection, user)
+            for table, current_owner in transfers:
+                if is_super or current_owner == user:
+                    _LOG.info(f"Transferring ownership of {table} to agdc_admin")
+                    connection.execute(
+                        text(f"alter table {SCHEMA_NAME}.{table} owner to agdc_admin")
+                    )
+                    updated = True
+                else:
+                    _LOG.warning(
+                        f"Cannot transfer ownership of {table} from {current_owner} to agdc_admin: "
+                        f"user {user} is not a superuser or current owner"
+                    )
+
+        transfers = view_transfers_required(connection, SCHEMA_NAME, "dv_")
+        if transfers:
+            user = get_current_user(connection)
+            is_super = user_is_super(connection, user)
+            for view, current_owner in transfers:
+                if is_super or current_owner == user:
+                    _LOG.info(f"Transferring ownership of {view} to agdc_admin")
+                    connection.execute(
+                        text(f"alter view {SCHEMA_NAME}.{view} owner to agdc_admin")
+                    )
+                    updated = True
+                else:
+                    _LOG.warning(
+                        f"Cannot transfer ownership of {view} from {current_owner} to agdc_admin: "
+                        f"user {user} is not a superuser or current owner"
+                    )
+
+        if not updated:
             _LOG.info("No schema updates required.")
+
+
+def role_has_role(conn: Connection, grant_role: UserRole, to_role: UserRole) -> bool:
+    return bool(
+        conn.execute(
+            text(
+                f"""
+            select 1
+            from pg_auth_members m
+            join pg_roles tr on tr.oid = m.roleid
+            join pg_roles gr on gr.oid = m.member
+            where gr.rolname = '{grant_role.value}'
+            and tr.rolname = '{to_role.value}'
+        """
+            )
+        ).scalar()
+    )
 
 
 def _ensure_role(conn, role: UserRole) -> None:
     if has_user(conn, role.value):
         _LOG.debug("Role exists: %s", role.value)
+        if (inherit := role.inherits_from()) is not None and not role_has_role(
+            conn, role, inherit
+        ):
+            conn.execute(text(f"grant {inherit.value} to {role.value}"))
         return
 
     sql = [
