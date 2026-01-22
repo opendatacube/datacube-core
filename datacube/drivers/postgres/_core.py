@@ -401,18 +401,29 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
             _LOG.info("No schema updates required.")
 
 
-def role_has_role(conn: Connection, grant_role: UserRole, to_role: UserRole) -> bool:
-    # Identical to function in posgis driver, but expects posgres UserRoles
+def check_role_inheritance(
+    conn: Connection, group_role: UserRole, role: UserRole
+) -> bool:
+    """
+    Check whether an extending role has been granted a base role.
+
+    :param conn: A SQLAlchemy connection object
+    :param base_role: The base role, the role that should be granted.
+    :param extending_role: The extending role, the role that should have the base role granted to it, so that it
+        can extend it with additional permissions
+    :return: True if the base_role has been granted to the extending_role.
+    """
+    # Identical to function in postgis driver, but expects postgres UserRoles
     return bool(
         conn.execute(
             text(
                 f"""
             select 1
             from pg_auth_members m
-            join pg_roles tr on tr.oid = m.roleid
+            join pg_roles r on r.oid = m.roleid
             join pg_roles gr on gr.oid = m.member
-            where gr.rolname = '{grant_role.value}'
-            and tr.rolname = '{to_role.value}'
+            where gr.rolname = '{group_role.value}'
+            and r.rolname = '{role.value}'
         """
             )
         ).scalar()
@@ -422,8 +433,8 @@ def role_has_role(conn: Connection, grant_role: UserRole, to_role: UserRole) -> 
 def _ensure_role(conn, role: UserRole) -> None:
     if has_user(conn, role.value):
         _LOG.debug("Role exists: %s", role.value)
-        if (inherit := role.inherits_from()) is not None and not role_has_role(
-            conn, role, inherit
+        if (inherit := role.inherits_from()) is not None and not check_role_inheritance(
+            conn, inherit, role
         ):
             conn.execute(text(f"grant {inherit.value} to {role.value}"))
         return
