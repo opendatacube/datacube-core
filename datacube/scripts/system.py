@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import logging
+import warnings
 
 import click
 from click import echo, style
@@ -12,6 +13,7 @@ import datacube
 from datacube.cfg import ODCEnvironment, psql_url_from_config
 from datacube.drivers.postgres._connections import IndexSetupError
 from datacube.index import index_connect
+from datacube.migration import ODC2DeprecationWarning
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
 
@@ -35,6 +37,7 @@ def system() -> None:
     is_flag=True,
     default=True,
     help="Include user roles and grants. (default: true)",
+    deprecated=True,
 )
 @click.option(
     "--recreate-views/--no-recreate-views",
@@ -59,6 +62,14 @@ def database_init(
     index, default_types, init_users, recreate_views, rebuild, lock_table
 ) -> None:
     echo("Initialising database...")
+
+    if not init_users:
+        warnings.warn(
+            "The --no-init-users flag is now deprecated. "
+            "Please use standard ODC database roles for permissions management.",
+            ODC2DeprecationWarning,
+            stacklevel=1,
+        )
 
     was_created = index.init_db(
         with_default_types=default_types, with_permissions=init_users

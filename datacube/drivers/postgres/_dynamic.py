@@ -15,7 +15,7 @@ from sqlalchemy.engine.mock import MockConnection
 
 from datacube.drivers.postgres._fields import PgField
 
-from ._core import schema_qualified
+from ._core import get_connection_info, schema_qualified
 from ._schema import DATASET, METADATA_TYPE, PRODUCT
 from .sql import CreateView, pg_exists
 
@@ -91,6 +91,8 @@ def check_dynamic_fields(
     """
     Check that we have expected indexes and views for the given fields
     """
+    _, user = get_connection_info(conn)
+    conn.execute(text("set role agdc_admin"))
     # If this type has time/space fields, create composite indexes (as they are often searched together)
     # We will probably move these into product configuration in the future.
     composite_indexes = (
@@ -132,7 +134,9 @@ def check_dynamic_fields(
             replace_existing=rebuild_indexes,
         )
     # A view of all fields
+    conn.execute(text("set role agdc_manage"))
     _ensure_view(conn, fields, name, rebuild_view, dataset_filter, delete_view)
+    conn.execute(text(f"set role {user}"))
 
 
 def _check_field_index(
