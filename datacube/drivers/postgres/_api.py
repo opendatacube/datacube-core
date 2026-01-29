@@ -15,7 +15,6 @@ Persistence API implementation for postgres.
 
 import datetime
 import logging
-import uuid  # noqa: F401
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import Any
 from typing import cast as type_cast
@@ -45,13 +44,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.selectable import NamedFromClause
 from typing_extensions import override
 
+from datacube.drivers.common_psql import escape_pg_identifier, grant_role, has_role
 from datacube.index.abstract import DSID
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.fields import Expression, Field, OrExpression
 from datacube.model import Range
 from datacube.utils.uris import split_uri
 
-from . import _core
 from . import _dynamic as dynamic
 from ._core import UserRole
 from ._fields import (  # noqa: F401
@@ -64,7 +63,6 @@ from ._fields import (  # noqa: F401
     parse_fields,
 )
 from ._schema import DATASET, DATASET_LOCATION, DATASET_SOURCE, METADATA_TYPE, PRODUCT
-from .sql import escape_pg_identifier
 
 PGCODE_FOREIGN_KEY_VIOLATION = "23503"
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -1365,7 +1363,7 @@ class PostgresDbAPI:
     ) -> None:
         if role_str not in UserRole.all_roles():
             raise ValueError(f"Invalid role: {role_str}")
-        role = UserRole.to_pg_role(role_str)  # type: ignore[arg-type]
+        role = UserRole.to_pg_role(role_str)
         username = escape_pg_identifier(self._connection, username)
         sql = text(f"create user {username} password :password in role {role.value}")
         self._connection.execute(sql, {"password": password})
@@ -1384,13 +1382,13 @@ class PostgresDbAPI:
         """
         if role_str not in UserRole.all_roles():
             raise ValueError(f"Invalid role: {role_str}")
-        role = UserRole.to_pg_role(role_str)  # type: ignore[arg-type]
+        role = UserRole.to_pg_role(role_str)
 
         for user in users:
-            if not _core.has_user(self._connection, user):
+            if not has_role(self._connection, user):
                 raise ValueError(f"Unknown user {user!r}")
 
-        _core.grant_role(self._connection, role, users)
+        grant_role(self._connection, role, users)
 
     def find_most_recent_change(self, product_id: int):
         """

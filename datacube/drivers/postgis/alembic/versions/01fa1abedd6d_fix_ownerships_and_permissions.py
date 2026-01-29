@@ -76,7 +76,8 @@ def upgrade() -> None:
 
     # Enforce hierarchical permissions
     conn.execute(sa.text("grant odc_user to odc_manage"))
-    conn.execute(sa.text("grant odc_manage to odc_admin"))
+    conn.execute(sa.text("grant odc_user to odc_admin with admin option"))
+    conn.execute(sa.text("grant odc_manage to odc_admin with admin option"))
 
 
 def downgrade() -> None:
@@ -86,5 +87,5 @@ def downgrade() -> None:
     #
     # Remove hierarchical permissions
     conn = op.get_bind()
-    conn.execute(sa.text("revoke odc_manage from odc_admin"))
-    conn.execute(sa.text("revoke odc_user from odc_manage"))
+    conn.execute(sa.text("revoke odc_manage from odc_admin cascade"))
+    conn.execute(sa.text("revoke odc_user from odc_manage cascade"))

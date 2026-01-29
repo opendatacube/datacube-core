@@ -40,6 +40,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.expression import Select
 from typing_extensions import override
 
+from datacube.drivers.common_psql import grant_role, has_role
 from datacube.index.abstract import DSID
 from datacube.index.fields import OrExpression
 from datacube.model import Range
@@ -48,7 +49,6 @@ from datacube.model.lineage import LineageDirection, LineageRelation
 from datacube.utils.uris import split_uri
 
 from ...utils.changes import Offset
-from . import _core
 from ._core import UserRole
 from ._fields import (
     DateDocField,
@@ -1194,7 +1194,7 @@ class PostgisDbAPI:
     ) -> None:
         if role_str not in UserRole.all_roles():
             raise ValueError(f"Invalid role: {role_str}")
-        role = UserRole.to_pg_role(role_str)  # type: ignore[arg-type]
+        role = UserRole.to_pg_role(role_str)
         username = escape_pg_identifier(self._connection, username)
         sql = text(f"create user {username} password :password in role {role.value}")
         self._connection.execute(sql, {"password": password})
@@ -1211,13 +1211,13 @@ class PostgisDbAPI:
         """
         Grant a role to a user.
         """
-        pg_role = UserRole.to_pg_role(role_str)  # type: ignore[arg-type]
+        pg_role = UserRole.to_pg_role(role_str)
 
         for user in users:
-            if not _core.has_user(self._connection, user):
+            if not has_role(self._connection, user):
                 raise ValueError(f"Unknown user {user!r}")
 
-        _core.grant_role(self._connection, pg_role, users)
+        grant_role(self._connection, pg_role, users)
 
     def insert_home(
         self, home: str, ids: Iterable[uuid.UUID], allow_updates: bool
