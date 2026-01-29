@@ -229,7 +229,7 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
 
 def database_exists(engine) -> bool:
     """
-    Have they init'd this database?
+    Have they init'd this database? (Thin wrapper around ``has_schema()``)
     """
     return has_schema(engine, SCHEMA_NAME)
 
@@ -257,14 +257,6 @@ def schema_is_latest(engine: Engine) -> bool:
 
     # No schema changes recently. Everything is perfect.
     return True
-
-
-def user_is_super(conn: Connection, user: str) -> bool:
-    return bool(
-        conn.execute(
-            text(f"select rolsuper from pg_roles WHERE rolname = '{user}'")
-        ).scalar()
-    )
 
 
 def table_transfers_required(

@@ -12,13 +12,14 @@ from ._perms import (
     has_role_membership,
 )
 from ._schema import create_schema, drop_schema, has_schema
-from ._utils import escape_pg_identifier, get_connection_info
+from ._utils import ensure_extension, escape_pg_identifier, get_connection_info
 
 __all__ = (
     "UserRoleBase",
     "as_role",
     "create_schema",
     "drop_schema",
+    "ensure_extension",
     "ensure_role",
     "escape_pg_identifier",
     "get_connection_info",

@@ -22,6 +22,7 @@ from datacube.drivers.common_psql import (
     UserRoleBase,
     as_role,
     create_schema,
+    ensure_extension,
     ensure_role,
     has_schema,
 )
@@ -136,7 +137,7 @@ def ensure_db(engine: Engine, with_permissions: bool = True) -> bool:
         #  NB. Using default SQLA2.0 auto-begin commit-as-you-go behaviour
         quoted_db_name, _ = get_connection_info(c)
 
-        _ensure_extension(c, "POSTGIS")
+        ensure_extension(c, "POSTGIS")
         c.commit()
 
         if with_permissions:
@@ -220,7 +221,7 @@ def ensure_db(engine: Engine, with_permissions: bool = True) -> bool:
 
 def database_exists(engine: Engine) -> bool:
     """
-    Have they init'd this database?
+    Have they init'd this database? (Thin wrapper around ``has_schema()``)
     """
     return has_schema(engine, SCHEMA_NAME)
 
@@ -301,8 +302,3 @@ def update_schema(engine: Engine) -> None:
         cfg.attributes["connection"] = conn
         print("Running upgrade")
         command.upgrade(cfg, "head")
-
-
-def _ensure_extension(conn: Connection, extension_name: str = "POSTGIS") -> None:
-    sql = text(f"create extension if not exists {extension_name}")
-    conn.execute(sql)

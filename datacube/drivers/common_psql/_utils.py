@@ -3,7 +3,7 @@
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-from sqlalchemy import text
+from sqlalchemy import text, Connection
 from sqlalchemy.engine import Connection
 
 
@@ -27,3 +27,8 @@ def get_connection_info(connection) -> tuple[str, str]:
         text("select quote_ident(current_database()), quote_ident(current_user)")
     ).fetchone()
     return db, user
+
+
+def ensure_extension(conn: Connection, extension_name: str = "POSTGIS") -> None:
+    sql = text(f"create extension if not exists {extension_name}")
+    conn.execute(sql)
