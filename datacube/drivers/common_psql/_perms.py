@@ -128,7 +128,7 @@ def ensure_role(conn: Connection, role: UserRoleBase) -> None:
     else:
         conn.execute(
             text(
-                f"create role {role.value} nologin inherit{' with createrole' if role.can_create_user() else ''}"
+                f"create role {role.value} nologin inherit{' createrole' if role.can_create_user() else ''}"
             )
         )
     # Ensure hierarchical role memberships
