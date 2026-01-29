@@ -9,7 +9,7 @@ Core SQL schema settings.
 import logging
 from enum import Enum
 
-from sqlalchemy import Connection, MetaData, text
+from sqlalchemy import MetaData, text
 from sqlalchemy.engine import Engine
 from typing_extensions import Self, override
 
@@ -19,8 +19,9 @@ from datacube.drivers.common_psql import (
     create_schema,
     ensure_role,
     get_connection_info,
-    has_role,
     has_schema,
+    transfer_ownership,
+    transfers_required,
 )
 from datacube.drivers.postgres.sql import (
     ADDED_COLUMN_INDEX_SQL_TEMPLATE,
@@ -259,42 +260,6 @@ def schema_is_latest(engine: Engine) -> bool:
     return True
 
 
-def table_transfers_required(
-    conn: Connection, new_owner: str, schema: str, tables: list[str]
-) -> list[tuple[str, str]]:
-    """
-    :return: List of tuples of tablename, current_owner of tables requiring transfer
-    """
-    transfers: list[tuple[str, str]] = []
-    for row in conn.execute(
-        text(
-            f"select tablename, tableowner from pg_tables where schemaname = '{schema}' "
-            f"and tablename in {tuple(tables)}"
-        )
-    ):
-        if row.tableowner != new_owner:
-            transfers.append((row.tablename, row.tableowner))
-    return transfers
-
-
-def view_transfers_required(
-    conn: Connection, new_owner: str, schema: str, prefix: str
-) -> list[tuple[str, str]]:
-    """
-    :return: List of tuples of viewname, current_owner of views requiring transfer
-    """
-    transfers: list[tuple[str, str]] = []
-    for row in conn.execute(
-        text(
-            f"select viewname, viewowner from pg_views where schemaname = '{schema}' "
-            f"and viewname like '{prefix}%'"
-        )
-    ):
-        if row.viewowner != new_owner:
-            transfers.append((row.viewname, row.viewowner))
-    return transfers
-
-
 def update_schema(engine: Engine, with_permissions: bool) -> None:
     """
     Check and apply any missing schema changes to the database.
@@ -314,16 +279,14 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
     # Post 1.8 DB Incremental Sync triggers
     with engine.connect() as connection:
         updated = False
-        _, user = get_connection_info(connection)
-
         if with_permissions:
-            is_super = has_role(connection, user, superuser=True)
             # ensure tables are all owned by agdc_admin
-            transfers = table_transfers_required(
+            transfers = transfers_required(
                 connection,
                 "agdc_admin",
                 SCHEMA_NAME,
-                [
+                "tables",
+                objects=[
                     "metadata_type",
                     "dataset_type",
                     "dataset",
@@ -333,39 +296,33 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
             )
             if transfers:
                 for table, current_owner in transfers:
-                    if is_super or current_owner == user:
-                        _LOG.info(f"Transferring ownership of {table} to agdc_admin")
-                        connection.execute(
-                            text(
-                                f"alter table {SCHEMA_NAME}.{table} owner to agdc_admin"
-                            )
-                        )
-                        updated = True
-                    else:
-                        _LOG.warning(
-                            f"Cannot transfer ownership of {table} from {current_owner} to agdc_admin: "
-                            f"user {user} is not a superuser or current owner"
-                        )
+                    transfer_ownership(
+                        connection,
+                        "agdc_admin",
+                        SCHEMA_NAME,
+                        table,
+                        current_owner,
+                        "tables",
+                    )
 
             # ensure dynamic views are all owned by agdc_manage
-            transfers = view_transfers_required(
-                connection, "agdc_manage", SCHEMA_NAME, "dv_"
+            transfers = transfers_required(
+                connection,
+                "agdc_manage",
+                SCHEMA_NAME,
+                "views",
+                prefix="dv_",
             )
             if transfers:
                 for view, current_owner in transfers:
-                    if is_super or current_owner == user:
-                        _LOG.info(f"Transferring ownership of {view} to agdc_manage")
-                        connection.execute(
-                            text(
-                                f"alter view {SCHEMA_NAME}.{view} owner to agdc_manage"
-                            )
-                        )
-                        updated = True
-                    else:
-                        _LOG.warning(
-                            f"Cannot transfer ownership of {view} from {current_owner} to agdc_manage: "
-                            f"user {user} is not a superuser or current owner"
-                        )
+                    transfer_ownership(
+                        connection,
+                        "agdc_manage",
+                        SCHEMA_NAME,
+                        view,
+                        current_owner,
+                        "views",
+                    )
 
         if not pg_column_exists(connection, "dataset", "updated"):
             _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")

@@ -63,6 +63,15 @@ def has_role(
     return bool(res)
 
 
+def has_roles(
+    conn: Connection,
+    roles: Iterable[str],
+    with_create_role: bool = False,
+    superuser: bool = False,
+):
+    return all(has_role(conn, r, with_create_role, superuser) for r in roles)
+
+
 def grant_role(conn: Connection, role: UserRoleBase, users: Iterable[str]) -> None:
     users = [escape_pg_identifier(conn, user) for user in users]
     with contextlib.suppress(ProgrammingError):

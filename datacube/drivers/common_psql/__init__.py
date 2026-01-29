@@ -4,12 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from ._connection import as_role
+from ._ownership import transfer_ownership, transfers_required
 from ._perms import (
     UserRoleBase,
     ensure_role,
     grant_role,
     has_role,
     has_role_membership,
+    has_roles,
 )
 from ._schema import create_schema, drop_schema, has_schema
 from ._utils import ensure_extension, escape_pg_identifier, get_connection_info
@@ -26,5 +28,8 @@ __all__ = (
     "grant_role",
     "has_role",
     "has_role_membership",
+    "has_roles",
     "has_schema",
+    "transfer_ownership",
+    "transfers_required",
 )

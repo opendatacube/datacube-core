@@ -3,8 +3,7 @@
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-from sqlalchemy import text, Connection
-from sqlalchemy.engine import Connection
+from sqlalchemy import Connection, text
 
 
 def escape_pg_identifier(conn: Connection, name: str):
@@ -22,10 +21,12 @@ def escape_pg_identifier(conn: Connection, name: str):
     return conn.execute(text(f"select quote_ident('{name}')")).scalar()
 
 
-def get_connection_info(connection) -> tuple[str, str]:
-    db, user = connection.execute(
+def get_connection_info(conn: Connection) -> tuple[str, str]:
+    row = conn.execute(
         text("select quote_ident(current_database()), quote_ident(current_user)")
     ).fetchone()
+    assert row is not None  # Reassure mypy that this cannot return None
+    db, user = row
     return db, user
 
 

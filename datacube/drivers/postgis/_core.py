@@ -14,7 +14,7 @@ from alembic import command, config
 from alembic.migration import MigrationContext
 from alembic.runtime.environment import EnvironmentContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import Connection, MetaData, text
+from sqlalchemy import MetaData, text
 from sqlalchemy.engine import Engine
 from typing_extensions import Self, override
 
@@ -24,6 +24,7 @@ from datacube.drivers.common_psql import (
     create_schema,
     ensure_extension,
     ensure_role,
+    get_connection_info,
     has_schema,
 )
 from datacube.drivers.postgis.sql import (
@@ -107,21 +108,6 @@ def schema_qualified(name: str) -> str:
     'odc.dataset'
     """
     return f"{SCHEMA_NAME}.{name}"
-
-
-def get_connection_info(connection: Connection) -> tuple[str, str]:
-    """
-    Obtain information about an open database connection
-    :param connection: An SQLAlchemy connection
-    :return: A tuple consisting of the database name and the user name of the connection
-    """
-    row = connection.execute(
-        text("select quote_ident(current_database()), quote_ident(current_user)")
-    ).fetchone()
-    # Mypy doesn't understand that the above SQL always returns a row.
-    assert row is not None
-    db, user = row
-    return db, user
 
 
 def ensure_db(engine: Engine, with_permissions: bool = True) -> bool:
