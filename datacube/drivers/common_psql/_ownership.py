@@ -9,7 +9,7 @@ from typing import Literal
 from sqlalchemy import Connection, text
 from sqlalchemy.exc import ProgrammingError
 
-from ._connection import as_role
+from ._utils import as_role
 
 _LOG = logging.getLogger(__name__)
 

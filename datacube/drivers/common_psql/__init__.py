@@ -3,7 +3,6 @@
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-from ._connection import as_role
 from ._ownership import transfer_ownership, transfers_required
 from ._perms import (
     UserRoleBase,
@@ -16,7 +15,7 @@ from ._perms import (
     has_roles,
 )
 from ._schema import create_schema, drop_schema, has_schema
-from ._utils import ensure_extension, escape_pg_identifier, get_connection_info
+from ._utils import as_role, ensure_extension, escape_pg_identifier, get_connection_info
 
 __all__ = [
     "UserRoleBase",

@@ -3,6 +3,9 @@
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 
+import contextlib
+from collections.abc import Generator
+
 from sqlalchemy import Connection, text
 
 
@@ -30,3 +33,16 @@ def get_connection_info(conn: Connection) -> tuple[str, str]:
 def ensure_extension(conn: Connection, extension_name: str = "POSTGIS") -> None:
     sql = text(f"create extension if not exists {extension_name}")
     conn.execute(sql)
+
+
+@contextlib.contextmanager
+def as_role(conn: Connection, role: str | None) -> Generator[Connection]:
+    if role is None:
+        yield conn
+    else:
+        try:
+            db_user = conn.execute(text("select quote_ident(current_user)")).scalar()
+            conn.execute(text(f"set role {role}"))
+            yield conn
+        finally:
+            conn.execute(text(f"set role {db_user}"))
