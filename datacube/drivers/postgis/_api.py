@@ -40,7 +40,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.expression import Select
 from typing_extensions import override
 
-from datacube.drivers.common_psql import grant_role, has_role
+from datacube.drivers.common_psql import create_user, drop_users, grant_role, has_role
 from datacube.index.abstract import DSID
 from datacube.index.fields import OrExpression
 from datacube.model import Range
@@ -74,7 +74,6 @@ from ._spatial import (
     generate_dataset_spatial_values,
     geom_alchemy,
 )
-from .sql import escape_pg_identifier
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -1191,23 +1190,21 @@ class PostgisDbAPI:
         password: str,
         role_str: str,
         description: str | None = None,
-    ) -> None:
+    ) -> bool:
         if role_str not in UserRole.all_roles():
             raise ValueError(f"Invalid role: {role_str}")
-        role = UserRole.to_pg_role(role_str)
-        username = escape_pg_identifier(self._connection, username)
-        sql = text(f"create user {username} password :password in role {role.value}")
-        self._connection.execute(sql, {"password": password})
-        if description:
-            sql = text(f"comment on role {username} is :description")
-            self._connection.execute(sql, {"description": description})
+        return create_user(
+            self._connection,
+            username,
+            password,
+            UserRole.to_pg_role(role_str),
+            description,
+        )
 
-    def drop_users(self, users: Iterable[str]) -> None:
-        for username in users:
-            sql = text(f"drop role {escape_pg_identifier(self._connection, username)}")
-            self._connection.execute(sql)
+    def drop_users(self, users: Iterable[str]) -> bool:
+        return drop_users(self._connection, users)
 
-    def grant_role(self, role_str: str, users: Iterable[str]) -> None:
+    def grant_role(self, role_str: str, users: Iterable[str]) -> bool:
         """
         Grant a role to a user.
         """
@@ -1217,7 +1214,7 @@ class PostgisDbAPI:
             if not has_role(self._connection, user):
                 raise ValueError(f"Unknown user {user!r}")
 
-        grant_role(self._connection, pg_role, users)
+        return grant_role(self._connection, pg_role, users)
 
     def insert_home(
         self, home: str, ids: Iterable[uuid.UUID], allow_updates: bool

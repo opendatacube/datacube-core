@@ -7,6 +7,8 @@ from ._connection import as_role
 from ._ownership import transfer_ownership, transfers_required
 from ._perms import (
     UserRoleBase,
+    create_user,
+    drop_users,
     ensure_role,
     grant_role,
     has_role,
@@ -16,11 +18,13 @@ from ._perms import (
 from ._schema import create_schema, drop_schema, has_schema
 from ._utils import ensure_extension, escape_pg_identifier, get_connection_info
 
-__all__ = (
+__all__ = [
     "UserRoleBase",
     "as_role",
     "create_schema",
+    "create_user",
     "drop_schema",
+    "drop_users",
     "ensure_extension",
     "ensure_role",
     "escape_pg_identifier",
@@ -32,4 +36,4 @@ __all__ = (
     "has_schema",
     "transfer_ownership",
     "transfers_required",
-)
+]

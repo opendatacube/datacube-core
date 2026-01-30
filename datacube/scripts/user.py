@@ -96,7 +96,8 @@ def grant(index: Index, role: str, users: Iterable[str]) -> None:
     """
     Grant a role to users
     """
-    index.users.grant_role(role, *users)
+    if not index.users.grant_role(role, *users):
+        click.echo("Could not grant role to user(s).")
 
 
 @user_cmd.command("create")
@@ -116,16 +117,19 @@ def create_user(
     Create a User
     """
     password = gen_password(12)
-    index.users.create_user(user, password, role, description=description)
+    result = index.users.create_user(user, password, role, description=description)
 
-    click.echo(
-        "{host}:{port}:*:{username}:{password}".format(
-            host=index.url_parts.hostname or "localhost",
-            port=index.url_parts.port,
-            username=user,
-            password=password,
+    if result:
+        click.echo(
+            "{host}:{port}:*:{username}:{password}".format(
+                host=index.url_parts.hostname or "localhost",
+                port=index.url_parts.port,
+                username=user,
+                password=password,
+            )
         )
-    )
+    else:
+        click.echo("Could not create user.")
 
 
 @user_cmd.command("delete")
@@ -136,4 +140,5 @@ def delete_user(config, index: Index, users: str) -> None:
     """
     Delete a User
     """
-    index.users.delete_user(*users)
+    if not index.users.delete_user(*users):
+        click.echo("Could not delete user(s).")

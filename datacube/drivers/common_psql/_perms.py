@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import contextlib
+import logging
 from collections.abc import Generator, Iterable
 
 from sqlalchemy import text
@@ -12,6 +13,8 @@ from sqlalchemy.exc import ProgrammingError
 from typing_extensions import Self
 
 from ._utils import escape_pg_identifier
+
+_LOG = logging.getLogger(__name__)
 
 
 class UserRoleBase:
@@ -53,14 +56,15 @@ def has_role(
     with_create_role: bool = False,
     superuser: bool = False,
 ) -> bool:
-    res = conn.execute(
-        text(
-            f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'"
-            f"{' and rolcreaterole' if with_create_role else ''}"
-            f"{' and rolsuper' if superuser else ''}"
-        )
-    ).fetchall()
-    return bool(res)
+    cre_sql = " and rolcreaterole" if with_create_role else ""
+    sup_sql = " and rolsuper" if superuser else ""
+    return bool(
+        conn.execute(
+            text(
+                f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}' {cre_sql} {sup_sql}"
+            )
+        ).fetchall()
+    )
 
 
 def has_roles(
@@ -68,11 +72,11 @@ def has_roles(
     roles: Iterable[str],
     with_create_role: bool = False,
     superuser: bool = False,
-):
+) -> bool:
     return all(has_role(conn, r, with_create_role, superuser) for r in roles)
 
 
-def grant_role(conn: Connection, role: UserRoleBase, users: Iterable[str]) -> None:
+def grant_role(conn: Connection, role: UserRoleBase, users: Iterable[str]) -> bool:
     users = [escape_pg_identifier(conn, user) for user in users]
     with contextlib.suppress(ProgrammingError):
         conn.execute(
@@ -83,9 +87,10 @@ def grant_role(conn: Connection, role: UserRoleBase, users: Iterable[str]) -> No
                 )
             )
         )
-    conn.execute(
+    results = conn.execute(
         text("grant {role} to {users}".format(users=", ".join(users), role=role.value))
     )
+    return bool(results.rowcount)
 
 
 def has_role_membership(
@@ -118,28 +123,70 @@ def has_role_membership(
     )
 
 
-def ensure_role(conn: Connection, role: UserRoleBase) -> None:
-    # Ensure role exists and has createrole attribute if required
-    if has_role(conn, role.value):
-        if role.can_create_user() and not has_role(
-            conn, role.value, with_create_role=True
-        ):
-            conn.execute(text(f"alter role {role.value} with createrole"))
-    else:
-        conn.execute(
-            text(
-                f"create role {role.value} nologin inherit{' createrole' if role.can_create_user() else ''}"
-            )
-        )
-    # Ensure hierarchical role memberships
-    if role.can_create_user():
-        if (group := role.inherits_from()) is not None and not has_role_membership(
-            conn, group, role
-        ):
-            conn.execute(text(f"grant {group.value} to {role.value}"))
-    else:
-        for group in role.lower_roles():
-            if not has_role_membership(conn, group, role, admin=True):
-                conn.execute(
-                    text(f"grant {group.value} to {role.value} with admin option")
+def ensure_role(conn: Connection, role: UserRoleBase) -> bool:
+    try:
+        # Ensure role exists and has createrole attribute if required
+        if has_role(conn, role.value):
+            if role.can_create_user() and not has_role(
+                conn, role.value, with_create_role=True
+            ):
+                conn.execute(text(f"alter role {role.value} with createrole"))
+        else:
+            conn.execute(
+                text(
+                    f"create role {role.value} nologin inherit{' createrole' if role.can_create_user() else ''}"
                 )
+            )
+        # Ensure hierarchical role memberships
+        if role.can_create_user():
+            if (group := role.inherits_from()) is not None and not has_role_membership(
+                conn, group, role
+            ):
+                conn.execute(text(f"grant {group.value} to {role.value}"))
+        else:
+            for group in role.lower_roles():
+                if not has_role_membership(conn, group, role, admin=True):
+                    conn.execute(
+                        text(f"grant {group.value} to {role.value} with admin option")
+                    )
+        return True
+    except ProgrammingError:
+        _LOG.error("Failed to create or update role: %s", role.value)
+        return False
+
+
+def create_user(
+    conn: Connection,
+    username: str,
+    password: str,
+    role: UserRoleBase,
+    description: str | None = None,
+) -> bool:
+    if has_role(conn, username):
+        _LOG.error("User already exists: %s", username)
+        return False
+    username = escape_pg_identifier(conn, username)
+    sql = text(f"create user {username} password :password in role {role.value}")
+    try:
+        conn.execute(sql, {"password": password})
+        if description:
+            sql = text(f"comment on role {username} is :description")
+            conn.execute(sql, {"description": description})
+        return True
+    except ProgrammingError:
+        _LOG.error("Insufficient permission to create user: %s", username)
+        return False
+
+
+def drop_users(conn: Connection, usernames: Iterable[str]) -> bool:
+    failed: list[str] = []
+    for user in usernames:
+        if has_role(conn, user):
+            try:
+                conn.execute(text(f"drop role {escape_pg_identifier(conn, user)}"))
+            except ProgrammingError:
+                failed.append(user)
+    if failed:
+        _LOG.error("Insufficient permission to drop users: %s", ", ".join(failed))
+        return False
+    return True

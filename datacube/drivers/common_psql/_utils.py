@@ -6,19 +6,16 @@
 from sqlalchemy import Connection, text
 
 
-def escape_pg_identifier(conn: Connection, name: str):
+def escape_pg_identifier(conn: Connection, name: str) -> str:
     """
-    Escape identifiers (tables, fields, roles, etc) for inclusion in SQL statements.
+    Escape identifiers for inclusion in SQL statements.
 
-    psycopg2 can safely merge query arguments, but cannot do the same for dynamically
-    generating queries.
-
-    See http://initd.org/psycopg/docs/sql.html for more information.
+    In ODC only used for user names.
     """
     # psycopg2 and psycopg3 both support this via the `quote_ident()` function.
     # We'll ask the server to escape instead to avoid conditional imports, as these are
     # not performance sensitive.
-    return conn.execute(text(f"select quote_ident('{name}')")).scalar()
+    return str(conn.execute(text(f"select quote_ident('{name}')")).scalar())
 
 
 def get_connection_info(conn: Connection) -> tuple[str, str]:

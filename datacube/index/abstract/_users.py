@@ -18,30 +18,33 @@ class AbstractUserResource(ABC):
     """
 
     @abstractmethod
-    def grant_role(self, role: str, *usernames: str) -> None:
+    def grant_role(self, role: str, *usernames: str) -> bool:
         """
         Grant a role to users
         :param role: name of the database role
         :param usernames: usernames to grant the role to.
+        :return: True if successful
         """
 
     @abstractmethod
     def create_user(
         self, username: str, password: str, role: str, description: str | None = None
-    ) -> None:
+    ) -> bool:
         """
         Create a new user
         :param username: username of the new user
         :param password: password of the new user
         :param role: default role of the new user
         :param description: optional description for the new user
+        :return: True if successful
         """
 
     @abstractmethod
-    def delete_user(self, *usernames: str) -> None:
+    def delete_user(self, *usernames: str) -> bool:
         """
         Delete database users
         :param usernames: usernames of users to be deleted
+        :return: True if successful
         """
 
     @abstractmethod

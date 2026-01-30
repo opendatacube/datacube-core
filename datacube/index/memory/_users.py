@@ -44,7 +44,7 @@ class UserResource(AbstractUserResource):
         }
 
     @override
-    def grant_role(self, role: str, *usernames: str) -> None:
+    def grant_role(self, role: str, *usernames: str) -> bool:
         if role not in self.roles:
             raise ValueError(f"{role} is not a known role")
         for user in usernames:
@@ -52,24 +52,25 @@ class UserResource(AbstractUserResource):
                 raise ValueError(f"{user} is not a known username")
         for user in usernames:
             self.users[user].grant_role(role)
+        return True
 
     @override
     def create_user(
         self, username: str, password: str, role: str, description: str | None = None
-    ) -> None:
+    ) -> bool:
         if username in self.users:
             raise ValueError(f"User {username} already exists")
         if role not in self.roles:
             raise ValueError(f"{role} is not a known role")
         self.users[username] = User(username, password, role, description)
+        return True
 
     @override
-    def delete_user(self, *usernames: str) -> None:
+    def delete_user(self, *usernames: str) -> bool:
         for user in usernames:
-            if user not in self.users:
-                raise ValueError(f"{user} is not a known username")
-        for user in usernames:
-            del self.users[user]
+            if user in self.users:
+                del self.users[user]
+        return True
 
     @override
     def list_users(self) -> Iterable[tuple[str, str, str | None]]:
