@@ -326,11 +326,10 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
 
         if not pg_column_exists(connection, "dataset", "updated"):
             _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
-            connection.execute(text("begin"))
             with as_role(connection, "agdc_admin"):
                 install_timestamp_trigger(connection)
                 install_added_column(connection)
-            connection.execute(text("commit"))
+                connection.commit()
             updated = True
 
         if not updated:
