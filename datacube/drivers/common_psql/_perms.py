@@ -18,25 +18,73 @@ _LOG = logging.getLogger(__name__)
 
 
 class UserRoleBase:
-    # For mypy: will get overridden by Enum in concreate UserRole classes.
+    """
+    Base class for representing user types.
+
+    Should be subclassed by index drivers with their own user type hierarchy, e.g. ::
+
+        from datacube.drivers.common_psql import UserRoleBase
+        from enum import Enum
+        from typing_extensions import Self, override
+
+        class UserRole(UserRoleBase, Enum):
+            # Enumerate supported user type names
+            # Should contain a driver specific prefix, in this example 'drv_'.
+            USER = "drv_user"
+            ADVANCED = drv_advanced"
+            MANAGE = "drv_manage"
+            ADMIN = "drv_admin"
+
+            ...  # Implement remaining methods as discussed below
+
+        The standard expected user types would be "user" for regular read-only users, "manage" for index-maintenance
+        read-write users, and "admin" for schema owner/maintainer users, but index
+        drivers may add additional user types.  A linear hierarchy is assumed.
+    """
+
+    # For mypy: will get overridden by Enum in concrete UserRole classes.
     value: str
 
     @classmethod
     def to_pg_role(cls, role_str: str) -> Self:
+        """
+        Converts convert user-facing user type names to internal database names
+
+        Should be implemented by adding a driver-specific prefix.
+
+        :param role_str: User-facing role name (e.g. "user", "manage", "admin")
+        :return: DB-facing role name (e.g. "odc_user", "drv_manage", "agdc_admin")
+        """
         raise NotImplementedError("UserRoleBase.to_pg_role")
 
     def simple_str(self) -> str:
+        """
+        Returns the user-facing user type name for this UserRole.
+
+        Default implementation splits on underscore.  Will need to be overridden if the driver's mapping
+        doesn't conform to this pattern.
+        """
         return self.value.split("_", 1)[1]
 
     @classmethod
     def all_roles(cls) -> Generator[str]:
+        """
+        Returns all user-facing user type names
+        """
         for role in cls:  #  type: ignore[attr-defined]
             yield role.simple_str()
 
     def higher_roles(self) -> list[Self]:
+        """
+        Returns all roles that have more privileges than this one.
+        :return:
+        """
         raise NotImplementedError("UserRoleBase.higher_roles")
 
     def lower_roles(self) -> list[Self]:
+        """
+        Returns all roles that have less privileges than this one.
+        """
         return [
             r
             for r in self.__class__  # type: ignore[attr-defined]
@@ -44,9 +92,20 @@ class UserRoleBase:
         ]
 
     def inherits_from(self) -> Self | None:
+        """
+        Returns the role immediately below this one in the hierarchy, or None if this is the most privileged role.
+        """
         raise NotImplementedError("UserRoleBase.inherits_from")
 
     def can_create_user(self) -> bool:
+        """
+        Returns True if this role can create new users. (typically only the most privileged role).
+
+        Note that the following additional restriction always applies and are not checked or enforced by this method:
+
+        * A user in a user group can only ever create users with a less privileged role than them.
+          This means that only a user who is postgresql superuser can create users in the most privileged role.
+        """
         raise NotImplementedError("UserRoleBase.can_create_user")
 
 
