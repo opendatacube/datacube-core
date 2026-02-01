@@ -27,6 +27,8 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         """
         Grant a role to users
         """
+        if len(usernames) == 0:
+            raise ValueError("Must specify at least one username to grant role to")
         with self._db_connection() as connection:
             return connection.grant_role(role, usernames)
 
@@ -47,6 +49,8 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         """
         Delete a user
         """
+        if len(usernames) == 0:
+            raise ValueError("Must specify at least one username to delete")
         with self._db_connection() as connection:
             return connection.drop_users(usernames)
 
