@@ -42,7 +42,7 @@ def bare_user(uninitialised_postgres_db, cfg_env):
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
-def test_transfer_perms(uninitialised_postgres_db, specific_user):
+def test_transfer_perms(uninitialised_postgres_db, specific_user, bare_user):
     from datacube.drivers.common_psql import (
         as_role,
         create_schema,
@@ -64,12 +64,38 @@ def test_transfer_perms(uninitialised_postgres_db, specific_user):
             conn.execute(
                 text(f"create table {SCHEMA_NAME}.test_table (id serial primary key)")
             )
+            conn.execute(
+                text(f"create table {SCHEMA_NAME}.test_table_2 (id serial primary key)")
+            )
+            conn.execute(
+                text(
+                    f"create materialized view {SCHEMA_NAME}.test_mv as select * from {SCHEMA_NAME}.test_table"
+                )
+            )
+        with as_role(conn, bare_user) as conn:
+            # should be a no-op, result tested below
+            transfer_ownership(
+                conn, SCHEMA_NAME, "test_table", specific_user, "odc_admin", "tables"
+            )
+
+        with pytest.raises(
+            ValueError, match="Must specify one of either objects or prefix"
+        ):
+            transfers = transfers_required(
+                conn,
+                "odc_admin",
+                SCHEMA_NAME,
+                "tables",
+            )
 
         try:
             transfers = transfers_required(
                 conn, "odc_admin", SCHEMA_NAME, "tables", prefix="test_"
             )
-            assert transfers == [("test_table", specific_user)]
+            assert transfers == [
+                ("test_table", specific_user),
+                ("test_table_2", specific_user),
+            ]
 
             transfer_ownership(
                 conn, SCHEMA_NAME, "test_table", specific_user, "odc_admin", "tables"
@@ -78,7 +104,16 @@ def test_transfer_perms(uninitialised_postgres_db, specific_user):
             transfers = transfers_required(
                 conn, "odc_admin", SCHEMA_NAME, "tables", prefix="test_"
             )
+            assert transfers == [("test_table_2", specific_user)]
+
+            transfer_ownership(
+                conn, SCHEMA_NAME, "test_mv", specific_user, "odc_admin", "matviews"
+            )
+            transfers = transfers_required(
+                conn, "odc_admin", SCHEMA_NAME, "matviews", prefix="test_"
+            )
             assert transfers == []
+
         finally:
             drop_schema(conn, SCHEMA_NAME)
 
