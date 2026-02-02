@@ -171,6 +171,16 @@ def test_drop_users(uninitialised_postgres_db, specific_user, bare_user):
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+def test_grant_role(uninitialised_postgres_db, specific_user, bare_user):
+    from datacube.drivers.common_psql import as_role, grant_role
+    from datacube.drivers.postgis._core import UserRole
+
+    engine = uninitialised_postgres_db._engine
+    with engine.connect() as conn, as_role(conn, bare_user) as conn:
+        assert not grant_role(conn, UserRole.MANAGE, [specific_user])
+
+
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
 def test_as_role(uninitialised_postgres_db, specific_user, bare_user):
     from datacube.drivers.common_psql import as_role
 
