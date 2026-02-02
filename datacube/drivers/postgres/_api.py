@@ -1361,7 +1361,7 @@ class PostgresDbAPI:
         role_str: str,
         description: str | None = None,
     ) -> bool:
-        if role_str not in UserRole.all_roles():
+        if role_str not in UserRole.all_role_names():
             raise ValueError(f"Invalid role: {role_str}")
         return create_user(
             self._connection,
@@ -1378,7 +1378,7 @@ class PostgresDbAPI:
         """
         Grant a role to a user.
         """
-        if role_str not in UserRole.all_roles():
+        if role_str not in UserRole.all_role_names():
             raise ValueError(f"Invalid role: {role_str}")
         role = UserRole.to_pg_role(role_str)
 

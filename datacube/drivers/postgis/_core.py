@@ -8,7 +8,6 @@ Core SQL schema settings.
 
 import logging
 import os
-from enum import Enum
 
 from alembic import command, config
 from alembic.migration import MigrationContext
@@ -35,7 +34,7 @@ from datacube.drivers.postgis.sql import (
 )
 
 
-class UserRole(UserRoleBase, Enum):
+class UserRole(UserRoleBase):
     USER = "odc_user"
     MANAGE = "odc_manage"
     ADMIN = "odc_admin"

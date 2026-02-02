@@ -6,6 +6,8 @@
 import contextlib
 import logging
 from collections.abc import Generator, Iterable
+from enum import Enum
+from typing import TypeVar
 
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
@@ -16,18 +18,18 @@ from ._utils import escape_pg_identifier
 
 _LOG = logging.getLogger(__name__)
 
+ET = TypeVar("ET", bound=Enum)
 
-class UserRoleBase:
+
+class UserRoleBase(Enum):
     """
     Base class for representing user types.
 
     Should be subclassed by index drivers with their own user type hierarchy, e.g. ::
 
         from datacube.drivers.common_psql import UserRoleBase
-        from enum import Enum
-        from typing_extensions import Self, override
 
-        class UserRole(UserRoleBase, Enum):
+        class UserRole(UserRoleBase[RoleNames]):
             # Enumerate supported user type names
             # Should contain a driver specific prefix, in this example 'drv_'.
             USER = "drv_user"
@@ -40,11 +42,12 @@ class UserRoleBase:
         The standard expected user types would be "user" for regular read-only users, "manage" for index-maintenance
         read-write users, and "admin" for schema owner/maintainer users, but index
         drivers may add additional user types.  A linear hierarchy is assumed.
+
+    Note that this class cannot use abc.ABC or abc.abstractmethod without breaking the above
+    inheritance model as the ABCMeta and EnumMeta metaclasses are incompatible.
     """
 
-    # For mypy: will get overridden by Enum in concrete UserRole classes.
-    value: str
-
+    # @abstractmethod   NB. Cannot use abc.abstractmethod due to metaclass clash with Enum
     @classmethod
     def to_pg_role(cls, role_str: str) -> Self:
         """
@@ -55,7 +58,7 @@ class UserRoleBase:
         :param role_str: User-facing role name (e.g. "user", "manage", "admin")
         :return: DB-facing role name (e.g. "odc_user", "drv_manage", "agdc_admin")
         """
-        raise NotImplementedError("UserRoleBase.to_pg_role")
+        raise NotImplementedError("UserRoleBase.to_pg_role not implemented")
 
     def simple_str(self) -> str:
         """
@@ -67,36 +70,35 @@ class UserRoleBase:
         return self.value.split("_", 1)[1]
 
     @classmethod
-    def all_roles(cls) -> Generator[str]:
+    def all_role_names(cls) -> Generator[str]:
         """
         Returns all user-facing user type names
         """
-        for role in cls:  #  type: ignore[attr-defined]
+        for role in cls:
             yield role.simple_str()
 
+    # @abstractmethod   NB. Cannot use abc.abstractmethod due to metaclass clash with Enum
     def higher_roles(self) -> list[Self]:
         """
         Returns all roles that have more privileges than this one.
         :return:
         """
-        raise NotImplementedError("UserRoleBase.higher_roles")
+        raise NotImplementedError("UserRoleBase.higher_roles not implemented")
 
     def lower_roles(self) -> list[Self]:
         """
         Returns all roles that have less privileges than this one.
         """
-        return [
-            r
-            for r in self.__class__  # type: ignore[attr-defined]
-            if r != self and r not in self.higher_roles()
-        ]
+        return [r for r in self.__class__ if r != self and r not in self.higher_roles()]
 
+    # @abstractmethod   NB. Cannot use abc.abstractmethod due to metaclass clash with Enum
     def inherits_from(self) -> Self | None:
         """
         Returns the role immediately below this one in the hierarchy, or None if this is the most privileged role.
         """
-        raise NotImplementedError("UserRoleBase.inherits_from")
+        raise NotImplementedError("UserRoleBase.inherits_from not implemented")
 
+    # @abstractmethod   NB. Cannot use abc.abstractmethod due to metaclass clash with Enum
     def can_create_user(self) -> bool:
         """
         Returns True if this role can create new users. (typically only the most privileged role).
@@ -106,7 +108,7 @@ class UserRoleBase:
         * A user in a user group can only ever create users with a less privileged role than them.
           This means that only a user who is postgresql superuser can create users in the most privileged role.
         """
-        raise NotImplementedError("UserRoleBase.can_create_user")
+        raise NotImplementedError("UserRoleBase.can_create_user not implemented")
 
 
 def has_role(
@@ -146,10 +148,17 @@ def grant_role(conn: Connection, role: UserRoleBase, users: Iterable[str]) -> bo
                 )
             )
         )
-    results = conn.execute(
-        text("grant {role} to {users}".format(users=", ".join(users), role=role.value))
-    )
-    return bool(results.rowcount)
+    try:
+        conn.execute(
+            text(
+                "grant {role} to {users}".format(
+                    users=", ".join(users), role=role.value
+                )
+            )
+        )
+        return True
+    except ProgrammingError:
+        return False
 
 
 def has_role_membership(

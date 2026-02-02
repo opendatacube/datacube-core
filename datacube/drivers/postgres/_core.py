@@ -7,7 +7,6 @@ Core SQL schema settings.
 """
 
 import logging
-from enum import Enum
 
 from sqlalchemy import MetaData, text
 from sqlalchemy.engine import Engine
@@ -36,7 +35,7 @@ from datacube.drivers.postgres.sql import (
 )
 
 
-class UserRole(UserRoleBase, Enum):
+class UserRole(UserRoleBase):
     USER = "agdc_user"
     INGEST = "agdc_ingest"
     MANAGE = "agdc_manage"
