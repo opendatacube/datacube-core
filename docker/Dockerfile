@@ -77,7 +77,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$pg_key" \
     && gpg --batch --export --armor "$pg_key" > /etc/apt/keyrings/postgres.gpg.asc \
     && gpgconf --kill all \
-    && echo "deb [signed-by=/etc/apt/keyrings/postgres.gpg.asc] http://apt.postgresql.org/pub/repos/apt noble-pgdg main $PG_VERSION" | tee /etc/apt/sources.list.d/postgres.list \
+    && echo "deb [signed-by=/etc/apt/keyrings/postgres.gpg.asc] http://apt.postgresql.org/pub/repos/apt noble-pgdg main $V_PG" | tee /etc/apt/sources.list.d/postgres.list \
     && apt-get -qq update \
     && apt-get install -y --no-install-recommends \
         gosu \
