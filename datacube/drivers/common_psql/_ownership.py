@@ -23,7 +23,8 @@ def transfers_required(
     prefix: str | None = None,
 ) -> list[tuple[str, str]]:
     """
-    Returns a list of (name, old_owner) tuples for objects that need to be transferred to the new owner.
+    Returns a list of (name, old_owner) tuples for objects that need to be
+    transferred to the new owner.
     """
     if objects is None == prefix is None:
         raise ValueError("Must specify one of either objects or prefix")
@@ -61,7 +62,8 @@ def transfer_ownership(
     }
     sql = f"alter {objs[object_type]} {schema}.{obj_name} owner to {new_owner}"
     try:
-        # Attempt as session user (hopefully we're a superuser or have both roles and required perms)
+        # Attempt as session user
+        # (hopefully we're a superuser or have both roles and required perms)
         conn.execute(text(sql))
         return True
     except ProgrammingError:
@@ -77,8 +79,9 @@ def transfer_ownership(
         return True
     except ProgrammingError:
         _LOG.warning(
-            f"Cannot transfer ownership of {objs[object_type]} {obj_name} from {current_owner} to {new_owner}: "
-            f"session user is not a superuser or session user cannot become {desired_role} or "
+            f"Cannot transfer ownership of {objs[object_type]} {obj_name} "
+            f"from {current_owner} to {new_owner}: session user is not a "
+            f"superuser or session user cannot become {desired_role} or "
             f"{desired_role} does not have CREATE permission on cubedash schema."
         )
         return False

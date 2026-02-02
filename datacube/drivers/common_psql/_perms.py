@@ -39,15 +39,16 @@ class UserRoleBase(Enum):
 
             ...  # Implement remaining methods as discussed below
 
-        The standard expected user types would be "user" for regular read-only users, "manage" for index-maintenance
-        read-write users, and "admin" for schema owner/maintainer users, but index
-        drivers may add additional user types.  A linear hierarchy is assumed.
+        The standard expected user types would be "user" for regular read-only users,
+        "manage" for index-maintenance/read-write users, and "admin" for
+        schema-owner/maintainer users, but index drivers may add additional user types.
+        A linear hierarchy is assumed.
 
-    Note that this class cannot use abc.ABC or abc.abstractmethod without breaking the above
-    inheritance model as the ABCMeta and EnumMeta metaclasses are incompatible.
+    Note that this class cannot use abc.ABC or abc.abstractmethod without breaking the
+    above inheritance model as the ABCMeta and EnumMeta metaclasses are incompatible.
     """
 
-    # @abstractmethod   NB. Cannot use abc.abstractmethod due to metaclass clash with Enum
+    # @abstractmethod  (Cannot use abc.abstractmethod due to metaclass clash with Enum)
     @classmethod
     def to_pg_role(cls, role_str: str) -> Self:
         """
@@ -64,8 +65,8 @@ class UserRoleBase(Enum):
         """
         Returns the user-facing user type name for this UserRole.
 
-        Default implementation splits on underscore.  Will need to be overridden if the driver's mapping
-        doesn't conform to this pattern.
+        Default implementation splits on underscore.  Will need to be overridden if
+        the driver's mapping doesn't conform to this pattern.
         """
         return self.value.split("_", 1)[1]
 
@@ -77,7 +78,7 @@ class UserRoleBase(Enum):
         for role in cls:
             yield role.simple_str()
 
-    # @abstractmethod   NB. Cannot use abc.abstractmethod due to metaclass clash with Enum
+    # @abstractmethod  (Cannot use abc.abstractmethod due to metaclass clash with Enum)
     def higher_roles(self) -> list[Self]:
         """
         Returns all roles that have more privileges than this one.
@@ -91,22 +92,26 @@ class UserRoleBase(Enum):
         """
         return [r for r in self.__class__ if r != self and r not in self.higher_roles()]
 
-    # @abstractmethod   NB. Cannot use abc.abstractmethod due to metaclass clash with Enum
+    # @abstractmethod  (Cannot use abc.abstractmethod due to metaclass clash with Enum)
     def inherits_from(self) -> Self | None:
         """
-        Returns the role immediately below this one in the hierarchy, or None if this is the most privileged role.
+        Returns the role immediately below this one in the hierarchy, or None if this
+        is the most privileged role.
         """
         raise NotImplementedError("UserRoleBase.inherits_from not implemented")
 
-    # @abstractmethod   NB. Cannot use abc.abstractmethod due to metaclass clash with Enum
+    # @abstractmethod  (Cannot use abc.abstractmethod due to metaclass clash with Enum)
     def can_create_user(self) -> bool:
         """
-        Returns True if this role can create new users. (typically only the most privileged role).
+        Returns True if this role can create new users.
+        (typically only the most privileged role).
 
-        Note that the following additional restriction always applies and are not checked or enforced by this method:
+        Note that the following additional restriction always applies and are not
+        checked or enforced by this method:
 
-        * A user in a user group can only ever create users with a less privileged role than them.
-          This means that only a user who is postgresql superuser can create users in the most privileged role.
+        * A user in a user group can only ever create users with a less privileged role
+          than them. This means that only a user who is postgresql superuser can create
+          users in the most privileged role.
         """
         raise NotImplementedError("UserRoleBase.can_create_user not implemented")
 
@@ -117,12 +122,12 @@ def has_role(
     with_create_role: bool = False,
     superuser: bool = False,
 ) -> bool:
-    cre_sql = " and rolcreaterole" if with_create_role else ""
-    sup_sql = " and rolsuper" if superuser else ""
+    csql = " and rolcreaterole" if with_create_role else ""
+    ssql = " and rolsuper" if superuser else ""
     return bool(
         conn.execute(
             text(
-                f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}' {cre_sql} {sup_sql}"
+                f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}' {csql} {ssql}"
             )
         ).fetchall()
     )
@@ -168,10 +173,11 @@ def has_role_membership(
     Check whether an extending role has been granted a base role.
 
     :param conn: A SQLAlchemy connection object
-    :param group_role: The base role, the role that should be granted. The group role that the other
-        role is a member of.
-    :param role: The extending role, the role that should have the group role granted to it, so that it
-        can extend it with additional permissions. The role that is a member of the group role.
+    :param group_role: The base role, the role that should be granted. The group role
+        that the other role is a member of.
+    :param role: The extending role, the role that should have the group role granted
+        to it, so that it can extend it with additional permissions. The role that is
+        a member of the group role.
     :return: True if role is a member of the group_role.
     """
     return bool(
@@ -202,7 +208,8 @@ def ensure_role(conn: Connection, role: UserRoleBase) -> bool:
         else:
             conn.execute(
                 text(
-                    f"create role {role.value} nologin inherit{' createrole' if role.can_create_user() else ''}"
+                    f"create role {role.value} nologin inherit"
+                    f"{' createrole' if role.can_create_user() else ''}"
                 )
             )
         # Ensure hierarchical role memberships
