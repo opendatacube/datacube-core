@@ -5,9 +5,9 @@
 
 import contextlib
 import logging
+from abc import ABCMeta, abstractmethod
 from collections.abc import Generator, Iterable
-from enum import Enum
-from typing import TypeVar
+from enum import Enum, EnumMeta
 
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
@@ -18,10 +18,12 @@ from ._utils import escape_pg_identifier
 
 _LOG = logging.getLogger(__name__)
 
-ET = TypeVar("ET", bound=Enum)
+
+class ABCEnumMeta(ABCMeta, EnumMeta):
+    pass
 
 
-class UserRoleBase(Enum):
+class UserRoleBase(Enum, metaclass=ABCEnumMeta):
     """
     Base class for representing user types.
 
@@ -48,8 +50,8 @@ class UserRoleBase(Enum):
     above inheritance model as the ABCMeta and EnumMeta metaclasses are incompatible.
     """
 
-    # @abstractmethod  (Cannot use abc.abstractmethod due to metaclass clash with Enum)
     @classmethod
+    @abstractmethod
     def to_pg_role(cls, role_str: str) -> Self:
         """
         Converts convert user-facing user type names to internal database names
@@ -59,7 +61,7 @@ class UserRoleBase(Enum):
         :param role_str: User-facing role name (e.g. "user", "manage", "admin")
         :return: DB-facing role name (e.g. "odc_user", "drv_manage", "agdc_admin")
         """
-        raise NotImplementedError("UserRoleBase.to_pg_role not implemented")
+        ...
 
     def simple_str(self) -> str:
         """
@@ -78,29 +80,29 @@ class UserRoleBase(Enum):
         for role in cls:
             yield role.simple_str()
 
-    # @abstractmethod  (Cannot use abc.abstractmethod due to metaclass clash with Enum)
+    @abstractmethod
     def higher_roles(self) -> list[Self]:
         """
         Returns all roles that have more privileges than this one.
         :return:
         """
-        raise NotImplementedError("UserRoleBase.higher_roles not implemented")
+        ...
 
     def lower_roles(self) -> list[Self]:
         """
-        Returns all roles that have less privileges than this one.
+        Returns all roles that have fewer privileges than this one.
         """
         return [r for r in self.__class__ if r != self and r not in self.higher_roles()]
 
-    # @abstractmethod  (Cannot use abc.abstractmethod due to metaclass clash with Enum)
+    @abstractmethod
     def inherits_from(self) -> Self | None:
         """
         Returns the role immediately below this one in the hierarchy, or None if this
         is the most privileged role.
         """
-        raise NotImplementedError("UserRoleBase.inherits_from not implemented")
+        ...
 
-    # @abstractmethod  (Cannot use abc.abstractmethod due to metaclass clash with Enum)
+    @abstractmethod
     def can_create_user(self) -> bool:
         """
         Returns True if this role can create new users.
@@ -113,7 +115,7 @@ class UserRoleBase(Enum):
           than them. This means that only a user who is postgresql superuser can create
           users in the most privileged role.
         """
-        raise NotImplementedError("UserRoleBase.can_create_user not implemented")
+        ...
 
 
 def has_role(
