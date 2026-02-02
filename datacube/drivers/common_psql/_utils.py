@@ -17,7 +17,7 @@ def escape_pg_identifier(conn: Connection, name: str) -> str:
     """
     # psycopg2 and psycopg3 both support this via the `quote_ident()` function.
     # We'll ask the server to escape instead to avoid conditional imports, as these are
-    # not performance sensitive.
+    # not performance-sensitive.
     return str(conn.execute(text(f"select quote_ident('{name}')")).scalar())
 
 
@@ -40,8 +40,8 @@ def as_role(conn: Connection, role: str | None) -> Generator[Connection]:
     if role is None:
         yield conn
     else:
+        _, db_user = get_connection_info(conn)
         try:
-            db_user = conn.execute(text("select quote_ident(current_user)")).scalar()
             conn.execute(text(f"set role {role}"))
             yield conn
         finally:
