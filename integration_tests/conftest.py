@@ -635,23 +635,29 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
 
 def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb) -> None:
     with db._engine.connect() as connection:
-        if cfg_env._name in ("datacube", "default", "postgres", "datacube3"):
-            drop_schema(connection, pgres_core.SCHEMA_NAME)
-        else:
-            drop_schema(connection, pgis_core.SCHEMA_NAME)
+        drop_schema(
+            connection,
+            pgres_core.SCHEMA_NAME
+            if cfg_env._name in ("datacube", "default", "postgres", "datacube3")
+            else pgis_core.SCHEMA_NAME,
+        )
     db.close()
 
 
 @pytest.fixture(params=["America/Los_Angeles", "UTC"])
+def db_tz(request) -> Generator[str]:
+    return request.param
+
+
+@pytest.fixture
 def uninitialised_postgres_db(
-    cfg_env: ODCEnvironment, request
+    cfg_env: ODCEnvironment, db_tz: str
 ) -> Generator[PostgresDb | PostGisDb]:
     """
     Return a connection to an empty PostgreSQL or PostGIS database
     """
     # Setup
-    timezone = request.param
-    db = reset_db(cfg_env, timezone)
+    db = reset_db(cfg_env, db_tz)
 
     yield db
 

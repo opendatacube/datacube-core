@@ -6,7 +6,8 @@
 import pytest
 from sqlalchemy import text
 
-# These tests use an empty/uninitialised database.  Doesn't matter whether it is postgis or postgres.
+# These tests use an empty/uninitialised database.
+# Doesn't matter whether it is postgis or postgres - use postgis for future-proofing
 
 
 @pytest.fixture
@@ -42,6 +43,7 @@ def bare_user(uninitialised_postgres_db, cfg_env):
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
 def test_transfer_perms(uninitialised_postgres_db, specific_user, bare_user):
     from datacube.drivers.common_psql import (
         as_role,
@@ -119,6 +121,7 @@ def test_transfer_perms(uninitialised_postgres_db, specific_user, bare_user):
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
 def test_has_roles(uninitialised_postgres_db, specific_user):
     from datacube.drivers.common_psql import has_roles
 
@@ -128,6 +131,7 @@ def test_has_roles(uninitialised_postgres_db, specific_user):
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
 def test_ensure_role(uninitialised_postgres_db, bare_user):
     from datacube.drivers.common_psql import as_role, ensure_role, has_role
     from datacube.drivers.postgis._core import UserRole
@@ -149,6 +153,7 @@ def test_ensure_role(uninitialised_postgres_db, bare_user):
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
 def test_create_user(uninitialised_postgres_db, specific_user, bare_user):
     from datacube.drivers.common_psql import as_role, create_user
     from datacube.drivers.postgis._core import UserRole
@@ -162,6 +167,7 @@ def test_create_user(uninitialised_postgres_db, specific_user, bare_user):
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
 def test_drop_users(uninitialised_postgres_db, specific_user, bare_user):
     from datacube.drivers.common_psql import as_role, drop_users
 
@@ -171,6 +177,7 @@ def test_drop_users(uninitialised_postgres_db, specific_user, bare_user):
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
 def test_grant_role(uninitialised_postgres_db, specific_user, bare_user):
     from datacube.drivers.common_psql import as_role, grant_role
     from datacube.drivers.postgis._core import UserRole
@@ -181,31 +188,36 @@ def test_grant_role(uninitialised_postgres_db, specific_user, bare_user):
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
 def test_as_role(uninitialised_postgres_db, specific_user, bare_user):
-    from datacube.drivers.common_psql import as_role
+    from datacube.drivers.common_psql import as_role, get_connection_info
 
     engine = uninitialised_postgres_db._engine
     with engine.connect() as conn:
-        db_user = conn.execute(text("select quote_ident(current_user)")).scalar()
+        _, init_user = get_connection_info(conn)
         with as_role(conn, None) as conn:
-            assert (
-                conn.execute(text("select quote_ident(current_user)")).scalar()
-                == db_user
-            )
+            _, as_user = get_connection_info(conn)
+            assert as_user == init_user
         with as_role(conn, specific_user) as conn:
-            assert (
-                conn.execute(text("select quote_ident(current_user)")).scalar()
-                == specific_user
-            )
+            _, as_user = get_connection_info(conn)
+            assert as_user == specific_user
             with as_role(conn, bare_user) as conn:
-                assert (
-                    conn.execute(text("select quote_ident(current_user)")).scalar()
-                    == bare_user
-                )
-            assert (
-                conn.execute(text("select quote_ident(current_user)")).scalar()
-                == specific_user
-            )
-        assert (
-            conn.execute(text("select quote_ident(current_user)")).scalar() == db_user
-        )
+                _, as_user = get_connection_info(conn)
+                assert as_user == bare_user
+            _, as_user = get_connection_info(conn)
+            assert as_user == specific_user
+        _, as_user = get_connection_info(conn)
+        assert as_user == init_user
+
+
+def test_driver_roles():
+    from datacube.drivers.postgis._core import UserRole as PostgisUserRole
+    from datacube.drivers.postgres._core import UserRole as PostgresUserRole
+
+    for UserRole in PostgresUserRole, PostgisUserRole:  # noqa: N806
+        for role in UserRole:
+            inherit = role.inherits_from()
+            assert inherit is None or inherit in role.lower_roles()
+            assert inherit not in role.higher_roles()
+            if role != UserRole.ADMIN:
+                assert role in UserRole.ADMIN.lower_roles()
