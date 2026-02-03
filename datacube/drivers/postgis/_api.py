@@ -1208,6 +1208,8 @@ class PostgisDbAPI:
         """
         Grant a role to a user.
         """
+        if role_str not in UserRole.all_role_names():
+            raise ValueError(f"Invalid role: {role_str}")
         pg_role = UserRole.to_pg_role(role_str)
 
         for user in users:

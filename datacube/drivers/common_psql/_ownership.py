@@ -82,6 +82,6 @@ def transfer_ownership(
             f"Cannot transfer ownership of {objs[object_type]} {obj_name} "
             f"from {current_owner} to {new_owner}: session user is not a "
             f"superuser or session user cannot become {desired_role} or "
-            f"{desired_role} does not have CREATE permission on cubedash schema."
+            f"{desired_role} does not have CREATE permission on {schema} schema."
         )
         return False

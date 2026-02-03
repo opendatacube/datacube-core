@@ -165,6 +165,7 @@ def grant_role(conn: Connection, role: UserRoleBase, users: Iterable[str]) -> bo
         )
         return True
     except ProgrammingError:
+        _LOG.error("Failed to grant role: %s", role.value)
         return False
 
 
