@@ -31,7 +31,7 @@ class UserRoleBase(Enum, metaclass=ABCEnumMeta):
 
         from datacube.drivers.common_psql import UserRoleBase
 
-        class UserRole(UserRoleBase[RoleNames]):
+        class UserRole(UserRoleBase):
             # Enumerate supported user type names
             # Should contain a driver specific prefix, in this example 'drv_'.
             USER = "drv_user"
@@ -39,15 +39,12 @@ class UserRoleBase(Enum, metaclass=ABCEnumMeta):
             MANAGE = "drv_manage"
             ADMIN = "drv_admin"
 
-            ...  # Implement remaining methods as discussed below
+            ...  # Implement remaining abstract methods as discussed below
 
         The standard expected user types would be "user" for regular read-only users,
         "manage" for index-maintenance/read-write users, and "admin" for
         schema-owner/maintainer users, but index drivers may add additional user types.
         A linear hierarchy is assumed.
-
-    Note that this class cannot use abc.ABC or abc.abstractmethod without breaking the
-    above inheritance model as the ABCMeta and EnumMeta metaclasses are incompatible.
     """
 
     @classmethod
@@ -84,7 +81,6 @@ class UserRoleBase(Enum, metaclass=ABCEnumMeta):
     def higher_roles(self) -> list[Self]:
         """
         Returns all roles that have more privileges than this one.
-        :return:
         """
         ...
 
@@ -105,14 +101,14 @@ class UserRoleBase(Enum, metaclass=ABCEnumMeta):
     @abstractmethod
     def can_create_user(self) -> bool:
         """
-        Returns True if this role can create new users.
-        (typically only the most privileged role).
+        Returns True if this role can create new users (typically only the most
+        privileged role).
 
-        Note that the following additional restriction always applies and are not
+        Note that the following additional restriction always applies and is not
         checked or enforced by this method:
 
         * A user in a user group can only ever create users with a less privileged role
-          than them. This means that only a user who is postgresql superuser can create
+          than them. This means that only a user who is PostgreSQL superuser can create
           users in the most privileged role.
         """
         ...
@@ -124,6 +120,15 @@ def has_role(
     with_create_role: bool = False,
     superuser: bool = False,
 ) -> bool:
+    """
+    Check if a role exists.
+
+    :param conn: A SQLAlchemy connection object
+    :param role_name: The name of the role being checked
+    :param with_create_role: Only return true if the role has the createrole attribute
+    :param superuser: Only return true if the role is a PostgreSQL superuser
+    :return: True if the role exists (with the specified attributes)
+    """
     csql = " and rolcreaterole" if with_create_role else ""
     ssql = " and rolsuper" if superuser else ""
     return bool(
@@ -141,10 +146,26 @@ def has_roles(
     with_create_role: bool = False,
     superuser: bool = False,
 ) -> bool:
+    """
+    Check if a group of roles exist - calls has_role for each role.
+
+    :return: Returns True if all roles exist (with the specified attributes)
+    """
     return all(has_role(conn, r, with_create_role, superuser) for r in roles)
 
 
 def grant_role(conn: Connection, role: UserRoleBase, users: Iterable[str]) -> bool:
+    """
+    Grant a UserRole to a user(s).
+
+    Attempts to revoke any existing memberships of more privileged roles from the
+    user first.
+
+    :param conn: An SQLAlchemy connection object
+    :param role: The role to grant
+    :param users: The usernames to grant the role to.
+    :return: True if the role was granted successfully.
+    """
     users = [escape_pg_identifier(conn, user) for user in users]
     with contextlib.suppress(ProgrammingError):
         conn.execute(
@@ -201,6 +222,12 @@ def has_role_membership(
 
 
 def ensure_role(conn: Connection, role: UserRoleBase) -> bool:
+    """
+    Ensure that a role exists and applies the role hierarchy.
+    :param conn: An SQLAlchemy connection object
+    :param role: The role object to ensure.
+    :return: Returns True on success.
+    """
     try:
         # Ensure role exists and has createrole attribute if required
         if has_role(conn, role.value):
@@ -240,6 +267,16 @@ def create_user(
     role: UserRoleBase,
     description: str | None = None,
 ) -> bool:
+    """
+    Create a new database user with the specified role.
+
+    :param conn: An SQLAlchemy connection object
+    :param username: The username for the new user
+    :param password: The password for the new user
+    :param role: The role to assign the user
+    :param description: A description of the user (optional)
+    :return: True on success, False on failure, including if the user already exists.
+    """
     if has_role(conn, username):
         _LOG.error("User already exists: %s", username)
         return False
@@ -257,6 +294,13 @@ def create_user(
 
 
 def drop_users(conn: Connection, usernames: Iterable[str]) -> bool:
+    """
+    Drop a user or users if they exist.
+
+    :param conn: An SQLAlchemy connection object
+    :param usernames: The usernames to drop
+    :return: True if all users no longer exist after calling.
+    """
     failed: list[str] = []
     for user in usernames:
         if has_role(conn, user):

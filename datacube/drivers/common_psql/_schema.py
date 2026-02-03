@@ -9,6 +9,12 @@ from sqlalchemy.schema import DropSchema
 
 
 def has_schema(engine: Engine, schema_name: str) -> bool:
+    """
+    Check if a schema exists.
+    :param engine: An SQLAlchemy engine
+    :param schema_name: The name of the schema to check
+    :return: True if the schema exists
+    """
     return inspect(engine).has_schema(schema_name)
 
 
@@ -18,7 +24,7 @@ def create_schema(
     """
     Create a schema.
 
-    :param conn: SQLA Connection to use
+    :param conn: An SQLAlchemy connection object.
     :param name: Name of schema to create
     :param if_exists: If true, ignore if schema already exists (default True)
     :param owner: Owner of new schema. If None (the default), owner will be the
@@ -30,4 +36,10 @@ def create_schema(
 
 
 def drop_schema(connection: Connection, schema_name: str) -> None:
+    """
+    Drop a schema and all its contents (if it exists).
+
+    :param connection: An SQLAlchemy connection object.
+    :param schema_name: The name of the schema to drop.
+    """
     connection.execute(DropSchema(schema_name, cascade=True, if_exists=True))

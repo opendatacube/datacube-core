@@ -23,8 +23,18 @@ def transfers_required(
     prefix: str | None = None,
 ) -> list[tuple[str, str]]:
     """
-    Returns a list of (name, old_owner) tuples for objects that need to be
-    transferred to the new owner.
+    Determine which objects in a schema need to be transferred to a new owner.
+
+    One and only one of objects or prefix must be specified.
+
+    :param conn: A SQLAlchemy connection object
+    :param new_owner: The new owner, the database role that should own the objects.
+    :param schema: The schema containing the objects.
+    :param object_type: The type of objects to check. One of "tables", "matviews", "views".
+    :param objects: A list of object names to check.
+    :param prefix: An object name prefix to check.
+
+    :return: A list of (name, old_owner) tuples of matching objects.
     """
     if objects is None == prefix is None:
         raise ValueError("Must specify one of either objects or prefix")
@@ -55,6 +65,17 @@ def transfer_ownership(
     new_owner: str,
     object_type: Literal["tables", "matviews", "views"],
 ) -> bool:
+    """
+    Transfer ownership of a database object to a new owner.
+
+    :param conn: A SQLAlchemy connection object
+    :param schema: The schema containing the object.
+    :param obj_name: The name of the object.
+    :param current_owner: The current owner of the object.
+    :param new_owner: The desired new owner of the object.
+    :param object_type: The type of object, one of "tables", "matviews", "views".
+    :return: True if the transfer succeeded, False otherwise.
+    """
     objs = {
         "tables": "table",
         "matviews": "materialized view",
