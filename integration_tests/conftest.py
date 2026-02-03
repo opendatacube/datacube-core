@@ -645,7 +645,7 @@ def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb) -> None:
 
 
 @pytest.fixture(params=["America/Los_Angeles", "UTC"])
-def db_tz(request) -> Generator[str]:
+def db_tz(request) -> str:
     return request.param
 
 

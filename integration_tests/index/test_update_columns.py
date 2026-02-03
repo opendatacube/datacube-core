@@ -40,8 +40,8 @@ def drop_column(conn, table: str, column: str) -> None:
     )
 
 
-@pytest.mark.parametrize("uninitialised_postgres_db", ("UTC",), indirect=True)
-@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"), indirect=True)
 def test_added_column(clirunner, uninitialised_postgres_db) -> None:
     # Run on an empty database.
     result = clirunner(["--env", "datacube", "system", "init"])
@@ -61,8 +61,8 @@ def test_added_column(clirunner, uninitialised_postgres_db) -> None:
         assert not check_trigger(connection, _schema.DATASET_LOCATION.name)
 
 
-@pytest.mark.parametrize("uninitialised_postgres_db", ("UTC",), indirect=True)
-@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"), indirect=True)
 def test_readd_column(clirunner, uninitialised_postgres_db) -> None:
     # Run on an empty database. drop columns and re-add
     result = clirunner(["--env", "datacube", "system", "init"])
