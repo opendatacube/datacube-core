@@ -30,7 +30,7 @@ def get_connection_info(conn: Connection) -> tuple[str, str]:
     return db, user
 
 
-def ensure_extension(conn: Connection, extension_name: str = "POSTGIS") -> None:
+def ensure_extension(conn: Connection, extension_name: str) -> None:
     sql = text(f"create extension if not exists {extension_name}")
     conn.execute(sql)
 
