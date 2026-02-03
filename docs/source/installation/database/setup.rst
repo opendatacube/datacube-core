@@ -185,3 +185,49 @@ After adding a new spatial index to a non-empty database it is necessary to **up
 creation::
 
    datacube spindex update 3577
+
+
+User and Permissions Management
+===============================
+
+When a database is initialised with ``datacube system init``, database roles
+are created. These roles can serve as user groups to organise database permissions.
+
+The user groups created are: "user" (providing read-only permissions for regular users
+who only need to access existing data), "manage" (providing read-write users for data
+management users who can add new data to the index), and "admin" (providing
+schema ownership for admin users can update apply schema updates and drop and recreate
+entire indexes).
+
+In the newer ``postgis`` index driver, these roles have an ``odc_`` prefix (e.g.
+``odc_user``, ``odc_manage``, etc.)
+
+In the legacy ``postgres`` index driver, these roles have an ``agdc_`` prefix (e.g.
+``agdc_user``, ``agdc_manage``, etc.)  (This refers to the old name for the project
+before the name "Open Data Cube" was adopted. The legacy index driver also creates a
+deprecated legacy ``agdc_ingest`` role which provides similar permissions to manage.)
+
+ODC users are simply postgres users that have been granted one of the roles discussed
+above.  Users can be created and role memberships maintained using conventional
+Postgresql tools, but Datacube does provide some basic user management tools::
+
+   datacube user create {user|manage|admin} USER
+
+creates a new login user with the selected permissions - the password for the new user
+is written to stdout.
+
+Permissions for an existing user (or users) can be adjusted using::
+
+   datacube user grant {user|manage|admin} USERS...
+
+Note that this replaces any previously granted permissions.  E.g. granting "user" to
+a user who already has the "admin" role will remove the "admin" role, leaving the user
+with only the read-only "user" role.
+
+Only a user with higher permissions can grant a particular role to a user.  This means
+that granting the "admin" role can only be done by a user with superuser privileges on
+the database.
+
+As of the most recent releases, datacube-ows and datacube-explorer use the same roles
+as datacube-core.  Previously they have maintained their own separate user permissions
+frameworks.
