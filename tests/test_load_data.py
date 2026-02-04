@@ -160,6 +160,48 @@ def test_load_data_dask(tmp_path) -> None:
     np.testing.assert_array_equal(aa, ds_data.aa.values[0, 100:228, 100:228])
 
 
+def test_load_nodata(tmp_path) -> None:
+    spatial = {
+        "resolution": (15, -15),
+        "offset": (11230, 1381110),
+    }
+
+    nodata = -999
+    aa = mk_test_image(128, 128, "int16", nodata=nodata)
+
+    ds, geobox = gen_tiff_dataset(
+        [SimpleNamespace(name="aa", values=aa, nodata=nodata)],
+        tmp_path,
+        prefix="ds1-",
+        timestamp="2018-07-19",
+        **spatial,
+    )
+
+    sources = Datacube.group_datasets([], "time")
+    mm = ds.product.measurements
+
+    expected = np.full([0, *geobox.shape], nodata, dtype=aa.dtype)
+    ds_data = Datacube.load_data(
+        sources,
+        geobox,
+        mm,
+    )  # spatial dims not equal!
+    assert ds_data.aa.nodata == nodata
+    np.testing.assert_array_equal(ds_data.aa.values, expected)
+    ds_data = Datacube.load_data(
+        sources, geobox, mm, dask_chunks={"x": 50, "y": 67}
+    )  # spatial dims not equal!
+    ds_data.compute()
+    assert ds_data.aa.nodata == nodata
+    np.testing.assert_array_equal(ds_data.aa.values, expected)
+    ds_data = Datacube.load_data(
+        sources, geobox, mm, dask_chunks={"x": 50, "y": 67}, driver = "rio",
+    )  # spatial dims not equal!
+    ds_data.compute()
+    assert ds_data.aa.nodata == nodata
+    np.testing.assert_array_equal(ds_data.aa.values, expected)
+
+
 def test_load_data_with_url_mangling(tmpdir) -> None:
     actual_tmpdir = Path(str(tmpdir))
     recorded_tmpdir = Path(str(tmpdir / "not" / "actual" / "location"))
