@@ -18,7 +18,7 @@ class AbstractUserResource(ABC):
     """
 
     @abstractmethod
-    def grant_role(self, role: str, usernames: Iterable[str]) -> bool:
+    def grant_role(self, role: str, usernames: str | Iterable[str]) -> bool:
         """
         Grant a role to users
         :param role: name of the database role
@@ -40,7 +40,7 @@ class AbstractUserResource(ABC):
         """
 
     @abstractmethod
-    def delete_user(self, usernames: Iterable[str]) -> bool:
+    def delete_user(self, usernames: str | Iterable[str]) -> bool:
         """
         Delete database users
         :param usernames: usernames of users to be deleted
@@ -53,3 +53,7 @@ class AbstractUserResource(ABC):
         List all database users
         :return: Iterable of (role, username, description) tuples
         """
+
+    @staticmethod
+    def _to_str_list(sl: str | Iterable[str]) -> list[str]:
+        return [sl] if isinstance(sl, str) else list(sl)
