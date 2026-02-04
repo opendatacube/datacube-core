@@ -23,12 +23,10 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         self._index = index
 
     @override
-    def grant_role(self, role: str, *usernames: str) -> bool:
+    def grant_role(self, role: str, usernames: Iterable[str]) -> bool:
         """
         Grant a role to users
         """
-        if len(usernames) == 0:
-            raise ValueError("Must specify at least one username to grant role to")
         with self._db_connection() as connection:
             return connection.grant_role(role, usernames)
 
@@ -45,12 +43,10 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
             )
 
     @override
-    def delete_user(self, *usernames: str) -> bool:
+    def delete_user(self, usernames: Iterable[str]) -> bool:
         """
         Delete a user
         """
-        if len(usernames) == 0:
-            raise ValueError("Must specify at least one username to delete")
         with self._db_connection() as connection:
             return connection.drop_users(usernames)
 

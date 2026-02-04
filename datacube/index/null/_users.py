@@ -14,7 +14,7 @@ class UserResource(AbstractUserResource):
         pass
 
     @override
-    def grant_role(self, role: str, *usernames: str) -> bool:
+    def grant_role(self, role: str, usernames: Iterable[str]) -> bool:
         raise NotImplementedError()
 
     @override
@@ -24,7 +24,7 @@ class UserResource(AbstractUserResource):
         raise NotImplementedError()
 
     @override
-    def delete_user(self, *usernames: str) -> bool:
+    def delete_user(self, usernames: Iterable[str]) -> bool:
         raise NotImplementedError()
 
     @override

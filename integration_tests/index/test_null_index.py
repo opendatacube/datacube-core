@@ -37,9 +37,9 @@ def test_null_user_resource(null_config: ODCEnvironment) -> None:
         with pytest.raises(NotImplementedError):
             dc.index.users.create_user("user1", "password2", "role1")
         with pytest.raises(NotImplementedError):
-            dc.index.users.delete_user("user1", "user2")
+            dc.index.users.delete_user(("user1", "user2"))
         with pytest.raises(NotImplementedError):
-            dc.index.users.grant_role("role1", "user1", "user2")
+            dc.index.users.grant_role("role1", ("user1", "user2"))
 
 
 def test_null_metadata_types_resource(null_config: ODCEnvironment) -> None:

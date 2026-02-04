@@ -18,7 +18,7 @@ class AbstractUserResource(ABC):
     """
 
     @abstractmethod
-    def grant_role(self, role: str, *usernames: str) -> bool:
+    def grant_role(self, role: str, usernames: Iterable[str]) -> bool:
         """
         Grant a role to users
         :param role: name of the database role
@@ -40,7 +40,7 @@ class AbstractUserResource(ABC):
         """
 
     @abstractmethod
-    def delete_user(self, *usernames: str) -> bool:
+    def delete_user(self, usernames: Iterable[str]) -> bool:
         """
         Delete database users
         :param usernames: usernames of users to be deleted

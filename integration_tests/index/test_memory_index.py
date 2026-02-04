@@ -55,27 +55,27 @@ def test_mem_user_resource(mem_index_fresh: Datacube) -> None:
         )
     assert "omg_user is not a known role" in str(e.value)
     # Test grant_role success
-    mem_index_fresh.index.users.grant_role("agdc_admin", "test_user_1", "test_user_2")
+    mem_index_fresh.index.users.grant_role("agdc_admin", ("test_user_1", "test_user_2"))
     # Roles can be granted multiple times.
-    mem_index_fresh.index.users.grant_role("agdc_admin", "test_user_1", "test_user_2")
+    mem_index_fresh.index.users.grant_role("agdc_admin", ("test_user_1", "test_user_2"))
     # Test grant_role errors
     with pytest.raises(ValueError) as e:
         mem_index_fresh.index.users.grant_role(
-            "omg_admin", "test_user_1", "test_user_2"
+            "omg_admin", ("test_user_1", "test_user_2")
         )
     assert "omg_admin is not a known role" in str(e.value)
     with pytest.raises(ValueError) as e:
         mem_index_fresh.index.users.grant_role(
-            "odc_admin", "test_user_1", "test_user_3"
+            "odc_admin", ("test_user_1", "test_user_3")
         )
     assert "test_user_3 is not a known username" in str(e.value)
     # Test delete_user errors
     # No error for deleting non-existent users.  The desired state holds.
     assert mem_index_fresh.index.users.delete_user(
-        "test_user_1", "test_user_2", "test_user_3"
+        ("test_user_1", "test_user_2", "test_user_3")
     )
     # Confirm delete error success
-    assert mem_index_fresh.index.users.delete_user("test_user_1", "test_user_2")
+    assert mem_index_fresh.index.users.delete_user(("test_user_1", "test_user_2"))
     assert mem_index_fresh.index.users.list_users() == [
         ("local_user", "localuser", "Default user")
     ]

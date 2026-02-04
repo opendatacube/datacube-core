@@ -92,11 +92,14 @@ def list_users(index: Index, f: str) -> None:
 @click.argument("role", type=click.Choice(USER_ROLES), nargs=1)
 @click.argument("users", nargs=-1)
 @ui.pass_index()
-def grant(index: Index, role: str, users: Iterable[str]) -> None:
+def grant(index: Index, role: str, users: Sequence[str]) -> None:
     """
     Grant a role to users
     """
-    if not index.users.grant_role(role, *users):
+    if len(users) == 0:
+        click.echo("No users specified")
+        sys.exit(1)
+    if not index.users.grant_role(role, users):
         click.echo(f"Could not grant role to user(s): {','.join(users)}")
         sys.exit(1)
 
@@ -138,10 +141,13 @@ def create_user(
 @click.argument("users", nargs=-1)
 @ui.pass_index()
 @ui.pass_config
-def delete_user(config, index: Index, users: str) -> None:
+def delete_user(config, index: Index, users: Sequence[str]) -> None:
     """
     Delete a User
     """
-    if not index.users.delete_user(*users):
+    if len(users) == 0:
+        click.echo("No users specified")
+        sys.exit(1)
+    if not index.users.delete_user(users):
         click.echo(f"Could not delete user(s): {','.join(users)}")
         sys.exit(1)
