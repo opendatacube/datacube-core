@@ -28,6 +28,7 @@ import datacube.scripts.cli_app
 import datacube.utils
 from datacube import Datacube
 from datacube.cfg import ODCConfig, ODCEnvironment, psql_url_from_config
+from datacube.drivers.common_psql import drop_schema
 from datacube.drivers.postgis import PostGisDb
 from datacube.drivers.postgis import _core as pgis_core
 from datacube.drivers.postgres import PostgresDb
@@ -610,7 +611,7 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
         # Drop tables so our tests have a clean db.
         # with db.begin() as c:  # Creates a new PostgresDbAPI, by passing a new connection to it
         with db._engine.connect() as connection:
-            pgres_core.drop_schema(connection)
+            drop_schema(connection, pgres_core.SCHEMA_NAME)
             if tz:
                 connection.execute(
                     text(f"alter database {db_name} set timezone = {tz!r}")
@@ -623,7 +624,7 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
             cfg_env, application_name="test-run", validate_connection=False
         )
         with db._engine.connect() as connection:
-            pgis_core.drop_schema(connection)
+            drop_schema(connection, pgis_core.SCHEMA_NAME)
             if tz:
                 connection.execute(
                     text(f"alter database {db_name} set timezone = {tz!r}")
@@ -634,23 +635,29 @@ def reset_db(cfg_env: ODCEnvironment, tz=None) -> PostgresDb | PostGisDb:
 
 def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb) -> None:
     with db._engine.connect() as connection:
-        if cfg_env._name in ("datacube", "default", "postgres", "datacube3"):
-            pgres_core.drop_schema(connection)
-        else:
-            pgis_core.drop_schema(connection)
+        drop_schema(
+            connection,
+            pgres_core.SCHEMA_NAME
+            if cfg_env._name in ("datacube", "default", "postgres", "datacube3")
+            else pgis_core.SCHEMA_NAME,
+        )
     db.close()
 
 
 @pytest.fixture(params=["America/Los_Angeles", "UTC"])
+def db_tz(request) -> str:
+    return request.param
+
+
+@pytest.fixture
 def uninitialised_postgres_db(
-    cfg_env: ODCEnvironment, request
+    cfg_env: ODCEnvironment, db_tz: str
 ) -> Generator[PostgresDb | PostGisDb]:
     """
     Return a connection to an empty PostgreSQL or PostGIS database
     """
     # Setup
-    timezone = request.param
-    db = reset_db(cfg_env, timezone)
+    db = reset_db(cfg_env, db_tz)
 
     yield db
 

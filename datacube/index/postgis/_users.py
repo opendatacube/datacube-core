@@ -23,30 +23,32 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         self._index = index
 
     @override
-    def grant_role(self, role: str, *usernames: str) -> None:
+    def grant_role(self, role: str, usernames: Iterable[str]) -> bool:
         """
         Grant a role to users
         """
         with self._db_connection() as connection:
-            connection.grant_role(role, usernames)
+            return connection.grant_role(role, usernames)
 
     @override
     def create_user(
         self, username: str, password: str, role: str, description: str | None = None
-    ) -> None:
+    ) -> bool:
         """
         Create a new user.
         """
         with self._db_connection() as connection:
-            connection.create_user(username, password, role, description=description)
+            return connection.create_user(
+                username, password, role, description=description
+            )
 
     @override
-    def delete_user(self, *usernames: str) -> None:
+    def delete_user(self, usernames: Iterable[str]) -> bool:
         """
         Delete a user
         """
         with self._db_connection() as connection:
-            connection.drop_users(usernames)
+            return connection.drop_users(usernames)
 
     @override
     def list_users(self) -> Iterable[tuple[str, str, str | None]]:

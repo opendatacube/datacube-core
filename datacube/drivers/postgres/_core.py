@@ -6,18 +6,22 @@
 Core SQL schema settings.
 """
 
-import contextlib
 import logging
-from collections.abc import Generator, Iterable
-from enum import Enum
-from typing import Literal, Union
 
-from deprecat import deprecat
-from sqlalchemy import Connection, MetaData, inspect, text
+from sqlalchemy import MetaData, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import ProgrammingError
-from sqlalchemy.schema import CreateSchema, DropSchema
+from typing_extensions import Self, override
 
+from datacube.drivers.common_psql import (
+    UserRoleBase,
+    as_role,
+    create_schema,
+    ensure_role,
+    get_connection_info,
+    has_schema,
+    transfer_ownership,
+    transfers_required,
+)
 from datacube.drivers.postgres.sql import (
     ADDED_COLUMN_INDEX_SQL_TEMPLATE,
     ADDED_COLUMN_MIGRATE_SQL_TEMPLATE,
@@ -27,33 +31,23 @@ from datacube.drivers.postgres.sql import (
     UPDATE_COLUMN_INDEX_SQL_TEMPLATE,
     UPDATE_COLUMN_MIGRATE_SQL_TEMPLATE,
     UPDATE_TIMESTAMP_SQL,
-    escape_pg_identifier,
     pg_column_exists,
 )
-from datacube.migration import ODC2DeprecationWarning
 
 
-class UserRole(Enum):
+class UserRole(UserRoleBase):
     USER = "agdc_user"
     INGEST = "agdc_ingest"
     MANAGE = "agdc_manage"
     ADMIN = "agdc_admin"
 
     @classmethod
-    def to_pg_role(
-        cls, role_str: Literal["user", "ingest", "manage", "admin"]
-    ) -> "UserRole":
+    @override
+    def to_pg_role(cls, role_str: str) -> Self:
         return cls("agdc_" + role_str.lower())
 
-    def simple_str(self) -> str:
-        return self.value.split("_", 1)[1]
-
-    @classmethod
-    def all_roles(cls) -> Generator[str]:
-        for role in cls:
-            yield role.simple_str()
-
-    def higher_roles(self) -> list["UserRole"]:
+    @override
+    def higher_roles(self) -> list[Self]:
         if self == UserRole.USER:
             return [UserRole.INGEST, UserRole.MANAGE, UserRole.ADMIN]
         if self == UserRole.INGEST:
@@ -62,7 +56,8 @@ class UserRole(Enum):
             return [UserRole.ADMIN]
         return []
 
-    def inherits_from(self) -> Union["UserRole", None]:
+    @override
+    def inherits_from(self) -> Self | None:
         if self == UserRole.ADMIN:
             return UserRole.MANAGE
         if self == UserRole.MANAGE:
@@ -71,6 +66,7 @@ class UserRole(Enum):
             return UserRole.USER
         return None
 
+    @override
     def can_create_user(self) -> bool:
         return self == UserRole.ADMIN
 
@@ -147,13 +143,6 @@ def schema_qualified(name: str) -> str:
     return f"{SCHEMA_NAME}.{name}"
 
 
-def get_connection_info(connection) -> tuple:
-    db, user = connection.execute(
-        text("select quote_ident(current_database()), quote_ident(current_user)")
-    ).fetchone()
-    return db, user
-
-
 def ensure_db(engine, with_permissions: bool = True) -> bool:
     """
     Initialise the db if needed.
@@ -162,15 +151,15 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
 
     Create the schema if it doesn't exist.
     """
-    is_new = not has_schema(engine)
+    is_new = not has_schema(engine, SCHEMA_NAME)
     with engine.connect() as c:
         #  NB. Using default SQLA2.0 auto-begin commit-as-you-go behaviour
-        db_name, db_user = get_connection_info(c)
+        db_name, _ = get_connection_info(c)
 
         if with_permissions:
             _LOG.info("Ensuring user roles.")
-            for role in UserRole:
-                _ensure_role(c, role)
+            for ur in UserRole:
+                ensure_role(c, ur)
 
             c.execute(
                 text(f"""
@@ -180,60 +169,59 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
             c.commit()
 
         if is_new:
-            if with_permissions:
-                # Switch to 'agdc_admin', so that all items are owned by them.
-                c.execute(text("set role agdc_admin"))
-            _LOG.info("Creating schema.")
-            c.execute(CreateSchema(SCHEMA_NAME))
-            _LOG.info("Creating types.")
-            for s in TYPES_INIT_SQL:
-                c.execute(text(s))
-            _LOG.info("Creating tables.")
-            METADATA.create_all(c)
-            _LOG.info("Creating triggers.")
-            install_timestamp_trigger(c)
-            _LOG.info("Creating added column.")
-            install_added_column(c)
-            if with_permissions:
-                c.execute(text(f"set role {db_user}"))
+            role = "agdc_admin" if with_permissions else None
+            with as_role(c, role) as c:
+                _LOG.info("Creating schema.")
+                create_schema(c, SCHEMA_NAME)
+                _LOG.info("Creating types.")
+                for s in TYPES_INIT_SQL:
+                    c.execute(text(s))
+                _LOG.info("Creating tables.")
+                METADATA.create_all(c)
+                _LOG.info("Creating triggers.")
+                install_timestamp_trigger(c)
+                _LOG.info("Creating added column.")
+                install_added_column(c)
             c.commit()
 
         if with_permissions:
             _LOG.info("Adding role grants.")
-            c.execute(text("set role agdc_admin"))
-            c.execute(text(f"grant usage on schema {SCHEMA_NAME} to agdc_user"))
-            c.execute(
-                text(f"grant select on all tables in schema {SCHEMA_NAME} to agdc_user")
-            )
-            c.execute(
-                text(
-                    f"grant execute on function {SCHEMA_NAME}.common_timestamp(text) to agdc_user"
+            with as_role(c, "agdc_admin") as c:
+                c.execute(text(f"grant usage on schema {SCHEMA_NAME} to agdc_user"))
+                c.execute(
+                    text(
+                        f"grant select on all tables in schema {SCHEMA_NAME} to agdc_user"
+                    )
                 )
-            )
+                c.execute(
+                    text(
+                        f"grant execute on function {SCHEMA_NAME}.common_timestamp(text) to agdc_user"
+                    )
+                )
 
-            c.execute(
-                text(
-                    f"grant insert on {SCHEMA_NAME}.dataset,"
-                    f"{SCHEMA_NAME}.dataset_location,"
-                    f"{SCHEMA_NAME}.dataset_source to agdc_ingest"
+                c.execute(
+                    text(
+                        f"grant insert on {SCHEMA_NAME}.dataset,"
+                        f"{SCHEMA_NAME}.dataset_location,"
+                        f"{SCHEMA_NAME}.dataset_source to agdc_ingest"
+                    )
                 )
-            )
-            c.execute(
-                text(
-                    f"grant usage, select on all sequences in schema {SCHEMA_NAME} to agdc_ingest"
+                c.execute(
+                    text(
+                        f"grant usage, select on all sequences in schema {SCHEMA_NAME} to agdc_ingest"
+                    )
                 )
-            )
 
-            # (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
-            c.execute(
-                text(
-                    f"grant insert, delete on {SCHEMA_NAME}.dataset_type,"
-                    f"{SCHEMA_NAME}.metadata_type to agdc_manage"
+                # We're only granting deletion of types that have nothing written yet:
+                #   they can't delete the data itself
+                c.execute(
+                    text(
+                        f"grant insert, delete on {SCHEMA_NAME}.dataset_type,"
+                        f"{SCHEMA_NAME}.metadata_type to agdc_manage"
+                    )
                 )
-            )
-            # Allow creation of indexes, views
-            c.execute(text(f"grant create on schema {SCHEMA_NAME} to agdc_manage"))
-            c.execute(text(f"set role {db_user}"))
+                # Allow creation of indexes, views
+                c.execute(text(f"grant create on schema {SCHEMA_NAME} to agdc_manage"))
             c.commit()
 
     return is_new
@@ -241,9 +229,9 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
 
 def database_exists(engine) -> bool:
     """
-    Have they init'd this database?
+    Have they init'd this database? (Thin wrapper around ``has_schema()``)
     """
-    return has_schema(engine)
+    return has_schema(engine, SCHEMA_NAME)
 
 
 def schema_is_latest(engine: Engine) -> bool:
@@ -271,50 +259,6 @@ def schema_is_latest(engine: Engine) -> bool:
     return True
 
 
-def user_is_super(conn: Connection, user: str) -> bool:
-    return bool(
-        conn.execute(
-            text(f"select rolsuper from pg_roles WHERE rolname = '{user}'")
-        ).scalar()
-    )
-
-
-def table_transfers_required(
-    conn: Connection, new_owner: str, schema: str, tables: list[str]
-) -> list[tuple[str, str]]:
-    """
-    :return: List of tuples of tablename, current_owner of tables requiring transfer
-    """
-    transfers: list[tuple[str, str]] = []
-    for row in conn.execute(
-        text(
-            f"select tablename, tableowner from pg_tables where schemaname = '{schema}' "
-            f"and tablename in {tuple(tables)}"
-        )
-    ):
-        if row.tableowner != new_owner:
-            transfers.append((row.tablename, row.tableowner))
-    return transfers
-
-
-def view_transfers_required(
-    conn: Connection, new_owner: str, schema: str, prefix: str
-) -> list[tuple[str, str]]:
-    """
-    :return: List of tuples of viewname, current_owner of views requiring transfer
-    """
-    transfers: list[tuple[str, str]] = []
-    for row in conn.execute(
-        text(
-            f"select viewname, viewowner from pg_views where schemaname = '{schema}' "
-            f"and viewname like '{prefix}%'"
-        )
-    ):
-        if row.viewowner != new_owner:
-            transfers.append((row.viewname, row.viewowner))
-    return transfers
-
-
 def update_schema(engine: Engine, with_permissions: bool) -> None:
     """
     Check and apply any missing schema changes to the database.
@@ -334,16 +278,14 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
     # Post 1.8 DB Incremental Sync triggers
     with engine.connect() as connection:
         updated = False
-        _, user = get_connection_info(connection)
-
         if with_permissions:
-            is_super = user_is_super(connection, user)
             # ensure tables are all owned by agdc_admin
-            transfers = table_transfers_required(
+            transfers = transfers_required(
                 connection,
                 "agdc_admin",
                 SCHEMA_NAME,
-                [
+                "tables",
+                objects=[
                     "metadata_type",
                     "dataset_type",
                     "dataset",
@@ -353,137 +295,41 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
             )
             if transfers:
                 for table, current_owner in transfers:
-                    if is_super or current_owner == user:
-                        _LOG.info(f"Transferring ownership of {table} to agdc_admin")
-                        connection.execute(
-                            text(
-                                f"alter table {SCHEMA_NAME}.{table} owner to agdc_admin"
-                            )
-                        )
-                        updated = True
-                    else:
-                        _LOG.warning(
-                            f"Cannot transfer ownership of {table} from {current_owner} to agdc_admin: "
-                            f"user {user} is not a superuser or current owner"
-                        )
+                    transfer_ownership(
+                        connection,
+                        "agdc_admin",
+                        SCHEMA_NAME,
+                        table,
+                        current_owner,
+                        "tables",
+                    )
 
             # ensure dynamic views are all owned by agdc_manage
-            transfers = view_transfers_required(
-                connection, "agdc_manage", SCHEMA_NAME, "dv_"
+            transfers = transfers_required(
+                connection,
+                "agdc_manage",
+                SCHEMA_NAME,
+                "views",
+                prefix="dv_",
             )
             if transfers:
                 for view, current_owner in transfers:
-                    if is_super or current_owner == user:
-                        _LOG.info(f"Transferring ownership of {view} to agdc_manage")
-                        connection.execute(
-                            text(
-                                f"alter view {SCHEMA_NAME}.{view} owner to agdc_manage"
-                            )
-                        )
-                        updated = True
-                    else:
-                        _LOG.warning(
-                            f"Cannot transfer ownership of {view} from {current_owner} to agdc_manage: "
-                            f"user {user} is not a superuser or current owner"
-                        )
+                    transfer_ownership(
+                        connection,
+                        "agdc_manage",
+                        SCHEMA_NAME,
+                        view,
+                        current_owner,
+                        "views",
+                    )
 
         if not pg_column_exists(connection, "dataset", "updated"):
             _LOG.info("Adding 'updated'/'added' fields and triggers to schema.")
-            connection.execute(text("begin"))
-            connection.execute(text("set role agdc_admin"))
-            install_timestamp_trigger(connection)
-            install_added_column(connection)
-            connection.execute(text(f"set role {user}"))
-            connection.execute(text("commit"))
+            with as_role(connection, "agdc_admin"):
+                install_timestamp_trigger(connection)
+                install_added_column(connection)
+                connection.commit()
             updated = True
 
         if not updated:
             _LOG.info("No schema updates required.")
-
-
-def check_role_inheritance(
-    conn: Connection, group_role: UserRole, role: UserRole
-) -> bool:
-    """
-    Check whether an extending role has been granted a base role.
-
-    :param conn: A SQLAlchemy connection object
-    :param base_role: The base role, the role that should be granted.
-    :param extending_role: The extending role, the role that should have the base role granted to it, so that it
-        can extend it with additional permissions
-    :return: True if the base_role has been granted to the extending_role.
-    """
-    # Identical to function in postgis driver, but expects postgres UserRoles
-    return bool(
-        conn.execute(
-            text(
-                f"""
-            select 1
-            from pg_auth_members m
-            join pg_roles r on r.oid = m.roleid
-            join pg_roles gr on gr.oid = m.member
-            where gr.rolname = '{group_role.value}'
-            and r.rolname = '{role.value}'
-        """
-            )
-        ).scalar()
-    )
-
-
-def _ensure_role(conn, role: UserRole) -> None:
-    if has_user(conn, role.value):
-        _LOG.debug("Role exists: %s", role.value)
-        if (inherit := role.inherits_from()) is not None and not check_role_inheritance(
-            conn, inherit, role
-        ):
-            conn.execute(text(f"grant {inherit.value} to {role.value}"))
-        return
-
-    sql = [
-        f"create role {role.value} nologin inherit",
-        "createrole" if role.can_create_user() else "nocreaterole",
-    ]
-    if (inherit := role.inherits_from()) is not None:
-        sql.append("in role " + inherit.value)
-    conn.execute(text(" ".join(sql)))
-
-
-def grant_role(conn: Connection, role: UserRole, users: Iterable[str]) -> None:
-    users = [escape_pg_identifier(conn, user) for user in users]
-    with contextlib.suppress(ProgrammingError):
-        conn.execute(
-            text(
-                "revoke {roles} from {users}".format(
-                    users=", ".join(users),
-                    roles=", ".join(r.value for r in UserRole.higher_roles(role)),
-                )
-            )
-        )
-    conn.execute(
-        text("grant {role} to {users}".format(users=", ".join(users), role=role.value))
-    )
-
-
-def has_user(conn, role_name: str) -> bool:
-    res = conn.execute(
-        text(f"SELECT rolname FROM pg_roles WHERE rolname='{role_name}'")
-    ).fetchall()
-    return bool(res)
-
-
-def has_schema(engine: Engine, schema_name: str = SCHEMA_NAME) -> bool:
-    return inspect(engine).has_schema(schema_name)
-
-
-def drop_schema(connection: Connection, schema_name: str = SCHEMA_NAME) -> None:
-    connection.execute(DropSchema(schema_name, cascade=True, if_exists=True))
-
-
-@deprecat(
-    reason="The 'drop_db' function has been deprecated. "
-    "Please use 'drop_schema' instead.",
-    version="1.9.10",
-    category=ODC2DeprecationWarning,
-)
-def drop_db(connection: Connection) -> None:
-    drop_schema(connection)

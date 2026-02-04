@@ -175,15 +175,17 @@ def test_db_init_rebuild(clirunner, cfg_env, ls8_eo3_product) -> None:
 
 
 def test_db_init(clirunner, index) -> None:
+    from datacube.drivers.common_psql import drop_schema, has_schema
+
     if index._db.driver_name == "postgis":
-        from datacube.drivers.postgis._core import drop_schema, has_schema
+        from datacube.drivers.postgis.sql import SCHEMA_NAME
     else:
-        from datacube.drivers.postgres._core import drop_schema, has_schema
+        from datacube.drivers.postgres.sql import SCHEMA_NAME
 
     with index._db._connect() as connection:
-        drop_schema(connection._connection)
+        drop_schema(connection._connection, SCHEMA_NAME)
 
-        assert not has_schema(index._db._engine)
+        assert not has_schema(index._db._engine, SCHEMA_NAME)
 
     # Run on an empty database.
     if index._db.driver_name == "postgis":
@@ -194,7 +196,7 @@ def test_db_init(clirunner, index) -> None:
     assert "Created." in result.output
 
     with index._db._connect() as connection:
-        assert has_schema(index._db._engine)
+        assert has_schema(index._db._engine, SCHEMA_NAME)
 
 
 def test_add_no_such_product(clirunner, index) -> None:
