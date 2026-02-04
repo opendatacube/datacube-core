@@ -55,5 +55,5 @@ class AbstractUserResource(ABC):
         """
 
     @staticmethod
-    def _to_str_list(sl: str | Iterable[str]) -> list[str]:
-        return [sl] if isinstance(sl, str) else list(sl)
+    def _to_str_iter(sl: str | Iterable[str]) -> Iterable[str]:
+        return [sl] if isinstance(sl, str) else sl

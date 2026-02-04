@@ -15,7 +15,7 @@ class UserResource(AbstractUserResource):
 
     @override
     def grant_role(self, role: str, usernames: str | Iterable[str]) -> bool:
-        if not self._to_str_list(usernames):
+        if not list(self._to_str_iter(usernames)):
             return True
         raise NotImplementedError()
 
