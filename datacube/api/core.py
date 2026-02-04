@@ -982,8 +982,6 @@ class Datacube:
         data = Datacube.create_storage(
             sources.coords, geobox, measurements, extra_dims=extra_dims
         )
-        if len(sources) == 0:
-            return data
         _cbk = mk_cbk(progress_cbk)
 
         # Create a list of read IO operations
@@ -1149,7 +1147,12 @@ class Datacube:
 
         geobox = _normalise_geobox(geobox)
 
-        if not legacy_load and len(sources) > 0:
+        if len(sources) == 0:
+            return Datacube.create_storage(
+                sources.coords, geobox, measurements, extra_dims=extra_dims
+            )
+
+        if not legacy_load:
             from ..storage._loader import driver_based_load
 
             assert driver is not None  # Mypy is confused by legacy_load.
@@ -1164,7 +1167,7 @@ class Datacube:
                 patch_url=patch_url,
             )
 
-        if dask_chunks is not None and len(sources) > 0:
+        if dask_chunks is not None:
             return Datacube._dask_load(
                 sources,
                 geobox,
@@ -1174,7 +1177,6 @@ class Datacube:
                 extra_dims=extra_dims,
                 patch_url=patch_url,
             )
-        # Default here for empty loads
         return Datacube._xr_load(
             sources,
             geobox,
