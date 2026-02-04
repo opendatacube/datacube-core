@@ -27,9 +27,8 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         """
         Grant a role to users
         """
-        usernames = self._to_str_iter(usernames)
         with self._db_connection() as connection:
-            return connection.grant_role(role, usernames)
+            return connection.grant_role(role, self._to_str_iter(usernames))
 
     @override
     def create_user(
@@ -50,7 +49,7 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         """
         usernames = self._to_str_iter(usernames)
         with self._db_connection() as connection:
-            return connection.drop_users(usernames)
+            return connection.drop_users(self._to_str_iter(usernames))
 
     @override
     def list_users(self) -> Iterable[tuple[str, str, str | None]]:

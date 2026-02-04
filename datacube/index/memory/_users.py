@@ -45,9 +45,9 @@ class UserResource(AbstractUserResource):
 
     @override
     def grant_role(self, role: str, usernames: str | Iterable[str]) -> bool:
-        usernames = self._to_str_iter(usernames)
         if role not in self.roles:
             raise ValueError(f"{role} is not a known role")
+        usernames = self._to_str_iter(usernames)
         for user in usernames:
             if user not in self.users:
                 raise ValueError(f"{user} is not a known username")
@@ -68,8 +68,7 @@ class UserResource(AbstractUserResource):
 
     @override
     def delete_user(self, usernames: str | Iterable[str]) -> bool:
-        usernames = self._to_str_iter(usernames)
-        for user in usernames:
+        for user in self._to_str_iter(usernames):
             if user in self.users:
                 del self.users[user]
         return True
