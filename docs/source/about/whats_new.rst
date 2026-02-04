@@ -65,6 +65,12 @@ Automated Updates
 
 **Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.13...1.9.14
 
+Includes contributions from @pjonsson, @snowman2, and @SpacemanPaul.
+
+The Open Data Cube Steering Council gratefully acknowledges Geoscience Australia and RISE
+for supporting the work that made this release possible.
+
+
 1.9.13 (14 January 2026)
 =========================
 
