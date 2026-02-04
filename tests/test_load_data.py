@@ -185,12 +185,12 @@ def test_load_nodata(tmp_path) -> None:
         sources,
         geobox,
         mm,
-    )  # spatial dims not equal!
+    )
     assert ds_data.aa.nodata == nodata
     np.testing.assert_array_equal(ds_data.aa.values, expected)
     ds_data = Datacube.load_data(
         sources, geobox, mm, dask_chunks={"x": 50, "y": 67}
-    )  # spatial dims not equal!
+    )
     ds_data.compute()
     assert ds_data.aa.nodata == nodata
     np.testing.assert_array_equal(ds_data.aa.values, expected)
@@ -200,7 +200,7 @@ def test_load_nodata(tmp_path) -> None:
         mm,
         dask_chunks={"x": 50, "y": 67},
         driver="rio",
-    )  # spatial dims not equal!
+    )
     ds_data.compute()
     assert ds_data.aa.nodata == nodata
     np.testing.assert_array_equal(ds_data.aa.values, expected)
