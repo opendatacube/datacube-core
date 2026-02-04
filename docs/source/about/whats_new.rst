@@ -8,6 +8,63 @@ What's New
 Next Release
 ============
 
+1.9.14 (5 February 2026)
+========================
+
+This release supports better code sharing between the postgres and postgis index drivers within the ODC, and with
+other packages in the broader ODC ecosystem that also need to do schema and user management (e.g. Explorer, OWS).
+
+Deprecations
+------------
+
+The `--no-init-users` option to `datacube system init` is now deprecated.  We now strongly recommend using
+the default user roles.
+
+Backwards incompatible changes
+------------------------------
+
+The calling signatures of ``dc.index.users.grant_role`` and ``dc.index.users.delete_user``
+in the user-resource index API have changed slightly. This is highly unlikely to affect
+system maintainers or end users.
+
+What's Changed
+--------------
+
+Contains a major refactor of PostgreSQL schema and user permissions management code and
+further improvements to backwards compatibility of driver-based loads.
+
+Significant Changes
+-------------------
+
+* Ensure table and view ownership for postgres driver. by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2329
+* Consolidate common postgresql code for schema and user permissions management by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2334
+* Ensure empty driver-based loads return a nodata Dataset by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2340
+* Better backwards compatibility in index users api by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2341
+
+Minor maintenance updates
+-------------------------
+
+* Dockerfile: fix variable name by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2336
+* uv.lock: update to distributed 2026.1.1 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2325
+* DEP: Make scikit-image optional by @snowman2 in https://github.com/opendatacube/datacube-core/pull/2328
+* Add scikit-image to dev dependencies by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2330
+* Update fallback version and release notes for 1.9.14 by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2342
+
+Automated Updates
+-----------------
+
+* build(deps): bump astral-sh/uv from 0.9.25 to 0.9.26 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2324
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2326
+* build(deps): bump astral-sh/setup-uv from 7.1.6 to 7.2.0 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2327
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2331
+* build(deps): bump the actions-deps group with 2 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2332
+* build(deps): bump astral-sh/uv from 0.9.26 to 0.9.27 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2333
+* build(deps): bump astral-sh/uv from 0.9.27 to 0.9.28 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2335
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2337
+* build(deps): bump astral-sh/uv from 0.9.28 to 0.9.29 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2339
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.13...1.9.14
+
 1.9.13 (14 January 2026)
 =========================
 
