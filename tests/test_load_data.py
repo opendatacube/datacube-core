@@ -188,9 +188,7 @@ def test_load_nodata(tmp_path) -> None:
     )
     assert ds_data.aa.nodata == nodata
     np.testing.assert_array_equal(ds_data.aa.values, expected)
-    ds_data = Datacube.load_data(
-        sources, geobox, mm, dask_chunks={"x": 50, "y": 67}
-    )
+    ds_data = Datacube.load_data(sources, geobox, mm, dask_chunks={"x": 50, "y": 67})
     ds_data.compute()
     assert ds_data.aa.nodata == nodata
     np.testing.assert_array_equal(ds_data.aa.values, expected)
