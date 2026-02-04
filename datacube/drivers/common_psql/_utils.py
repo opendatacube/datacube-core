@@ -43,7 +43,7 @@ def ensure_extension(conn: Connection, extension_name: str) -> None:
     Ensure the database has the given extension installed (e.g. the PostGIS extension).
 
     :param conn: An SQLAlchemy connection object.
-    :param extension_name: The extensio name, e.g. "postgis"
+    :param extension_name: The extension name, e.g. "postgis"
     """
     sql = text(f"create extension if not exists {extension_name}")
     conn.execute(sql)
