@@ -30,7 +30,7 @@ dependencies = [
     'antimeridian<0.4.5', # All test_index_cloning tests fail with 0.4.5.
     'attrs>=18.1',
     'cachetools',
-    'click>=8',
+    'click>=8.2',  # Support for deprecated argument on options
     'cloudpickle>=0.4',
     'dask[array]',
     'deprecat',
@@ -40,7 +40,7 @@ dependencies = [
     'lark',
     'numpy>=1.26.0',
     'odc-geo>=0.5.0',
-    'odc-loader>=0.6.3', # Consistent custom fuser support from 0.6.3
+    'odc-loader>=0.6.4', # Consistent custom fuser support from 0.6.4
     'odc-stac>=0.5.0',   # First release compatible with odc-loader 0.6.x
     'packaging',
     'pandas',
