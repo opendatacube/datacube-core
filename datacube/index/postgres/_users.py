@@ -47,7 +47,6 @@ class UserResource(AbstractUserResource, IndexResourceAddIn):
         """
         Delete a user
         """
-        usernames = self._to_str_iter(usernames)
         with self._db_connection() as connection:
             return connection.drop_users(self._to_str_iter(usernames))
 
