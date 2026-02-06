@@ -294,6 +294,6 @@ def test_gridworkflow_with_time_depth() -> None:
             assert tile.shape == (1, 10, 10)
 
         #  test Tile.split_by_time()
-        for year, year_cell in cell.split_by_time(freq="A"):
+        for year, year_cell in cell.split_by_time(freq="Y"):
             for t in year_cell.sources.time.values:
                 assert str(t)[:4] == year

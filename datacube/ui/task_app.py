@@ -194,7 +194,7 @@ def year_splitter(start: str, end: str) -> Generator[tuple[str, str]]:
     """
     start_ts = pd.Timestamp(start)
     end_ts = pd.Timestamp(end)
-    for p in pd.period_range(start=start_ts, end=end_ts, freq="A"):
+    for p in pd.period_range(start=start_ts, end=end_ts, freq="Y"):
         yield str(p.start_time), str(p.end_time)
 
 
