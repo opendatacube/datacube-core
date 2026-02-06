@@ -78,7 +78,7 @@ scikit-image = ['scikit-image']
 
 [dependency-groups]
 dev = [
-    'datacube[netcdf,postgres,psycopg3,scikit-image]',
+    'datacube[netcdf,postgres,psycopg3,s3,scikit-image]',
     # Test requirements
     'hypothesis',
     'moto>=5.0',
