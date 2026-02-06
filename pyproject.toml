@@ -80,7 +80,6 @@ scikit-image = ['scikit-image']
 dev = [
     'datacube[netcdf,postgres,psycopg3,scikit-image]',
     # Test requirements
-    'click>=8.2', # Only the tests need >=8.2, everything else works with older click.
     'hypothesis',
     'moto>=5.0',
     'pytest',
