@@ -41,10 +41,7 @@ def validate_eo3_offset(field_name: str, mdt_name: str, offset: Sequence) -> Non
         return
     # Simple offset validation
     # Special EO3 offsets
-    if offset in [
-        ["crs"],
-        # Others??
-    ]:
+    if offset == ["crs"]:  # Others??
         return
     # Everything else should stored flat in properties
     if offset[0] != "properties" or len(offset) != 2:
