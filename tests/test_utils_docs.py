@@ -293,7 +293,7 @@ def test_traverse_datasets() -> None:
     A, *_ = make_graph_abcde(node)
 
     def visitor(node, name: str | None = None, depth: int = 0, out=None) -> None:
-        s = "{}:{}:{:d}".format(node.id, name if name else "..", depth)
+        s = "{}:{}:{:d}".format(node.id, name or "..", depth)
         out.append(s)
 
     # Test that type errors raise exceptions.
@@ -368,7 +368,7 @@ def test_simple_doc_nav() -> None:
     assert isinstance(rdr.sources_path, tuple)
 
     def visitor(node, name: str | None = None, depth: int = 0, out=None) -> None:
-        s = "{}:{}:{:d}".format(un_map[node.id], name if name else "..", depth)
+        s = "{}:{}:{:d}".format(un_map[node.id], name or "..", depth)
         out.append(s)
 
     expect_preorder = """

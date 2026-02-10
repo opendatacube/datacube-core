@@ -47,7 +47,7 @@ def _write_csv(index: Iterable[dict[str, str | None]]) -> None:
 
     def add_first_role(row: dict[str, str | None]) -> dict[str, str | None]:
         roles_ = row["role"]
-        row["role"] = roles_ if roles_ else None
+        row["role"] = roles_ or None
         return row
 
     writer.writerows(add_first_role(row) for row in index)

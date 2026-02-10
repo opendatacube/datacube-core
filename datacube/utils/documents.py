@@ -460,14 +460,10 @@ class SimpleDocNav:
         if self._is_stac and doc.get("type") != "Feature":
             raise ValueError("SimpleDocNav requires STAC documents to be Items")
         self._doc_without = None
-        self._sources_path = (
-            sources_path
-            if sources_path
-            else (
-                ("properties", "odc:lineage")
-                if self._is_stac
-                else ("lineage", "source_datasets")
-            )
+        self._sources_path = sources_path or (
+            ("properties", "odc:lineage")
+            if self._is_stac
+            else ("lineage", "source_datasets")
         )
         self._sources = None
         self._doc_uuid: UUID | None = None
