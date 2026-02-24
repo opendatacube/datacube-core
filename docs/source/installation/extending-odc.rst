@@ -26,7 +26,7 @@ other environment issues.
 Data Read Plug-ins
 ==================
 
-:Entry point group: `datacube.plugins.io.read <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/setup.py#L104>`__.
+:Entry point group: ``datacube.plugins.io.read``.
 
 Read plug-ins are specified as supporting particular **uri protocols**
 and **formats**, both of which are fields available on existing
@@ -74,7 +74,7 @@ Driver specific metadata will be present in ``BandInfo.driver_data`` if saved du
 Example Pickle Based Driver
 ---------------------------
 
-Available in ``/examples/io_plugin``. Includes an example ``setup.py``
+Available in ``/examples/io_plugin``. Includes an example ``pyproject.toml``
 as well as example **Read** and **Write** Drivers.
 
 .. _write_plugin:
@@ -82,8 +82,7 @@ as well as example **Read** and **Write** Drivers.
 Data Write Plug-ins
 ===================
 
-:Entry point group:
-    `datacube.plugins.io.write <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/setup.py#L107>`__
+:Entry point group: ``datacube.plugins.io.write``
 
 Are selected based on their name. The ``storage.driver`` field has been
 added to the ingestion configuration file which specifies the name of
@@ -157,8 +156,7 @@ NetCDF Writer Driver
 Index Plug-ins
 ==============
 
-:Entry point group:
-    `datacube.plugins.index <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/setup.py#L112>`__
+:Entry point group: ``datacube.plugins.index``
 
 A connection to an ``Index`` is required to find data in the Data Cube.
 
@@ -220,25 +218,23 @@ The memory index driver may be useful:
 Drivers Plugin Management Module
 ================================
 
-Drivers are registered in ``setup.py -> entry_points``::
+Drivers are registered in ``pyproject.toml -> [project.entry-points]``::
 
-    entry_points={
-        'datacube.plugins.io.read': [
-            'netcdf = datacube.drivers.netcdf.driver:reader_driver_init',
-        ],
-        'datacube.plugins.io.write': [
-            'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
-        ],
-        'datacube.plugins.index': [
-            'default = datacube.index.postgres.index:index_driver_init',
-            'null = datacube.index.null.index:index_driver_init',
-            *extra_plugins['index'],
-        ],
-    }
+    [project.entry-points."datacube.plugins.io.read"]
+    netcdf = 'datacube.drivers.netcdf.driver:reader_driver_init'
+
+    [project.entry-points."datacube.plugins.io.write"]
+    netcdf = 'datacube.drivers.netcdf.driver:writer_driver_init'
+
+    [project.entry-points."datacube.plugins.index"]
+    postgres = 'datacube.index.postgres.index:index_driver_init'
+    null = 'datacube.index.null.index:index_driver_init'
+    memory = 'datacube.index.memory.index:index_driver_init'
+    postgis = 'datacube.index.postgis.index:index_driver_init'
 
 These are drivers ``datacube-core`` ships with. When developing a custom driver one
-does not need to add them to ``datacube-core/setup.py``, rather you have to define
-these in the ``setup.py`` of your driver package.
+does not need to add them to ``datacube-core/pyproject.toml``, rather you have to define
+these in the ``pyproject.toml`` of your driver package.
 
 
 Data Cube Drivers API
