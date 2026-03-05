@@ -89,6 +89,10 @@ def driver_based_load(
         extra_coords=extra_coords,
     )
 
+    global_attrs = {} if geobox.crs is None else {
+        "crs": str(geobox.crs),
+        "grid_mapping": "spatial_ref"
+    }
     load_cfg = {
         m.name: RasterLoadParams(
             m.dtype,
@@ -96,7 +100,7 @@ def driver_based_load(
             resampling=m.get("resampling", "nearest"),
             fail_on_error=fail_on_error,
             dims=tuple(m.get("dims", ())),
-            meta=RasterBandMetadata(attrs=m.dataarray_attrs()),
+            meta=RasterBandMetadata(attrs=m.dataarray_attrs() | global_attrs),
             fuser_fqn=m.fuser,
         )
         for m in measurements

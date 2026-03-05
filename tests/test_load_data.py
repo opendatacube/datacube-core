@@ -97,8 +97,18 @@ def test_load_data(tmpdir) -> None:
     assert ds_data.aa.nodata == nodata
     np.testing.assert_array_equal(aa, ds_data.aa.values[0])
 
+    ds_data_legacy = Datacube.load_data(
+        sources, geobox, mm, dask_chunks={}, driver="legacy"
+    )
+    assert ds_data_legacy.aa.attrs == {
+        "nodata": nodata,
+        "units": "1",
+        "crs": str(geobox.crs),
+        "grid_mapping": "spatial_ref",
+    }
+
     ds_data = Datacube.load_data(sources, geobox, mm, dask_chunks={}, driver="rio")
-    assert ds_data.aa.attrs == {"nodata": nodata, "units": "1"}
+    assert ds_data.aa.attrs == ds_data_legacy.aa.attrs
 
     # custom_fuser above cannot be used directly for driver-based loads as it is not serialisable to dask.
     with pytest.raises(ValueError):
