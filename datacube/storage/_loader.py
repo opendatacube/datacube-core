@@ -89,10 +89,11 @@ def driver_based_load(
         extra_coords=extra_coords,
     )
 
-    global_attrs = {} if geobox.crs is None else {
-        "crs": str(geobox.crs),
-        "grid_mapping": "spatial_ref"
-    }
+    global_attrs = (
+        {}
+        if geobox.crs is None
+        else {"crs": str(geobox.crs), "grid_mapping": "spatial_ref"}
+    )
     load_cfg = {
         m.name: RasterLoadParams(
             m.dtype,
