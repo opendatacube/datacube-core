@@ -6,7 +6,7 @@
 ##
 # gdal:ubuntu-small no longer comes with netcdf support compiled into gdal
 # syntax=docker/dockerfile:1
-FROM ghcr.io/astral-sh/uv:0.10.8@sha256:88234bc9e09c2b2f6d176a3daf411419eb0370d450a08129257410de9cfafd2a AS uv
+FROM ghcr.io/astral-sh/uv:0.10.9@sha256:10902f58a1606787602f303954cea099626a4adb02acbac4c69920fe9d278f82 AS uv
 
 FROM ghcr.io/osgeo/gdal:ubuntu-full-3.12.2@sha256:35cf3b42728f568b911a120d8644b5e5fb7d277b8d3ed07e4b66c0af19c957af AS base
 
