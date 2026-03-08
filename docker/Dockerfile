@@ -39,6 +39,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 FROM base AS builder
 
 ENV UV_COMPILE_BYTECODE=0 \
+    UV_HTTP_RETRIES=10 \
     UV_PROJECT_ENVIRONMENT=/app \
     UV_PYTHON_DOWNLOADS=never \
     UV_PYTHON=python3.12
