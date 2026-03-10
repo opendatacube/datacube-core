@@ -241,7 +241,7 @@ include = ['datacube*']
 
 [tool.setuptools_scm]
 write_to = 'datacube/_version.py'
-fallback_version = "1.9.14"
+fallback_version = "1.9.15"
 
 [tool.ty.src]
 include = ["datacube", "examples", "integration_tests", "tests"]
