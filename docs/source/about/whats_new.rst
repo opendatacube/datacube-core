@@ -2,11 +2,56 @@
 
 .. default-role:: code
 
-What's New
-**********
+Release History
+***************
 
-Next Release
-============
+1.9.15 (11 March 2026)
+========================
+
+A regular maintenance release.
+
+Includes a fix for another incompatibility between the rio and legacy load drivers.
+
+What's Changed
+--------------
+
+* Update python dependencies by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2344
+* pyproject.toml: tweak dependencies by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2346
+* Ruff 0.15 fixes by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2348
+* uv.lock: update to cryptography 46.0.5 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2352
+* uv.lock: update to pillow 12.1.1 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2353
+* uv.lock: update to werkzeug 3.1.6 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2358
+* docs: Update old references from setup.py -> pyproject.toml by @omad in https://github.com/opendatacube/datacube-core/pull/2362
+* CI: update to latest Trivy workflow by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2368
+* Add spatial attributes to rio driver output to match legacy driver by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2369
+* Dockerfile: increase UV_HTTP_RETRIES by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2371
+* Prepare for 1.9.15 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2374
+
+Automated Updates
+-----------------
+
+* build(deps): bump astral-sh/uv from 0.9.29 to 0.9.30 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2343
+* build(deps): bump astral-sh/uv from 0.9.30 to 0.10.0 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2345
+* build(deps): bump actions/cache from 5.0.2 to 5.0.3 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2349
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2347
+* build(deps): bump astral-sh/uv from 0.10.0 to 0.10.2 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2350
+* build(deps): bump osgeo/gdal from ubuntu-full-3.12.1 to ubuntu-full-3.12.2 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2351
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2354
+* build(deps): bump astral-sh/uv from 0.10.2 to 0.10.3 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2355
+* build(deps): bump astral-sh/setup-uv from 7.2.0 to 7.3.0 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2356
+* build(deps): bump astral-sh/uv from 0.10.3 to 0.10.4 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2357
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2359
+* build(deps): bump docker/build-push-action from 6.18.0 to 6.19.2 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2360
+* build(deps): bump astral-sh/uv from 0.10.4 to 0.10.5 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2361
+* build(deps): bump astral-sh/uv from 0.10.5 to 0.10.6 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2363
+* build(deps): bump astral-sh/uv from 0.10.6 to 0.10.7 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2364
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2366
+* build(deps): bump astral-sh/uv from 0.10.7 to 0.10.8 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2367
+* build(deps): bump astral-sh/uv from 0.10.8 to 0.10.9 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2370
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2372
+* build(deps): bump astral-sh/setup-uv from 7.3.0 to 7.3.1 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2373
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.14...1.9.15
 
 1.9.14 (5 February 2026)
 ========================
