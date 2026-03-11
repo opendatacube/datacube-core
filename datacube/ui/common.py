@@ -115,8 +115,8 @@ def ui_path_doc_stream(
                 for p, doc in read_documents(fname, uri=uri):
                     yield p, maybe_wrap(doc)
 
-            except InvalidDocException:
+            except InvalidDocException as e:
                 if logger is not None:
-                    logger.error("Failed reading documents from %s", str(fname))
+                    logger.error(str(e))
 
     yield from _path_doc_stream(_resolve_doc_files(paths), uri=uri, raw=raw)

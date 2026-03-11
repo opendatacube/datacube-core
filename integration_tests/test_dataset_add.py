@@ -197,7 +197,7 @@ def check_missing_metadata_doc(clirunner) -> None:
 def check_bad_yaml(clirunner, index) -> None:
     prefix = write_files({"broken.yml": '"'})
     r = clirunner(["dataset", "add", str(prefix / "broken.yml")])
-    assert "ERROR Failed reading documents from " in r.output
+    assert "ERROR Failed to load " in r.output
 
 
 def test_dataset_add_no_id(index: Index, eo3_ls8_dataset3_doc, ls8_eo3_product) -> None:
