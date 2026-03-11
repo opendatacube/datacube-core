@@ -59,8 +59,9 @@ def _find_any_metadata_suffix(path: Path) -> Path | None:
     Find any supported metadata files that exist with the given file path stem.
     (supported suffixes are tried on the name)
 
-    Eg. searching for '/tmp/ga-metadata' will find if any files such as '/tmp/ga-metadata.yaml' or
-    '/tmp/ga-metadata.json', or '/tmp/ga-metadata.yaml.gz' etc that exist: any suffix supported by read_documents()
+    E.g. searching for '/tmp/ga-metadata' will find if any files such as '/tmp/ga-metadata.yaml' or
+    '/tmp/ga-metadata.json', or '/tmp/ga-metadata.yaml.gz' that exist: any suffix
+    supported by read_documents()
     """
     existing_paths = list(
         filter(is_supported_document_type, path.parent.glob(path.name + "*"))
@@ -92,7 +93,7 @@ def ui_path_doc_stream(
 
     :param uri: If True return path in uri format, else return it as filesystem path
 
-    :param raw: By default docs are wrapped in :class:`SimpleDocNav`, but you can
+    :param raw: By default, docs are wrapped in :class:`SimpleDocNav`, but you can
     instead request them to be raw dictionaries
     """
 
