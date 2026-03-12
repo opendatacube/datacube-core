@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
-from uuid import UUID
+from uuid import UUID, uuid5
 
 import numpy
 import toolz
@@ -485,7 +485,21 @@ class SimpleDocNav:
         if not self._doc_uuid:
             doc_id = self._doc.get("id", None)
             if doc_id:
-                self._doc_uuid = doc_id if isinstance(doc_id, UUID) else UUID(doc_id)
+                try:
+                    self._doc_uuid = (
+                        doc_id if isinstance(doc_id, UUID) else UUID(doc_id)
+                    )
+                except ValueError:
+                    # mimic basic _compute_uuid logic from stac2ds conversion
+                    from datacube.metadata._eo3converter import UUID_NAMESPACE_STAC
+
+                    collection_id = self._doc.get(
+                        "collection",
+                        toolz.get_in(["properties", "odc:product"], self._doc, "_"),
+                    )
+                    self._doc_uuid = uuid5(
+                        UUID_NAMESPACE_STAC, f"{collection_id}\n{doc_id}\n"
+                    )
         return self._doc_uuid
 
     @property
