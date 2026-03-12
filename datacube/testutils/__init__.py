@@ -182,6 +182,15 @@ dataset:
     return MetadataType(parse_yaml(eo_yaml))
 
 
+def mk_sample_eo3() -> MetadataType:
+    from datacube.index.abstract._metadata_types import default_metadata_type_docs
+
+    for doc in default_metadata_type_docs():
+        if doc["name"] == "eo3":
+            break
+    return MetadataType(doc)
+
+
 def mk_sample_product(
     name: str,
     description: str = "Sample",
@@ -190,6 +199,7 @@ def mk_sample_product(
     metadata_type: MetadataType | None = None,
     storage: dict | None = None,
     load: dict | bool | None = None,
+    eo3: bool = False,
 ) -> Product:
     if storage is None and with_grid_spec is True:
         storage = {
@@ -201,7 +211,7 @@ def mk_sample_product(
     common = {"dtype": "int16", "nodata": -999, "units": "1", "aliases": []}
 
     if metadata_type is None:
-        metadata_type = mk_sample_eo("eo")
+        metadata_type = mk_sample_eo3() if eo3 else mk_sample_eo("eo")
 
     def mk_measurement(m):
         if isinstance(m, str):
@@ -245,6 +255,7 @@ def mk_sample_dataset(
     id: str = "3a1df9e0-8484-44fc-8102-79184eab85dd",  # noqa: A002
     geobox: GeoBox | None = None,
     product_opts: dict | None = None,
+    eo3: bool = False,
 ) -> Dataset:
     # pylint: disable=redefined-builtin
     image_bands_keys = ["path", "layer", "band"]
@@ -259,7 +270,9 @@ def mk_sample_dataset(
     if product_opts is None:
         product_opts = {}
 
-    product = mk_sample_product(product_name, measurements=measurements, **product_opts)
+    product = mk_sample_product(
+        product_name, measurements=measurements, eo3=eo3, **product_opts
+    )
 
     if timestamp is None:
         timestamp = "2018-06-29"
@@ -272,6 +285,25 @@ def mk_sample_dataset(
     else:
         kwargs = {"uris": uri}
 
+    if eo3:
+        if geobox is None:
+            raise ValueError("geobox is required for eo3 datasets")
+        return Dataset(
+            product,
+            {
+                "id": id,
+                "label": id,
+                "product": {"name": product_name},
+                "crs": geobox.crs,
+                "grids": {
+                    "default": {"shape": geobox.shape, "transform": geobox.transform}
+                },
+                "properties": {"datetime": timestamp},
+                "measurements": image_bands,
+                **geobox_to_gridspatial(geobox),
+            },
+            **kwargs,
+        )
     with suppress_deprecations():
         return Dataset(
             product,
@@ -424,6 +456,7 @@ def gen_tiff_dataset(
     prefix: str = "",
     timestamp: str = "2018-07-19",
     base_folder_of_record=None,
+    eo3: bool = False,
     **kwargs,
 ) -> tuple[Dataset, GeoBox]:
     """
@@ -471,7 +504,7 @@ def gen_tiff_dataset(
 
     uri = Path(base_folder_of_record / "metadata.yaml").absolute().as_uri()
     ds = mk_sample_dataset(
-        measurement_defs, uri=uri, timestamp=timestamp, geobox=geobox
+        measurement_defs, uri=uri, timestamp=timestamp, geobox=geobox, eo3=eo3
     )
     return ds, geobox
 
