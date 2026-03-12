@@ -288,34 +288,27 @@ def mk_sample_dataset(
     if eo3:
         if geobox is None:
             raise ValueError("geobox is required for eo3 datasets")
-        return Dataset(
-            product,
-            {
-                "id": id,
-                "label": id,
-                "product": {"name": product_name},
-                "crs": geobox.crs,
-                "grids": {
-                    "default": {"shape": geobox.shape, "transform": geobox.transform}
-                },
-                "properties": {"datetime": timestamp},
-                "measurements": image_bands,
-                **geobox_to_gridspatial(geobox),
+        metadata_doc: dict[str, Any] = {
+            "id": id,
+            "label": id,
+            "product": {"name": product_name},
+            "crs": geobox.crs,
+            "grids": {
+                "default": {"shape": geobox.shape, "transform": geobox.transform}
             },
-            **kwargs,
-        )
-    with suppress_deprecations():
-        return Dataset(
-            product,
-            {
-                "id": id,
-                "format": {"name": format},
-                "image": {"bands": image_bands},
-                "time": timestamp,
-                **geobox_to_gridspatial(geobox),
-            },
-            **kwargs,
-        )
+            "properties": {"datetime": timestamp},
+            "measurements": image_bands,
+            **geobox_to_gridspatial(geobox),
+        }
+    else:
+        metadata_doc = {
+            "id": id,
+            "format": {"name": format},
+            "image": {"bands": image_bands},
+            "time": timestamp,
+            **geobox_to_gridspatial(geobox),
+        }
+    return Dataset(product, metadata_doc, **kwargs)
 
 
 def make_graph_abcde(node) -> tuple[Any, Any, Any, Any, Any]:
