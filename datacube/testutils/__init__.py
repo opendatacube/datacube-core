@@ -184,6 +184,7 @@ dataset:
 
 def mk_sample_eo3() -> MetadataType:
     from datacube.index.abstract._metadata_types import default_metadata_type_docs
+
     for doc in default_metadata_type_docs():
         if doc["name"] == "eo3":
             break
@@ -198,7 +199,7 @@ def mk_sample_product(
     metadata_type: MetadataType | None = None,
     storage: dict | None = None,
     load: dict | bool | None = None,
-    eo3: bool = False
+    eo3: bool = False,
 ) -> Product:
     if storage is None and with_grid_spec is True:
         storage = {
@@ -257,7 +258,7 @@ def mk_sample_dataset(
     id: str = "3a1df9e0-8484-44fc-8102-79184eab85dd",  # noqa: A002
     geobox: GeoBox | None = None,
     product_opts: dict | None = None,
-    eo3: bool = False
+    eo3: bool = False,
 ) -> Dataset:
     # pylint: disable=redefined-builtin
     image_bands_keys = ["path", "layer", "band"]
@@ -272,7 +273,9 @@ def mk_sample_dataset(
     if product_opts is None:
         product_opts = {}
 
-    product = mk_sample_product(product_name, measurements=measurements, eo3=eo3, **product_opts)
+    product = mk_sample_product(
+        product_name, measurements=measurements, eo3=eo3, **product_opts
+    )
 
     if timestamp is None:
         timestamp = "2018-06-29"
@@ -287,32 +290,33 @@ def mk_sample_dataset(
 
     if eo3:
         return Dataset(
-                product,
-                {
-                    "id": id,
-                    "label": id,
-                    "product": {"name": product_name},
-                    "crs": geobox.crs,
-                    "grids": {"default": {"shape": geobox.shape, "transform": geobox.transform}},
-                    "properties": {"datetime": timestamp},
-                    "measurements": image_bands,
-                    **geobox_to_gridspatial(geobox),
+            product,
+            {
+                "id": id,
+                "label": id,
+                "product": {"name": product_name},
+                "crs": geobox.crs,
+                "grids": {
+                    "default": {"shape": geobox.shape, "transform": geobox.transform}
                 },
-                **kwargs,
-            )
-    else:
-        with suppress_deprecations():
-            return Dataset(
-                product,
-                {
-                    "id": id,
-                    "format": {"name": format},
-                    "image": {"bands": image_bands},
-                    "time": timestamp,
-                    **geobox_to_gridspatial(geobox),
-                },
-                **kwargs,
-            )
+                "properties": {"datetime": timestamp},
+                "measurements": image_bands,
+                **geobox_to_gridspatial(geobox),
+            },
+            **kwargs,
+        )
+    with suppress_deprecations():
+        return Dataset(
+            product,
+            {
+                "id": id,
+                "format": {"name": format},
+                "image": {"bands": image_bands},
+                "time": timestamp,
+                **geobox_to_gridspatial(geobox),
+            },
+            **kwargs,
+        )
 
 
 def make_graph_abcde(node) -> tuple[Any, Any, Any, Any, Any]:
