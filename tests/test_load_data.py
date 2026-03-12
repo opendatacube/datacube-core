@@ -48,6 +48,7 @@ def test_load_data(tmpdir) -> None:
         tmpdir,
         prefix="ds1-",
         timestamp="2018-07-19",
+        eo3=True,
         **spatial,
     )
     assert ds.time is not None
@@ -108,6 +109,7 @@ def test_load_data(tmpdir) -> None:
     }
 
     ds_data = Datacube.load_data(sources, geobox, mm, dask_chunks={}, driver="rio")
+    assert ds_data.attrs == ds_data_legacy.attrs
     assert ds_data.aa.attrs == ds_data_legacy.aa.attrs
 
     # custom_fuser above cannot be used directly for driver-based loads as it is not serialisable to dask.

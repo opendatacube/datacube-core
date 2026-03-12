@@ -156,7 +156,7 @@ def driver_based_load(
 
     rdr = reader_driver(driver)
 
-    return chunked_load(
+    out = chunked_load(
         load_cfg,
         template,
         srcs,
@@ -168,3 +168,6 @@ def driver_based_load(
         chunks=dask_chunks,
         progress=progress_cbk,
     )
+
+    out.attrs.update(global_attrs)
+    return out
