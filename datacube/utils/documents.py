@@ -43,7 +43,6 @@ try:
 except ImportError:
     from yaml import SafeLoader  # type: ignore[assignment]
 
-from datacube.metadata._eo3converter import UUID_NAMESPACE_STAC
 from datacube.utils.generic import map_with_lookahead
 from datacube.utils.uris import as_url, mk_part_uri, uri_to_local_path
 
@@ -492,6 +491,8 @@ class SimpleDocNav:
                     )
                 except ValueError:
                     # mimic basic _compute_uuid logic from stac2ds conversion
+                    from datacube.metadata._eo3converter import UUID_NAMESPACE_STAC
+
                     collection_id = self._doc.get(
                         "collection",
                         toolz.get_in(["properties", "odc:product"], self._doc, "_"),
