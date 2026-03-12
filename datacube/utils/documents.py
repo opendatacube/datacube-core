@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
-from uuid import UUID
+from uuid import NAMESPACE_DNS, UUID, uuid5
 
 import numpy
 import toolz
@@ -485,7 +485,12 @@ class SimpleDocNav:
         if not self._doc_uuid:
             doc_id = self._doc.get("id", None)
             if doc_id:
-                self._doc_uuid = doc_id if isinstance(doc_id, UUID) else UUID(doc_id)
+                try:
+                    self._doc_uuid = (
+                        doc_id if isinstance(doc_id, UUID) else UUID(doc_id)
+                    )
+                except ValueError:  # don't assume the id will be a valid UUID string
+                    self._doc_uuid = uuid5(NAMESPACE_DNS, doc_id)
         return self._doc_uuid
 
     @property
