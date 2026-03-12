@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
-from uuid import NAMESPACE_DNS, UUID, uuid5
+from uuid import UUID, uuid5
 
 import numpy
 import toolz
@@ -43,6 +43,7 @@ try:
 except ImportError:
     from yaml import SafeLoader  # type: ignore[assignment]
 
+from datacube.metadata._eo3converter import UUID_NAMESPACE_STAC
 from datacube.utils.generic import map_with_lookahead
 from datacube.utils.uris import as_url, mk_part_uri, uri_to_local_path
 
@@ -489,8 +490,15 @@ class SimpleDocNav:
                     self._doc_uuid = (
                         doc_id if isinstance(doc_id, UUID) else UUID(doc_id)
                     )
-                except ValueError:  # don't assume the id will be a valid UUID string
-                    self._doc_uuid = uuid5(NAMESPACE_DNS, doc_id)
+                except ValueError:
+                    # mimic basic _compute_uuid logic from stac2ds conversion
+                    collection_id = self._doc.get(
+                        "collection",
+                        toolz.get_in(["properties", "odc:product"], self._doc, "_"),
+                    )
+                    self._doc_uuid = uuid5(
+                        UUID_NAMESPACE_STAC, f"{collection_id}\n{doc_id}\n"
+                    )
         return self._doc_uuid
 
     @property
