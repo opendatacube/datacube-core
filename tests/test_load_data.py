@@ -58,6 +58,7 @@ def test_load_data(tmpdir) -> None:
         tmpdir,
         prefix="ds2-",
         timestamp="2018-07-19",
+        eo3=False,
         **spatial,
     )
     assert ds.time is not None
@@ -144,6 +145,7 @@ def test_load_data_dask(tmp_path) -> None:
         tmp_path,
         prefix="ds1-",
         timestamp="2018-07-19",
+        eo3=True,
         **spatial,
     )
 
@@ -186,6 +188,7 @@ def test_load_nodata(tmp_path) -> None:
         tmp_path,
         prefix="ds1-",
         timestamp="2018-07-19",
+        eo3=False,
         **spatial,
     )
 
@@ -240,6 +243,7 @@ def test_load_data_with_url_mangling(tmpdir) -> None:
         prefix="ds1-",
         timestamp="2018-07-19",
         base_folder_of_record=recorded_tmpdir,
+        eo3=True,
         **spatial,
     )
     assert ds.time is not None
@@ -250,6 +254,7 @@ def test_load_data_with_url_mangling(tmpdir) -> None:
         prefix="ds2-",
         timestamp="2018-07-19",
         base_folder_of_record=recorded_tmpdir,
+        eo3=False,
         **spatial,
     )
     assert ds.time is not None
@@ -316,12 +321,12 @@ def test_load_data_cbk(tmpdir) -> None:
     ]
 
     ds, geobox = gen_tiff_dataset(
-        bands, tmpdir, prefix="ds1-", timestamp="2018-07-19", **spatial
+        bands, tmpdir, prefix="ds1-", timestamp="2018-07-19", eo3=True, **spatial
     )
     assert ds.time is not None
 
     ds2, _ = gen_tiff_dataset(
-        bands, tmpdir, prefix="ds2-", timestamp="2018-07-19", **spatial
+        bands, tmpdir, prefix="ds2-", timestamp="2018-07-19", eo3=False, **spatial
     )
     assert ds.time is not None
     assert ds.time == ds2.time
@@ -510,7 +515,7 @@ def test_native_load(tmpdir) -> None:
     bands.append(SimpleNamespace(name="cc", values=cc, nodata=nodata))
 
     ds, geobox = gen_tiff_dataset(
-        bands[:2], tmpdir, prefix="ds1-", timestamp="2018-07-19", **spatial
+        bands[:2], tmpdir, prefix="ds1-", timestamp="2018-07-19", eo3=True, **spatial
     )
 
     assert set(get_raster_info(ds)) == set(ds.measurements)
@@ -522,7 +527,7 @@ def test_native_load(tmpdir) -> None:
     np.testing.assert_array_equal(aa, xx.isel(time=0).bb.values)
 
     ds, geobox_cc = gen_tiff_dataset(
-        bands, tmpdir, prefix="ds2-", timestamp="2018-07-19", **spatial
+        bands, tmpdir, prefix="ds2-", timestamp="2018-07-19", eo3=False, **spatial
     )
 
     # cc is different size from aa,bb

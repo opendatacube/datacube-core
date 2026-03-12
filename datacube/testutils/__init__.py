@@ -211,10 +211,7 @@ def mk_sample_product(
     common = {"dtype": "int16", "nodata": -999, "units": "1", "aliases": []}
 
     if metadata_type is None:
-        if eo3:
-            metadata_type = mk_sample_eo3()
-        else:
-            metadata_type = mk_sample_eo("eo")
+        metadata_type = mk_sample_eo3() if eo3 else mk_sample_eo("eo")
 
     def mk_measurement(m):
         if isinstance(m, str):
@@ -289,6 +286,8 @@ def mk_sample_dataset(
         kwargs = {"uris": uri}
 
     if eo3:
+        if geobox is None:
+            raise ValueError("geobox is required for eo3 datasets")
         return Dataset(
             product,
             {

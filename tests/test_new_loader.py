@@ -25,6 +25,7 @@ def test_with_driver(tmpdir) -> None:
         tmpdir,
         prefix="ds1-",
         timestamp="2018-07-19",
+        eo3=True,
         **spatial,
     )
     assert ds.time is not None
