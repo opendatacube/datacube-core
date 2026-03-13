@@ -99,7 +99,7 @@ def dataset_stream(doc_stream, ds_resolve) -> Iterator:
         dataset, err = ds_resolve(ds, uri)
 
         if dataset is None:
-            _LOG.error("%s", str(err))
+            _LOG.error("%s from '%s'", str(err), str(uri))
             continue
 
         yield dataset
