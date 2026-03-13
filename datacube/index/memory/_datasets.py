@@ -290,11 +290,16 @@ class DatasetResource(AbstractDatasetResource):
     ) -> bool:
         skip_set: set[str | None] = {None}
         new_uris: list[str] = []
-        if existing and existing.uris:
-            for uri in existing.uris:
-                skip_set.add(uri)
-            if dataset.uris:
+        if existing:
+            if existing.has_multiple_uris():
+                for uri in existing.uris:
+                    skip_set.add(uri)
+            else:
+                skip_set.add(dataset.uri)
+            if dataset.has_multiple_uris():
                 new_uris = [uri for uri in dataset.uris if uri not in skip_set]
+            elif dataset.uri is not None:
+                new_uris = [dataset.uri]
         if len(new_uris):
             _LOG.info(
                 "Adding locations for dataset %s: %s", dataset.id, ", ".join(new_uris)
