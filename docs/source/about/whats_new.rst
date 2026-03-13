@@ -5,6 +5,24 @@
 Release History
 ***************
 
+1.9.16 (13 March 2026)
+======================
+
+Emergency release to get a few quick fixes out.
+
+What's Changed
+--------------
+
+* Handle non-UUID id strings by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2377
+* Loader compatibility tweaks by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2378
+* ui: show error message to user by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2375
+* testutils: share more code by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2379
+* CI: update versions of actions by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2380
+* Prepare for 1.9.16 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2381
+
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.15...1.9.16
+
 1.9.15 (11 March 2026)
 ========================
 
