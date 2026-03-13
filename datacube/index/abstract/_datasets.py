@@ -641,7 +641,6 @@ class AbstractDatasetResource(ABC):
         def increment_progress() -> None:
             report_to_user(".", progress_indicator=True)
 
-        n_batches = 0
         n_in_batch = 0
         added = 0
         skipped = 0
@@ -664,7 +663,6 @@ class AbstractDatasetResource(ABC):
                 skipped += batch_result.skipped
                 batch = []
                 n_in_batch = 0
-                n_batches += 1
                 increment_progress()
         if n_in_batch > 0:
             batch_result = self._add_batch(batch, inter_batch_cache)
