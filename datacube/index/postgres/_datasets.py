@@ -226,15 +226,20 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     @override
     def _add_batch(
-        self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]
+        self,
+        batch_ds: Iterable[DatasetTuple],
+        cache: Mapping[str, Any],
+        archive_less_mature: int | None = None,
     ) -> BatchStatus:
         b_started = monotonic()
         batch: dict[str, list[dict[str, Any]]] = {
             "datasets": [],
             "uris": [],
         }
+        dsids = []
         for prod, metadata_doc, uris in batch_ds:
             dsid = UUID(str(metadata_doc["id"]))
+            dsids.append(dsid)
             batch["datasets"].append(
                 {
                     "id": dsid,
@@ -261,6 +266,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 b_added, b_skipped = 0, 0
             if batch["uris"]:
                 connection.insert_dataset_location_bulk(batch["uris"])
+            if archive_less_mature is not None:
+                for dataset in self.bulk_get(dsids):
+                    self.archive_less_mature(dataset, archive_less_mature)
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
     @override
