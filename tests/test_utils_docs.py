@@ -327,8 +327,7 @@ A:..:0
         traverse_datasets(A, visitor, mode=mode, out=out)  # type: ignore[arg-type]
         assert "\n".join(out) == expect
 
-    fv = flatten_datasets(A)
-    assert isinstance(fv, dict)
+    fv = flatten_datasets(A, with_depth_grouping=False)
     assert len(fv["A"]) == 1
     assert len(fv["C"]) == 2
     assert len(fv["E"]) == 1
@@ -336,7 +335,7 @@ A:..:0
 
     leaf = SimpleNamespace(id="N", sources=None)
     out = []
-    # FIX;E: Dataset | SimpleDocNav expected.
+    # FIXME: Dataset | SimpleDocNav expected.
     traverse_datasets(leaf, visitor, out=out)  # type: ignore[arg-type]
     assert out == ["N:..:0"]
 
@@ -398,15 +397,13 @@ A:..:0
         traverse_datasets(rdr, visitor, mode=mode, out=out)  #  type: ignore[arg-type]
         assert "\n".join(out) == expect
 
-    fv = flatten_datasets(rdr)
-    assert isinstance(fv, dict)
+    fv = flatten_datasets(rdr, with_depth_grouping=False)
     assert len(fv[nu_map["A"]]) == 1
     assert len(fv[nu_map["C"]]) == 2
     assert len(fv[nu_map["E"]]) == 1
     assert set(fv.keys()) == set(un_map.keys())
 
     fv, dg = flatten_datasets(rdr, with_depth_grouping=True)
-    assert isinstance(fv, dict)
     assert len(fv[nu_map["A"]]) == 1
     assert len(fv[nu_map["C"]]) == 2
     assert len(fv[nu_map["E"]]) == 1

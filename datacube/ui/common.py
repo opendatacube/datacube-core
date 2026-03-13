@@ -8,6 +8,7 @@ Common methods for UI code.
 
 from collections.abc import Generator, Iterable
 from pathlib import Path
+from typing import Literal, overload
 
 from toolz.functoolz import identity
 
@@ -73,6 +74,24 @@ def _find_any_metadata_suffix(path: Path) -> Path | None:
         raise ValueError(f"Multiple matched metadata files: {existing_paths!r}")
 
     return existing_paths[0]
+
+
+@overload
+def ui_path_doc_stream(
+    paths: Iterable[str | Path],
+    logger=None,
+    uri: bool = True,
+    raw: Literal[False] = False,
+) -> Generator[tuple[str, SimpleDocNav]]: ...
+
+
+@overload
+def ui_path_doc_stream(
+    paths: Iterable[str | Path],
+    logger=None,
+    uri: bool = True,
+    raw: Literal[True] = True,
+) -> Generator[tuple[str, dict]]: ...
 
 
 def ui_path_doc_stream(
