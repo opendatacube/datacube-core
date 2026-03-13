@@ -47,6 +47,7 @@ from datacube.index.abstract import (
     DatasetTuple,
     dsid_to_uuid,
 )
+from datacube.index.abstract._types import SearchMode
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, LineageTree, Product, Range
@@ -584,7 +585,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return connection.insert_dataset_location(id_, uri)
 
     @override
-    def get_datasets_for_location(self, uri: str, mode: str | None = None) -> Iterator:
+    def get_datasets_for_location(
+        self, uri: str, mode: SearchMode | None = None
+    ) -> Iterator:
         """
         Find datasets that exist at the given URI
 
@@ -1072,7 +1075,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 product, field_names, custom_offsets
             )
             select_field_names = tuple(field.name for field in select_fields)
-            result_type = namedtuple("DatasetLight", select_field_names)  # type: ignore
+            result_type = namedtuple("DatasetLight", select_field_names)  # type: ignore[misc]
 
             if "grid_spatial" in select_field_names:
 

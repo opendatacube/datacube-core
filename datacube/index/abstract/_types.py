@@ -3,7 +3,7 @@
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import Iterable, Sequence
-from typing import NamedTuple, TypeAlias
+from typing import Literal, NamedTuple, TypeAlias
 from uuid import UUID
 
 from deprecat import deprecat
@@ -37,6 +37,9 @@ class BatchStatus(NamedTuple):
 # Non-strict Dataset ID representation
 
 DSID: TypeAlias = str | UUID
+
+
+SearchMode: TypeAlias = Literal["exact", "prefix"]
 
 
 def dsid_to_uuid(dsid: DSID) -> UUID:

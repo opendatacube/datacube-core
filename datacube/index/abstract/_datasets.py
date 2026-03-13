@@ -20,7 +20,7 @@ from datacube.utils import report_to_user
 from datacube.utils.changes import AllowPolicy, Change, DocumentMismatchError, Offset
 from datacube.utils.documents import JsonDict
 
-from ._types import DSID, BatchStatus, DatasetTuple
+from ._types import DSID, BatchStatus, DatasetTuple, SearchMode
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -447,7 +447,7 @@ class AbstractDatasetResource(ABC):
 
     @abstractmethod
     def get_datasets_for_location(
-        self, uri: str, mode: str | None = None
+        self, uri: str, mode: SearchMode | None = None
     ) -> Iterable[Dataset]:
         """
         Find datasets that exist at the given URI

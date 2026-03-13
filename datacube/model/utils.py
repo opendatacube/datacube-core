@@ -28,7 +28,7 @@ from datacube.utils.py import sorted_items
 try:
     from yaml import CSafeDumper as SafeDumper
 except ImportError:
-    from yaml import SafeDumper  # type: ignore
+    from yaml import SafeDumper  # type: ignore[assignment]
 
 
 class BadMatch(Exception):  # noqa: N818

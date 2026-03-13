@@ -33,6 +33,7 @@ from datacube.index.abstract import (
     DatasetTuple,
     dsid_to_uuid,
 )
+from datacube.index.abstract._types import SearchMode
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, Product, Range
@@ -571,7 +572,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return connection.insert_dataset_location(id_, uri)
 
     @override
-    def get_datasets_for_location(self, uri: str, mode: str | None = None) -> Iterator:
+    def get_datasets_for_location(
+        self, uri: str, mode: SearchMode | None = None
+    ) -> Iterator:
         """
         Find datasets that exist at the given URI
 
