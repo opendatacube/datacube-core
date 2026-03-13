@@ -72,7 +72,8 @@ def _resolve_uri(uri: str, doc: SimpleDocNav) -> str:
 
 def remap_uri_from_doc(doc_stream) -> Iterator:
     """
-    Given a stream of `uri: str, doc: SimpleDocNav` tuples, replace `uri` with `doc.location` if it is set.
+    Given a stream of `uri: str, doc: SimpleDocNav` tuples, replace `uri` with
+    `doc.location` if it is set.
     """
     for uri, doc in doc_stream:
         real_uri = _resolve_uri(uri, doc)
@@ -290,7 +291,8 @@ def parse_update_rules(
         if key_str == "collection":
             _LOG.error("Changing collection is not supported")
             sys.exit(2)
-        # Don't support assets since there's no easy way to determine which are measurements and which are accessories
+        # Don't support assets since there's no easy way to determine which are
+        # measurements and which are accessories
         if key_str.startswith("assets"):
             _LOG.error("Updating assets is not yet supported.")
             sys.exit(2)
@@ -504,9 +506,11 @@ def _write_yaml(infos, fields: list[str] | None = None) -> None:
     """
     Dump yaml data with support for OrderedDicts.
 
-    Allows for better human-readability of output: such as dataset ID field first, sources last.
+    Allows for better human-readability of output: such as dataset ID field first,
+    sources last.
 
-    (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
+    (Ordered dicts are output identically to normal yaml dicts: their order is purely
+    for readability)
     """
     return yaml.dump_all(
         infos, sys.stdout, SafeDatacubeDumper, default_flow_style=False, indent=4
@@ -1018,9 +1022,9 @@ def find_duplicates_cmd(
     index: Index, product_names: Sequence[str], f: str, fields: Iterable[str]
 ) -> None:
     """
-    Find dataset ids of two or more active datasets that have duplicate values in the specified fields.
-    If products are specified, search only within those products. Otherwise, search within any products that
-    have the fields.
+    Find dataset ids of two or more active datasets that have duplicate values in
+    the specified fields. If products are specified, search only within those products.
+    Otherwise, search within any products that have the fields.
     """
     if not fields:
         echo("Error: must provide field names to match on\n", err=True)
