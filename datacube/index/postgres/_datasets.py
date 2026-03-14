@@ -617,7 +617,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param id_: dataset id
         :param uri: fully qualified uri
-        :return: True if location was able to be archived
+        :return: True if location was archived
         """
         with self._db_connection() as connection:
             return connection.archive_location(id_, uri)
@@ -636,7 +636,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param id_: dataset id
         :param uri: fully qualified uri
-        :return: True if location was able to be restored
+        :return: True if location was restored
         """
         with self._db_connection() as connection:
             return connection.restore_location(id_, uri)
