@@ -618,7 +618,7 @@ class PostgisDbAPI:
         geom: Geometry | None = None,
         archived: bool | None = False,
         order_by=None,
-    ) -> Generator:
+    ) -> Generator[dict[str, Any]]:
         """
         :return: An iterable of tuples of decoded values
         """
