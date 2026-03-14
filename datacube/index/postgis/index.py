@@ -129,16 +129,16 @@ class Index(AbstractIndex):
     @override
     def from_config(
         cls,
-        config_env: ODCEnvironment,
+        cfg_env: ODCEnvironment,
         application_name: str | None = None,
         validate_connection: bool = True,
     ) -> "Index":
         db = PostGisDb.from_config(
-            config_env,
+            cfg_env,
             application_name=application_name,
             validate_connection=validate_connection,
         )
-        return cls(db, config_env)
+        return cls(db, cfg_env)
 
     @classmethod
     @override
