@@ -1021,9 +1021,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             query, return_fields=True, archived=archived
         ):
             for columns in results:
-                output = columns._asdict()  # type: ignore[attr-defined]
-                _LOG.warning("search results: %s (%s)", output["id"], output["product"])
-                yield output
+                yield columns._asdict()  # type: ignore[attr-defined]
 
     @override
     @deprecat(
