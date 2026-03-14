@@ -258,6 +258,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection(transaction=True) as connection:
             if batch["datasets"]:
                 b_added, b_skipped = connection.insert_dataset_bulk(batch["datasets"])
+            else:
+                b_added, b_skipped = 0, 0
             if batch["uris"]:
                 connection.insert_dataset_location_bulk(batch["uris"])
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
