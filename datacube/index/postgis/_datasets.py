@@ -498,13 +498,14 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         category=ODC2DeprecationWarning,
     )
     @override
-    def get_locations(self, id_: DSID) -> list[str | None]:
+    def get_locations(self, id_: DSID) -> list[str]:
         """
         Get the list of storage locations for the given dataset id
 
         :param id_: dataset id
         """
-        return [self.get_location(id_)]
+        loc = self.get_location(id_)
+        return [] if loc is None else [loc]
 
     @override
     def get_location(self, id_: DSID) -> str | None:
