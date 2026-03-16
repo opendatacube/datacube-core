@@ -51,7 +51,7 @@ class AbstractIndex(ABC):
     supports_write = False
     #   supports persistent storage. Writes from previous instantiations will persist into future ones.
     #   (Requires supports_write)
-    supports_persistance = False
+    supports_persistence = False
     #    Supports ACID transactions (Requires supports_write)
     supports_transactions = False
     #    Supports per-CRS spatial indexes (Requires supports_write)

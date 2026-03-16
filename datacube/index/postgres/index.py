@@ -57,7 +57,7 @@ class Index(AbstractIndex):
 
     #   Database/storage feature support flags
     supports_write = True
-    supports_persistance = True
+    supports_persistence = True
     supports_transactions = True
 
     #   User management support flags
