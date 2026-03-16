@@ -6,9 +6,9 @@ import os
 import platform
 import sys
 import uuid
-from collections.abc import Generator, Mapping, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
 from datetime import datetime, timezone
-from typing import Any, Literal
+from typing import Any, Literal, overload
 
 import numpy
 import toolz
@@ -273,7 +273,7 @@ def merge(a: dict, b: Mapping, path: list | None = None) -> dict:
 
 def traverse_datasets(
     ds: Dataset | SimpleDocNav,
-    cbk,
+    cbk: Callable[..., None],
     mode: Literal["post-order", "pre-order"] = "post-order",
     **kwargs,
 ) -> None:
@@ -322,6 +322,18 @@ def traverse_datasets(
         raise ValueError(f"Unsupported traversal mode: {mode}")
 
     proc(ds, cbk)
+
+
+@overload
+def flatten_datasets(
+    ds: Dataset | SimpleDocNav, with_depth_grouping: Literal[True] = True
+) -> tuple[dict, list]: ...
+
+
+@overload
+def flatten_datasets(
+    ds: Dataset | SimpleDocNav, with_depth_grouping: Literal[False] = False
+) -> dict: ...
 
 
 def flatten_datasets(

@@ -12,7 +12,6 @@ from collections import OrderedDict
 from collections.abc import (
     Generator,
     Iterable,
-    Iterator,
     Mapping,
     MutableMapping,
     Sequence,
@@ -70,7 +69,9 @@ def _resolve_uri(uri: str, doc: SimpleDocNav) -> str:
     return uri
 
 
-def remap_uri_from_doc(doc_stream) -> Iterator:
+def remap_uri_from_doc(
+    doc_stream: Iterable[tuple[str, SimpleDocNav]],
+) -> Generator[tuple[str, SimpleDocNav]]:
     """
     Given a stream of `uri: str, doc: SimpleDocNav` tuples, replace `uri` with
     `doc.location` if it is set.
@@ -85,7 +86,9 @@ def dataset_cmd() -> None:
     pass
 
 
-def dataset_stream(doc_stream, ds_resolve) -> Iterator:
+def dataset_stream(
+    doc_stream: Iterable[tuple[str, SimpleDocNav]], ds_resolve: Doc2Dataset
+) -> Generator[Dataset]:
     """Convert a stream `(uri, doc)` pairs into a stream of resolved datasets
 
     skips failures with logging

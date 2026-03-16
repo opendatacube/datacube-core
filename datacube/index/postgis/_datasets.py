@@ -629,7 +629,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param id_: dataset id
         :param uri: fully qualified uri
-        :return bool: location was able to be archived
+        :return bool: location was archived
         """
         return False
 
@@ -646,7 +646,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param id_: dataset id
         :param uri: fully qualified uri
-        :return bool: location was able to be restored
+        :return bool: location was restored
         """
         return False
 
@@ -1011,7 +1011,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         category=ODC2DeprecationWarning,
     )
     def search_summaries(
-        self, archived: bool | None = False, **query
+        self, archived: bool | None = False, **query: QueryField
     ) -> Iterable[Mapping[str, Any]]:
         """
         Perform a search, returning just the search fields of each dataset.
@@ -1038,7 +1038,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         custom_offsets=None,
         limit: int | None = None,
         archived: bool | None = False,
-        **query,
+        **query: QueryField,
     ) -> Iterable[tuple]:
         """
         This is a dataset search function that returns the results as objects of a dynamically

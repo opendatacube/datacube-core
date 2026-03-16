@@ -196,9 +196,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         _LOG.info("Indexing %s", dataset.id)
 
         if with_lineage:
-            # Tuple return type is only with_depth_grouping=True.
-            ds_by_uuid = flatten_datasets(dataset)
-            assert isinstance(ds_by_uuid, dict)  # For typechecker.
+            ds_by_uuid = flatten_datasets(dataset, with_depth_grouping=False)
             all_uuids = list(ds_by_uuid)
 
             present = dict(zip(all_uuids, self.bulk_has(all_uuids)))
@@ -619,7 +617,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param id_: dataset id
         :param uri: fully qualified uri
-        :return: True if location was able to be archived
+        :return: True if location was archived
         """
         with self._db_connection() as connection:
             return connection.archive_location(id_, uri)
@@ -638,7 +636,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param id_: dataset id
         :param uri: fully qualified uri
-        :return: True if location was able to be restored
+        :return: True if location was restored
         """
         with self._db_connection() as connection:
             return connection.restore_location(id_, uri)
@@ -1069,7 +1067,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         custom_offsets=None,
         limit: int | None = None,
         archived: bool | None = False,
-        **query,
+        **query: QueryField,
     ) -> Generator[tuple]:
         """
         This is a dataset search function that returns the results as objects of a dynamically
