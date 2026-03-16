@@ -176,7 +176,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                delta in timestamp comparison
         """
         _LOG.info("Indexing %s", dataset.id)
-
+        if dataset.has_multiple_uris():
+            raise ValueError(
+                "Postgis driver does not support multiple locations for a dataset."
+            )
         with self._db_connection(transaction=True) as transaction:
             # 1a. insert (if not already exists)
             product_id = dataset.product.id
@@ -193,10 +196,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 transaction.update_search_index(dsids=[dataset.id])
                 # 1c. Store locations
                 if dataset.uri is not None:
-                    if dataset.has_multiple_uris():
-                        raise ValueError(
-                            "Postgis driver does not support multiple locations for a dataset."
-                        )
                     self._ensure_new_locations(dataset, transaction=transaction)
                 if dataset.source_tree is not None:
                     self._index.lineage.add(dataset.source_tree)
@@ -323,6 +322,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param dataset: Dataset to update
         :param updates_allowed: Allowed updates
         """
+        if dataset.has_multiple_uris():
+            raise ValueError(
+                "Postgis driver does not support multiple locations for a dataset."
+            )
         need_sources = dataset.sources is not None
         # TODO: Source retrieval is broken.
         need_sources = False
@@ -337,11 +340,6 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 "Changing product is not supported. From "
                 f"{existing.product.name} to {dataset.product.name} "
                 f"in {dataset.id}"
-            )
-
-        if dataset.has_multiple_uris():
-            raise ValueError(
-                "Postgis driver does not support multiple locations for a dataset."
             )
 
         # TODO: figure out (un)safe changes from metadata type?
