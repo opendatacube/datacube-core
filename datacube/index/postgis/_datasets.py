@@ -899,7 +899,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         limit: int | None = None,
         archived: bool | None = False,
         order_by=None,
-    ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
+    ) -> Iterable[tuple[Product, Iterable[dict[str, Any]]]]:
         assert not with_source_ids
         assert source_filter is None
         product_queries = list(self._get_product_queries(query))
@@ -1092,12 +1092,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
             for result in results:
                 field_values = {}
-                for i_, field in enumerate(select_fields):
+                for field in select_fields:
                     # We need to load the simple doc fields
                     if isinstance(field, SimpleDocField):
-                        field_values[field.name] = json.loads(result[i_])
+                        field_values[field.name] = json.loads(result[field.name])
                     else:
-                        field_values[field.name] = result[i_]
+                        field_values[field.name] = result[field.name]
 
                 yield DatasetLight(**field_values)
 
