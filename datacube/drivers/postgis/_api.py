@@ -1165,7 +1165,7 @@ class PostgisDbAPI:
 
     @override
     def __repr__(self) -> str:
-        return f"PostgresDb<connection={self._connection!r}>"
+        return f"PostgisDb<connection={self._connection!r}>"
 
     def list_users(self) -> Generator:
         result = self._connection.execute(
