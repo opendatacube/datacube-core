@@ -274,6 +274,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         with self._db_connection(transaction=True) as connection:
             if batch.datasets:
                 b_added, b_skipped = connection.insert_dataset_bulk(batch.datasets)
+            else:
+                b_added, b_skipped = 0, 0
             for crs in crses:
                 crs_values = batch.spatial_indexes[crs]
                 if crs_values:
@@ -496,13 +498,14 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         category=ODC2DeprecationWarning,
     )
     @override
-    def get_locations(self, id_: DSID) -> list[str | None]:
+    def get_locations(self, id_: DSID) -> list[str]:
         """
         Get the list of storage locations for the given dataset id
 
         :param id_: dataset id
         """
-        return [self.get_location(id_)]
+        loc = self.get_location(id_)
+        return [] if loc is None else [loc]
 
     @override
     def get_location(self, id_: DSID) -> str | None:
