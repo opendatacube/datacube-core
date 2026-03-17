@@ -5,11 +5,11 @@ Release Process
    that they don't have anything pending.
 
 #. Ensure version pins in pyproject.toml and conda-environment.yml are in sync and up to date,
-   and refresh uv.lock.
+   and refresh uv.lock:
 
 .. code-block:: bash
 
-   uv lock
+   uv lock -U
 
 #. Create a new **Tag** and **Draft Release** using the `GitHub Releases Web UI`_
 
