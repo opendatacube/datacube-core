@@ -43,6 +43,7 @@ from typing_extensions import override
 
 from datacube.drivers.common_psql import create_user, drop_users, grant_role, has_role
 from datacube.index.abstract import DSID
+from datacube.index.abstract._types import SearchMode
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.model.fields import Expression
@@ -426,7 +427,7 @@ class PostgisDbAPI:
         ]
 
     def get_datasets_for_location(
-        self, uri: str, mode: str | None = None
+        self, uri: str, mode: SearchMode | None = None
     ) -> Sequence[Dataset]:
         scheme, body = split_uri(uri)
 
@@ -503,7 +504,7 @@ class PostgisDbAPI:
     def get_derived_datasets(self, dataset_id: uuid.UUID) -> Sequence[Dataset]:
         raise NotImplementedError()
 
-    def get_dataset_sources(self, dataset_id):
+    def get_dataset_sources(self, dataset_id: uuid.UUID) -> Sequence[Dataset]:
         raise NotImplementedError()
 
     def search_datasets_by_metadata(

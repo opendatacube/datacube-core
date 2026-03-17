@@ -76,7 +76,7 @@ def validate_eo3_offsets(field_name: str, mdt_name: str, defn: dict[str, Any]) -
             )
 
 
-def validate_eo3_compatible_type(doc) -> None:
+def validate_eo3_compatible_type(doc: dict) -> None:
     """
     Validate that a metadata type document is EO3 compatible.
 

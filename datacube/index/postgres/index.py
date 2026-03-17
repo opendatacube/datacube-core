@@ -27,6 +27,7 @@ from datacube.index.postgres._transaction import PostgresTransaction
 from datacube.index.postgres._users import UserResource
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import MetadataType
+from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ class Index(AbstractIndex):
 
     #   Database/storage feature support flags
     supports_write = True
-    supports_persistance = True
+    supports_persistence = True
     supports_transactions = True
 
     #   User management support flags
@@ -230,11 +231,11 @@ class PostgresIndexDriver(AbstractIndexDriver):
         version="1.9.0",
         category=ODC2DeprecationWarning,
     )
-    def metadata_type_from_doc(definition: dict) -> MetadataType:
+    def metadata_type_from_doc(definition: JsonDict) -> MetadataType:
         """
         :param definition:
         """
-        MetadataType.validate(definition)  # type: ignore
+        MetadataType.validate(definition)  # type: ignore[attr-defined]
         return MetadataType(definition, search_field_extractor=Index.get_dataset_fields)
 
     @staticmethod

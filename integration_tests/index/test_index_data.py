@@ -791,7 +791,8 @@ def test_index_dataset_with_location(
     with pytest.raises(ValueError):
         list(
             index.datasets.get_datasets_for_location(
-                first_file.as_uri(), mode="nosuchmode"
+                first_file.as_uri(),
+                mode="nosuchmode",  # type:ignore[arg-type]
             )
         )
 

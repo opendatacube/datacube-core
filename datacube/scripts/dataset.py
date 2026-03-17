@@ -905,7 +905,7 @@ def restore_cmd(
         target_dataset = index.datasets.get(id_)
         if target_dataset is None:
             echo(f"No dataset found with id {id_}", err=True)
-            sys.exit(-1)
+            sys.exit(1)
 
         to_process = (
             _get_derived_set(index, id_) if restore_derived else {target_dataset}
@@ -977,7 +977,7 @@ def purge_cmd(
             for dataset_id, exists in datasets_for_purge.items():
                 if not exists:
                     echo(f"No dataset found with id: {dataset_id}", err=True)
-            sys.exit(-1)
+            sys.exit(1)
 
         if sys.stdin.isatty() and force:
             click.confirm(

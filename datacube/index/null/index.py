@@ -24,6 +24,7 @@ from datacube.index.null._users import UserResource
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Field, MetadataType
 from datacube.model.fields import get_dataset_fields
+from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -147,11 +148,11 @@ class NullIndexDriver(AbstractIndexDriver):
         version="1.9.0",
         category=ODC2DeprecationWarning,
     )
-    def metadata_type_from_doc(definition: dict) -> MetadataType:
+    def metadata_type_from_doc(definition: JsonDict) -> MetadataType:
         """
         :param definition:
         """
-        MetadataType.validate(definition)  # type: ignore
+        MetadataType.validate(definition)  # type: ignore[attr-defined]
         return MetadataType(definition, search_field_extractor=Index.get_dataset_fields)
 
 
