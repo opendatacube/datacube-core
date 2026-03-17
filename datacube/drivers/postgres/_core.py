@@ -297,10 +297,10 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
                 for table, current_owner in transfers:
                     transfer_ownership(
                         connection,
-                        "agdc_admin",
                         SCHEMA_NAME,
                         table,
                         current_owner,
+                        "agdc_admin",
                         "tables",
                     )
 
@@ -316,10 +316,10 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
                 for view, current_owner in transfers:
                     transfer_ownership(
                         connection,
-                        "agdc_manage",
                         SCHEMA_NAME,
                         view,
                         current_owner,
+                        "agdc_manage",
                         "views",
                     )
 
