@@ -102,18 +102,15 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             dataset = connection.get_dataset(id_)
             if not dataset:
                 raise KeyError(id_)
-            return self._make(
-                dataset,
-                full_info=True,
-                source_tree=source_tree,
-                derived_tree=derived_tree,
+            return self._sqldataset_to_dataset(
+                dataset, source_tree=source_tree, derived_tree=derived_tree
             )
 
     @override
-    def bulk_get(self, ids: Iterable[DSID]) -> list:
+    def bulk_get(self, ids: Iterable[DSID]) -> Sequence[Dataset]:
         with self._db_connection() as connection:
             rows = connection.get_datasets([dsid_to_uuid(i) for i in ids])
-            return [self._make(r, full_info=True) for r in rows]
+            return [self._sqldataset_to_dataset(r) for r in rows]
 
     @deprecat(
         reason="The 'get_derived' static method is deprecated in favour of the new lineage API.",
@@ -127,11 +124,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         :param id_: dataset id
         """
-        with self._db_connection() as connection:
-            return [
-                self._make(result, full_info=True)
-                for result in connection.get_derived_datasets(dsid_to_uuid(id_))
-            ]
+        raise NotImplementedError()
 
     @override
     def has(self, id_: DSID) -> bool:
@@ -597,8 +590,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         with self._db_connection() as connection:
             return (
-                self._make(row)
-                for row in connection.get_datasets_for_location(uri, mode=mode)
+                self._sqldataset_to_dataset(ds)
+                for ds in connection.get_datasets_for_location(uri, mode=mode)
             )
 
     @deprecat(
@@ -653,6 +646,23 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         """
         return False
 
+    def _sqldataset_to_dataset(
+        self,
+        dataset_res: SQLDataset,
+        source_tree: LineageTree | None = None,
+        derived_tree: LineageTree | None = None,
+    ) -> Dataset:
+        return Dataset(
+            product=self.products.get(dataset_res.product_ref),
+            metadata_doc=dataset_res.metadata_doc,
+            uri=dataset_res.uri,
+            indexed_by=dataset_res.added_by,
+            indexed_time=dataset_res.added,
+            archived_time=dataset_res.archived,
+            source_tree=source_tree,
+            derived_tree=derived_tree,
+        )
+
     def _make(
         self,
         dataset_res,
@@ -687,7 +697,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     @override
     def search_by_metadata(
         self, metadata: JsonDict, archived: bool | None = False
-    ) -> Iterable[Dataset]:
+    ) -> Generator[Dataset]:
         """
         Perform a search using arbitrary metadata, returning results as Dataset objects.
 
@@ -697,9 +707,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param archived: include archived datasets
         """
         with self._db_connection() as connection:
-            yield from self._make_many(
-                connection.search_datasets_by_metadata(metadata, archived)
-            )
+            for ds in connection.search_datasets_by_metadata(metadata, archived):
+                yield self._sqldataset_to_dataset(ds)
 
     @override
     @deprecat(

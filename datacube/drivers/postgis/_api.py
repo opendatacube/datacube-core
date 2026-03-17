@@ -37,6 +37,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import INTERVAL, insert
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import Select
 from typing_extensions import override
 
@@ -77,11 +78,6 @@ from ._spatial import (
 )
 
 _LOG: logging.Logger = logging.getLogger(__name__)
-
-
-# Make a function because it's broken
-def _dataset_select_fields() -> tuple:
-    return tuple(f.alchemy_expression for f in _dataset_fields())
 
 
 def _base_known_fields() -> dict[str, PgField]:
@@ -432,7 +428,7 @@ class PostgisDbAPI:
 
     def get_datasets_for_location(
         self, uri: str, mode: SearchMode | None = None
-    ) -> Sequence:
+    ) -> Sequence[Dataset]:
         scheme, body = split_uri(uri)
 
         if mode is None:
@@ -445,11 +441,14 @@ class PostgisDbAPI:
         else:
             raise ValueError(f"Unsupported query mode {mode}")
 
-        return self._connection.execute(
-            select(*_dataset_select_fields()).where(
-                and_(Dataset.uri_scheme == scheme, body_query)
+        return (
+            Session(self._connection)
+            .execute(
+                select(Dataset).where(and_(Dataset.uri_scheme == scheme, body_query))
             )
-        ).fetchall()
+            .scalars()
+            .all()
+        )
 
     def all_dataset_ids(self, archived: bool | None = False) -> Sequence:
         query = select(Dataset.id)
@@ -487,15 +486,20 @@ class PostgisDbAPI:
         r = self._connection.execute(delete(Dataset).where(Dataset.id == dataset_id))
         return r.rowcount > 0
 
-    def get_dataset(self, dataset_id):
-        return self._connection.execute(
-            select(*_dataset_select_fields()).where(Dataset.id == dataset_id)
-        ).first()
+    def get_dataset(self, dataset_id: uuid.UUID) -> Dataset | None:
+        return (
+            Session(self._connection)
+            .execute(select(Dataset).where(Dataset.id == dataset_id))
+            .scalar_one_or_none()
+        )
 
-    def get_datasets(self, dataset_ids) -> Sequence:
-        return self._connection.execute(
-            select(*_dataset_select_fields()).where(Dataset.id.in_(dataset_ids))
-        ).fetchall()
+    def get_datasets(self, dataset_ids: Iterable[uuid.UUID]) -> Sequence[Dataset]:
+        return (
+            Session(self._connection)
+            .execute(select(Dataset).where(Dataset.id.in_(dataset_ids)))
+            .scalars()
+            .all()
+        )
 
     def get_derived_datasets(self, dataset_id: uuid.UUID) -> Sequence[Dataset]:
         raise NotImplementedError()
@@ -505,7 +509,7 @@ class PostgisDbAPI:
 
     def search_datasets_by_metadata(
         self, metadata: dict, archived: bool | None
-    ) -> Sequence:
+    ) -> Sequence[Dataset]:
         """
         Find any datasets that have the given metadata.
         """
@@ -515,8 +519,8 @@ class PostgisDbAPI:
             where = and_(where, Dataset.archived.is_not(None))
         elif archived is not None:
             where = and_(where, Dataset.archived.is_(None))
-        query = select(*_dataset_select_fields()).where(where)
-        return self._connection.execute(query).fetchall()
+        query = select(Dataset).where(where)
+        return Session(self._connection).execute(query).scalars().all()
 
     def search_products_by_metadata(self, metadata: dict) -> Sequence:
         """
