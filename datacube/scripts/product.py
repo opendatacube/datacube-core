@@ -138,7 +138,7 @@ def update_products(
                 f"{len(list(unsafe_changes))} unsafe changes, {len(list(safe_changes))}"
                 " safe changes"
             )
-    sys.exit(failures)
+    sys.exit(0 if failures == 0 else 1)
 
 
 @product_cli.command("delete", help="Delete products and all associated datasets")

@@ -92,7 +92,7 @@ def create(index: Index, init_users: bool, update: bool, srids: Sequence[str]) -
         echo(
             "Newly created spatial indexes are unpopulated - run the 'spindex update' command before use."
         )
-    exit(len(failed))
+    exit(0 if len(failed) == 0 else 1)
 
 
 @system.command(
@@ -109,7 +109,6 @@ def list_spindex(index) -> None:
         exit(1)
     for crs in index.spatial_indexes():
         echo(f"EPSG:{crs.epsg}")
-    exit(0)
 
 
 @system.command("update", help="Update a spatial index for particular CRSs.")
@@ -167,12 +166,12 @@ def update(
             echo(f"No spatial index for crs {srid} exists: skipping")
     if not for_update:
         echo("Nothing to update!")
-        exit(len(cant_update))
+        exit(0 if len(cant_update) == 0 else 1)
     result = index.update_spatial_index(
         for_update, product_names=product, dataset_ids=dataset
     )
     echo(f"{result} extents checked and updated in {len(for_update)} spatial indexes")
-    exit(len(cant_update))
+    exit(0 if len(cant_update) == 0 else 1)
 
 
 @system.command("drop", help="Drop existing spatial indexes for particular CRSs")
@@ -239,7 +238,4 @@ def drop(index: Index, force: bool, srids: Sequence[str]) -> None:
         else:
             click.echo("Failed")
             errors = True
-    if errors:
-        exit(1)
-    else:
-        exit(0)
+    exit(1 if errors else 0)
