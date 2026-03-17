@@ -5,6 +5,39 @@
 Release History
 ***************
 
+1.9.17 (17 March 2026)
+======================
+
+Emergency release to fix bug in postgres schema update script.
+
+What's Changed
+--------------
+
+* postgis: perform simple checks early by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2382
+* index/memory: avoid deprecation warnings by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2383
+* dataset: include uri in error message by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2384
+* index/abstract: remove unused variable by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2385
+* postgis: fix type error by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2387
+* index/postgis: remove debug printout by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2388
+* index/postgis: type error fixes by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2389
+* Improve some type signatures by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2390
+* drivers/postgis: fix __repr__ output by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2391
+* scripts: fix exit values by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2394
+* index: fix typo in variable name by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2397
+* Improve some more type signatures by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2395
+* drivers/postgis: be more ORM-like by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2392
+* drivers/postgres: Fix argument order in during transfer ownership upgrades by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2398
+* Prepare for 1.9.17 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2399
+
+Automated Updates
+-----------------
+
+* build(deps): bump astral-sh/uv from 0.10.9 to 0.10.10 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2386
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2396
+
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.16...1.9.17
+
 1.9.16 (13 March 2026)
 ======================
 
