@@ -281,10 +281,10 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
         if with_permissions:
             # ensure tables are all owned by agdc_admin
             transfers = transfers_required(
-                connection,
-                "agdc_admin",
-                SCHEMA_NAME,
-                "tables",
+                conn=connection,
+                new_owner="agdc_admin",
+                schema=SCHEMA_NAME,
+                object_type="tables",
                 objects=[
                     "metadata_type",
                     "dataset_type",
@@ -296,31 +296,31 @@ def update_schema(engine: Engine, with_permissions: bool) -> None:
             if transfers:
                 for table, current_owner in transfers:
                     transfer_ownership(
-                        connection,
-                        SCHEMA_NAME,
-                        table,
-                        current_owner,
-                        "agdc_admin",
-                        "tables",
+                        conn=connection,
+                        schema=SCHEMA_NAME,
+                        obj_name=table,
+                        current_owner=current_owner,
+                        new_owner="agdc_admin",
+                        object_type="tables",
                     )
 
             # ensure dynamic views are all owned by agdc_manage
             transfers = transfers_required(
-                connection,
-                "agdc_manage",
-                SCHEMA_NAME,
-                "views",
+                conn=connection,
+                new_owner="agdc_manage",
+                schema=SCHEMA_NAME,
+                object_type="views",
                 prefix="dv_",
             )
             if transfers:
                 for view, current_owner in transfers:
                     transfer_ownership(
-                        connection,
-                        SCHEMA_NAME,
-                        view,
-                        current_owner,
-                        "agdc_manage",
-                        "views",
+                        conn=connection,
+                        schema=SCHEMA_NAME,
+                        obj_name=view,
+                        current_owner=current_owner,
+                        new_owner="agdc_manage",
+                        object_type="views",
                     )
 
         if not pg_column_exists(connection, "dataset", "updated"):
