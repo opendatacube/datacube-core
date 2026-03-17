@@ -46,6 +46,7 @@ from typing_extensions import override
 
 from datacube.drivers.common_psql import create_user, drop_users, grant_role, has_role
 from datacube.index.abstract import DSID
+from datacube.index.abstract._types import SearchMode
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.fields import Expression, Field, OrExpression
 from datacube.model import Range
@@ -309,7 +310,7 @@ class PostgresDbAPI:
             ).fetchall()
         ]
 
-    def get_datasets_for_location(self, uri: str, mode: str | None = None):
+    def get_datasets_for_location(self, uri: str, mode: SearchMode | None = None):
         scheme, body = split_uri(uri)
 
         if mode is None:

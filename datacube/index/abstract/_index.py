@@ -15,6 +15,7 @@ from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Field, MetadataType
 from datacube.utils import cached_property, report_to_user
 from datacube.utils.generic import thread_local_cache
+from datacube.utils.json_types import JsonDict
 
 from ._datasets import AbstractDatasetResource
 from ._lineage import AbstractLineageResource
@@ -179,9 +180,9 @@ class AbstractIndex(ABC):
 
     def update_spatial_index(
         self,
-        crses: Sequence[CRS] = [],
-        product_names: Sequence[str] = [],
-        dataset_ids: Sequence[DSID] = [],
+        crses: Sequence[CRS] = (),
+        product_names: Sequence[str] = (),
+        dataset_ids: Sequence[DSID] = (),
     ) -> int:
         """
         Populate a newly created spatial index (or indexes).
@@ -419,7 +420,7 @@ class AbstractIndexDriver(ABC):
         version="1.9.0",
         category=ODC2DeprecationWarning,
     )
-    def metadata_type_from_doc(definition: dict) -> MetadataType: ...
+    def metadata_type_from_doc(definition: JsonDict) -> MetadataType: ...
 
     @staticmethod
     def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:

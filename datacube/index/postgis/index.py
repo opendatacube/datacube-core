@@ -30,6 +30,7 @@ from datacube.index.postgis._transaction import PostgisTransaction
 from datacube.index.postgis._users import UserResource
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import MetadataType
+from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -201,9 +202,9 @@ class Index(AbstractIndex):
     @override
     def update_spatial_index(
         self,
-        crses: Sequence[CRS] = [],
-        product_names: Sequence[str] = [],
-        dataset_ids: Sequence[DSID] = [],
+        crses: Sequence[CRS] = (),
+        product_names: Sequence[str] = (),
+        dataset_ids: Sequence[DSID] = (),
     ) -> int:
         with self._active_connection(transaction=True) as conn:
             return conn.update_spindex(crses, product_names, dataset_ids)
@@ -270,12 +271,12 @@ class PostgisIndexDriver(AbstractIndexDriver):
         version="1.9.0",
         category=ODC2DeprecationWarning,
     )
-    def metadata_type_from_doc(definition: dict) -> MetadataType:
+    def metadata_type_from_doc(definition: JsonDict) -> MetadataType:
         """
         :param definition:
         """
         # TODO: Validate metadata is ODCv2 compliant - e.g. either non-raster or EO3.
-        MetadataType.validate(definition)  # type: ignore
+        MetadataType.validate(definition)  # type: ignore[attr-defined]
         return MetadataType(definition, search_field_extractor=Index.get_dataset_fields)
 
     @staticmethod

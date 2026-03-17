@@ -55,9 +55,9 @@ def _xarray_geobox(obj):
     return _xr_geobox(obj)
 
 
-xarray.Dataset.geobox = property(_xarray_geobox)  # type: ignore
-xarray.Dataset.affine = property(_xarray_affine)  # type: ignore
-xarray.Dataset.extent = property(_xarray_extent)  # type: ignore
-xarray.DataArray.geobox = property(_xarray_geobox)  # type: ignore
-xarray.DataArray.affine = property(_xarray_affine)  # type: ignore
-xarray.DataArray.extent = property(_xarray_extent)  # type: ignore
+xarray.Dataset.geobox = property(_xarray_geobox)  # type: ignore[attr-defined]
+xarray.Dataset.affine = property(_xarray_affine)  # type: ignore[attr-defined]
+xarray.Dataset.extent = property(_xarray_extent)  # type: ignore[attr-defined]
+xarray.DataArray.geobox = property(_xarray_geobox)  # type: ignore[attr-defined]
+xarray.DataArray.affine = property(_xarray_affine)  # type: ignore[attr-defined]
+xarray.DataArray.extent = property(_xarray_extent)  # type: ignore[attr-defined]

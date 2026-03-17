@@ -15,7 +15,7 @@ try:
     from yaml import CSafeDumper as SafeDumper
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
-    from yaml import SafeDumper, SafeLoader  # type: ignore
+    from yaml import SafeDumper, SafeLoader  # type: ignore[assignment]
 
 import rasterio
 import xarray as xr
