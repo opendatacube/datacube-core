@@ -302,7 +302,20 @@ class PostgisDbAPI:
 
     def insert_dataset_bulk(self, values: Sequence[dict[str, Any]]) -> tuple[int, int]:
         requested = len(values)
-        res = self._connection.execute(insert(Dataset).values(values))
+        res = self._connection.execute(
+            insert(Dataset)
+            .values(values)
+            .on_conflict_do_nothing(index_elements=[Dataset.id])
+            .returning(Dataset.id)
+        )
+        if requested - res.rowcount > 0:
+            inserted = set(res.fetchall())
+            missing = [str(id_) for v in values if (id_ := v.get("id")) not in inserted]
+            plural = len(missing) > 1
+            _LOG.warning(
+                f"Dataset{'s' if plural else ''} {', '.join(missing)} "
+                f"{'are' if plural else 'is'} already in the database"
+            )
         return res.rowcount, requested - res.rowcount
 
     def update_dataset(self, metadata_doc, dataset_id, product_id) -> bool:
@@ -359,7 +372,13 @@ class PostgisDbAPI:
 
     def insert_dataset_search_bulk(self, search_type: str, values) -> int:
         search_table = search_field_index_map[search_type]
-        r = self._connection.execute(insert(search_table).values(values))
+        stmt = insert(search_table).values(values)
+        r = self._connection.execute(
+            stmt.on_conflict_do_update(
+                index_elements=[search_table.dataset_ref, search_table.search_key],
+                set_={"search_val": stmt.excluded.search_val},
+            )
+        )
         return r.rowcount
 
     def insert_dataset_spatial(
@@ -386,7 +405,11 @@ class PostgisDbAPI:
 
     def insert_dataset_spatial_bulk(self, crs, values) -> int:
         SpatialIndex = self._db.spatial_index(crs)  # noqa: N806
-        r = self._connection.execute(insert(SpatialIndex).values(values))
+        r = self._connection.execute(
+            insert(SpatialIndex)
+            .values(values)
+            .on_conflict_do_nothing(index_elements=["dataset_ref"])
+        )
         return r.rowcount
 
     def spatial_extent(self, ids, crs: CRS) -> Geometry | None:

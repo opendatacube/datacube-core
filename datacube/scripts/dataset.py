@@ -27,6 +27,7 @@ import yaml.resolver
 from click import echo
 
 from datacube.index import Index
+from datacube.index.abstract import DatasetTuple
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
@@ -142,6 +143,15 @@ def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Generator[tu
             _LOG.error(f"Failure while processing: {uri}\n > Reason: {error_msg}")
         else:
             yield dataset, existing
+
+
+def _mk_dataset_tuples(dss: Iterable[Dataset]) -> Generator[DatasetTuple]:
+    for ds in dss:
+        my_uris = (
+            ds._uris if ds.has_multiple_uris() else ds.uri if ds.uri is not None else []
+        )
+        assert isinstance(my_uris, (str, list))
+        yield DatasetTuple(ds.product, ds.metadata_doc, my_uris)
 
 
 @dataset_cmd.command(
@@ -261,6 +271,12 @@ def index_datasets(
     dry_run: bool,
     archive_less_mature: int | None,
 ) -> None:
+    if index.name == "pgis_index":
+        if not dry_run:
+            index.datasets.bulk_add(
+                _mk_dataset_tuples(dss), archive_less_mature=archive_less_mature
+            )
+        return
     for dataset in dss:
         _LOG.info("Matched %s", dataset)
         if not dry_run:
