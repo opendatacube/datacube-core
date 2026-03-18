@@ -18,7 +18,10 @@ from odc.stac import load
 from odc.stac._mdtools import RasterCollectionMetadata, has_proj_ext, has_raster_ext
 from pystac.extensions.eo import EOExtension
 from pystac.extensions.item_assets import ItemAssetsExtension
+from pystac.extensions.projection import SCHEMA_URI as PROJECTION_SCHEMA_URI
 from pystac.extensions.projection import ProjectionExtension
+from pystac.extensions.raster import SCHEMA_URI as RASTER_SCHEMA_URI
+from pystac.extensions.view import SCHEMA_URI as VIEW_SCHEMA_URI
 from toolz import dicttoolz
 
 from datacube.metadata import (
@@ -341,18 +344,9 @@ def test_ds2stac(eo3_dataset: Dataset) -> None:
             "href": f"https://localhost/dataset/{eo3_dataset.id}",
         },
     ]
-    assert (
-        "https://stac-extensions.github.io/raster/v1.1.0/schema.json"
-        in output_stac["stac_extensions"]
-    )
-    assert (
-        "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
-        in output_stac["stac_extensions"]
-    )
-    assert (
-        "https://stac-extensions.github.io/view/v1.0.0/schema.json"
-        in output_stac["stac_extensions"]
-    )
+    assert RASTER_SCHEMA_URI in output_stac["stac_extensions"]
+    assert PROJECTION_SCHEMA_URI in output_stac["stac_extensions"]
+    assert VIEW_SCHEMA_URI in output_stac["stac_extensions"]
 
 
 def test_sources(ds_legacy_sources: Dataset, ds_ext_lineage: Dataset) -> None:
