@@ -584,7 +584,10 @@ class AbstractDatasetResource(ABC):
             yield from self.get_all_docs_for_product(product, batch_size=batch_size)
 
     def _add_batch(
-        self, batch_ds: Iterable[DatasetTuple], cache: dict[str, Any]
+        self,
+        batch_ds: Iterable[DatasetTuple],
+        cache: dict[str, Any],
+        archive_less_mature: int | None = None,
     ) -> BatchStatus:
         """
         Add a single "batch" of datasets, provided as DatasetTuples.
@@ -594,6 +597,10 @@ class AbstractDatasetResource(ABC):
         API Note: This API method is not finalised and may be subject to change.
 
         :param batch_ds: An iterable of one batch's worth of DatasetTuples to add
+        :param cache: Cache to use for adding batches
+        :param archive_less_mature: if integer, search for less
+            mature versions of the dataset with the int value as a millisecond
+            delta in timestamp comparison
         :return: BatchStatus named tuple.
         """
         b_skipped = 0
@@ -605,7 +612,9 @@ class AbstractDatasetResource(ABC):
                 ds = Dataset(
                     product=ds_tup.product, metadata_doc=ds_tup.metadata, **kwargs
                 )
-                self.add(ds, with_lineage=False)
+                self.add(
+                    ds, with_lineage=False, archive_less_mature=archive_less_mature
+                )
                 b_added += 1
             except DocumentMismatchError as e:
                 _LOG.warning("%s: Skipping", str(e))
@@ -626,7 +635,10 @@ class AbstractDatasetResource(ABC):
         return {}
 
     def bulk_add(
-        self, datasets: Iterable[DatasetTuple], batch_size: int = 1000
+        self,
+        datasets: Iterable[DatasetTuple],
+        batch_size: int = 1000,
+        archive_less_mature: int | None = None,
     ) -> BatchStatus:
         """
         Add a group of Dataset documents in bulk.
@@ -635,6 +647,9 @@ class AbstractDatasetResource(ABC):
 
         :param datasets: An Iterable of DatasetTuples (i.e. as returned by get_all_docs)
         :param batch_size: Number of datasets to add per batch (default 1000)
+        :param archive_less_mature: if integer, search for less
+            mature versions of the dataset with the int value as a millisecond
+            delta in timestamp comparison
         :return: BatchStatus named tuple, with `safe` set to None.
         """
 
@@ -651,7 +666,9 @@ class AbstractDatasetResource(ABC):
             batch.append(ds_tup)
             n_in_batch += 1
             if n_in_batch >= batch_size:
-                batch_result = self._add_batch(batch, inter_batch_cache)
+                batch_result = self._add_batch(
+                    batch, inter_batch_cache, archive_less_mature=archive_less_mature
+                )
                 _LOG.info(
                     "Batch %d/%d datasets added in %.2fs: (%.2fdatasets/min)",
                     batch_result.completed,

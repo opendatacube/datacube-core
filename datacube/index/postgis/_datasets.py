@@ -208,7 +208,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
     @override
     def _add_batch(
-        self, batch_ds: Iterable[DatasetTuple], cache: Mapping[str, Any]
+        self,
+        batch_ds: Iterable[DatasetTuple],
+        cache: Mapping[str, Any],
+        archive_less_mature: int | None = None,
     ) -> BatchStatus:
         # Add a "batch" of datasets.
         b_started = monotonic()
@@ -276,6 +279,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                     connection.insert_dataset_spatial_bulk(crs, crs_values)
             for search_type, search_values in batch.search_indexes.items():
                 connection.insert_dataset_search_bulk(search_type, search_values)
+            if archive_less_mature is not None:
+                for ds in self.bulk_get(dsids):
+                    self.archive_less_mature(ds, archive_less_mature)
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
     @override
