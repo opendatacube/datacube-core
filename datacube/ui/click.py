@@ -82,7 +82,7 @@ class ClickHandler(logging.Handler):
         try:
             msg = self.format(record)
             click.echo(msg, err=True)
-        except:  # pylint: disable=bare-except  # noqa: E722
+        except Exception:
             self.handleError(record)
 
 
