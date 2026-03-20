@@ -8,7 +8,7 @@
 # syntax=docker/dockerfile:1
 FROM ghcr.io/astral-sh/uv:0.10.12@sha256:72ab0aeb448090480ccabb99fb5f52b0dc3c71923bffb5e2e26517a1c27b7fec AS uv
 
-FROM ghcr.io/osgeo/gdal:ubuntu-full-3.12.2@sha256:35cf3b42728f568b911a120d8644b5e5fb7d277b8d3ed07e4b66c0af19c957af AS base
+FROM ghcr.io/osgeo/gdal:ubuntu-full-3.12.3@sha256:47d5cf4cc4c057275f0a1946271eb1585d40481b3ab719685259ddbe3db4da4b AS base
 
 ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8 \
