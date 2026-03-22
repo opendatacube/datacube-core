@@ -6,6 +6,7 @@ import csv
 import datetime
 import json
 import logging
+import multiprocessing
 import sys
 import uuid
 from collections import OrderedDict
@@ -154,6 +155,11 @@ def _mk_dataset_tuples(dss: Iterable[Dataset]) -> Generator[DatasetTuple]:
         yield DatasetTuple(ds.product, ds.metadata_doc, my_uris)
 
 
+# Needs to be top level definition so it can be pickled.
+def _ui_path_doc_stream(p: str | Path) -> list[tuple[str, SimpleDocNav]]:
+    return list(ui_path_doc_stream([p], logger=_LOG, uri=True))
+
+
 @dataset_cmd.command(
     "add",
     help="Add datasets to the Data Cube",
@@ -219,6 +225,9 @@ def _mk_dataset_tuples(dss: Iterable[Dataset]) -> Generator[DatasetTuple]:
     is_flag=True,
     default=False,
 )
+@click.option(
+    "--workers", default=1, type=int, help="Number of workers to use, default 1"
+)
 @click.argument("dataset-paths", type=str, nargs=-1)
 @ui.pass_index()
 def index_cmd(
@@ -231,6 +240,7 @@ def index_cmd(
     ignore_lineage: bool,
     archive_less_mature: bool,
     dataset_paths: list[str],
+    workers: int,
 ) -> None:
     if not dataset_paths:
         echo("Error: no datasets provided\n", err=True)
@@ -253,7 +263,21 @@ def index_cmd(
     with click.progressbar(
         dataset_paths, label="Indexing datasets", file=sys.stdout
     ) as pp:
-        doc_stream = ui_path_doc_stream(pp, logger=_LOG, uri=True)
+        doc_stream: list[tuple[str, SimpleDocNav]] | Generator[tuple[str, SimpleDocNav]]
+        if workers > 1:
+            doc_stream = []
+            # Shut down pool nicely to keep pytest-cov happy.
+            # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
+            pool = multiprocessing.Pool(workers)
+            try:
+                results = [pool.apply_async(_ui_path_doc_stream, (p,)) for p in pp]
+                for res in results:
+                    doc_stream.extend(res.get())
+            finally:
+                pool.close()
+                pool.join()
+        else:
+            doc_stream = ui_path_doc_stream(pp, logger=_LOG, uri=True)
         index_datasets(
             dataset_stream(remap_uri_from_doc(doc_stream), ds_resolve),
             index,

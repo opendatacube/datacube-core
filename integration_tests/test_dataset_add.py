@@ -360,6 +360,9 @@ def test_dataset_add_stac(index, clirunner, ls8_stac_doc, eo3_products) -> None:
     ds, err = doc2ds(stac_doc, "file://something")
     assert err is not None
 
+    r = clirunner(["-v", "dataset", "add", "--workers", "2", path])
+    assert r.exit_code == 0, f"Output: {r.output}"
+
 
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
