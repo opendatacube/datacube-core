@@ -8,7 +8,6 @@ Useful methods for tests (particularly: reading/writing and checking files)
 
 import atexit
 import contextlib
-import json
 import math
 import os
 import pathlib
@@ -31,7 +30,7 @@ from odc.geo.geobox import GeoBox
 from datacube import Datacube
 from datacube.model import Dataset, Measurement, MetadataType, Product
 from datacube.ui.common import get_metadata_path
-from datacube.utils import SimpleDocNav, read_documents
+from datacube.utils import SimpleDocNav, json, read_documents
 from datacube.utils.dates import mk_time_coord
 from datacube.utils.documents import parse_yaml
 

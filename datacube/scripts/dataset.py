@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 import csv
 import datetime
-import json
 import logging
 import sys
 import uuid
@@ -35,7 +34,7 @@ from datacube.ui import click as ui
 from datacube.ui.click import cli, print_help_msg
 from datacube.ui.common import ui_path_doc_stream
 from datacube.ui.expression import parse_expressions
-from datacube.utils import SimpleDocNav, changes
+from datacube.utils import SimpleDocNav, changes, json
 from datacube.utils.changes import AllowPolicy, Offset
 from datacube.utils.dates import tz_as_utc
 from datacube.utils.serialise import SafeDatacubeDumper

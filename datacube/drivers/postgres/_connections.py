@@ -13,7 +13,6 @@
 Postgres connection and setup
 """
 
-import json
 import logging
 import re
 from collections.abc import Callable, Generator, Mapping
@@ -28,7 +27,7 @@ from typing_extensions import override
 import datacube
 from datacube.drivers.postgres._fields import PgField
 from datacube.index.exceptions import IndexSetupError
-from datacube.utils import jsonify_document
+from datacube.utils import json, jsonify_document
 
 from ...cfg import ODCEnvironment, psql_url_from_config
 from . import _api, _core

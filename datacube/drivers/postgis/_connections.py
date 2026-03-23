@@ -13,7 +13,6 @@
 Postgis connection and setup
 """
 
-import json
 import logging
 import re
 from collections.abc import Callable, Generator, Iterable, Mapping
@@ -29,7 +28,7 @@ from typing_extensions import override
 import datacube
 from datacube.drivers.postgis._fields import PgField
 from datacube.index.exceptions import IndexSetupError, NoIndexError
-from datacube.utils import jsonify_document
+from datacube.utils import json, jsonify_document
 
 from ...cfg import ODCEnvironment, psql_url_from_config
 from . import _api, _core

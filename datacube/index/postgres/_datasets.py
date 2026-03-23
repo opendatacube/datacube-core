@@ -9,7 +9,6 @@ API for dataset indexing, access and search.
 from __future__ import annotations
 
 import datetime
-import json
 import logging
 import warnings
 from collections import namedtuple
@@ -40,7 +39,7 @@ from datacube.model import Dataset, Product, Range
 from datacube.model._base import QueryDict, QueryField
 from datacube.model.fields import Expression, Field
 from datacube.model.utils import flatten_datasets
-from datacube.utils import _readable_offset, changes, jsonify_document
+from datacube.utils import _readable_offset, changes, json, jsonify_document
 from datacube.utils.changes import Offset, get_doc_changes
 
 if TYPE_CHECKING:

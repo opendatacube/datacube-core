@@ -2,7 +2,6 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import json
 import os
 from typing import Any
 from unittest import mock
@@ -14,6 +13,7 @@ import pytest
 from botocore.credentials import ReadOnlyCredentials
 
 from datacube.testutils import write_files
+from datacube.utils import json
 from datacube.utils.aws import (
     _fetch_text,
     _s3_cache_key,
