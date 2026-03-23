@@ -155,14 +155,13 @@ def ensure_spindex(
             # SpatialIndexRecord exists - actual index assumed to exist too.
             return
         role = "odc_admin" if with_permissions else None
-        with as_role(conn, role) as conn:
-            session = Session(conn)
+        with as_role(conn, role) as conn, Session(conn) as session:
             # SpatialIndexRecord doesn't exist - create the index table...
             orm_registry.metadata.create_all(engine, [sp_idx.__table__])  # type: ignore[attr-defined]
             # ... and add a SpatialIndexRecord
             session.add(SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__))  # type: ignore[attr-defined]
             session.commit()
-            session.flush()
+
             if with_permissions:
                 for command in [
                     # Read access to odc_user
