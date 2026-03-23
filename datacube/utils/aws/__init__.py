@@ -92,7 +92,7 @@ def ec2_metadata(timeout: float = 0.1) -> dict[str, Any] | None:
     """When running inside AWS returns dictionary describing instance identity.
     Returns None when not inside AWS
     """
-    import json
+    from datacube.utils import json
 
     txt = _fetch_text(
         "http://169.254.169.254/latest/dynamic/instance-identity/document", timeout

@@ -3,7 +3,6 @@
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import csv
-import json
 from collections.abc import Generator, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from gzip import GzipFile
@@ -11,6 +10,8 @@ from io import BytesIO
 from types import SimpleNamespace
 
 from botocore.client import BaseClient
+
+from datacube.utils import json
 
 from . import s3_client, s3_fetch, s3_ls_dir
 

@@ -72,6 +72,7 @@ performance = ['ciso8601', 'bottleneck']
 distributed = ['distributed', 'dask[distributed]']
 s3 = ['boto3', 'botocore']
 netcdf = ['netcdf4']
+orjson = ['orjson']
 postgres = ['psycopg2']
 psycopg3 = ['psycopg']
 scikit-image = ['scikit-image']
@@ -208,6 +209,7 @@ select = [
     "W",  # pycodestyle warnings
     "F",  # pyflakes
     "T10", # flake8-debugger
+    "TID253", # Banned imports
 ]
 ignore = [
     # FIXME: re-enable these rules.
@@ -217,6 +219,11 @@ ignore = [
     "B905",
     "RUF012",
     "SIM115",
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+banned-module-level-imports = [
+    "json", # Import datacube.utils.json instead.
 ]
 
 [tool.ruff.lint.pep8-naming]

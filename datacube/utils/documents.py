@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import collections.abc
 import gzip
-import json
 import logging
 import math
 from collections import OrderedDict
@@ -30,6 +29,7 @@ import toolz
 import yaml
 from typing_extensions import override
 
+from datacube.utils import json
 from datacube.utils.changes import Offset
 
 # Compatibility-imports to preserve the API.

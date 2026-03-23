@@ -3,13 +3,14 @@
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import itertools
-import json
 import logging
 from collections.abc import Generator, Iterable, Iterator, Mapping
 from typing import Any
 
 import boto3
 from toolz import dicttoolz
+
+from datacube.utils import json
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

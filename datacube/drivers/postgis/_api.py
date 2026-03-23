@@ -14,7 +14,6 @@ Persistence API implementation for postgis.
 """
 
 import datetime
-import json
 import logging
 import uuid
 from collections.abc import Generator, Iterable, Mapping, Sequence
@@ -48,6 +47,7 @@ from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.model.fields import Expression
 from datacube.model.lineage import LineageDirection, LineageRelation
+from datacube.utils import json
 from datacube.utils.uris import split_uri
 
 from ...utils.changes import Offset

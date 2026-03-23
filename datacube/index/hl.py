@@ -6,7 +6,6 @@
 High level indexing operations/utilities
 """
 
-import json
 import logging
 from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
 from typing import Any, TypeAlias, cast
@@ -24,7 +23,13 @@ from datacube.model.utils import (
     flatten_datasets,
     remap_lineage_doc,
 )
-from datacube.utils import InvalidDocException, SimpleDocNav, changes, jsonify_document
+from datacube.utils import (
+    InvalidDocException,
+    SimpleDocNav,
+    changes,
+    json,
+    jsonify_document,
+)
 from datacube.utils.changes import Offset, get_doc_changes
 
 from .eo3 import is_doc_eo3, is_doc_geo, prep_eo3
