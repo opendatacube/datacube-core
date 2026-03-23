@@ -167,6 +167,8 @@ def ensure_db(engine: Engine, with_permissions: bool = True) -> bool:
                 command.stamp(alembic_cfg, "head")
 
         if with_permissions:
+            from datacube.drivers.postgis._schema import search_field_indexes
+
             _LOG.info("Adding role grants.")
             with as_role(c, "odc_admin") as c:
                 c.execute(text(f"grant usage on schema {SCHEMA_NAME} to odc_user"))
@@ -180,6 +182,16 @@ def ensure_db(engine: Engine, with_permissions: bool = True) -> bool:
                     text(
                         f"grant insert on {SCHEMA_NAME}.dataset,"
                         f"{SCHEMA_NAME}.dataset_lineage to odc_manage"
+                    )
+                )
+                c.execute(
+                    text(
+                        "grant insert, update on "
+                        + ", ".join(
+                            f"{SCHEMA_NAME}.{v.__tablename__}"
+                            for v in search_field_indexes.values()
+                        )
+                        + " to odc_manage"
                     )
                 )
                 c.execute(
