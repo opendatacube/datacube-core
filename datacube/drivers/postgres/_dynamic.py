@@ -16,7 +16,7 @@ from sqlalchemy.engine.mock import MockConnection
 from datacube.drivers.common_psql import as_role
 from datacube.drivers.postgres._fields import PgField
 
-from ._core import get_connection_info, schema_qualified
+from ._core import schema_qualified
 from ._schema import DATASET, METADATA_TYPE, PRODUCT
 from .sql import CreateView, pg_exists
 

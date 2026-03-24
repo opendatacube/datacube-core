@@ -21,10 +21,10 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, mapped_column
 from sqlalchemy.sql.ddl import DropTable
 
-from ._core import METADATA, get_connection_info
+from ..common_psql import as_role
+from ._core import METADATA
 from ._schema import Base, Dataset, SpatialIndex, SpatialIndexRecord, orm_registry
 from .sql import SCHEMA_NAME
-from ..common_psql import as_role
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -159,7 +159,9 @@ def ensure_spindex(
             # SpatialIndexRecord doesn't exist - create the index table...
             orm_registry.metadata.create_all(engine, [sp_idx.__table__])  # type: ignore[attr-defined]
             # ... and add a SpatialIndexRecord
-            session.add(SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__))  # type: ignore[attr-defined]
+            session.add(
+                SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__)
+            )  # type: ignore[attr-defined]
             session.commit()
 
             if with_permissions:
