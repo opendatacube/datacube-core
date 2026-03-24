@@ -275,6 +275,22 @@ def test_user_creation(clirunner, example_user) -> None:
     assert_no_user(clirunner, username)
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
+def test_user_creation_passwd_stdin(clirunner, index, tmp_path: Path) -> None:
+    username = "test_user_passwd"
+    password = "some random password"
+
+    args = ["user", "create", "user", username, "--passwd-stdin"]
+    r = clirunner(args, stdin_input=password)
+    assert password not in r.output
+    assert "password taken from stdin" in r.stdout
+    assert_user_with_role(clirunner, "ingest", username)
+
+    # Remove the user just added.
+    clirunner(["user", "delete", username])
+    assert_no_user(clirunner, username)
+
+
 def assert_user_with_role(clirunner, role, user_name: str) -> None:
     result = clirunner(["user", "list"])
     assert "{}{}".format("user: ", user_name) in result.output

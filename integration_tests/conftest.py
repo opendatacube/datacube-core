@@ -1022,6 +1022,7 @@ def clirunner(datacube_env_name: str):
         skip_env: bool = False,
         skip_config_paths: bool = False,
         verbose_flag: Literal[False] | str = "-v",
+        stdin_input: str | None = None,
     ) -> Result:
         # If raw config passed in, skip default test config
         exe_opts: list[str] = (
@@ -1036,7 +1037,7 @@ def clirunner(datacube_env_name: str):
         exe_opts.extend(opts)
 
         result = CliRunner().invoke(
-            cli_method, exe_opts, catch_exceptions=catch_exceptions
+            cli_method, exe_opts, input=stdin_input, catch_exceptions=catch_exceptions
         )
         if expect_success:
             assert result.exit_code == 0, (
