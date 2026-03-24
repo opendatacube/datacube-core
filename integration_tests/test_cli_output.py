@@ -66,6 +66,10 @@ def test_cli_product_subcommand(
 
 
 def test_cli_metadata_subcommand(index_empty, clirunner, dataset_add_configs) -> None:
+    r = clirunner(["metadata", "show", "nonexistentfortest"], expect_success=False)
+    assert r.exit_code == 1, f"Output: {r.output}"
+    assert "No such metadata: " in r.stderr
+
     runner = clirunner(["metadata", "update"], verbose_flag=False, expect_success=False)
     assert "Usage:  [OPTIONS] [FILES]" in runner.output
     assert "Update existing metadata types." in runner.output
@@ -277,6 +281,13 @@ def test_cli_dataset_subcommand(
     assert "Usage:  [OPTIONS] [IDS]" in runner.output
     assert "Restore datasets" in runner.output
     assert runner.exit_code == 1, f"Output: {runner.output}"
+
+    r = clirunner(
+        ["dataset", "restore", "4c0b7fda-9239-4002-9ea5-98582ffb4b8b"],
+        expect_success=False,
+    )
+    assert r.exit_code == 1, f"Output: {r.output}"
+    assert "No dataset found with id " in r.stderr
 
     runner = clirunner(["dataset", "restore", "--all"], verbose_flag=False)
     assert "restoring" in runner.output

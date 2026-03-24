@@ -106,7 +106,13 @@ def test_add_example_dataset_types(
 
 
 @pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
-def test_error_returned_on_invalid(clirunner, index) -> None:
+@pytest.mark.parametrize("datacube_env_name", ("postgis3",), indirect=True)
+def test_cli_errors(clirunner, index) -> None:
+    for op in [["delete"], ["grant", "user"]]:
+        r = clirunner(["user", *op], expect_success=False)
+        assert r.exit_code != 0, f"Output: {r.output}"
+        assert "No users specified" in r.stdout
+
     assert _dataset_type_count(index) == 0
 
     for mapping_path in INVALID_MAPPING_DOCS:
