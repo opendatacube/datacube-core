@@ -160,8 +160,8 @@ def ensure_spindex(
             orm_registry.metadata.create_all(engine, [sp_idx.__table__])  # type: ignore[attr-defined]
             # ... and add a SpatialIndexRecord
             session.add(
-                SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__)
-            )  # type: ignore[attr-defined]
+                SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__)  # type: ignore[attr-defined]
+            )
             session.commit()
 
             if with_permissions:
