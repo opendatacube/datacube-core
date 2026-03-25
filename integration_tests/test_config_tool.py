@@ -90,7 +90,7 @@ def test_add_example_dataset_types(
 
     expect_result = 0 if existing_mappings > 0 else 1
     result = clirunner(["-v", "product", "show"], expect_success=(expect_result == 0))
-    assert result.exit_code == expect_result
+    assert result.exit_code == expect_result, f"Output: {result.output}"
 
     if existing_mappings > 1:
         result = clirunner(
@@ -106,7 +106,13 @@ def test_add_example_dataset_types(
 
 
 @pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
-def test_error_returned_on_invalid(clirunner, index) -> None:
+@pytest.mark.parametrize("datacube_env_name", ("postgis3",), indirect=True)
+def test_cli_errors(clirunner, index) -> None:
+    for op in [["delete"], ["grant", "user"]]:
+        r = clirunner(["user", *op], expect_success=False)
+        assert r.exit_code != 0, f"Output: {r.output}"
+        assert "No users specified" in r.stdout
+
     assert _dataset_type_count(index) == 0
 
     for mapping_path in INVALID_MAPPING_DOCS:
@@ -116,7 +122,7 @@ def test_error_returned_on_invalid(clirunner, index) -> None:
             catch_exceptions=True,
             expect_success=False,
         )
-        assert result.exit_code != 0, "Success return code for invalid document."
+        assert result.exit_code != 0, f"Output: {result.output}"
         assert _dataset_type_count(index) == 0, "Invalid document was added to DB"
 
 
@@ -155,7 +161,6 @@ def test_db_init_noop(clirunner, cfg_env, ls8_eo3_product) -> None:
 def test_db_init_rebuild(clirunner, cfg_env, ls8_eo3_product) -> None:
     if cfg_env._name in ("datacube", "datacube3"):
         from datacube.drivers.postgres import _dynamic
-        from datacube.drivers.postgres.sql import SCHEMA_NAME
 
         # Set field creation logging to debug since we assert on debug output.
         _dynamic._LOG.setLevel(logging.DEBUG)
@@ -164,6 +169,8 @@ def test_db_init_rebuild(clirunner, cfg_env, ls8_eo3_product) -> None:
     assert "Updated." in result.output
     # These debug log messages are not present in the Postgis driver.
     if cfg_env._name in ("datacube", "datacube3"):
+        from datacube.drivers.postgres.sql import SCHEMA_NAME
+
         # It should have recreated views and indexes.
         assert f"Dropping index: dix_{ls8_eo3_product.name}" in result.output
         assert f"Creating index: dix_{ls8_eo3_product.name}" in result.output
