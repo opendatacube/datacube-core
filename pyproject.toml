@@ -56,7 +56,7 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["setuptools>=69", "setuptools_scm[toml]>=8"]
+requires = ["setuptools>=69", "setuptools_scm[toml]>=8,<10"]
 # v69 includes py.typed files by default
 build-backend = "setuptools.build_meta"
 
