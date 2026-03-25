@@ -155,7 +155,6 @@ def test_db_init_noop(clirunner, cfg_env, ls8_eo3_product) -> None:
 def test_db_init_rebuild(clirunner, cfg_env, ls8_eo3_product) -> None:
     if cfg_env._name in ("datacube", "datacube3"):
         from datacube.drivers.postgres import _dynamic
-        from datacube.drivers.postgres.sql import SCHEMA_NAME
 
         # Set field creation logging to debug since we assert on debug output.
         _dynamic._LOG.setLevel(logging.DEBUG)
@@ -164,6 +163,8 @@ def test_db_init_rebuild(clirunner, cfg_env, ls8_eo3_product) -> None:
     assert "Updated." in result.output
     # These debug log messages are not present in the Postgis driver.
     if cfg_env._name in ("datacube", "datacube3"):
+        from datacube.drivers.postgres.sql import SCHEMA_NAME
+
         # It should have recreated views and indexes.
         assert f"Dropping index: dix_{ls8_eo3_product.name}" in result.output
         assert f"Creating index: dix_{ls8_eo3_product.name}" in result.output
