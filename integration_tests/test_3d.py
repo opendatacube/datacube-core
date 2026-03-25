@@ -233,6 +233,7 @@ def dataset_types(product_with_spectral_map, request):
 
 
 @pytest.mark.usefixtures("default_metadata_type")
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_missing_extra_dimensions(clirunner, invalid_dataset_type_paths) -> None:
     """Test error on invalid product definition."""
     for expected_msg, path in invalid_dataset_type_paths.items():

@@ -105,6 +105,7 @@ def test_add_example_dataset_types(
         assert result.exit_code == 0, f"Output: {result.output}"
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_error_returned_on_invalid(clirunner, index) -> None:
     assert _dataset_type_count(index) == 0
 
@@ -119,6 +120,7 @@ def test_error_returned_on_invalid(clirunner, index) -> None:
         assert _dataset_type_count(index) == 0, "Invalid document was added to DB"
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_config_check(clirunner, index, cfg_env) -> None:
     # This is not a very thorough check, we just check to see that
     # it prints something vaguely related and does not error-out.
@@ -130,10 +132,11 @@ def test_config_check(clirunner, index, cfg_env) -> None:
     assert str(cfg_env["dc_load_limit"]) in result.output
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_list_users_does_not_fail(clirunner, cfg_env, index) -> None:
     # We don't want to make assumptions about available users during test runs.
     # (They are host-global, not specific to the database)
-    # So we're just checking that it doesn't fail (and the SQL etc is well formed)
+    # So we're just checking that it doesn't fail (and the SQL etc. is well-formed)
     result = clirunner(["user", "list"])
     assert result.exit_code == 0, f"Output: {result.output}"
 
@@ -199,6 +202,7 @@ def test_db_init(clirunner, index) -> None:
         assert has_schema(index._db._engine, SCHEMA_NAME)
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_add_no_such_product(clirunner, index) -> None:
     result = clirunner(
         ["dataset", "add", "--dtype", "no_such_product", "/tmp"], expect_success=False
@@ -239,6 +243,7 @@ def example_user(clirunner, index, request):
             connection.drop_users([username])
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_user_creation(clirunner, example_user) -> None:
     """
     Add a user, grant them, delete them.

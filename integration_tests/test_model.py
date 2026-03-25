@@ -8,6 +8,7 @@ from datacube.model import Dataset, Product
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_crs_parse(indexed_ls5_scene_products: list[Product]) -> None:
     product = indexed_ls5_scene_products[2]
 
