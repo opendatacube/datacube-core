@@ -4,8 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 import pytest
 
+from datacube.scripts.product import LIST_OUTPUT_WRITERS
 
-def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs) -> None:
+
+def test_cli_product_subcommand(
+    index_empty, clirunner, dataset_add_configs, ext_eo3_mdt_path, eo3_product_paths
+) -> None:
     runner = clirunner(["product", "update"], verbose_flag=False, expect_success=False)
     assert "Usage:  [OPTIONS] [FILES]" in runner.output
     assert "Update existing products." in runner.output
@@ -51,6 +55,14 @@ def test_cli_product_subcommand(index_empty, clirunner, dataset_add_configs) -> 
     )
     assert '"ga_ls8c_ard_3" is not a valid Product name' in runner.output
     assert runner.exit_code == 1, f"Output: {runner.output}"
+
+    r = clirunner(["metadata", "add", ext_eo3_mdt_path])
+    assert r.exit_code == 0, f"Output: {r.output}"
+    r = clirunner(["product", "add", eo3_product_paths[0]])
+    assert r.exit_code == 0, f"Output: {r.output}"
+    for _format in LIST_OUTPUT_WRITERS:
+        r = clirunner(["product", "list", "-f", _format])
+        assert r.exit_code == 0, f"Output: {r.output}"
 
 
 def test_cli_metadata_subcommand(index_empty, clirunner, dataset_add_configs) -> None:
