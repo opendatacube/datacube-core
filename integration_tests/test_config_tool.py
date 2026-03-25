@@ -90,7 +90,7 @@ def test_add_example_dataset_types(
 
     expect_result = 0 if existing_mappings > 0 else 1
     result = clirunner(["-v", "product", "show"], expect_success=(expect_result == 0))
-    assert result.exit_code == expect_result
+    assert result.exit_code == expect_result, f"Output: {result.output}"
 
     if existing_mappings > 1:
         result = clirunner(
@@ -116,7 +116,7 @@ def test_error_returned_on_invalid(clirunner, index) -> None:
             catch_exceptions=True,
             expect_success=False,
         )
-        assert result.exit_code != 0, "Success return code for invalid document."
+        assert result.exit_code != 0, f"Output: {result.output}"
         assert _dataset_type_count(index) == 0, "Invalid document was added to DB"
 
 
