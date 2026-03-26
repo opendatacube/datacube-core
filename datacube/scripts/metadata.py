@@ -49,7 +49,6 @@ def add_metadata_types(index: Index, allow_exclusive_lock: bool, files: list) ->
             index.metadata_types.add(type_, allow_table_lock=allow_exclusive_lock)
         except InvalidDocException as e:
             _LOG.error(f"Invalid metadata type definition '{e}' in '{descriptor_path}'")
-            continue
 
 
 @this_group.command("update")
