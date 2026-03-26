@@ -109,16 +109,11 @@ def update_metadata_types(
             can_update, safe_changes, unsafe_changes = index.metadata_types.can_update(
                 type_, allow_unsafe_updates=allow_unsafe
             )
-            if can_update:
-                echo(
-                    f'Can update "{type_.name}": {len(list(unsafe_changes))} unsafe '
-                    f"changes, {len(list(safe_changes))} safe changes"
-                )
-            else:
-                echo(
-                    f'Cannot update "{type_.name}": {len(list(unsafe_changes))} unsafe'
-                    f" changes, {len(list(safe_changes))} safe changes"
-                )
+            echo(
+                f'Can{"" if can_update else "not"} update "{type_.name}": '
+                f"{len(list(unsafe_changes))} unsafe changes, "
+                f"{len(list(safe_changes))} safe changes"
+            )
 
 
 @this_group.command("show")
