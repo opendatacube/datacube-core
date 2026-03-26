@@ -48,8 +48,7 @@ def add_metadata_types(index: Index, allow_exclusive_lock: bool, files: list) ->
             type_ = index.metadata_types.from_doc(parsed_doc)
             index.metadata_types.add(type_, allow_table_lock=allow_exclusive_lock)
         except InvalidDocException as e:
-            _LOG.exception(e)
-            _LOG.error("Invalid metadata type definition: %s", descriptor_path)
+            _LOG.error(f"Invalid metadata type definition '{e}' in '{descriptor_path}'")
             continue
 
 
@@ -96,8 +95,7 @@ def update_metadata_types(
         try:
             type_ = index.metadata_types.from_doc(parsed_doc)
         except InvalidDocException as e:
-            _LOG.exception(e)
-            _LOG.error("Invalid metadata type definition: %s", descriptor_path)
+            _LOG.error(f"Invalid metadata type definition '{e}' in '{descriptor_path}'")
             continue
 
         if not dry_run:
