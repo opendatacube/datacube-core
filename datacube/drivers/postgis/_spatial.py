@@ -155,14 +155,15 @@ def ensure_spindex(
             # SpatialIndexRecord exists - actual index assumed to exist too.
             return
         role = "odc_admin" if with_permissions else None
-        with as_role(conn, role) as conn, Session(conn) as session:
+        with as_role(conn, role) as conn:
             # SpatialIndexRecord doesn't exist - create the index table...
-            orm_registry.metadata.create_all(engine, [sp_idx.__table__])  # type: ignore[attr-defined]
-            # ... and add a SpatialIndexRecord
-            session.add(
-                SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__)  # type: ignore[attr-defined]
-            )
-            session.commit()
+            orm_registry.metadata.create_all(conn, [sp_idx.__table__])  # type: ignore[attr-defined]
+            with Session(conn) as session:
+                # ... and add a SpatialIndexRecord
+                session.add(
+                    SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__)  # type: ignore[attr-defined]
+                )
+                session.commit()
 
             if with_permissions:
                 for command in [
@@ -173,9 +174,9 @@ def ensure_spindex(
                     # Full access to odc_admin
                     f"grant all on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_admin;",  # type: ignore[attr-defined]
                 ]:
-                    session.execute(text(command))
+                    conn.execute(text(command))
                 # Grant statements in PostgreSQL behave like transactions, so commit them.
-                session.commit()
+                conn.commit()
 
 
 def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> bool:
