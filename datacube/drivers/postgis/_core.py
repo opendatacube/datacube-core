@@ -26,8 +26,8 @@ from datacube.drivers.common_psql import (
     get_connection_info,
     has_schema,
 )
+from datacube.drivers.common_psql.sql import INSTALL_TRIGGER_SQL_TEMPLATE
 from datacube.drivers.postgis.sql import (
-    INSTALL_TRIGGER_SQL_TEMPLATE,
     SCHEMA_NAME,
     TYPES_INIT_SQL,
     UPDATE_TIMESTAMP_SQL,
