@@ -216,6 +216,8 @@ non_legit:
     index_driver: null
         """
         )
+    with pytest.raises(ConfigException):
+        _ = ODCConfig(raw_dict={"all": {}})
 
 
 def test_oldstyle_cfg() -> None:
