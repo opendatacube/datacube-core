@@ -5,7 +5,7 @@ Data Loading
 .. currentmodule:: datacube
 
 .. autosummary::
-   :nosignatures:
+   :signatures: none
    :toctree: generate/
 
    Datacube.load

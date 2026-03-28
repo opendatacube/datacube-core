@@ -12,7 +12,7 @@ When connected to an ODC Database, these methods are available for discovering i
 .. currentmodule:: datacube.index.abstract.AbstractProductResource
 
 .. autosummary::
-   :nosignatures:
+   :signatures: none
 
    can_update
    get
