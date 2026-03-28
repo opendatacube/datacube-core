@@ -547,6 +547,16 @@ def test_invalid_pg_url() -> None:
     )
     with pytest.raises(ConfigException):
         assert cfg["default"].index_driver == "postgres"
+    cfg = ODCConfig(
+        raw_dict={
+            "badurl": {
+                "db_url": "postgresql+psycopg://foo:password/with/slash@"
+                "server.subdomain.domain/mytestdb",
+            }
+        }
+    )
+    with pytest.raises(ConfigException):
+        _ = cfg["badurl"].db_url
 
 
 def test_pgurl_from_config(simple_dict) -> None:

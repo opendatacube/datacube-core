@@ -260,7 +260,12 @@ class PostgresURLOptionHandler(ODCOptionHandler):
             and not value.startswith("postgresql+psycopg://")
         ):
             raise ConfigException("Database URL is not a postgresql connection URL")
-        # Don't bother splitting up the url, we'd just have to put it back together again later
+        # Ensure the database URL can be parsed.
+        try:
+            for field in ["username", "password", "hostname", "port", "path"]:
+                getattr(components, field)
+        except ValueError as e:
+            raise ConfigException(str(e)) from None
         return value
 
     @override
