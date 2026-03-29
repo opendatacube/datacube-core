@@ -147,23 +147,22 @@ def ensure_spindex(
     engine: Engine, sp_idx: type[SpatialIndex], crs_id: int, with_permissions: bool
 ) -> None:
     """Ensure a Spatial Index exists in a particular database."""
-    with engine.connect() as conn:
-        results = Session(conn).execute(
+    with engine.connect() as conn, Session(conn) as session:
+        results = session.execute(
             select(SpatialIndexRecord.srid).where(SpatialIndexRecord.srid == crs_id)
         )
         for _ in results:
             # SpatialIndexRecord exists - actual index assumed to exist too.
             return
         role = "odc_admin" if with_permissions else None
-        with as_role(conn, role) as conn:
+        with as_role(session.connection(), role):
             # SpatialIndexRecord doesn't exist - create the index table...
             orm_registry.metadata.create_all(conn, [sp_idx.__table__])  # type: ignore[attr-defined]
-            with Session(conn) as session:
-                # ... and add a SpatialIndexRecord
-                session.add(
-                    SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__)  # type: ignore[attr-defined]
-                )
-                session.commit()
+            # ... and add a SpatialIndexRecord
+            session.add(
+                SpatialIndexRecord(srid=crs_id, table_name=sp_idx.__tablename__)  # type: ignore[attr-defined]
+            )
+            session.commit()
 
             if with_permissions:
                 for command in [
@@ -174,9 +173,9 @@ def ensure_spindex(
                     # Full access to odc_admin
                     f"grant all on {SCHEMA_NAME}.{sp_idx.__tablename__} to odc_admin;",  # type: ignore[attr-defined]
                 ]:
-                    conn.execute(text(command))
+                    session.execute(text(command))
                 # Grant statements in PostgreSQL behave like transactions, so commit them.
-                conn.commit()
+                session.commit()
 
 
 def drop_spindex(engine: Engine, sp_idx: type[SpatialIndex], crs_id: int) -> bool:
