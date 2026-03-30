@@ -13,9 +13,10 @@ from sqlalchemy import Index, select, text
 from sqlalchemy.engine.base import Connection, Engine
 from sqlalchemy.engine.mock import MockConnection
 
+from datacube.drivers.common_psql import as_role
 from datacube.drivers.postgres._fields import PgField
 
-from ._core import get_connection_info, schema_qualified
+from ._core import schema_qualified
 from ._schema import DATASET, METADATA_TYPE, PRODUCT
 from .sql import CreateView, pg_exists
 
@@ -46,35 +47,36 @@ def _ensure_view(
     # 'dv_' prefix: dynamic view. To distinguish from views that are created as part of the schema itself.
     view_name = schema_qualified(f"dv_{name}_dataset")
     exists = pg_exists(conn, view_name)
-    # This currently leaves a window of time without the views: it's primarily intended for development.
-    if exists and replace_existing:
-        _LOG.debug("Dropping view: %s (replace=%r)", view_name, replace_existing)
-        conn.execute(text(f"drop view {view_name}"))
-        exists = False
-    if not exists:
-        _LOG.debug("Creating view: %s", view_name)
-        select_fields = [
-            field.alchemy_expression.label(field.name)
-            for field in fields.values()
-            if not field.affects_row_selection
-        ]
-        conn.execute(
-            CreateView(
-                view_name,
-                select(*select_fields)
-                .select_from(DATASET.join(PRODUCT).join(METADATA_TYPE))
-                .where(where_expression),
+    with as_role(conn, "agdc_manage"):
+        # This currently leaves a window of time without the views: it's primarily intended for development.
+        if exists and replace_existing:
+            _LOG.debug("Dropping view: %s (replace=%r)", view_name, replace_existing)
+            conn.execute(text(f"drop view {view_name}"))
+            exists = False
+        if not exists:
+            _LOG.debug("Creating view: %s", view_name)
+            select_fields = [
+                field.alchemy_expression.label(field.name)
+                for field in fields.values()
+                if not field.affects_row_selection
+            ]
+            conn.execute(
+                CreateView(
+                    view_name,
+                    select(*select_fields)
+                    .select_from(DATASET.join(PRODUCT).join(METADATA_TYPE))
+                    .where(where_expression),
+                )
             )
-        )
-    elif exists and delete:
-        _LOG.debug(f"Dropping view: {view_name}")
-        conn.execute(text(f"drop view {view_name}"))
-    else:
-        _LOG.debug("View exists: %s (replace=%r)", view_name, replace_existing)
-    legacy_name = schema_qualified(f"{name}_dataset")
-    if pg_exists(conn, legacy_name):
-        _LOG.debug("Dropping legacy view: %s", legacy_name)
-        conn.execute(text(f"drop view {legacy_name}"))
+        elif exists and delete:
+            _LOG.debug(f"Dropping view: {view_name}")
+            conn.execute(text(f"drop view {view_name}"))
+        else:
+            _LOG.debug("View exists: %s (replace=%r)", view_name, replace_existing)
+        legacy_name = schema_qualified(f"{name}_dataset")
+        if pg_exists(conn, legacy_name):
+            _LOG.debug("Dropping legacy view: %s", legacy_name)
+            conn.execute(text(f"drop view {legacy_name}"))
 
 
 def check_dynamic_fields(
@@ -91,52 +93,49 @@ def check_dynamic_fields(
     """
     Check that we have expected indexes and views for the given fields
     """
-    _, user = get_connection_info(conn)
-    conn.execute(text("set role agdc_admin"))
-    # If this type has time/space fields, create composite indexes (as they are often searched together)
-    # We will probably move these into product configuration in the future.
-    composite_indexes = (
-        ("lat", "lon", "time"),
-        ("time", "lat", "lon"),
-        ("sat_path", "sat_row", "time"),
-    )
+    with as_role(conn, "agdc_admin"):
+        # If this type has time/space fields, create composite indexes (as they are often searched together)
+        # We will probably move these into product configuration in the future.
+        composite_indexes = (
+            ("lat", "lon", "time"),
+            ("time", "lat", "lon"),
+            ("sat_path", "sat_row", "time"),
+        )
 
-    all_exclusions = tuple(excluded_field_names)
-    for composite_names in composite_indexes:
-        # If all of the fields are available in this product, we'll create a composite index
-        # for them instead of individual indexes.
-        if contains_all(fields, *composite_names):
-            all_are_excluded = set(excluded_field_names) >= set(composite_names)
+        all_exclusions = tuple(excluded_field_names)
+        for composite_names in composite_indexes:
+            # If all of the fields are available in this product, we'll create a composite index
+            # for them instead of individual indexes.
+            if contains_all(fields, *composite_names):
+                all_are_excluded = set(excluded_field_names) >= set(composite_names)
+                _check_field_index(
+                    conn,
+                    [fields.get(f) for f in composite_names],
+                    name,
+                    dataset_filter,
+                    concurrently=concurrently,
+                    replace_existing=rebuild_indexes,
+                    # If all fields were excluded individually it should be removed.
+                    should_exist=not all_are_excluded,
+                    index_type="gist",
+                )
+                all_exclusions += composite_names
+
+        # Create indexes for the individual fields.
+        for field in fields.values():
+            if not field.postgres_index_type:
+                continue
             _check_field_index(
                 conn,
-                [fields.get(f) for f in composite_names],
+                [field],
                 name,
                 dataset_filter,
+                should_exist=field.indexed and (field.name not in all_exclusions),
                 concurrently=concurrently,
                 replace_existing=rebuild_indexes,
-                # If all fields were excluded individually it should be removed.
-                should_exist=not all_are_excluded,
-                index_type="gist",
             )
-            all_exclusions += composite_names
-
-    # Create indexes for the individual fields.
-    for field in fields.values():
-        if not field.postgres_index_type:
-            continue
-        _check_field_index(
-            conn,
-            [field],
-            name,
-            dataset_filter,
-            should_exist=field.indexed and (field.name not in all_exclusions),
-            concurrently=concurrently,
-            replace_existing=rebuild_indexes,
-        )
     # A view of all fields
-    conn.execute(text("set role agdc_manage"))
     _ensure_view(conn, fields, name, rebuild_view, dataset_filter, delete_view)
-    conn.execute(text(f"set role {user}"))
 
 
 def _check_field_index(
