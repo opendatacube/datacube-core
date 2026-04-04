@@ -108,13 +108,12 @@ class PgField(Field):
         return self.alchemy_expression
 
     @property
-    def sql_expression(self):
+    def sql_expression(self) -> str:
         """
         Get the raw SQL expression for this field as a string.
-        :rtype: str
         """
         return str(
-            self.alchemy_expression.compile(
+            self.alchemy_expression.compile(  # type:ignore[union-attr]
                 dialect=postgres.dialect(), compile_kwargs={"literal_binds": True}
             )
         )
@@ -719,11 +718,11 @@ class EqualsExpression(PgExpression):
         return self.field.search_alchemy_expression == self.value
 
     @override
-    def evaluate(self, ctx):
-        return self.field.evaluate(ctx) == self.value
+    def evaluate(self, ctx) -> bool:
+        return self.field.evaluate(ctx) == self.value  # type:ignore[attr-defined]
 
 
-def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
+def parse_fields(doc: dict, table_column) -> dict[str, PgDocField]:
     """
     Parse a field spec document into objects.
 
@@ -769,7 +768,7 @@ def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
     # No later field should have overridden string
     assert type_map["string"] == SimpleDocField
 
-    def _get_field(name: str, descriptor: dict, column) -> PgField:
+    def _get_field(name: str, descriptor: dict, column) -> PgDocField:
         """
         :param column: SQLAlchemy table column
         """

@@ -2,8 +2,9 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 from unittest import mock
 
@@ -11,7 +12,7 @@ import numpy as np
 import pytest
 import rasterio.warp
 from affine import Affine
-from odc.geo import wh_
+from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox
 from rasterio.warp import Resampling
 from typing_extensions import override
@@ -178,15 +179,15 @@ class FakeDatasetSource(DataSource):
         self.shape = shape
         self.nodata = nodata
 
-    def get_bandnumber(self, src):
+    def get_bandnumber(self, src) -> int | None:
         return self.bandnumber
 
-    def get_transform(self, shape):
+    def get_transform(self, shape) -> Affine:
         if self.transform is None:
             raise RuntimeError("No transform in the data and no fallback")
         return self.transform
 
-    def get_crs(self):
+    def get_crs(self) -> CRS:
         if self.crs is None:
             raise RuntimeError("No CRS in the data and no fallback")
         return self.crs
@@ -202,7 +203,7 @@ class FakeDatasetSource(DataSource):
 
 class BrokenBandDataSource(FakeBandDataSource):
     @override
-    def read(self, window=None, out_shape=None):
+    def read(self, window=None, out_shape=None) -> None:
         raise OSError("Read or write failed")
 
 
@@ -245,7 +246,7 @@ class FakeDataSource:
         self.data = np.full(self.shape, self.nodata, dtype="int16")
         self.data[:512, :512] = np.arange(512) + np.arange(512).reshape((512, 1))
 
-    def read(self, window=None, out_shape=None):
+    def read(self, window=None, out_shape=None) -> np.ndarray:
         data = self.data
 
         if window:
@@ -269,7 +270,7 @@ class FakeDataSource:
 
 def assert_same_read_results(
     source, dst_shape, dst_dtype, dst_transform, dst_nodata, dst_projection, resampling
-):
+) -> np.ndarray:
     expected = np.empty(dst_shape, dtype=dst_dtype)
     with source.open() as src:
         rasterio.warp.reproject(
@@ -302,7 +303,7 @@ def test_read_from_fake_source() -> None:
     data_source = FakeDataSource()
 
     @contextmanager
-    def fake_open():
+    def fake_open() -> Generator:
         yield data_source
 
     source = mock.Mock()
@@ -585,7 +586,7 @@ class TestRasterDataReading:
 
 
 @pytest.fixture
-def make_sample_netcdf(tmpdir):
+def make_sample_netcdf(tmpdir) -> tuple[str, GeoBox, Any]:
     """Make a test Geospatial NetCDF file, 4000x4000 int16 random data, in a variable named `sample`.
     Return the GDAL access string."""
     sample_nc = str(tmpdir.mkdir("netcdfs").join("sample.nc"))
@@ -602,11 +603,13 @@ def make_sample_netcdf(tmpdir):
             sample_data.dtype, nodata=-999, dims=geobox.dimensions, units=1
         )
     }
+    assert geobox.crs is not None
+    # FIXME: coordinates and variables have the wrong type.
     nco = create_netcdf_storage_unit(
         sample_nc,
         geobox.crs,
-        geobox.coordinates,
-        variables=variables,
+        geobox.coordinates,  # type:ignore[arg-type]
+        variables=variables,  # type:ignore[arg-type]
         variable_params={},
     )
 
@@ -618,7 +621,7 @@ def make_sample_netcdf(tmpdir):
 
 
 @pytest.fixture
-def make_sample_geotiff(tmpdir):
+def make_sample_geotiff(tmpdir) -> Callable:
     """Make a sample geotiff, filled with random data, and twice as tall as it is wide."""
 
     def internal_make_sample_geotiff(nodata=-999):
@@ -742,7 +745,7 @@ def test_netcdf_multi_part() -> None:
         },
     }
 
-    def ds(uri):
+    def ds(uri: str) -> RasterDatasetDataSource:
         d = Dataset(_EXAMPLE_PRODUCT, defn, uri=uri)
         return RasterDatasetDataSource(BandInfo(d, "green"))
 
@@ -754,8 +757,6 @@ def test_netcdf_multi_part() -> None:
 
 
 def test_rasterio_nodata(tmpdir) -> None:
-    from pathlib import Path
-
     from datacube.testutils.io import dc_read, write_gtiff
 
     roi = np.s_[10:20, 20:30]

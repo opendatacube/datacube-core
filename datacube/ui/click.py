@@ -11,7 +11,8 @@ import functools
 import logging
 import os
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
+from pathlib import Path
 from textwrap import dedent
 from typing import Literal
 
@@ -51,7 +52,7 @@ def compose(*functions):
     4
     """
 
-    def compose2(f, g):
+    def compose2(f: Callable, g: Callable) -> Callable:
         return lambda x: f(g(x))
 
     return functools.reduce(compose2, functions, lambda x: x)
@@ -130,7 +131,7 @@ def _log_queries(ctx, param, value) -> None:
         logging.getLogger("sqlalchemy.engine").setLevel("INFO")
 
 
-def _set_config(ctx, param, value):
+def _set_config(ctx, param, value: Sequence[str | Path]) -> Sequence[str | Path]:
     if value:
         if not any(os.path.exists(p) for p in value):
             raise ValueError(f"No specified config paths exist: {value}")

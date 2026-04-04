@@ -489,8 +489,9 @@ def test_testutils_geobox() -> None:
 
     meta = {"width": w, "height": h, "transform": transform, "crs": crs}
     gbox = rio_geobox(meta)
-
+    assert gbox is not None
     assert gbox.shape == shape
+    assert gbox.crs is not None
     assert gbox.crs.epsg == 3578
     assert gbox.transform == transform
 

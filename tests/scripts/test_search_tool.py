@@ -26,7 +26,7 @@ class MockFile:
     def flush(self) -> None:
         pass
 
-    def getvalue(self):
+    def getvalue(self) -> str:
         return "".join(self.vals)
 
 

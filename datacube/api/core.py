@@ -28,7 +28,13 @@ from typing_extensions import override
 from xarray.core.coordinates import DataArrayCoordinates
 
 from datacube.cfg import GeneralisedCfg, GeneralisedEnv, GeneralisedRawCfg, ODCConfig
-from datacube.model import Dataset, ExtraDimensions, ExtraDimensionSlices, Measurement
+from datacube.model import (
+    Dataset,
+    ExtraDimensions,
+    ExtraDimensionSlices,
+    Measurement,
+    Product,
+)
 from datacube.model.utils import xr_apply
 from datacube.storage import BandInfo, reproject_and_fuse
 from datacube.utils import ignore_exceptions_if
@@ -166,7 +172,7 @@ class Datacube:
         :return: A table or list of every product in the datacube.
         """
 
-        def _get_non_default(product, col):
+        def _get_non_default(product: Product, col):
             load_hints = product.load_hints()
             if load_hints:
                 if col == "crs":
@@ -914,8 +920,8 @@ class Datacube:
         gbt = GeoboxTiles(geobox, grid_chunks)
         dsk = {}
 
-        def chunk_datasets(dss, gbt):
-            out = {}
+        def chunk_datasets(dss: Iterable[Dataset], gbt) -> dict:
+            out: dict = {}
             for ds in dss:
                 dsk[_tokenize_dataset(ds)] = ds
                 for idx in gbt.tiles(ds.extent):
@@ -926,7 +932,7 @@ class Datacube:
             sources, lambda _, dss: chunk_datasets(dss, gbt), dtype=object
         )
 
-        def data_func(measurement, shape):
+        def data_func(measurement: Measurement, shape):
             if "extra_dim" in measurement:
                 chunks = needed_irr_chunks + extra_dim_chunks + grid_chunks
             else:
@@ -1219,7 +1225,9 @@ def per_band_load_data_settings(
     fuse_func: FuserFunc | str | Mapping[str, FuserFunc | None | str] | None = None,
     legacy_load: bool = True,
 ) -> list[Measurement]:
-    def with_resampling(m, resampling, default=None):
+    def with_resampling(
+        m: Measurement, resampling: Mapping[str, Resampling], default=None
+    ) -> Measurement:
         m = m.copy()
         m["resampling_method"] = resampling.get(m.name, default)
         return m
@@ -1249,13 +1257,13 @@ def per_band_load_data_settings(
         m["fuser"] = fuser.get(m.name, default)
         return m
 
-    if resampling is not None and not isinstance(resampling, dict):
+    if resampling is not None and not isinstance(resampling, (dict, Mapping)):
         resampling = {"*": resampling}
 
     if fuse_func is None or not isinstance(fuse_func, Mapping):
         fuse_func = {"*": fuse_func}
 
-    if isinstance(measurements, dict):
+    if isinstance(measurements, (dict, Mapping)):
         measurements = list(measurements.values())
 
     if resampling is not None:

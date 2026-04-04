@@ -142,7 +142,7 @@ def test_read_with_reproject(nearest_resampling, tmpdir) -> None:
 
     def _read(
         geobox, resampling=nearest_resampling, fallback_nodata=None, dst_nodata=-999
-    ):
+    ) -> tuple:
         with RasterFileDataSource(mm.path, 1, nodata=fallback_nodata).open() as rdr:
             yy = np.full(geobox.shape, dst_nodata, dtype=rdr.dtype)
             roi = read_time_slice(rdr, yy, geobox, resampling, dst_nodata)
@@ -285,7 +285,7 @@ def test_read_with_reproject_v2(nearest_resampling, tmpdir) -> None:
 
     def _read(
         geobox, resampling=nearest_resampling, fallback_nodata=-999, dst_nodata=-999
-    ):
+    ) -> tuple:
         rdr = open_reader(mm.path, nodata=fallback_nodata)
 
         yy = np.full(geobox.shape, dst_nodata, dtype=rdr.dtype)

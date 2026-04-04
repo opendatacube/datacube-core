@@ -137,7 +137,7 @@ def time_info(
     return extent
 
 
-def source_info(source_datasets):
+def source_info(source_datasets) -> dict:
     return {
         "lineage": {
             "source_datasets": {

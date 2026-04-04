@@ -12,7 +12,8 @@ from typing import Any
 import numpy as np
 import toolz
 import xarray as xr
-from odc.geo import wh_
+from affine import Affine
+from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox, zoom_to
 from odc.geo.geobox import pad as gbox_pad
 from odc.geo.warp import resampling_s2rio
@@ -40,17 +41,17 @@ class RasterFileDataSource(RasterioDataSource):
         self.transform = transform
 
     @override
-    def get_bandnumber(self, src):
+    def get_bandnumber(self, src) -> int | None:
         return self.bandnumber
 
     @override
-    def get_transform(self, shape):
+    def get_transform(self, shape) -> Affine:
         if self.transform is None:
             raise RuntimeError("No transform in the data and no fallback")
         return self.transform
 
     @override
-    def get_crs(self):
+    def get_crs(self) -> CRS | None:
         if self.crs is None:
             raise RuntimeError("No CRS in the data and no fallback")
         return self.crs
@@ -277,7 +278,7 @@ def native_load(
     # split datasets if they are in different grid/crs
     if "grid" in sources.coords:
 
-        def yield_by_grid():
+        def yield_by_grid() -> Generator:
             for srcs in _split_by_grid(sources):
                 _xx = _native_load_1(
                     srcs,
@@ -415,15 +416,13 @@ def write_gtiff(
     return SimpleNamespace(**meta)
 
 
-def dc_crs_from_rio(crs):
-    from odc.geo import CRS
-
+def dc_crs_from_rio(crs) -> CRS:
     if crs.is_epsg_code:
         return CRS(f"EPSG:{crs.to_epsg()}")
     return CRS(crs.wkt)
 
 
-def rio_geobox(meta):
+def rio_geobox(meta) -> GeoBox | None:
     """Construct geobox from src.meta of opened rasterio dataset"""
     if "crs" not in meta or "transform" not in meta:
         return None
@@ -441,7 +440,7 @@ def _fix_resampling(kw: dict) -> None:
         kw["resampling"] = resampling_s2rio(r)
 
 
-def rio_slurp_reproject(fname, geobox, dtype=None, dst_nodata=None, **kw):
+def rio_slurp_reproject(fname, geobox, dtype=None, dst_nodata=None, **kw) -> tuple:
     """
     Read image with reprojection
     """
@@ -515,7 +514,7 @@ def rio_slurp_read(fname, out_shape=None, **kw):
         return data, SimpleNamespace(**meta)
 
 
-def rio_slurp(fname, *args, **kw):
+def rio_slurp(fname, *args, **kw) -> tuple:
     """
     Dispatches to either:
 

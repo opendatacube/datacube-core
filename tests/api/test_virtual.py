@@ -17,6 +17,7 @@ from typing_extensions import override
 from datacube.model import Dataset, MetadataType, Product
 from datacube.virtual import (
     DEFAULT_RESOLVER,
+    Catalog,
     Transformation,
     VirtualProductException,
     catalog_from_yaml,
@@ -146,7 +147,7 @@ def example_grid_spatial() -> dict:
 
 
 @pytest.fixture
-def catalog():
+def catalog() -> Catalog:
     return catalog_from_yaml("""
         about: this is a test catalog of virtual products
         products:
@@ -235,18 +236,18 @@ def catalog():
 
 
 @pytest.fixture
-def cloud_free_nbar(catalog):
+def cloud_free_nbar(catalog: Catalog) -> Catalog:
     return catalog["cloud_free_nbar"]
 
 
-def load_data(*args, **kwargs):
+def load_data(*args, **kwargs) -> xr.Dataset:
     sources, geobox, measurements = args
 
     # this returns nodata bands which are good enough for this test
     return Datacube.create_storage(sources.coords, geobox, measurements)
 
 
-def group_datasets(*args, **kwargs):
+def group_datasets(*args, **kwargs) -> xr.DataArray:
     return Datacube.group_datasets(*args, **kwargs)
 
 

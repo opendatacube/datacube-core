@@ -14,7 +14,7 @@ class ClickHelpDirective(Directive):
     has_content = True
     required_arguments = 1
 
-    def run(self):
+    def run(self) -> list:
         root_cmd = self.arguments[0]
 
         env = self.state.document.settings.env
@@ -32,7 +32,7 @@ def find_script_callable_from_env(name, env):
     return getattr(module, function_name)
 
 
-def find_script_callable(name):
+def find_script_callable(name: str):
     from importlib.metadata import entry_points
 
     return next(iter(entry_points(group="console_scripts", name=name))).load()
@@ -79,7 +79,7 @@ class DatacubeDomain(Domain):
         pass  # avoid errors on parallel builds
 
 
-def setup(app):
+def setup(app) -> dict[str, bool]:
     app.add_config_value("click_utils_commands", {}, "html")
 
     app.add_domain(DatacubeDomain)

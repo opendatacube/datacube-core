@@ -919,7 +919,7 @@ class PostgisDbAPI:
         return select(time_ranges.c.time_period, count_query.label("dataset_count"))
 
     def update_search_index(
-        self, product_names: Sequence[str] = [], dsids: Sequence[DSID] = []
+        self, product_names: Sequence[str] = (), dsids: Sequence[DSID] = ()
     ) -> int:
         """
         Update search indexes
@@ -967,9 +967,9 @@ class PostgisDbAPI:
 
     def update_spindex(
         self,
-        crs_seq: Sequence[CRS] = [],
-        product_names: Sequence[str] = [],
-        dsids: Sequence[DSID] = [],
+        crs_seq: Sequence[CRS] = (),
+        product_names: Sequence[str] = (),
+        dsids: Sequence[DSID] = (),
     ) -> int:
         """
         Update a spatial index
@@ -1026,7 +1026,7 @@ class PostgisDbAPI:
         # Sort simple joins before qualified joins
         return sorted(join_args, key=len)
 
-    def get_product(self, id_):
+    def get_product(self, id_: int):
         return self._connection.execute(
             select(Product).where(Product.id == id_)
         ).first()
@@ -1150,7 +1150,7 @@ class PostgisDbAPI:
     def get_all_product_docs(self):
         return self._connection.execute(select(Product.definition))
 
-    def _get_products_for_metadata_type(self, id_) -> Sequence:
+    def _get_products_for_metadata_type(self, id_: DSID) -> Sequence:
         return self._connection.execute(
             select(Product)
             .where(Product.metadata_type_ref == id_)
@@ -1168,12 +1168,12 @@ class PostgisDbAPI:
         ):
             yield r[0]
 
-    def get_location(self, dataset_id):
+    def get_location(self, dataset_id: DSID):
         return self._connection.execute(
             select(Dataset.uri).where(Dataset.id == dataset_id)
         ).first()
 
-    def remove_location(self, dataset_id, uri: str) -> bool:
+    def remove_location(self, dataset_id: DSID, uri: str) -> bool:
         """
         Remove a dataset's location
 

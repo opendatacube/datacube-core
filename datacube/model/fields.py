@@ -59,7 +59,7 @@ class SimpleEqualsExpression(Expression):
         self.value = value
 
     @override
-    def evaluate(self, ctx):
+    def evaluate(self, ctx) -> bool:
         return self.field.extract(ctx) == self.value
 
 

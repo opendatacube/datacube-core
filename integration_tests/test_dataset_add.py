@@ -560,7 +560,7 @@ measurements:
     assert str(ds5.id) in r.output
 
 
-def dataset_archive_prep(dataset_add_configs, index_empty, clirunner):
+def dataset_archive_prep(dataset_add_configs, index_empty, clirunner) -> tuple:
     p = dataset_add_configs
     index = index_empty
 
@@ -569,7 +569,7 @@ def dataset_archive_prep(dataset_add_configs, index_empty, clirunner):
     clirunner(["dataset", "add", p.datasets])
 
     ds = load_dataset_definition(p.datasets)
-
+    assert ds is not None
     assert index.datasets.has(ds.id) is True
 
     return p, index, ds
@@ -781,7 +781,7 @@ def xtest_dataset_add_fails(clirunner, index) -> None:
 
 
 def test_resolve_uri() -> None:
-    def doc(loc=None):
+    def doc(loc=None) -> SimpleDocNav:
         return SimpleDocNav(
             {"location": loc, "id": "4d9fd75c-1309-4712-93b5-f0d9c6fdd8ab"}
         )

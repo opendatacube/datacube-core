@@ -159,7 +159,7 @@ def partition_map(
     Iterator of ``dask.Delayed`` objects.
     """
 
-    def lump_proc(dd):
+    def lump_proc(dd) -> list:
         return [func(d) for d in dd]
 
     proc = delayed(lump_proc, nout=1, pure=True)

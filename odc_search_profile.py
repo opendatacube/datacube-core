@@ -1,17 +1,21 @@
 import sys
+from collections.abc import Callable, Iterable
 from datetime import datetime, timezone
 from time import monotonic
 
 from odc.geo.geom import CRS, polygon
 
 from datacube import Datacube
-from datacube.model import Range
+from datacube.model import Dataset, Range
 
 
-def benchmark(test, dc, label, n):
+def benchmark(
+    test: Callable[[Datacube], Iterable], dc: Datacube, label: object, n: int
+) -> None:
     total = 0.0
     total_first = 0.0
     last_count = None
+    count = 0
     for i in range(n):
         start = monotonic()
         # count, first = test(dc)
@@ -27,6 +31,7 @@ def benchmark(test, dc, label, n):
         if last_count and count != last_count:
             print(f"Count mismatch in {label}: {count} vs {last_count}")
         last_count = count
+        assert first is not None  # For type checker.
         print(
             f"Test {label}#{i + 1}: {end - start}s   ({first - start}s to first returned dataset)"
         )
@@ -41,13 +46,13 @@ def benchmark(test, dc, label, n):
     print("-----------------------------------------------------------------")
 
 
-def test_less_than(dc):
+def test_less_than(dc: Datacube) -> Iterable[Dataset]:
     return dc.index.datasets.search(
         product="ga_ls8c_ard_3", cloud_cover=Range(None, 0.2)
     )
 
 
-def test_geospatial_search(dc):
+def test_geospatial_search(dc: Datacube) -> Iterable[Dataset]:
     return dc.index.datasets.search(
         product="ga_ls8c_ard_3",
         lat=Range(-30.0, -25.0),
@@ -55,17 +60,17 @@ def test_geospatial_search(dc):
     )
 
 
-def test_offset_geom(dc):
+def test_offset_geom(dc: Datacube) -> Iterable[Dataset]:
     if dc.index.supports_external_lineage:
         return dc.index.datasets.search(
             product="ga_ls8c_ard_3",
             geometry=polygon(
                 [
-                    [140.0, -25.0],
-                    [142.0, -25.0],
-                    [145.0, -30.0],
-                    [145.0, -30.0],
-                    [140.0, -25.0],
+                    (140.0, -25.0),
+                    (142.0, -25.0),
+                    (145.0, -30.0),
+                    (145.0, -30.0),
+                    (140.0, -25.0),
                 ],
                 crs=CRS("epsg:4326"),
             ),
@@ -77,7 +82,7 @@ def test_offset_geom(dc):
     )
 
 
-def test_temporal_search(dc):
+def test_temporal_search(dc: Datacube) -> Iterable[Dataset]:
     return dc.index.datasets.search(
         product="ga_ls8c_ard_3",
         time=Range(
@@ -87,7 +92,7 @@ def test_temporal_search(dc):
     )
 
 
-def main(args):
+def main(args) -> None:
     env = args.pop() if args else "datacube_real"
     print("Testing on database ", env)
     dc = Datacube(env=env)

@@ -11,6 +11,7 @@ from typing import TypeAlias
 
 import numpy as np
 from affine import Affine
+from odc.geo import CRS
 
 RasterShape: TypeAlias = tuple[int, int]  # pylint: disable=invalid-name
 RasterWindow: TypeAlias = tuple[slice, slice] | tuple[tuple[int, int], tuple[int, int]]  # pylint: disable=invalid-name
@@ -23,7 +24,7 @@ class GeoRasterReader(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def crs(self): ...  # pragma: no cover
+    def crs(self) -> CRS | None: ...  # pragma: no cover
 
     @property
     @abstractmethod

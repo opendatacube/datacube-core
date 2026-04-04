@@ -104,7 +104,7 @@ def test_task_app_year_splitting() -> None:
 
     one_millisecond = pd.Timedelta("1 ms")
 
-    def is_close(ts1, ts2, max_delta=one_millisecond):
+    def is_close(ts1, ts2, max_delta=one_millisecond) -> bool:
         return abs(pd.Timestamp(ts1) - pd.Timestamp(ts2)) < max_delta
 
     assert validate_year(None, None, None) is None
@@ -184,7 +184,7 @@ def test_task_app_cell_index(tmpdir) -> None:
 
 
 def test_wrap_task() -> None:
-    def task_with_args(task, a, b):
+    def task_with_args(task, a, b) -> tuple:
         return task, a, b
 
     assert task_with_args(1, 2, "a") == (1, 2, "a")

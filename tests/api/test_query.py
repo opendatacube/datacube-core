@@ -25,7 +25,7 @@ def mock_index():
 
 
 @pytest.fixture
-def test_geom():
+def test_geom() -> Geometry:
     from odc.geo.geom import polygon
 
     return polygon(
@@ -150,7 +150,7 @@ def test_query_kwargs_postgis(mock_index, test_geom) -> None:
     assert "geopolygon" in query.search_terms
 
 
-def format_test(start_out, end_out):
+def format_test(start_out, end_out) -> Range:
     return Range(
         pandas.to_datetime(start_out, utc=True).to_pydatetime(),
         pandas.to_datetime(end_out, utc=True).to_pydatetime(),

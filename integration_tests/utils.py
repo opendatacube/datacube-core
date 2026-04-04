@@ -5,6 +5,7 @@
 import logging
 import os
 import shutil
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
@@ -43,7 +44,7 @@ GEOTIFF: dict[str, Any] = {
 
 
 @contextmanager
-def alter_log_level(logger, level=logging.WARN):
+def alter_log_level(logger, level=logging.WARN) -> Generator[None]:
     previous_level = logger.getEffectiveLevel()
     logger.setLevel(level)
     yield
@@ -57,7 +58,7 @@ def assert_click_command(command, args) -> None:
     assert result.exit_code == 0, f"Output: {result.output}"
 
 
-def limit_num_measurements(dataset_type):
+def limit_num_measurements(dataset_type: dict) -> dict | None:
     if "measurements" not in dataset_type:
         return None
     measurements = dataset_type["measurements"]
@@ -171,7 +172,7 @@ def shrink_storage_type(storage_type: dict, variables, shrink_factors) -> dict:
     return storage_type
 
 
-def load_test_products(filename, metadata_type=None):
+def load_test_products(filename, metadata_type=None) -> list:
     dataset_types = load_yaml_file(filename)
     return [
         alter_product_for_testing(dataset_type, metadata_type=metadata_type)

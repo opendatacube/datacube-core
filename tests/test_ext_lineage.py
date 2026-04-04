@@ -3,6 +3,7 @@
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import os
+from uuid import UUID
 from uuid import uuid4 as random_uuid
 
 import pytest
@@ -41,7 +42,7 @@ def test_ltree_clsmethods(data_folder) -> None:
 
 
 @pytest.fixture
-def shared_tree_ids():
+def shared_tree_ids() -> dict[str, UUID]:
     return {
         "ard1": random_uuid(),
         "l1_1": random_uuid(),
@@ -52,7 +53,7 @@ def shared_tree_ids():
 
 
 @pytest.fixture
-def src_tree_ids(shared_tree_ids):
+def src_tree_ids(shared_tree_ids: dict[str, UUID]) -> dict[str, UUID]:
     return {
         "root": random_uuid(),
         "ard1": shared_tree_ids["ard1"],
@@ -64,7 +65,7 @@ def src_tree_ids(shared_tree_ids):
 
 
 @pytest.fixture
-def src_lineage_tree(src_tree_ids):
+def src_lineage_tree(src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = src_tree_ids
     direction = LineageDirection.SOURCES
     return LineageTree(
@@ -137,7 +138,7 @@ def test_lineage_serialisation(src_lineage_tree, src_tree_ids) -> None:
 
 
 @pytest.fixture
-def src_lineage_tree_diffhome(src_tree_ids):
+def src_lineage_tree_diffhome(src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = src_tree_ids
     direction = LineageDirection.SOURCES
     return LineageTree(
@@ -181,7 +182,7 @@ def src_lineage_tree_diffhome(src_tree_ids):
 
 
 @pytest.fixture
-def mixed_dir_lineage_tree(src_tree_ids):
+def mixed_dir_lineage_tree(src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = src_tree_ids
     direction = LineageDirection.SOURCES
     return LineageTree(
@@ -219,7 +220,7 @@ def mixed_dir_lineage_tree(src_tree_ids):
 
 
 @pytest.fixture
-def big_src_tree_ids(shared_tree_ids):
+def big_src_tree_ids(shared_tree_ids: dict[str, UUID]) -> dict[str, UUID]:
     ids = shared_tree_ids
     return {
         "root": random_uuid(),
@@ -237,7 +238,7 @@ def big_src_tree_ids(shared_tree_ids):
 
 
 @pytest.fixture
-def big_src_lineage_tree(big_src_tree_ids):
+def big_src_lineage_tree(big_src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = big_src_tree_ids
     direction = LineageDirection.SOURCES
     return LineageTree(
@@ -307,7 +308,7 @@ def big_src_lineage_tree(big_src_tree_ids):
 
 
 @pytest.fixture
-def classifier_mismatch(big_src_tree_ids):
+def classifier_mismatch(big_src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = big_src_tree_ids
     direction = LineageDirection.SOURCES
     return LineageTree(
@@ -377,7 +378,7 @@ def classifier_mismatch(big_src_tree_ids):
 
 
 @pytest.fixture
-def src_lineage_tree_with_bad_diamond(big_src_tree_ids):
+def src_lineage_tree_with_bad_diamond(big_src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = big_src_tree_ids
     direction = LineageDirection.SOURCES
     # This is a test tree with a malformed diamond relationship.

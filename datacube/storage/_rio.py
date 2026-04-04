@@ -32,7 +32,7 @@ from ._hdf5 import HDF5_LOCK
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def _rasterio_crs(src):
+def _rasterio_crs(src) -> CRS:
     if src.crs is None:
         raise ValueError("no CRS")
 
@@ -110,13 +110,13 @@ class RasterioDataSource(DataSource):
         self.nodata = nodata
         self._lock = lock
 
-    def get_bandnumber(self, src):
+    def get_bandnumber(self, src) -> int | None:
         raise NotImplementedError()
 
-    def get_transform(self, shape):
+    def get_transform(self, shape) -> Affine:
         raise NotImplementedError()
 
-    def get_crs(self):
+    def get_crs(self) -> CRS | None:
         raise NotImplementedError()
 
     @override
@@ -217,7 +217,7 @@ class RasterDatasetDataSource(RasterioDataSource):
         )
 
     @override
-    def get_crs(self):
+    def get_crs(self) -> CRS | None:
         return self._band_info.crs
 
 

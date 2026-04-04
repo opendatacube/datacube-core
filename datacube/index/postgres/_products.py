@@ -361,7 +361,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         :param query:
         """
 
-        def _listify(v):
+        def _listify(v) -> list:
             if isinstance(v, tuple):
                 return list(v)
             if isinstance(v, list):

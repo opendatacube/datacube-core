@@ -45,7 +45,7 @@ def _get_units(coord) -> str:
 
 
 def create_netcdf_storage_unit(
-    filename: Path,
+    filename: str | Path,
     crs: CRS,
     coordinates: DatasetCoordinates,
     variables: DataVariables,

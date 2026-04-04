@@ -103,17 +103,17 @@ new:
 
 
 @pytest.fixture
-def single_env_config():
+def single_env_config() -> str:
     return mk_single_env_config("+psycopg2")
 
 
 @pytest.fixture
-def single_env_config_psycopg3():
+def single_env_config_psycopg3() -> str:
     return mk_single_env_config("+psycopg")
 
 
 @pytest.fixture
-def single_env_config_no_connector():
+def single_env_config_no_connector() -> str:
     return mk_single_env_config("")
 
 
@@ -346,21 +346,21 @@ def test_noenv_overrides_in_text(simple_config, monkeypatch) -> None:
 
 
 @pytest.fixture
-def path_to_yaml_config():
+def path_to_yaml_config() -> str:
     import os.path
 
     return os.path.join(os.path.dirname(__file__), "cfg", "simple_cfg.yaml")
 
 
 @pytest.fixture
-def path_to_ini_config():
+def path_to_ini_config() -> str:
     import os.path
 
     return os.path.join(os.path.dirname(__file__), "cfg", "simple_cfg.ini")
 
 
 @pytest.fixture
-def path_to_different_config():
+def path_to_different_config() -> str:
     import os.path
 
     return os.path.join(os.path.dirname(__file__), "cfg", "different_cfg.yaml")

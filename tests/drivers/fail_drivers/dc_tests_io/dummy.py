@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-def fail_to_init():
+def fail_to_init() -> None:
     raise ValueError("This will always fail")
 
 
-def init_to_none():
+def init_to_none() -> None:
     return None

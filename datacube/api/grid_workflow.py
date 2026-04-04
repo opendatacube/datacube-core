@@ -298,7 +298,7 @@ class GridWorkflow:
 
         return cells
 
-    def _find_datasets(self, geopolygon, indexers):
+    def _find_datasets(self, geopolygon, indexers) -> tuple:
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
         if not query.product:
             raise RuntimeError("must specify a product")
