@@ -211,10 +211,13 @@ ODC users are simply postgres users that have been granted one of the roles disc
 above.  Users can be created and role memberships maintained using conventional
 Postgresql tools, but Datacube does provide some basic user management tools::
 
-   datacube user create {user|manage|admin} USER
+   datacube user create {user|manage|admin} USER [--passwd-stdin]
 
-creates a new login user with the selected permissions - the password for the new user
-is written to stdout.
+creates a new login user with the selected permissions. The password for the new user
+is written to stdout unless a password is provided through the ``--passwd-stdin``
+parameter::
+
+   echo "$PASSWORD_VAR" | datacube user create {user|manage|admin} USER --passwd-stdin
 
 Permissions for an existing user (or users) can be adjusted using::
 

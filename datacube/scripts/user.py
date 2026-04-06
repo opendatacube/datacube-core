@@ -7,6 +7,7 @@ import logging
 import sys
 from collections import OrderedDict
 from collections.abc import Iterable, Sequence
+from getpass import getpass
 
 import click
 import yaml
@@ -108,6 +109,9 @@ def grant(index: Index, role: str, users: Sequence[str]) -> None:
 @click.argument("role", type=click.Choice(USER_ROLES), nargs=1)
 @click.argument("user", nargs=1)
 @click.option("--description")
+@click.option(
+    "--passwd-stdin", is_flag=True, default=False, help="Read user password from stdin"
+)
 @ui.pass_index()
 @ui.pass_config
 def create_user(
@@ -116,11 +120,22 @@ def create_user(
     role: str,
     user: str,
     description: str,
+    passwd_stdin: bool,
 ) -> None:
     """
     Create a User
     """
-    password = gen_password(12)
+    if passwd_stdin:
+        if sys.stdin.isatty():
+            password = getpass()
+            second_password = getpass("Confirm password: ")
+            if password != second_password:
+                click.echo("ERROR: Passwords do not match", err=True)
+                sys.exit(1)
+        else:
+            password = sys.stdin.read().rstrip()
+    else:
+        password = gen_password(12)
     result = index.users.create_user(user, password, role, description=description)
 
     if result:
@@ -129,7 +144,7 @@ def create_user(
                 host=index.url_parts.hostname or "localhost",
                 port=index.url_parts.port,
                 username=user,
-                password=password,
+                password="password taken from stdin" if passwd_stdin else password,
             )
         )
     else:
