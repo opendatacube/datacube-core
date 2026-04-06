@@ -25,6 +25,7 @@ from datacube import __version__
 from datacube.api.core import Datacube
 from datacube.cfg import ConfigException, ODCConfig, ODCEnvironment
 from datacube.index import Index, index_connect
+from datacube.index.exceptions import NoIndexError
 from datacube.ui.expression import parse_expressions
 
 _LOG_FORMAT_STRING = "%(asctime)s %(process)d %(name)s %(levelname)s %(message)s"
@@ -291,7 +292,12 @@ def pass_index(app_name: str | None = None, expect_initialised: bool = True):
                     validate_connection=expect_initialised,
                 )
                 _LOG.debug("Connected to datacube index: %s", index)
-            except (OperationalError, ProgrammingError, ConfigException) as e:
+            except (
+                ConfigException,
+                NoIndexError,
+                OperationalError,
+                ProgrammingError,
+            ) as e:
                 handle_exception("Error Connecting to database: %s", e)
                 return None
 
