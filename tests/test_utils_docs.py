@@ -11,6 +11,7 @@ from collections import OrderedDict
 from collections.abc import Iterable
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from uuid import UUID, uuid4
 
 import boto3
@@ -132,7 +133,7 @@ def test_more_check_doc_unchanged() -> None:
 
 
 def test_without_lineage_sources() -> None:
-    def mk_sample(v):
+    def mk_sample(v) -> dict[str, Any]:
         return {
             "lineage": {"source_datasets": v, "a": "a", "b": "b"},
             "aa": "aa",
@@ -412,7 +413,7 @@ A:..:0
     assert len(dg) == 4
     assert [len(dss) for dss in dg] == [1, 3, 2, 1]
 
-    def to_set(xx):
+    def to_set(xx) -> set:
         return {x.id for x in xx}
 
     assert [{nu_map[n] for n in s} for s in ("A", "BCE", "CD", "D")] == [
@@ -507,7 +508,7 @@ def test_dedup() -> None:
 
 
 def test_remap_lineage_doc() -> None:
-    def mk_node(ds, sources):
+    def mk_node(ds, sources) -> dict:
         return dict(id=ds.id, **sources)
 
     ds = SimpleDocNav(gen_dataset_test_dag(3, force_tree=True))
@@ -545,7 +546,7 @@ def test_merge_with_nan() -> None:
 
 
 @pytest.fixture
-def sample_document_files(data_folder):
+def sample_document_files(data_folder: Path) -> list[tuple[str, int]]:
     files = [
         ("multi_doc.yml", 3),
         ("multi_doc.yml.gz", 3),
@@ -638,7 +639,7 @@ def test_doc_offset() -> None:
 
 
 def test_transform_object_tree() -> None:
-    def add_one(a):
+    def add_one(a: int) -> int:
         return a + 1
 
     assert transform_object_tree(add_one, [1, 2, 3]) == [2, 3, 4]

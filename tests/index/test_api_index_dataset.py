@@ -132,7 +132,7 @@ _EXAMPLE_PRODUCT = Product(
 )
 
 
-def _build_dataset(doc):
+def _build_dataset(doc) -> Dataset:
     sources = {
         name: _build_dataset(src)
         for name, src in doc["lineage"]["source_datasets"].items()
@@ -256,7 +256,10 @@ def test_index_already_ingested_source_dataset() -> None:
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
     datasets = DatasetResource(cast(PostgresDb, mock_db), cast(Index, mock_index))
-    datasets.add(_EXAMPLE_NBAR_DATASET.sources["ortho"])
+    assert _EXAMPLE_NBAR_DATASET.sources is not None
+    ds = _EXAMPLE_NBAR_DATASET.sources["ortho"]
+    assert ds is not None
+    datasets.add(ds)
 
     assert len(mock_db.dataset) == 2
     assert len(mock_db.dataset_source) == 1
@@ -270,9 +273,11 @@ def test_index_two_levels_already_ingested() -> None:
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
     datasets = DatasetResource(cast(PostgresDb, mock_db), cast(Index, mock_index))
-    datasets.add(
-        _EXAMPLE_NBAR_DATASET.sources["ortho"].sources["satellite_telemetry_data"]
-    )
+    assert _EXAMPLE_NBAR_DATASET.sources is not None
+    ds1 = _EXAMPLE_NBAR_DATASET.sources["ortho"]
+    assert ds1.sources is not None
+    ds = ds1.sources["satellite_telemetry_data"]
+    datasets.add(ds)
 
     assert len(mock_db.dataset) == 1
     assert len(mock_db.dataset_source) == 0

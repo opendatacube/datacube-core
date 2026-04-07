@@ -359,7 +359,7 @@ def documents_equal(d1: str | float | list | dict, d2) -> bool:
     return d1 == d2
 
 
-def transform_object_tree(f, o, key_transform=lambda k: k):
+def transform_object_tree(f, o: Any, key_transform=lambda k: k):
     """
     Apply a function (f) on all the values in the given document tree (o), returning a new document of
     the results.
@@ -517,7 +517,7 @@ class SimpleDocNav:
         return self._sources_path
 
     @property
-    def location(self):
+    def location(self) -> str | None:
         if self.is_stac:
             for link in self._doc.get("link", []):
                 if link.get("rel") == "self":
@@ -525,7 +525,7 @@ class SimpleDocNav:
         return self._doc.get("location", None)
 
     @property
-    def is_stac(self):
+    def is_stac(self) -> bool:
         return self._is_stac
 
     def without_location(self) -> SimpleDocNav:
@@ -590,7 +590,7 @@ class DocReader:
         return self.__dict__["_doc"]
 
     @property
-    def search_fields(self):
+    def search_fields(self) -> dict[str, Any]:
         return {
             name: field.extract(self.__dict__["_doc"])
             for name, field in self._search_fields.items()
@@ -598,7 +598,7 @@ class DocReader:
         }
 
     @property
-    def system_fields(self):
+    def system_fields(self) -> dict[str, Any]:
         return {
             name: get_doc_offset(field, self.__dict__["_doc"])
             for name, field in self._system_offsets.items()

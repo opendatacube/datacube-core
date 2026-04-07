@@ -187,7 +187,7 @@ def test_fetch_text() -> None:
     ):
         assert _fetch_text("http://localhost:8817") == "text"
 
-    def fake_urlopen(*args, **kw):
+    def fake_urlopen(*args, **kw) -> None:
         raise OSError("Always broken")
 
     with mock.patch("datacube.utils.aws.urlopen", fake_urlopen):

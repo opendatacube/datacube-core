@@ -2,8 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-
 from collections import OrderedDict
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -19,7 +19,7 @@ GEDI_PRODUCT = (
 
 
 @pytest.fixture
-def cover_z_product():
+def cover_z_product() -> Generator:
     """The GEDI product for cover_z."""
     for doc in read_documents(GEDI_PRODUCT):
         if doc[1]["name"] == "gedi_l2b_cover_z":

@@ -171,7 +171,7 @@ latex_documents = [
 numfig = True
 
 
-def setup(app):
+def setup(app) -> None:
     # Fix bug where code isn't being highlighted
     app.add_css_file("pygments.css")
     app.add_css_file("custom.css")

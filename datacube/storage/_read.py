@@ -78,7 +78,9 @@ def read_time_slice(
 
     scale = pick_read_scale(rr.scale, rdr)
 
-    def norm_read_args(roi, shape, extra_dim_index):
+    def norm_read_args(
+        roi, shape, extra_dim_index
+    ) -> tuple[tuple | None, tuple | None]:
         if roi_is_full(roi, rdr.shape):
             roi = None
 
@@ -191,7 +193,7 @@ def read_time_slice_v2(
 
     scale = pick_read_scale(rr.scale, rdr)
 
-    def norm_read_args(roi, shape):
+    def norm_read_args(roi, shape) -> tuple[tuple | None, tuple | None]:
         if roi_is_full(roi, rdr.shape):
             roi = None
 

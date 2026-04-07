@@ -58,9 +58,7 @@ class NameResolver:
 
         get = recipe.get
 
-        def lookup(
-            name: str | Callable | None, namespace=None, kind: str = "transformation"
-        ):
+        def lookup(name: str | Callable, namespace=None, kind: str = "transformation"):
             if callable(name):
                 return name
 
@@ -145,6 +143,7 @@ class NameResolver:
                 input_product is not None, f"no input for aggregate in {recipe}"
             )
             self._assert(group_by is not None, f"no group_by for aggregate in {recipe}")
+            assert group_by is not None  # For type checker.
 
             return from_validated_recipe(
                 dict(

@@ -367,7 +367,7 @@ class CRS:
         """
         transform = _make_crs_transform(self._crs, other._crs, always_xy=always_xy)
 
-        def result(x, y):
+        def result(x, y) -> tuple[Any, Any]:
             rx, ry = transform(x, y)
 
             if not isinstance(rx, numpy.ndarray) or not isinstance(ry, numpy.ndarray):
@@ -415,7 +415,7 @@ def wrap_shapely(suppress_geos_warnings: bool = False):
     objects that carry their CRSs.
     """
 
-    def wrap_func(method):
+    def wrap_func(method: Callable) -> Callable:
         @functools.wraps(method, assigned=("__doc__",))
         def wrapped(*args):
             first = args[0]
@@ -442,7 +442,7 @@ def force_2d(geojson: dict[str, Any]) -> dict[str, Any]:
     assert "type" in geojson
     assert "coordinates" in geojson
 
-    def is_scalar(x):
+    def is_scalar(x) -> bool:
         return isinstance(x, int | float)
 
     def go(x):
@@ -465,7 +465,7 @@ def densify(coords: CoordList, resolution: float) -> CoordList:
     """
     d2 = resolution**2
 
-    def short_enough(p1, p2):
+    def short_enough(p1: tuple[float, float], p2: tuple[float, float]) -> bool:
         return (p1[0] ** 2 + p2[0] ** 2) < d2
 
     new_coords = [coords[0]]
@@ -807,7 +807,7 @@ class Geometry:
     # Implement pickle/unpickle
     # It does work without these two methods, but gdal/ogr prints 'ERROR 1: Empty geometries cannot be constructed'
     # when unpickling, which is quite unpleasant.
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
         return {"geom": self.json, "crs": self.crs}
 
     def __setstate__(self, state):
@@ -861,17 +861,17 @@ def clip_lon180(geom: Geometry, tol: float = 1e-6) -> Geometry:
     """
     thresh = 180 - tol
 
-    def _clip_180(xx, clip):
+    def _clip_180(xx, clip) -> list:
         return [x if abs(x) < thresh else clip for x in xx]
 
-    def _pick_clip(xx: list[float]):
+    def _pick_clip(xx: list[float]) -> int:
         cc = 0
         for x in xx:
             if abs(x) < thresh:
                 cc += 1 if x > 0 else -1
         return 180 if cc >= 0 else -180
 
-    def transformer(xx, yy):
+    def transformer(xx, yy) -> tuple[list, Any]:
         clip = _pick_clip(xx)
         return _clip_180(xx, clip), yy
 

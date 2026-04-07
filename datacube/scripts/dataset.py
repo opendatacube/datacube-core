@@ -10,6 +10,7 @@ import sys
 import uuid
 from collections import OrderedDict
 from collections.abc import (
+    Callable,
     Generator,
     Iterable,
     Mapping,
@@ -27,7 +28,7 @@ import yaml.resolver
 from click import echo
 
 from datacube.index import Index
-from datacube.index.abstract import DatasetTuple
+from datacube.index.abstract import DSID, DatasetTuple
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
@@ -44,7 +45,7 @@ from datacube.utils.uris import uri_resolve
 _LOG: logging.Logger = logging.getLogger("datacube-dataset")
 
 
-def report_old_options(mapping):
+def report_old_options(mapping: Mapping[str, str]) -> Callable[[str], str]:
     def maybe_remap(s):
         if s in mapping:
             _LOG.warning(
@@ -609,7 +610,7 @@ def info_cmd(
     # Using an array wrapper to get around the lack of "nonlocal" in py2
     missing_datasets = [0]
 
-    def get_datasets(ids):
+    def get_datasets(ids: Iterable[DSID]) -> Generator[Dataset]:
         for id_ in ids:
             dataset = index.datasets.get(id_, include_sources=show_sources)
             if dataset:
@@ -955,10 +956,12 @@ def restore_cmd(
         to_process = {d for d in to_process if d.is_archived}
         _LOG.debug("%s selected are archived", len(to_process))
 
-        def within_tolerance(dataset):
+        def within_tolerance(dataset: Dataset) -> bool:
             if not dataset.is_archived:
                 return False
+            assert dataset.archived_time is not None
             t = target_dataset.archived_time
+            assert t is not None
             return (t - tolerance) <= dataset.archived_time <= (t + tolerance)
 
         # Only those archived around the same time as the target.

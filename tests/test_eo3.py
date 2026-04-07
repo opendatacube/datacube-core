@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from collections.abc import Mapping
 from copy import deepcopy
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -22,7 +23,7 @@ from datacube.index.eo3 import (
     prep_eo3,
 )
 from datacube.metadata._stacconverter import infer_eo_product
-from datacube.model import Dataset
+from datacube.model import Dataset, Product
 from datacube.testutils import mk_sample_product
 from datacube.utils.documents import InvalidDocException, parse_yaml
 
@@ -62,17 +63,17 @@ lineage: {}
 
 
 @pytest.fixture
-def sample_doc():
+def sample_doc() -> Mapping[str, Any]:
     return parse_yaml(SAMPLE_DOC)
 
 
 @pytest.fixture
-def sample_doc_180():
+def sample_doc_180() -> Mapping[str, Any]:
     return parse_yaml(SAMPLE_DOC_180)
 
 
 @pytest.fixture
-def eo3_product(eo3_metadata):
+def eo3_product(eo3_metadata) -> Product:
     return mk_sample_product("eo3_product", metadata_type=eo3_metadata)
 
 

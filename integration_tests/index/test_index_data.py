@@ -10,6 +10,7 @@ Integration tests: these depend on a local Postgres instance.
 
 import copy
 import datetime
+from datetime import timezone
 from pathlib import Path
 from uuid import UUID
 
@@ -797,8 +798,8 @@ def test_index_dataset_with_location(
         )
 
 
-def utc_now():
-    return datetime.datetime.now(datetime.UTC)
+def utc_now() -> datetime.datetime:
+    return datetime.datetime.now(timezone.utc)
 
 
 def test_bulk_reads_transaction(

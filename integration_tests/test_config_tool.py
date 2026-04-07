@@ -8,6 +8,7 @@ Module
 
 import logging
 import random
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -29,7 +30,7 @@ INVALID_MAPPING_DOCS = list(
 assert len(INVALID_MAPPING_DOCS) > 0
 
 
-def _dataset_type_count(index):
+def _dataset_type_count(index) -> int:
     with index._active_connection() as connection:
         return len(list(connection.get_all_products()))
 
@@ -228,7 +229,7 @@ def test_add_no_such_product(clirunner, index) -> None:
         ("test_user_invalid_desc_{n}", "Invalid \"' chars in description"),
     ]
 )
-def example_user(clirunner, index, request):
+def example_user(clirunner, index, request) -> Generator[tuple[str, str | None]]:
     username, description = request.param
 
     username = username.format(n=random.randint(111111, 999999))
@@ -291,7 +292,7 @@ def test_user_creation_passwd_stdin(clirunner, index, tmp_path: Path) -> None:
     assert_no_user(clirunner, username)
 
 
-def assert_user_with_role(clirunner, role, user_name: str) -> None:
+def assert_user_with_role(clirunner, role: str, user_name: str) -> None:
     result = clirunner(["user", "list"])
     assert "{}{}".format("user: ", user_name) in result.output
 

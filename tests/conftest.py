@@ -10,6 +10,7 @@ tests in this and sub packages.
 """
 
 import os
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,7 @@ import pystac
 import pystac.collection
 import pystac.item
 import pytest
+import xarray as xr
 from affine import Affine
 from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox
@@ -49,7 +51,7 @@ AWS_ENV_VARS = [
 
 
 @pytest.fixture
-def example_gdal_path(data_folder):
+def example_gdal_path(data_folder: str) -> str:
     """Return the pathname of a sample geotiff file
 
     Use this fixture by specifying an argument named 'example_gdal_path' in your
@@ -59,25 +61,25 @@ def example_gdal_path(data_folder):
 
 
 @pytest.fixture
-def no_crs_gdal_path(data_folder):
+def no_crs_gdal_path(data_folder: str) -> str:
     """Return the pathname of a GDAL file that doesn't contain a valid CRS."""
     return str(os.path.join(data_folder, "no_crs_ds.tif"))
 
 
 @pytest.fixture
-def data_folder():
+def data_folder() -> str:
     """Return a string path to the location `test/data`"""
     return os.path.join(os.path.split(os.path.realpath(__file__))[0], "data")
 
 
 @pytest.fixture
-def example_netcdf_path(request):
+def example_netcdf_path(request) -> str:
     """Return a string path to `sample_tile.nc` in the test data dir"""
     return str(request.fspath.dirpath("data/sample_tile.nc"))
 
 
 @pytest.fixture
-def non_geo_dataset_file(data_folder):
+def non_geo_dataset_file(data_folder: str) -> str:
     return os.path.join(data_folder, "ds_non-geo.yaml")
 
 
@@ -88,7 +90,7 @@ def non_geo_dataset_doc(non_geo_dataset_file):
 
 
 @pytest.fixture
-def eo_dataset_file(data_folder):
+def eo_dataset_file(data_folder: str) -> str:
     return os.path.join(data_folder, "ds_eo.yaml")
 
 
@@ -99,7 +101,7 @@ def eo_dataset_doc(eo_dataset_file):
 
 
 @pytest.fixture
-def eo3_dataset_file(data_folder):
+def eo3_dataset_file(data_folder: str) -> str:
     return os.path.join(data_folder, "ds_eo3.yaml")
 
 
@@ -110,18 +112,18 @@ def eo3_dataset_doc(eo3_dataset_file):
 
 
 @pytest.fixture
-def eo3_metadata_file(data_folder):
+def eo3_metadata_file(data_folder: str) -> str:
     return os.path.join(data_folder, "eo3.yaml")
 
 
 @pytest.fixture
-def eo3_metadata(eo3_metadata_file):
+def eo3_metadata(eo3_metadata_file) -> MetadataType:
     (_, doc), *_ = read_documents(eo3_metadata_file)
     return MetadataType(doc)
 
 
 @pytest.fixture
-def eo3_dataset_s2(eo3_metadata):
+def eo3_dataset_s2(eo3_metadata) -> Dataset:
     ds_doc = {
         "$schema": "https://schemas.opendatacube.org/dataset",
         "id": "8b0e2770-5d4e-5238-8995-4aa91691ab85",
@@ -313,7 +315,7 @@ def ls_scene_metadata(data_folder) -> MetadataType:
 
 
 @pytest.fixture
-def ls5_nbar_product(data_folder, ls_scene_metadata) -> Product:
+def ls5_nbar_product(data_folder: str, ls_scene_metadata) -> Product:
     (_, doc), *_ = read_documents(
         os.path.join(data_folder, "ls5_nbar_scene.odc-product.yaml")
     )
@@ -321,7 +323,7 @@ def ls5_nbar_product(data_folder, ls_scene_metadata) -> Product:
 
 
 @pytest.fixture
-def ls5_nbar_dataset(data_folder, ls5_nbar_product) -> Dataset:
+def ls5_nbar_dataset(data_folder: str, ls5_nbar_product) -> Dataset:
     (_, doc), *_ = read_documents(
         os.path.join(data_folder, "ls5_nbar_scene.odc-metadata.yaml")
     )
@@ -337,7 +339,7 @@ def ls8_fc_albers_product(data_folder) -> Product:
 
 
 @pytest.fixture
-def ls8_fc_albers_dataset(data_folder, ls8_fc_albers_product) -> Dataset:
+def ls8_fc_albers_dataset(data_folder: str, ls8_fc_albers_product) -> Dataset:
     (_, doc), *_ = read_documents(
         os.path.join(data_folder, "ls8_fc_albers.odc-metadata.yaml")
     )
@@ -352,7 +354,7 @@ netcdf_num = 1
 
 
 @pytest.fixture
-def tmpnetcdf_filename(tmpdir):
+def tmpnetcdf_filename(tmpdir) -> str:
     """Return a generated filename for a non-existent netcdf file"""
     global netcdf_num
     filename = str(tmpdir.join(f"testfile_np_{netcdf_num}.nc"))
@@ -361,7 +363,7 @@ def tmpnetcdf_filename(tmpdir):
 
 
 @pytest.fixture
-def odc_style_xr_dataset(request):
+def odc_style_xr_dataset(request) -> xr.Dataset:
     """An xarray.Dataset with ODC style coordinates and CRS
 
     Contains an EPSG:4326, single variable 'B10' of 100x100 int16 pixels."""
@@ -376,7 +378,7 @@ def odc_style_xr_dataset(request):
 
 
 @pytest.fixture(scope="session")
-def workdir(tmpdir_factory):
+def workdir(tmpdir_factory) -> Path:
     return tmpdir_factory.mktemp("workdir")
 
 
@@ -394,7 +396,7 @@ GEO_PROJ = (
 
 
 @pytest.fixture(scope="module")
-def dask_client():
+def dask_client() -> Generator:
     from distributed import Client
 
     client = Client(processes=False, threads_per_worker=1, dashboard_address=None)
@@ -431,13 +433,13 @@ def partial_proj_stac() -> pystac.Item:
 
 
 @pytest.fixture
-def no_bands_stac(partial_proj_stac) -> pystac.Item:
+def no_bands_stac(partial_proj_stac: pystac.Item) -> pystac.Item:
     partial_proj_stac.assets.clear()
     return partial_proj_stac
 
 
 @pytest.fixture
-def usgs_landsat_stac_v1():
+def usgs_landsat_stac_v1() -> pystac.Item:
     return pystac.item.Item.from_file(
         str(TEST_DATA_FOLDER.joinpath(USGS_LANDSAT_STAC_v1))
     )

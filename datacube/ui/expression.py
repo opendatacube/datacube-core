@@ -24,6 +24,7 @@ from lark import Lark, Transformer, v_args
 
 from datacube.api.query import _time_to_search_dims
 from datacube.model import Range
+from datacube.utils.generic import T
 
 search_grammar = r"""
     start: expression*
@@ -82,7 +83,7 @@ search_grammar = r"""
 """
 
 
-def identity(x):
+def identity(x: T) -> T:
     return x
 
 

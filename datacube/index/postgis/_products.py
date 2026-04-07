@@ -365,7 +365,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
         """
 
-        def _listify(v):
+        def _listify(v) -> list:
             if isinstance(v, tuple):
                 return list(v)
             if isinstance(v, list):

@@ -9,7 +9,7 @@ Common methods for index integration tests.
 import itertools
 import os
 import warnings
-from collections.abc import Generator, Iterable, Sequence
+from collections.abc import Callable, Generator, Iterable, Sequence
 from copy import copy, deepcopy
 from datetime import timedelta
 from pathlib import Path
@@ -528,7 +528,7 @@ def mem_index_eo3(
     extended_eo3_metadata_type_doc,
     extended_eo3_product_doc,
     base_eo3_product_doc,
-):
+) -> Datacube:
     mem_index_fresh.index.metadata_types.add(
         mem_index_fresh.index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
     )
@@ -538,14 +538,16 @@ def mem_index_eo3(
 
 
 @pytest.fixture
-def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc):
+def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc) -> tuple:
     (doc_ls8, loc_ls8), (doc_wo, loc_wo) = datasets_with_unembedded_lineage_doc
     from datacube.index.hl import Doc2Dataset
 
     resolver = Doc2Dataset(mem_index_eo3.index)
     ds_ls8, _ = resolver(doc_ls8, loc_ls8)
+    assert ds_ls8 is not None
     mem_index_eo3.index.datasets.add(ds_ls8)
     ds_wo, _ = resolver(doc_wo, loc_wo)
+    assert ds_wo is not None
     mem_index_eo3.index.datasets.add(ds_wo)
     return mem_index_eo3, ds_ls8.id, ds_wo.id
 
@@ -933,7 +935,9 @@ def default_metadata_type_doc() -> dict:
 
 
 @pytest.fixture
-def eo3_metadata_type_docs(eo3_base_metadata_type_doc, extended_eo3_metadata_type_doc):
+def eo3_metadata_type_docs(
+    eo3_base_metadata_type_doc, extended_eo3_metadata_type_doc
+) -> list:
     return [eo3_base_metadata_type_doc, extended_eo3_metadata_type_doc]
 
 
@@ -1049,7 +1053,7 @@ def clirunner(datacube_env_name: str):
 
 
 @pytest.fixture
-def clirunner_raw():
+def clirunner_raw() -> Callable[..., Result]:
     def _run_cli(
         opts: Sequence[str],
         catch_exceptions: bool = False,
@@ -1074,7 +1078,7 @@ def clirunner_raw():
 
 
 @pytest.fixture
-def dataset_add_configs():
+def dataset_add_configs() -> SimpleNamespace:
     B = INTEGRATION_TESTS_DIR / "data" / "dataset_add"
     return SimpleNamespace(
         metadata=str(B / "metadata.yml"),

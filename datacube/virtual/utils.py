@@ -61,5 +61,5 @@ def merge_search_terms(original, override, keys=None) -> dict:
     }
 
 
-def qualified_name(func):
+def qualified_name(func) -> str:
     return func.__module__ + "." + func.__qualname__

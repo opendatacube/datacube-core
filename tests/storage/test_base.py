@@ -10,7 +10,7 @@ from datacube.testutils import mk_sample_dataset, suppress_deprecations
 
 
 def test_band_layer() -> None:
-    def t(band=None, layer=None):
+    def t(band=None, layer=None) -> tuple[int | None, str | None]:
         return _get_band_and_layer({"band": band, "layer": layer})
 
     assert t() == (None, None)
@@ -88,7 +88,7 @@ def test_band_info() -> None:
 
 
 def test_band_info_with_url_mangling() -> None:
-    def url_mangler(raw):
+    def url_mangler(raw: str) -> str:
         return raw.replace("tmp", "tmp/mangled")
 
     bands = [

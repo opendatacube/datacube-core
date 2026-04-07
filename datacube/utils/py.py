@@ -15,7 +15,7 @@ from datacube.migration import ODC2DeprecationWarning
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def import_function(func_ref):
+def import_function(func_ref: str) -> Callable:
     """
     Import a function available in the python path.
 

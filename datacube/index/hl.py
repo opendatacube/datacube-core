@@ -83,7 +83,9 @@ def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
     def matches(doc: Mapping[str, Any], rule: ProductRule) -> bool:
         return changes.contains(doc, rule.signature)
 
-    def single_product_matcher(rule):
+    def single_product_matcher(
+        rule: ProductRule,
+    ) -> Callable[[Mapping[str, Any]], Product]:
         def matcher(doc: Mapping[str, Any]) -> Product:
             if matches(doc, rule):
                 return rule.product

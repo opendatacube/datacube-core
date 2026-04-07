@@ -5,6 +5,7 @@
 import lark
 import numpy
 
+from datacube.utils.generic import T
 from datacube.utils.masking import valid_data_mask
 
 
@@ -113,7 +114,7 @@ class MaskEvaluator(lark.Transformer):
     eq = ne = le = ge = lt = gt = or_
     add = sub = mul = truediv = floordiv = mod = pow = lshift = rshift = or_
 
-    def not_(self, value):
+    def not_(self, value: T) -> T:
         return value
 
     neg = pos = inv = not_
