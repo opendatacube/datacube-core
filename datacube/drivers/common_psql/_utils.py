@@ -55,6 +55,7 @@ def as_role(conn: Connection, role: str | None) -> Generator[Connection]:
     Context manager to temporarily switch database roles.
 
     E.g.::
+
         with engine.connect() as conn:
             # This is executed as the session role configured into the engine
             conn.execute(query1)
