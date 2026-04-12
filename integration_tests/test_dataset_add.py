@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
 import math
 
@@ -9,9 +11,7 @@ import pytest
 import toolz
 import yaml
 
-from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
-from datacube.model import MetadataType
 from datacube.scripts.dataset import _resolve_uri
 from datacube.testutils import (
     dataset_maker,
@@ -20,6 +20,11 @@ from datacube.testutils import (
     write_files,
 )
 from datacube.utils import SimpleDocNav
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.index import Index
+    from datacube.model import MetadataType
 
 logger = logging.getLogger(__name__)
 

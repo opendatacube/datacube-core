@@ -8,14 +8,19 @@ Tools for masking data based on a bit-mask variable with attached definition.
 The main functions are `make_mask(variable)` `describe_flags(variable)`
 """
 
+from __future__ import annotations
+
 from collections.abc import Iterable
 
 import pandas
 import xarray
-from pandas.core.frame import DataFrame
 from xarray import DataArray, Dataset
 
 from datacube.utils.math import valid_mask
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from pandas.core.frame import DataFrame
 
 FLAGS_ATTR_NAME = "flags_definition"
 

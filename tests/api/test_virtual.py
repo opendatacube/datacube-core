@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import warnings
 from copy import deepcopy
 from datetime import datetime
@@ -17,7 +19,6 @@ from typing_extensions import override
 from datacube.model import Dataset, MetadataType, Product
 from datacube.virtual import (
     DEFAULT_RESOLVER,
-    Catalog,
     Transformation,
     VirtualProductException,
     catalog_from_yaml,
@@ -26,6 +27,10 @@ from datacube.virtual import (
 from datacube.virtual.expr import FormulaEvaluator, evaluate_data, formula_parser
 from datacube.virtual.impl import Datacube
 from datacube.virtual.transformations import fiscal_year
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.virtual import Catalog
 
 ##########################################
 # Set up some common test data and fixtures

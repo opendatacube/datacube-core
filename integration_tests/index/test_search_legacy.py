@@ -6,6 +6,8 @@
 Module
 """
 
+from __future__ import annotations
+
 import copy
 import datetime
 import uuid
@@ -22,14 +24,18 @@ from sqlalchemy.dialects.postgresql.ranges import Range as SQLARange
 import datacube.index.postgis.index
 import datacube.index.postgres.index
 from datacube import Datacube
-from datacube.cfg import ODCEnvironment
 from datacube.cfg.opt import _DEFAULT_DB_USER
-from datacube.index import Index
-from datacube.model import Dataset, MetadataType, Product, Range
+from datacube.model import Range
 from datacube.testutils import load_dataset_definition, suppress_deprecations
 from datacube.utils.dates import tz_as_utc
 
 from .search_utils import _cli_csv_search, _csv_search_raw, _load_product_query
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.cfg import ODCEnvironment
+    from datacube.index import Index
+    from datacube.model import Dataset, MetadataType, Product
 
 # These tests use non-EO3 metadata, so will not work with the postgis driver.
 # Mark all with @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))

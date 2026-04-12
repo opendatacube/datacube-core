@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import datetime
 from uuid import uuid4
 
@@ -9,10 +11,13 @@ import pytest
 
 import datacube.index.memory.index
 from datacube import Datacube
-from datacube.cfg import ODCEnvironment
 from datacube.model import Range
 from datacube.testutils import gen_dataset_test_dag, suppress_deprecations
 from datacube.utils import InvalidDocException, SimpleDocNav, read_documents
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.cfg import ODCEnvironment
 
 
 def test_init_memory(in_memory_config: ODCEnvironment) -> None:

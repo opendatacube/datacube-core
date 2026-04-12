@@ -6,28 +6,37 @@
 Common functions for click-based cli scripts.
 """
 
+from __future__ import annotations
+
 import copy
 import functools
 import logging
 import os
 import sys
-from collections.abc import Callable, Mapping, Sequence
-from pathlib import Path
 from textwrap import dedent
 from typing import Literal
 
 import click
-from click import Command
 from lark.exceptions import UnexpectedEOF
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from typing_extensions import override
 
 from datacube import __version__
 from datacube.api.core import Datacube
-from datacube.cfg import ConfigException, ODCConfig, ODCEnvironment
-from datacube.index import Index, index_connect
+from datacube.cfg import ConfigException, ODCConfig
+from datacube.index import index_connect
 from datacube.index.exceptions import NoIndexError
 from datacube.ui.expression import parse_expressions
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping, Sequence
+    from pathlib import Path
+
+    from click import Command
+
+    from datacube.cfg import ODCEnvironment
+    from datacube.index import Index
 
 _LOG_FORMAT_STRING = "%(asctime)s %(process)d %(name)s %(levelname)s %(message)s"
 CLICK_SETTINGS: dict[str, list[str]] = {"help_option_names": ["-h", "--help"]}

@@ -2,19 +2,27 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping
 from time import monotonic
-from uuid import UUID
 
 from typing_extensions import override
 
-from datacube.model import LineageDirection, LineageRelation, LineageTree
-from datacube.model.lineage import LineageRelations
 from datacube.utils import report_to_user
 
-from ._types import DSID, BatchStatus
+from ._types import BatchStatus
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+    from uuid import UUID
+
+    from datacube.model import LineageDirection, LineageRelation, LineageTree
+    from datacube.model.lineage import LineageRelations
+
+    from ._types import DSID
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

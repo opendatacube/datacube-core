@@ -2,18 +2,23 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import csv
-from collections.abc import Generator, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from gzip import GzipFile
 from io import BytesIO
 from types import SimpleNamespace
 
-from botocore.client import BaseClient
-
 from datacube.utils import json
 
 from . import s3_client, s3_fetch, s3_ls_dir
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+
+    from botocore.client import BaseClient
 
 
 def find_latest_manifest(prefix: str, s3: BaseClient | None, **kw) -> str:

@@ -2,16 +2,21 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
-from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
 from typing_extensions import override
 
-from datacube.drivers.postgis import PostGisDb
 from datacube.drivers.postgis._api import PostgisDbAPI
 from datacube.index.abstract import AbstractTransaction
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from datacube.drivers.postgis import PostGisDb
 
 
 class PostgisTransaction(AbstractTransaction):

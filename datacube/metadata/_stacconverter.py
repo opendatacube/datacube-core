@@ -8,10 +8,11 @@ EO3 -> STAC utilities.
 Utilities for translating EO3 Datasets to STAC Items.
 """
 
+from __future__ import annotations
+
 import math
 import mimetypes
 import warnings
-from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
@@ -36,6 +37,10 @@ from datacube.utils import parse_time
 
 from ..migration import ODC2DeprecationWarning
 from ._utils import EO3_MD_TYPE, EO_MD_TYPE, eo3_to_stac_properties
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 def _lineage_fields(dataset: Dataset) -> dict:

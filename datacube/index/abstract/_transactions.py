@@ -2,15 +2,20 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from threading import Lock
-from types import TracebackType
 from typing import Any
 
 from typing_extensions import override
 
 from datacube.index.exceptions import TransactionException
 from datacube.utils.generic import thread_local_cache
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from types import TracebackType
 
 
 class AbstractTransaction(ABC):
@@ -108,7 +113,7 @@ class AbstractTransaction(ABC):
         return TransactionException(errmsg, commit=False)
 
     # Context Manager Interface
-    def __enter__(self) -> "AbstractTransaction":
+    def __enter__(self) -> AbstractTransaction:
         self.begin()
         return self
 

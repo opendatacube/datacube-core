@@ -2,45 +2,53 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import csv
 import datetime
 import logging
 import multiprocessing
 import sys
-import uuid
 from collections import OrderedDict
-from collections.abc import (
-    Callable,
-    Generator,
-    Iterable,
-    Mapping,
-    MutableMapping,
-    Sequence,
-)
-from pathlib import Path
 from textwrap import dedent
 from typing import Any, Literal, cast
-from uuid import UUID
 
 import click
 import yaml
 import yaml.resolver
 from click import echo
 
-from datacube.index import Index
-from datacube.index.abstract import DSID, DatasetTuple
+from datacube.index.abstract import DatasetTuple
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.hl import Doc2Dataset
-from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli, print_help_msg
 from datacube.ui.common import ui_path_doc_stream
 from datacube.ui.expression import parse_expressions
-from datacube.utils import SimpleDocNav, changes, json
-from datacube.utils.changes import AllowPolicy, Offset
+from datacube.utils import changes, json
 from datacube.utils.dates import tz_as_utc
 from datacube.utils.serialise import SafeDatacubeDumper
 from datacube.utils.uris import uri_resolve
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import uuid
+    from collections.abc import (
+        Callable,
+        Generator,
+        Iterable,
+        Mapping,
+        MutableMapping,
+        Sequence,
+    )
+    from pathlib import Path
+    from uuid import UUID
+
+    from datacube.index import Index
+    from datacube.index.abstract import DSID
+    from datacube.model import Dataset
+    from datacube.utils import SimpleDocNav
+    from datacube.utils.changes import AllowPolicy, Offset
 
 _LOG: logging.Logger = logging.getLogger("datacube-dataset")
 

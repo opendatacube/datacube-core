@@ -2,29 +2,37 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping, Sequence
 from functools import cached_property
-from urllib.parse import ParseResult, urlparse
+from urllib.parse import urlparse
 
 from deprecat import deprecat
-from odc.geo import CRS
 
-from datacube.cfg import ODCEnvironment, ODCOptionHandler
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Field, MetadataType
 from datacube.utils import report_to_user
 from datacube.utils.generic import thread_local_cache
-from datacube.utils.json_types import JsonDict
 
-from ._datasets import AbstractDatasetResource
-from ._lineage import AbstractLineageResource
-from ._metadata_types import AbstractMetadataTypeResource
-from ._products import AbstractProductResource
-from ._transactions import AbstractTransaction
-from ._types import DSID, BatchStatus
-from ._users import AbstractUserResource
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping, Sequence
+    from urllib.parse import ParseResult
+
+    from odc.geo import CRS
+
+    from datacube.cfg import ODCEnvironment, ODCOptionHandler
+    from datacube.model import Field, MetadataType
+    from datacube.utils.json_types import JsonDict
+
+    from ._datasets import AbstractDatasetResource
+    from ._lineage import AbstractLineageResource
+    from ._metadata_types import AbstractMetadataTypeResource
+    from ._products import AbstractProductResource
+    from ._transactions import AbstractTransaction
+    from ._types import DSID, BatchStatus
+    from ._users import AbstractUserResource
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -123,7 +131,7 @@ class AbstractIndex(ABC):
         cfg_env: ODCEnvironment,
         application_name: str | None = None,
         validate_connection: bool = True,
-    ) -> "AbstractIndex":
+    ) -> AbstractIndex:
         """Instantiate a new index from an ODCEnvironment configuration object"""
 
     @classmethod
@@ -233,7 +241,7 @@ class AbstractIndex(ABC):
 
     def clone(
         self,
-        origin_index: "AbstractIndex",
+        origin_index: AbstractIndex,
         batch_size: int = 1000,
         skip_lineage: bool = False,
         lineage_only: bool = False,
@@ -385,7 +393,7 @@ class AbstractIndex(ABC):
         """
         return thread_local_cache(f"txn-{self.index_id}", None)
 
-    def __enter__(self) -> "AbstractIndex":
+    def __enter__(self) -> AbstractIndex:
         return self
 
     def __exit__(self) -> None:
@@ -408,7 +416,7 @@ class AbstractIndexDriver(ABC):
         config_env: ODCEnvironment,
         application_name: str | None = None,
         validate_connection: bool = True,
-    ) -> "AbstractIndex":
+    ) -> AbstractIndex:
         return cls.index_class().from_config(
             config_env, application_name, validate_connection
         )

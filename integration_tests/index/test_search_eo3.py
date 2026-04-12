@@ -6,6 +6,8 @@
 Module
 """
 
+from __future__ import annotations
+
 import datetime
 import warnings
 from collections import namedtuple
@@ -19,14 +21,18 @@ from antimeridian import FixWindingWarning
 import datacube.scripts.cli_app
 import datacube.scripts.search_tool
 from datacube import Datacube
-from datacube.cfg import ODCEnvironment
 from datacube.cfg.opt import _DEFAULT_DB_USER
-from datacube.index import Index
-from datacube.model import Dataset, Range
+from datacube.model import Range
 from datacube.testutils import suppress_deprecations
 from datacube.utils.dates import tz_as_utc
 
 from .search_utils import _cli_csv_search, _csv_search_raw, _load_product_query
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.cfg import ODCEnvironment
+    from datacube.index import Index
+    from datacube.model import Dataset
 
 
 def test_search_by_metadata(index: Index, ls8_eo3_product, wo_eo3_product) -> None:

@@ -11,8 +11,9 @@ Hypothesis is used for most of the data generation, which will hopefully improve
 of our tests when we can roll it into more tests.
 """
 
+from __future__ import annotations
+
 import string
-from collections.abc import Callable
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,10 @@ from hypothesis.strategies import (
 )
 from odc.geo import CRS
 from odc.geo.geom import point
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 

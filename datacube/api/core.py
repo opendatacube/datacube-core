@@ -9,50 +9,59 @@ import datetime
 import logging
 import uuid
 import warnings
-from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
+from collections.abc import Mapping
 from itertools import groupby
-from types import TracebackType
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
+from typing import Any, Literal, TypeAlias, cast
 
 import deprecat
 import numpy
 import xarray
 from dask import array as da
-from odc.geo import CRS, XY, Resolution, res_, resyx_, yx_
+from odc.geo import CRS, res_, resyx_, yx_
 from odc.geo.geobox import GeoBox, GeoboxTiles
-from odc.geo.geom import Geometry, bbox_union, box, intersects
-from odc.geo.warp import Resampling
+from odc.geo.geom import bbox_union, box, intersects
 from odc.geo.xr import xr_coords
-from odc.loader.types import FuserFunc, ReaderDriverSpec
 from typing_extensions import override
 from xarray.core.coordinates import DataArrayCoordinates
 
-from datacube.cfg import GeneralisedCfg, GeneralisedEnv, GeneralisedRawCfg, ODCConfig
-from datacube.model import (
-    Dataset,
-    ExtraDimensions,
-    ExtraDimensionSlices,
-    Measurement,
-    Product,
-)
+from datacube.cfg import ODCConfig
 from datacube.model.utils import xr_apply
 from datacube.storage import BandInfo, reproject_and_fuse
 from datacube.utils import ignore_exceptions_if
 from datacube.utils.dates import normalise_dt
 
+from ..drivers import new_datasource
+from ..index import extract_geom_from_query, index_connect
+from ..migration import ODC2DeprecationWarning
+from .query import Query, query_group_by
+
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    from collections.abc import Callable, Hashable, Iterable, Sequence
+    from types import TracebackType
+
+    from odc.geo import XY, Resolution
     from odc.geo.crs import MaybeCRS
+    from odc.geo.geom import Geometry
+    from odc.geo.warp import Resampling
+    from odc.loader.types import FuserFunc, ReaderDriverSpec
     from pandas import DataFrame
 
-    from datacube.model import GridSpec
+    from datacube.cfg import GeneralisedCfg, GeneralisedEnv, GeneralisedRawCfg
+    from datacube.model import (
+        Dataset,
+        ExtraDimensions,
+        ExtraDimensionSlices,
+        GridSpec,
+        Measurement,
+        Product,
+    )
     from datacube.utils.geometry import GeoBox as LegacyGeoBox
 
-from ..drivers import new_datasource
-from ..index import Index, extract_geom_from_query, index_connect
-from ..migration import ODC2DeprecationWarning
-from ..model import QueryField
-from ..storage import ProgressFunction
-from .query import GroupBy, Query, query_group_by
+    from ..index import Index
+    from ..model import QueryField
+    from ..storage import ProgressFunction
+    from .query import GroupBy
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

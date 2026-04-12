@@ -6,15 +6,15 @@
 High level indexing operations/utilities
 """
 
+from __future__ import annotations
+
 import logging
-from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
+from collections.abc import Callable, Mapping
 from typing import Any, TypeAlias, cast
-from uuid import UUID
 
 import toolz
 from pystac import Item
 
-from datacube.index.abstract import AbstractIndex
 from datacube.metadata import stac2ds
 from datacube.model import Dataset, LineageDirection, LineageTree, Product
 from datacube.model.utils import (
@@ -30,9 +30,17 @@ from datacube.utils import (
     json,
     jsonify_document,
 )
-from datacube.utils.changes import Offset, get_doc_changes
+from datacube.utils.changes import get_doc_changes
 
 from .eo3 import is_doc_eo3, is_doc_geo, prep_eo3
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, MutableMapping, Sequence
+    from uuid import UUID
+
+    from datacube.index.abstract import AbstractIndex
+    from datacube.utils.changes import Offset
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

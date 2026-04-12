@@ -2,13 +2,19 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 from typing import cast
 
 from odc.geo.crs import CRS
 from odc.geo.geom import Geometry, box
 
-from datacube.model import QueryDict, QueryField, Range
-from datacube.utils.documents import JsonDict
+from datacube.model import Range
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.model import QueryDict, QueryField
+    from datacube.utils.documents import JsonDict
 
 H_SPATIAL_KEYS = ("lon", "longitude", "x")
 V_SPATIAL_KEYS = ("lat", "latitude", "y")

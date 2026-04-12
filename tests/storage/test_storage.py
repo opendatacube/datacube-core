@@ -2,7 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Callable, Generator
+from __future__ import annotations
+
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -12,7 +13,7 @@ import numpy as np
 import pytest
 import rasterio.warp
 from affine import Affine
-from odc.geo import CRS, wh_
+from odc.geo import wh_
 from odc.geo.geobox import GeoBox
 from rasterio.warp import Resampling
 from typing_extensions import override
@@ -26,6 +27,12 @@ from datacube.storage._read import read_time_slice
 from datacube.storage._rio import RasterDatasetDataSource, _url2rasterio
 from datacube.testutils.geom import epsg3577, epsg4326
 from datacube.testutils.io import RasterFileDataSource
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
+
+    from odc.geo import CRS
 
 identity = Affine.identity()
 

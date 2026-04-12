@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import functools
 import itertools
 import logging
@@ -9,15 +11,19 @@ import os
 import pickle
 import re
 import time
-from collections.abc import Generator, Sequence
 from pathlib import Path
 
 import click
 import pandas as pd
 
-from datacube.index import Index
 from datacube.ui import click as dc_ui
 from datacube.utils import read_documents
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator, Sequence
+
+    from datacube.index import Index
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

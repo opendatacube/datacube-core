@@ -2,10 +2,14 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
-from ..index.abstract import AbstractIndexDriver
 from ._tools import singleton_setup
 from .driver_cache import load_drivers
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from ..index.abstract import AbstractIndexDriver
 
 
 class IndexDriverCache:

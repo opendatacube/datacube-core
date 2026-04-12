@@ -6,9 +6,10 @@
 Build and index fields within documents.
 """
 
+from __future__ import annotations
+
 import math
 from collections import namedtuple
-from collections.abc import Callable, Sequence
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from functools import cached_property
@@ -26,10 +27,16 @@ from typing_extensions import override
 from datacube import utils
 from datacube.drivers.postgis._schema import Dataset, search_field_index_map
 from datacube.model import Range
-from datacube.model.fields import _AVAILABLE_TYPES, Expression, Field
+from datacube.model.fields import Expression, Field
 from datacube.utils import get_doc_offset, parse_time
-from datacube.utils.changes import Offset
 from datacube.utils.dates import tz_as_utc
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+    from datacube.model.fields import _AVAILABLE_TYPES
+    from datacube.utils.changes import Offset
 
 DatasetJoinArgs: TypeAlias = (
     tuple[FromClause] | tuple[FromClause, ColumnExpressionArgument]
@@ -331,7 +338,7 @@ class NumericDocField(SimpleDocField):
         )
 
     @override
-    def between(self, low, high) -> "RangeBetweenExpression":
+    def between(self, low, high) -> RangeBetweenExpression:
         # Numeric fields actually stored as ranges in current schema.
         # return ValueBetweenExpression(self, low, high)
         return RangeBetweenExpression(self, low, high, _range_class=PgRange)
@@ -428,7 +435,7 @@ class DateDocField(SimpleDocField):
         )
 
     @override
-    def between(self, low, high) -> "ValueBetweenExpression":
+    def between(self, low, high) -> ValueBetweenExpression:
         return ValueBetweenExpression(self, low, high)
 
     @override

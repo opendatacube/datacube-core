@@ -10,9 +10,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
-from collections.abc import Generator
 from contextlib import contextmanager
-from threading import RLock
 from urllib.parse import urlparse
 
 import numpy as np
@@ -25,9 +23,16 @@ from datacube.utils import get_part_from_uri, is_vsipath, uri_to_local_path
 from datacube.utils.math import num2numpy
 from datacube.utils.rio import activate_from_config
 
-from ..drivers.datasource import DataSource, GeoRasterReader, RasterShape, RasterWindow
-from ._base import BandInfo
+from ..drivers.datasource import DataSource, GeoRasterReader
 from ._hdf5 import HDF5_LOCK
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from threading import RLock
+
+    from ..drivers.datasource import RasterShape, RasterWindow
+    from ._base import BandInfo
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

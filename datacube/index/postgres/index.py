@@ -2,21 +2,20 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
-from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from typing import Any
 
 from deprecat import deprecat
 from typing_extensions import override
 
-from datacube.cfg.api import ODCEnvironment
-from datacube.cfg.opt import ODCOptionHandler, config_options_for_psql_driver
-from datacube.drivers.postgres import PostgresDb, PostgresDbAPI
+from datacube.cfg.opt import config_options_for_psql_driver
+from datacube.drivers.postgres import PostgresDb
 from datacube.index.abstract import (
     AbstractIndex,
     AbstractIndexDriver,
-    AbstractTransaction,
     default_metadata_type_docs,
 )
 from datacube.index.postgres._datasets import DatasetResource
@@ -27,7 +26,16 @@ from datacube.index.postgres._transaction import PostgresTransaction
 from datacube.index.postgres._users import UserResource
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import MetadataType
-from datacube.utils.json_types import JsonDict
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping
+
+    from datacube.cfg.api import ODCEnvironment
+    from datacube.cfg.opt import ODCOptionHandler
+    from datacube.drivers.postgres import PostgresDbAPI
+    from datacube.index.abstract import AbstractTransaction
+    from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -123,7 +131,7 @@ class Index(AbstractIndex):
         cfg_env: ODCEnvironment,
         application_name: str | None = None,
         validate_connection: bool = True,
-    ) -> "Index":
+    ) -> Index:
         db = PostgresDb.from_config(
             cfg_env,
             application_name=application_name,

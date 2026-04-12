@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
 import sys
 
@@ -9,11 +11,14 @@ import click
 import yaml
 from click import echo, style
 
-from datacube.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli, exit_on_empty_file, print_help_msg
 from datacube.utils import InvalidDocException, json, read_documents
 from datacube.utils.serialise import SafeDatacubeDumper
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.index import Index
 
 _LOG: logging.Logger = logging.getLogger("datacube-md-type")
 

@@ -2,10 +2,15 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import os
-from collections.abc import Generator
 from pathlib import Path
 from sys import stdin
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 def _norm_path(path: str | Path, in_home_dir: bool = False) -> Path:

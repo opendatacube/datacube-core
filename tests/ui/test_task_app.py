@@ -6,8 +6,13 @@
 Module
 """
 
-from datacube.index import Index
+from __future__ import annotations
+
 from datacube.ui.task_app import task_app, wrap_task
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.index import Index
 
 
 def make_test_config(index: Index, config, **kwargs):

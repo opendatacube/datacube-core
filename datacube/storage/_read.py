@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Dataset -> Raster"""
 
+from __future__ import annotations
+
 from typing import cast
 
 import numpy as np
@@ -11,17 +13,15 @@ from odc.geo import wh_
 from odc.geo.geobox import GeoBox, zoom_out
 from odc.geo.math import is_affine_st, is_almost_int
 from odc.geo.overlap import compute_reproject_roi
-from odc.geo.roi import (
-    roi_is_empty,
-    roi_is_full,
-    roi_pad,
-    roi_shape,
-    w_,
-)
-from odc.geo.types import Nodata
-from odc.geo.warp import Resampling, is_resampling_nn, rio_reproject, warp_affine
+from odc.geo.roi import roi_is_empty, roi_is_full, roi_pad, roi_shape, w_
+from odc.geo.warp import is_resampling_nn, rio_reproject, warp_affine
 
 from ..utils.math import valid_mask
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from odc.geo.types import Nodata
+    from odc.geo.warp import Resampling
 
 
 def rdr_geobox(rdr) -> GeoBox:

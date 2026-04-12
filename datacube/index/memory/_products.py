@@ -2,36 +2,44 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import datetime
-import logging
-from collections.abc import Iterable, Sequence
-from typing import cast
-from uuid import UUID
+from __future__ import annotations
 
-from odc.geo import CRS, Geometry
+import logging
+from typing import cast
+
+from odc.geo import CRS
 from typing_extensions import override
 
-from datacube.index.abstract import AbstractIndex, AbstractProductResource
+from datacube.index.abstract import AbstractProductResource
 from datacube.index.fields import as_expression
 from datacube.model import Product
-from datacube.model._base import QueryDict, QueryField
 from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import (
-    AllowPolicy,
-    Change,
-    Offset,
     check_doc_unchanged,
     classify_changes,
     get_doc_changes,
 )
-from datacube.utils.documents import JsonDict, metadata_subset
+from datacube.utils.documents import metadata_subset
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Iterable, Sequence
+    from uuid import UUID
+
+    from odc.geo import Geometry
+
+    from datacube.index.abstract import AbstractIndex
+    from datacube.index.memory.index import Index
+    from datacube.model._base import QueryDict, QueryField
+    from datacube.utils.changes import AllowPolicy, Change, Offset
+    from datacube.utils.documents import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class ProductResource(AbstractProductResource):
     def __init__(self, index: AbstractIndex) -> None:
-        from datacube.index.memory.index import Index
 
         self._index: Index = cast("Index", index)
         self.by_id: dict[int, Product] = {}

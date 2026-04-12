@@ -6,7 +6,6 @@ import pytest
 
 from datacube.utils.changes import (
     MISSING,
-    Change,
     allow_addition,
     allow_any,
     allow_extension,
@@ -15,6 +14,10 @@ from datacube.utils.changes import (
     classify_changes,
     contains,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.utils.changes import Change
 
 
 def test_changes_contains() -> None:

@@ -8,31 +8,23 @@ STAC -> EO3 utilities.
 Utilities for translating STAC Items to EO3 Datasets.
 """
 
+from __future__ import annotations
+
 import dataclasses
 import uuid
-from collections.abc import Iterable, Iterator, Sequence
 from functools import singledispatch
 from typing import Any
 
 from odc.geo import CRS, Geometry
 from odc.geo.geobox import GeoBox
-from odc.loader.types import (
-    BandKey,
-    RasterBandMetadata,
-    RasterSource,
-)
+from odc.loader.types import RasterSource
 from odc.stac._mdtools import (
     EPSG4326,
-    ConversionConfig,
     _collection_id,
     extract_collection_metadata,
     mk_1x1_geobox,
     mk_sample_item,
     parse_item,
-)
-from odc.stac.model import (
-    ParsedItem,
-    RasterCollectionMetadata,
 )
 from pystac import Collection, Item
 
@@ -40,6 +32,14 @@ from datacube.index.eo3 import prep_eo3
 from datacube.model import Dataset, Product
 
 from ._utils import EO3_MD_TYPE, stac_to_eo3_properties
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Sequence
+
+    from odc.loader.types import BandKey, RasterBandMetadata
+    from odc.stac._mdtools import ConversionConfig
+    from odc.stac.model import ParsedItem, RasterCollectionMetadata
 
 # uuid.uuid5(uuid.NAMESPACE_URL, "https://stacspec.org")
 UUID_NAMESPACE_STAC = uuid.UUID("55d26088-a6d0-5c77-bf9a-3a7f3c6a6dab")

@@ -6,9 +6,10 @@
 Test utility functions from :module:`datacube.utils`
 """
 
+from __future__ import annotations
+
 import os
 from collections import OrderedDict
-from collections.abc import Iterable
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -53,6 +54,10 @@ from datacube.utils.documents import (
 )
 from datacube.utils.serialise import jsonify_document
 from datacube.utils.uris import as_url
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 doc_changes = [
     (1, 1, []),

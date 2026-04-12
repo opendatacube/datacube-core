@@ -192,6 +192,7 @@ extend-exclude = [
 docstring-code-format = true # Reformat code in doc strings.
 
 [tool.ruff.lint]
+future-annotations = true
 select = [
     "A",  # Don't shadow built-ins
     "B",  # flake8-bugbear
@@ -210,6 +211,7 @@ select = [
     "W",  # pycodestyle warnings
     "F",  # pyflakes
     "T10", # flake8-debugger
+    "TC",  # Import types in TYPE_CHECKING block
     "TID253", # Banned imports
 ]
 ignore = [
@@ -236,9 +238,10 @@ extend-ignore-names = [
 [tool.ruff.lint.per-file-ignores]
 # SQLAlchemy has overloaded ==, so use that (or is_) to compare with None.
 "datacube/drivers/postgis/_api.py" = ["E711"]
-"datacube/drivers/postgis/_schema.py" = ["E711"]
 "datacube/drivers/postgres/_api.py" = ["E711"]
 "datacube/drivers/postgres/_schema.py" = ["E711"]
+# SQLAlchemy uses the types for the schema so runtime types are required.
+"datacube/drivers/postgis/_schema.py" = ["E711", "TC002", "TC003"]
 
 [tool.ruff.lint.pycodestyle]
 max-line-length = 120

@@ -2,19 +2,27 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
-import datetime
-from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import Any, NamedTuple
 
 from deprecat import deprecat
-from odc.geo import CRS, Geometry
+from odc.geo import CRS
 from typing_extensions import override
 
-from datacube.index.abstract import DSID, AbstractDatasetResource
+from datacube.index.abstract import AbstractDatasetResource
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Dataset, Product, QueryDict, QueryField
-from datacube.utils.changes import Change, Offset
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Generator, Iterable, Mapping, Sequence
+
+    from odc.geo import Geometry
+
+    from datacube.index.abstract import DSID
+    from datacube.model import Dataset, Product, QueryDict, QueryField
+    from datacube.utils.changes import Change, Offset
 
 
 class DatasetResource(AbstractDatasetResource):

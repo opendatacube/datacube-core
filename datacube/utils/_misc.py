@@ -6,9 +6,14 @@
 Utility functions
 """
 
-import logging
+from __future__ import annotations
+
 import os
 import sys
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import logging
 
 
 class DatacubeException(Exception):  # noqa: N818

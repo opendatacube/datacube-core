@@ -6,9 +6,10 @@
 Build and index fields within documents.
 """
 
+from __future__ import annotations
+
 from collections import namedtuple
-from collections.abc import Callable, Sequence
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
@@ -20,12 +21,19 @@ from typing_extensions import override
 
 from datacube import utils
 from datacube.model import Range
-from datacube.model.fields import _AVAILABLE_TYPES, Expression, Field
+from datacube.model.fields import Expression, Field
 from datacube.utils import get_doc_offset
-from datacube.utils.changes import Offset
 from datacube.utils.dates import tz_aware
 
 from .sql import FLOAT8RANGE
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+    from datetime import date
+
+    from datacube.model.fields import _AVAILABLE_TYPES
+    from datacube.utils.changes import Offset
 
 
 class PgField(Field):
@@ -246,7 +254,7 @@ class IntDocField(SimpleDocField):
         return cast(value, postgres.INTEGER)
 
     @override
-    def between(self, low, high) -> "ValueBetweenExpression":
+    def between(self, low, high) -> ValueBetweenExpression:
         return ValueBetweenExpression(self, low, high)
 
     @override
@@ -278,7 +286,7 @@ class NumericDocField(SimpleDocField):
         return cast(value, postgres.NUMERIC)
 
     @override
-    def between(self, low, high) -> "ValueBetweenExpression":
+    def between(self, low, high) -> ValueBetweenExpression:
         return ValueBetweenExpression(self, low, high)
 
     @override
@@ -294,7 +302,7 @@ class DoubleDocField(SimpleDocField):
         return cast(value, postgres.DOUBLE_PRECISION)
 
     @override
-    def between(self, low, high) -> "ValueBetweenExpression":
+    def between(self, low, high) -> ValueBetweenExpression:
         return ValueBetweenExpression(self, low, high)
 
     @override
@@ -320,7 +328,7 @@ class DateDocField(SimpleDocField):
         raise ValueError(f"Value not readable as date: {value!r}")
 
     @override
-    def between(self, low, high) -> "ValueBetweenExpression":
+    def between(self, low, high) -> ValueBetweenExpression:
         return ValueBetweenExpression(self, low, high)
 
     @override

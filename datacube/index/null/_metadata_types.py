@@ -2,14 +2,19 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Iterable
+from __future__ import annotations
 
 from typing_extensions import override
 
 from datacube.index.abstract import AbstractMetadataTypeResource
-from datacube.model import MetadataType
-from datacube.utils.changes import Change
-from datacube.utils.documents import JsonDict
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from datacube.model import MetadataType
+    from datacube.utils.changes import Change
+    from datacube.utils.documents import JsonDict
 
 
 class MetadataTypeResource(AbstractMetadataTypeResource):

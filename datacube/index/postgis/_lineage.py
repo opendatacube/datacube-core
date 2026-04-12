@@ -2,23 +2,25 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Iterable, Mapping
+from __future__ import annotations
+
 from time import monotonic
-from uuid import UUID
 
 from typing_extensions import override
 
-from datacube.drivers.postgis._connections import PostGisDb
-from datacube.index.abstract import (
-    DSID,
-    AbstractIndex,
-    AbstractLineageResource,
-    BatchStatus,
-    dsid_to_uuid,
-)
+from datacube.index.abstract import AbstractLineageResource, BatchStatus, dsid_to_uuid
 from datacube.index.postgis._transaction import IndexResourceAddIn
-from datacube.model import LineageDirection, LineageRelation, LineageTree
+from datacube.model import LineageDirection, LineageRelation
 from datacube.model.lineage import LineageRelations
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+    from uuid import UUID
+
+    from datacube.drivers.postgis._connections import PostGisDb
+    from datacube.index.abstract import DSID, AbstractIndex
+    from datacube.model import LineageTree
 
 
 class LineageResource(AbstractLineageResource, IndexResourceAddIn):

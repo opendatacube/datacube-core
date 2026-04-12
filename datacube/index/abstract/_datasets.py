@@ -2,25 +2,37 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import datetime
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Iterable, Mapping, Sequence
 from datetime import timedelta
 from time import monotonic
 from typing import Any, NamedTuple
-from uuid import UUID
 
 from deprecat import deprecat
-from odc.geo import CRS, Geometry
+from odc.geo import CRS
 
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Dataset, Field, Product, QueryDict, QueryField, Range
+from datacube.model import Dataset, Range
 from datacube.utils import report_to_user
-from datacube.utils.changes import AllowPolicy, Change, DocumentMismatchError, Offset
-from datacube.utils.documents import JsonDict
+from datacube.utils.changes import DocumentMismatchError
 
-from ._types import DSID, BatchStatus, DatasetTuple, SearchMode
+from ._types import BatchStatus, DatasetTuple
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Generator, Iterable, Mapping, Sequence
+    from uuid import UUID
+
+    from odc.geo import Geometry
+
+    from datacube.model import Field, Product, QueryDict, QueryField
+    from datacube.utils.changes import AllowPolicy, Change, Offset
+    from datacube.utils.documents import JsonDict
+
+    from ._types import DSID, SearchMode
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

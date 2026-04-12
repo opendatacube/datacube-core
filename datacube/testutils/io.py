@@ -2,9 +2,9 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import inspect
-from collections.abc import Callable, Generator, Sequence
-from os import PathLike
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -12,7 +12,6 @@ from typing import Any
 import numpy as np
 import toolz
 import xarray as xr
-from affine import Affine
 from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox, zoom_to
 from odc.geo.geobox import pad as gbox_pad
@@ -22,11 +21,19 @@ from typing_extensions import override
 
 from ..api import Datacube
 from ..index.eo3 import EO3Grid
-from ..model import Dataset
 from ..storage import BandInfo, reproject_and_fuse
 from ..storage._read import rdr_geobox
 from ..storage._rio import RasterDatasetDataSource, RasterioDataSource
 from . import suppress_deprecations
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Sequence
+    from os import PathLike
+
+    from affine import Affine
+
+    from ..model import Dataset
 
 
 class RasterFileDataSource(RasterioDataSource):

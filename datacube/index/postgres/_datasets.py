@@ -8,13 +8,11 @@ API for dataset indexing, access and search.
 
 from __future__ import annotations
 
-import datetime
 import logging
 import warnings
 from collections import namedtuple
-from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 from time import monotonic
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import Any, NamedTuple
 from uuid import UUID
 
 from deprecat import deprecat
@@ -25,26 +23,33 @@ from datacube.drivers.postgres._fields import SimpleDocField
 from datacube.drivers.postgres._schema import DATASET
 from datacube.index import fields
 from datacube.index.abstract import (
-    DSID,
     AbstractDatasetResource,
     BatchStatus,
     DatasetSpatialMixin,
     DatasetTuple,
     dsid_to_uuid,
 )
-from datacube.index.abstract._types import SearchMode
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Dataset, Product, Range
-from datacube.model._base import QueryDict, QueryField
-from datacube.model.fields import Expression, Field
+from datacube.model import Dataset
+from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
 from datacube.utils import _readable_offset, changes, json, jsonify_document
-from datacube.utils.changes import Offset, get_doc_changes
+from datacube.utils.changes import get_doc_changes
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
+
     from datacube.drivers.postgres import PostgresDb
+    from datacube.index.abstract import DSID
+    from datacube.index.abstract._types import SearchMode
     from datacube.index.postgres.index import Index
+    from datacube.model import Product, Range
+    from datacube.model._base import QueryDict, QueryField
+    from datacube.model.fields import Expression
+    from datacube.utils.changes import Offset
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -6,11 +6,17 @@
 Access methods for indexing datasets & products.
 """
 
+from __future__ import annotations
+
 import logging
 
-from datacube.cfg import ODCConfig, ODCEnvironment
+from datacube.cfg import ODCConfig
 
-from .abstract import AbstractIndex as Index
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.cfg import ODCEnvironment
+
+    from .abstract import AbstractIndex as Index
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -8,6 +8,8 @@ Test database methods.
 Integration tests: these depend on a local Postgres instance.
 """
 
+from __future__ import annotations
+
 import copy
 import datetime
 from datetime import timezone
@@ -16,12 +18,16 @@ from uuid import UUID
 
 import pytest
 
-from datacube.index import Index
 from datacube.index.eo3 import prep_eo3
 from datacube.index.exceptions import MissingRecordError
-from datacube.model import Dataset, MetadataType, Product
+from datacube.model import Dataset, Product
 from datacube.testutils import suppress_deprecations
-from datacube.utils.json_types import JsonDict
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.index import Index
+    from datacube.model import MetadataType
+    from datacube.utils.json_types import JsonDict
 
 _telemetry_uuid = UUID("4ec8fe97-e8b9-11e4-87ff-1040f381a756")
 _telemetry_dataset = {

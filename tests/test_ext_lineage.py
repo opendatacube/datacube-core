@@ -2,8 +2,9 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import os
-from uuid import UUID
 from uuid import uuid4 as random_uuid
 
 import pytest
@@ -11,6 +12,10 @@ import pytest
 from datacube.model import InconsistentLineageException, LineageDirection, LineageTree
 from datacube.model.lineage import LineageIDPair, LineageRelations
 from datacube.utils import read_documents
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from uuid import UUID
 
 
 def test_directions() -> None:

@@ -13,18 +13,13 @@
 Persistence API implementation for postgres.
 """
 
-import datetime
+from __future__ import annotations
+
 import logging
-from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import Any
 from typing import cast as type_cast
 
 from sqlalchemy import (
-    Connection,
-    FromClause,
-    Label,
-    RootTransaction,
-    Select,
     String,
     and_,
     bindparam,
@@ -40,16 +35,12 @@ from sqlalchemy import (
     values,
 )
 from sqlalchemy.dialects.postgresql import INTERVAL, JSONB, UUID, insert
-from sqlalchemy.engine import Row
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.sql.selectable import NamedFromClause
 from typing_extensions import override
 
 from datacube.drivers.common_psql import create_user, drop_users, grant_role, has_role
-from datacube.index.abstract import DSID
-from datacube.index.abstract._types import SearchMode
 from datacube.index.exceptions import MissingRecordError
-from datacube.index.fields import Expression, Field, OrExpression
+from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.utils.uris import split_uri
 
@@ -57,7 +48,6 @@ from . import _dynamic as dynamic
 from ._core import UserRole
 from ._fields import (  # noqa: F401
     DateDocField,
-    DateRangeDocField,
     NativeField,
     PgExpression,
     PgField,
@@ -65,6 +55,21 @@ from ._fields import (  # noqa: F401
     parse_fields,
 )
 from ._schema import DATASET, DATASET_LOCATION, DATASET_SOURCE, METADATA_TYPE, PRODUCT
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Iterable, Iterator, Mapping, Sequence
+
+    from sqlalchemy import Connection, FromClause, Label, RootTransaction, Select
+    from sqlalchemy.engine import Row
+    from sqlalchemy.sql.selectable import NamedFromClause
+
+    from datacube.index.abstract import DSID
+    from datacube.index.abstract._types import SearchMode
+    from datacube.index.fields import Expression, Field
+
+    from ._fields import DateRangeDocField
 
 PGCODE_FOREIGN_KEY_VIOLATION = "23503"
 _LOG: logging.Logger = logging.getLogger(__name__)

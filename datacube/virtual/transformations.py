@@ -2,8 +2,9 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import warnings
-from collections.abc import Collection, Iterable, Mapping
 
 import numpy
 import pandas as pd
@@ -23,6 +24,10 @@ from .expr import (
     formula_parser,
 )
 from .impl import Measurement, Transformation, VirtualProductException
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Collection, Iterable, Mapping
 
 
 def selective_apply_dict(

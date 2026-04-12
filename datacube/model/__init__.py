@@ -8,12 +8,11 @@ Core classes used across modules.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import math
 import warnings
 from collections import OrderedDict
-from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
-from datetime import datetime
 from functools import cached_property
 from pathlib import Path
 from typing import Any, TypeAlias
@@ -22,8 +21,14 @@ from uuid import UUID
 
 import numpy as np
 from affine import Affine
+from deprecat import deprecat
+from odc.geo import CRS, BoundingBox, Geometry, res_, resyx_, wh_, yx_
+from odc.geo.geobox import GeoBox
+from odc.geo.geom import intersects, polygon
+from odc.geo.gridspec import GridSpec as GeoGridSpec
 from typing_extensions import override
 
+from datacube.migration import ODC2DeprecationWarning
 from datacube.utils import (
     DocReader,
     parse_time,
@@ -32,6 +37,7 @@ from datacube.utils import (
     without_lineage_sources,
 )
 
+from ..utils.uris import pick_uri
 from ._base import Not, QueryDict, QueryField, Range, ranges_overlap  # noqa: F401
 from .eo3 import validate_eo3_compatible_type
 from .fields import Field, get_dataset_fields
@@ -41,6 +47,22 @@ from .lineage import (
     LineageRelation,
     LineageTree,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import (
+        Callable,
+        Generator,
+        Iterable,
+        Iterator,
+        Mapping,
+        Sequence,
+    )
+    from datetime import datetime
+
+    from odc.geo import Resolution, SomeShape
+    from odc.stac.model import RasterCollectionMetadata
+
 
 __all__ = [
     "Dataset",
@@ -61,29 +83,6 @@ __all__ = [
     "metadata_from_doc",
     "ranges_overlap",
 ]
-
-import contextlib
-
-from deprecat import deprecat
-from odc.geo import (
-    CRS,
-    BoundingBox,
-    Geometry,
-    Resolution,
-    SomeShape,
-    res_,
-    resyx_,
-    wh_,
-    yx_,
-)
-from odc.geo.geobox import GeoBox
-from odc.geo.geom import intersects, polygon
-from odc.geo.gridspec import GridSpec as GeoGridSpec
-from odc.stac.model import RasterCollectionMetadata
-
-from datacube.migration import ODC2DeprecationWarning
-
-from ..utils.uris import pick_uri
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -2,17 +2,23 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import datetime
 from types import SimpleNamespace
 
 import numpy as np
 import pandas
 import pytest
-from odc.geo import CRS, Geometry
+from odc.geo import CRS
 
 from datacube.api.query import GroupBy, Query, query_group_by, solar_day, solar_offset
 from datacube.model import Range
 from datacube.utils import parse_time
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from odc.geo import Geometry
 
 
 @pytest.fixture
