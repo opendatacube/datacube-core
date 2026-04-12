@@ -231,7 +231,7 @@ The Open Data Cube Steering Council thanks and acknowledges the ongoing support 
 Notable Changes
 ---------------
 
-* Support for direct indexing of STAC items with ``datacube dataset add`.  STAC documents are converted to EO3
+* Support for direct indexing of STAC items with ``datacube dataset add``.  STAC documents are converted to EO3
   before being indexed.
 * The previous release (1.9.11) included a database schema upgrade for the postgis index driver and refused to operate
   if the upgrade was not applied. This was unnecessarily strict and caused deployment issues in complicated
