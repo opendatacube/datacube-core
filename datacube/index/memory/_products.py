@@ -33,7 +33,7 @@ class ProductResource(AbstractProductResource):
     def __init__(self, index: AbstractIndex) -> None:
         from datacube.index.memory.index import Index
 
-        self._index: Index = cast(Index, index)
+        self._index: Index = cast("Index", index)
         self.by_id: dict[int, Product] = {}
         self.by_name: dict[str, Product] = {}
         self.next_id = 1
@@ -148,7 +148,7 @@ class ProductResource(AbstractProductResource):
             )
             raise ValueError(f"Unsafe changes in {product.name}: {errs}")
 
-        existing = cast(Product, self.get_by_name(product.name))
+        existing = cast("Product", self.get_by_name(product.name))
         if product.metadata_type.name != existing.metadata_type.name:
             raise ValueError(
                 "Unsafe change: cannot (currently) switch metadata types for a product"
@@ -157,7 +157,7 @@ class ProductResource(AbstractProductResource):
         _LOG.info(f"Updating product {product.name}")
 
         persisted = self.clone(product)
-        persisted.id = cast(int, existing.id)
+        persisted.id = cast("int", existing.id)
         self.by_id[persisted.id] = persisted
         self.by_name[persisted.name] = persisted
         return self.get_by_name(product.name)

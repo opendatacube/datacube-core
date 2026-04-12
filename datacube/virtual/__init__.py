@@ -94,7 +94,7 @@ class NameResolver:
 
         if kind == "transform":
             cls_name = recipe["transform"]
-            input_product = cast(Mapping, get("input"))
+            input_product = cast("Mapping", get("input"))
 
             self._assert(
                 input_product is not None, f"no input for transformation in {recipe}"
@@ -136,7 +136,7 @@ class NameResolver:
 
         if kind == "aggregate":
             cls_name = recipe["aggregate"]
-            input_product = cast(Mapping, get("input"))
+            input_product = cast("Mapping", get("input"))
             group_by = get("group_by")
 
             self._assert(
@@ -155,7 +155,7 @@ class NameResolver:
             )
 
         if kind == "reproject":
-            input_product = cast(Mapping, get("input"))
+            input_product = cast("Mapping", get("input"))
             output_crs = recipe["reproject"].get("output_crs")
             resolution = recipe["reproject"].get("resolution")
 

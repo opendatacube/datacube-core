@@ -61,7 +61,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
             self.next_id += 1
             self.by_id[persisted.id] = persisted
             self.by_name[persisted.name] = persisted
-        return cast(MetadataType, self.get_by_name(metadata_type.name))
+        return cast("MetadataType", self.get_by_name(metadata_type.name))
 
     @override
     def can_update(

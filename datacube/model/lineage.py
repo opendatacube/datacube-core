@@ -94,7 +94,7 @@ class LineageTree:
     ) -> "LineageTree":
         if "id" not in serialised:
             raise ValueError("Serialised Lineage tree node must have an id")
-        id_ = UUID(cast(str, serialised["id"]))
+        id_ = UUID(cast("str", serialised["id"]))
         home = serialised.get("home")
         if direction is None:
             if LineageDirection.SOURCES.label in serialised:
@@ -116,14 +116,14 @@ class LineageTree:
                     for child_tree in child_trees
                 ]
                 for classifier, child_trees in cast(
-                    dict[str, list[SerialisedTree]], serialised[direction.label]
+                    "dict[str, list[SerialisedTree]]", serialised[direction.label]
                 ).items()
             }
         else:
             children = {}
         return LineageTree(
             dataset_id=id_,
-            home=cast(str | None, home),
+            home=cast("str | None", home),
             direction=direction,
             children=children,
         )

@@ -74,7 +74,7 @@ def read_time_slice(
     rr = compute_reproject_roi(src_geobox, dst_geobox, ttol=0.9 if is_nn else 0.01)
 
     if roi_is_empty(rr.roi_dst):
-        return cast(tuple[slice, slice], rr.roi_dst)
+        return cast("tuple[slice, slice]", rr.roi_dst)
 
     scale = pick_read_scale(rr.scale, rdr)
 
@@ -172,7 +172,7 @@ def read_time_slice(
                 **gdal_scale_params,
             )
 
-    return cast(tuple[slice, slice], rr.roi_dst)
+    return cast("tuple[slice, slice]", rr.roi_dst)
 
 
 def read_time_slice_v2(
@@ -189,7 +189,7 @@ def read_time_slice_v2(
     rr = compute_reproject_roi(src_geobox, dst_geobox, ttol=0.9 if is_nn else 0.01)
 
     if roi_is_empty(rr.roi_dst):
-        return None, cast(tuple[slice, slice], rr.roi_dst)
+        return None, cast("tuple[slice, slice]", rr.roi_dst)
 
     scale = pick_read_scale(rr.scale, rdr)
 
@@ -254,4 +254,4 @@ def read_time_slice_v2(
                 dst_nodata=dst_nodata,
             )
 
-    return dst, cast(tuple[slice, slice], rr.roi_dst)
+    return dst, cast("tuple[slice, slice]", rr.roi_dst)

@@ -80,7 +80,7 @@ class AbstractProductResource(ABC):
         else:
             # Otherwise they embedded a document, add it if needed:
             metadata_type = self._index.metadata_types.from_doc(
-                cast(JsonDict, metadata_type_in)
+                cast("JsonDict", metadata_type_in)
             )
             definition = dict(definition)
             definition["metadata_type"] = metadata_type.name
@@ -441,7 +441,7 @@ class AbstractProductResource(ABC):
         :returns: Iterable of metadata documents for all known products
         """
         for prod in self.get_all():
-            yield cast(JsonDict, prod.definition)
+            yield cast("JsonDict", prod.definition)
 
     @abstractmethod
     def spatial_extent(

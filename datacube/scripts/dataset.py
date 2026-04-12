@@ -656,7 +656,7 @@ def _get_derived_set(index: Index, id_: UUID) -> set[Dataset]:
     Get a single flat set of all derived datasets.
     (children, grandchildren, great-grandchildren...)
     """
-    derived_set = {cast(Dataset, index.datasets.get(id_))}
+    derived_set = {cast("Dataset", index.datasets.get(id_))}
     to_process = {id_}
     while to_process:
         derived = index.datasets.get_derived(to_process.pop())
