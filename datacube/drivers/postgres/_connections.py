@@ -13,24 +13,34 @@
 Postgres connection and setup
 """
 
+from __future__ import annotations
+
 import logging
 import re
-from collections.abc import Callable, Generator, Mapping
 from contextlib import contextmanager
 from typing import Any
 
-from sqlalchemy import Connection, create_engine, event
-from sqlalchemy.engine import Engine
-from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
+from sqlalchemy import create_engine, event
 from typing_extensions import override
 
 import datacube
-from datacube.drivers.postgres._fields import PgField
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import json, jsonify_document
 
-from ...cfg import ODCEnvironment, psql_url_from_config
+from ...cfg import psql_url_from_config
 from . import _api, _core
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Mapping
+
+    from sqlalchemy import Connection
+    from sqlalchemy.engine import Engine
+    from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
+
+    from datacube.drivers.postgres._fields import PgField
+
+    from ...cfg import ODCEnvironment
 
 _LIB_ID: str = "odc-" + str(datacube.__version__)
 
@@ -65,7 +75,7 @@ class PostgresDb:
         config_env: ODCEnvironment,
         application_name: str | None = None,
         validate_connection: bool = True,
-    ) -> "PostgresDb":
+    ) -> PostgresDb:
         app_name = cls._expand_app_name(application_name)
 
         return PostgresDb.create(
@@ -78,7 +88,7 @@ class PostgresDb:
         config_env: ODCEnvironment,
         application_name: str | None = None,
         validate: bool = True,
-    ) -> "PostgresDb":
+    ) -> PostgresDb:
         url = psql_url_from_config(config_env)
         engine = cls._create_engine(
             url,

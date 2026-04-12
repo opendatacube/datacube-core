@@ -5,9 +5,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable, Mapping
 from time import monotonic
-from typing import TYPE_CHECKING
 
 from cachetools.func import lru_cache
 from typing_extensions import override
@@ -17,17 +15,18 @@ from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import MetadataType
 from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import (
-    AllowPolicy,
-    Change,
-    Offset,
     check_doc_unchanged,
     get_doc_changes,
 )
-from datacube.utils.documents import JsonDict
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
     from datacube.drivers.postgis import PostGisDb
     from datacube.index.postgis.index import Index
+    from datacube.utils.changes import AllowPolicy, Change, Offset
+    from datacube.utils.documents import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

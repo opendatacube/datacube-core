@@ -2,26 +2,25 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import datetime
 import logging
 import re
 import warnings
 from collections import namedtuple
-from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
+from collections.abc import Iterable
 from itertools import chain
 from time import monotonic
 from typing import Any, NamedTuple, cast
-from uuid import UUID
 
 from deprecat import deprecat
-from odc.geo import CRS, Geometry
+from odc.geo import CRS
 from typing_extensions import override
 
 from datacube.index import fields
 from datacube.index.abstract import (
-    DSID,
     AbstractDatasetResource,
-    AbstractIndex,
     BatchStatus,
     DatasetSpatialMixin,
     NoLineageResource,
@@ -31,11 +30,22 @@ from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, LineageRelation, Product, Range, ranges_overlap
-from datacube.model._base import QueryField
 from datacube.utils import _readable_offset, changes, jsonify_document
-from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
+from datacube.utils.changes import get_doc_changes
 from datacube.utils.dates import tz_aware
-from datacube.utils.documents import JsonDict, metadata_subset
+from datacube.utils.documents import metadata_subset
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Mapping, Sequence
+    from uuid import UUID
+
+    from odc.geo import Geometry
+
+    from datacube.index.abstract import DSID, AbstractIndex
+    from datacube.model._base import QueryField
+    from datacube.utils.changes import AllowPolicy, Change, Offset
+    from datacube.utils.documents import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

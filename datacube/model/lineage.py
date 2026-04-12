@@ -2,13 +2,18 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Iterable, Mapping, Sequence
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, TypeAlias, cast
+from typing import Any, TypeAlias, cast
 from uuid import UUID
 
 from typing_extensions import override
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping, Sequence
 
 
 class LineageDirection(Enum):
@@ -22,7 +27,7 @@ class LineageDirection(Enum):
     SOURCES = 1
     DERIVED = 2
 
-    def opposite(self) -> "LineageDirection":
+    def opposite(self) -> LineageDirection:
         if self == LineageDirection.SOURCES:
             return LineageDirection.DERIVED
         return LineageDirection.SOURCES
@@ -58,7 +63,7 @@ class LineageTree:
 
     direction: LineageDirection
     dataset_id: UUID
-    children: dict[str, list["LineageTree"]] | None = None
+    children: dict[str, list[LineageTree]] | None = None
     home: str | None = None
 
     @override
@@ -91,7 +96,7 @@ class LineageTree:
     @classmethod
     def deserialise(
         cls, serialised: SerialisedTree, direction: LineageDirection | None = None
-    ) -> "LineageTree":
+    ) -> LineageTree:
         if "id" not in serialised:
             raise ValueError("Serialised Lineage tree node must have an id")
         id_ = UUID(cast("str", serialised["id"]))
@@ -129,8 +134,8 @@ class LineageTree:
         )
 
     def find_subtree(
-        self, dsid: UUID, _state: list["LineageTree"] | None = None
-    ) -> Optional["LineageTree"]:
+        self, dsid: UUID, _state: list[LineageTree] | None = None
+    ) -> LineageTree | None:
         """
         Finds subtree with root at dsid, if there is one.
 
@@ -177,7 +182,7 @@ class LineageTree:
         doc: Mapping[str, Any],
         home: str | None = None,
         home_derived: str | None = None,
-    ) -> "LineageTree":
+    ) -> LineageTree:
         """
         Generate a shallow (depth=1) LineageTree from an EO3 dataset document
 
@@ -197,7 +202,7 @@ class LineageTree:
         direction: LineageDirection = LineageDirection.SOURCES,
         home: str | None = None,
         home_derived: str | None = None,
-    ) -> "LineageTree":
+    ) -> LineageTree:
         """
         Generate a shallow (depth=1) LineageTree from the sort of data found in an EO3 dataset
 
@@ -284,7 +289,7 @@ class LineageRelations:
         max_depth: int = 0,
         relations: Iterable[LineageRelation] | None = None,
         homes: Mapping[UUID, str] | None = None,
-        clone: Optional["LineageRelations"] = None,
+        clone: LineageRelations | None = None,
     ) -> None:
         """
         All arguments are optional.  Default gives an empty LineageRelations, and:
@@ -391,7 +396,7 @@ class LineageRelations:
                 self.extract_tree(rel.source_id, direction=LineageDirection.DERIVED)
             self.dataset_ids.update(new_ids)
 
-    def merge(self, pool: "LineageRelations") -> None:
+    def merge(self, pool: LineageRelations) -> None:
         """
         Merge in another LineageRelations collection, ensuring it is consistent with this one.
 
@@ -462,7 +467,7 @@ class LineageRelations:
 
     def relations_diff(
         self,
-        existing_relations: Optional["LineageRelations"] = None,
+        existing_relations: LineageRelations | None = None,
         allow_updates: bool = False,
     ) -> tuple[
         Mapping[LineageIDPair, str],

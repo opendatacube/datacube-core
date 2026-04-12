@@ -2,24 +2,27 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import contextlib
 import logging
-from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
-
-import xarray
-from odc.geo import CRS
-from xarray.core.coordinates import DatasetCoordinates
-from xarray.core.dataset_variables import DataVariables
+from typing import Any
 
 from datacube.storage._hdf5 import HDF5_LOCK
 from datacube.utils import DatacubeException
 
 from . import writer as netcdf_writer
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     import netCDF4
+    import xarray
+    from odc.geo import CRS
+    from xarray.core.coordinates import DatasetCoordinates
+    from xarray.core.dataset_variables import DataVariables
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -52,7 +55,7 @@ def create_netcdf_storage_unit(
     variable_params: Mapping[str, Mapping[str, Any]],
     global_attributes: dict | None = None,
     netcdfparams: dict | None = None,
-) -> "netCDF4.Dataset":
+) -> netCDF4.Dataset:
     """
     Create a NetCDF file on disk.
 

@@ -2,8 +2,9 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import copy
-from collections.abc import Callable, Mapping
 from typing import Any, cast
 
 from datacube.model import Measurement
@@ -13,7 +14,6 @@ from datacube.utils.documents import parse_yaml
 from .catalog import Catalog
 from .impl import (
     Transformation,
-    VirtualProduct,
     VirtualProductException,
     from_validated_recipe,
     virtual_product_kind,
@@ -35,6 +35,12 @@ from .transformations import (
 )
 from .utils import reject_keys
 
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
+
+    from .impl import VirtualProduct
+
 __all__ = ["Measurement", "Transformation", "construct"]
 
 
@@ -44,7 +50,7 @@ class NameResolver:
     def __init__(self, lookup_table) -> None:
         self.lookup_table = lookup_table
 
-    def clone(self) -> "NameResolver":
+    def clone(self) -> NameResolver:
         """Safely copy the resolver in order to possibly extend it."""
         return NameResolver(copy.deepcopy(self.lookup_table))
 

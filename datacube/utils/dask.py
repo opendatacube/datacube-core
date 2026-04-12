@@ -4,19 +4,26 @@
 # SPDX-License-Identifier: Apache-2.0
 """Dask Distributed Tools"""
 
+from __future__ import annotations
+
 import logging
 import os
 import queue
 import threading
-from collections.abc import Iterable
 from random import randint
 from typing import Any
 
 import dask
 import toolz
-from botocore.credentials import ReadOnlyCredentials
-from dask.delayed import Delayed, DelayedLeaf, delayed
+from dask.delayed import delayed
 from dask.distributed import Client
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from botocore.credentials import ReadOnlyCredentials
+    from dask.delayed import Delayed, DelayedLeaf
 
 __all__ = [
     "compute_tasks",

@@ -6,6 +6,8 @@
 Useful methods for tests (particularly: reading/writing and checking files)
 """
 
+from __future__ import annotations
+
 import atexit
 import contextlib
 import math
@@ -16,14 +18,13 @@ import tempfile
 import typing
 import uuid
 import warnings
-from collections.abc import Callable, Generator, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import Any
 
 import numpy as np
 import xarray as xr
 from affine import Affine
-from numpy.typing import NDArray
 from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox
 
@@ -33,6 +34,12 @@ from datacube.ui.common import get_metadata_path
 from datacube.utils import SimpleDocNav, json, read_documents
 from datacube.utils.dates import mk_time_coord
 from datacube.utils.documents import parse_yaml
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
+
+    from numpy.typing import NDArray
 
 _DEFAULT = object()
 

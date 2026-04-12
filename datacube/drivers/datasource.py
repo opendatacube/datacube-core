@@ -4,14 +4,19 @@
 # SPDX-License-Identifier: Apache-2.0
 """Defines abstract types for IO reader drivers."""
 
+from __future__ import annotations
+
 from abc import ABCMeta, abstractmethod
-from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import TypeAlias
 
-import numpy as np
-from affine import Affine
-from odc.geo import CRS
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    import numpy as np
+    from affine import Affine
+    from odc.geo import CRS
 
 RasterShape: TypeAlias = tuple[int, int]  # pylint: disable=invalid-name
 RasterWindow: TypeAlias = tuple[slice, slice] | tuple[tuple[int, int], tuple[int, int]]  # pylint: disable=invalid-name

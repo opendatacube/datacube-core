@@ -5,20 +5,13 @@
 # TODO: type hints need attention
 """Tools for working with EO3 metadata"""
 
-from collections.abc import Generator, Iterable, Mapping
+from __future__ import annotations
+
 from functools import reduce
 from typing import Any, cast
-from uuid import UUID
 
 from affine import Affine
-from odc.geo import (
-    CRS,
-    BoundingBox,
-    CoordList,
-    Geometry,
-    SomeCRS,
-    xy_,
-)
+from odc.geo import CRS, xy_
 from odc.geo.crs import norm_crs
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import lonlat_bounds, multipolygon, polygon
@@ -28,8 +21,17 @@ from toolz.dicttoolz import get_in
 from datacube.model import Dataset, GridSpec, Product, Range
 from datacube.storage import BandInfo
 from datacube.storage._rio import RasterDatasetDataSource
-from datacube.utils import DatacubeException, DocReader
-from datacube.utils.generic import T
+from datacube.utils import DatacubeException
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable, Mapping
+    from uuid import UUID
+
+    from odc.geo import BoundingBox, CoordList, Geometry, SomeCRS
+
+    from datacube.utils import DocReader
+    from datacube.utils.generic import T
 
 EO3_SCHEMA = "https://schemas.opendatacube.org/dataset"
 

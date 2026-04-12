@@ -2,10 +2,11 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
 import os
 import shutil
-from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
@@ -15,8 +16,13 @@ import numpy as np
 import rasterio
 from click.testing import CliRunner
 
-from datacube.index import Index
 from datacube.utils.documents import load_from_yaml
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from datacube.index import Index
 
 # On Windows, symlinks are not supported in Python 2 and require
 # specific privileges otherwise, so we copy instead of linking

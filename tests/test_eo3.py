@@ -2,7 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Mapping
+from __future__ import annotations
+
 from copy import deepcopy
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -23,9 +24,15 @@ from datacube.index.eo3 import (
     prep_eo3,
 )
 from datacube.metadata._stacconverter import infer_eo_product
-from datacube.model import Dataset, Product
+from datacube.model import Dataset
 from datacube.testutils import mk_sample_product
 from datacube.utils.documents import InvalidDocException, parse_yaml
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from datacube.model import Product
 
 SAMPLE_DOC = """---
 $schema: https://schemas.opendatacube.org/dataset

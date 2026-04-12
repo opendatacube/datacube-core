@@ -2,8 +2,9 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import datetime
-from collections.abc import Iterable
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import UUID
@@ -15,9 +16,14 @@ import xarray as xr
 from datacube import Datacube
 from datacube.api.core import _calculate_chunk_sizes, output_geobox
 from datacube.api.query import GroupBy
-from datacube.model import Dataset
 from datacube.testutils import mk_sample_dataset, suppress_deprecations
 from datacube.testutils.geom import AlbersGS
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from datacube.model import Dataset
 
 
 def test_grouping_datasets() -> None:

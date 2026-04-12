@@ -2,10 +2,11 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import datetime
 import decimal
 import sys
-from collections.abc import Mapping
 from textwrap import dedent
 from typing import Any
 
@@ -14,6 +15,10 @@ import yaml
 
 from datacube.model import Range, metadata_from_doc
 from datacube.model.fields import Expression, get_dataset_fields, parse_search_field
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 METADATA_DOC = yaml.safe_load("""---
 name: test

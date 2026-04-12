@@ -4,19 +4,25 @@
 # SPDX-License-Identifier: Apache-2.0
 """rasterio environment management tools"""
 
+from __future__ import annotations
+
 import threading
-from collections.abc import Mapping
 from types import SimpleNamespace
 from typing import Literal
 
 import rasterio
 import rasterio.env
-from botocore.credentials import Credentials
 from deprecat import deprecat
 from rasterio.session import AWSSession, DummySession
 
 from datacube.migration import ODC2DeprecationWarning
 from datacube.utils.generic import thread_local_cache
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from botocore.credentials import Credentials
 
 _CFG_LOCK = threading.Lock()
 _CFG = SimpleNamespace(aws=None, cloud_defaults=False, kwargs={}, epoch=0)

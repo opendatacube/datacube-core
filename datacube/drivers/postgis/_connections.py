@@ -13,26 +13,23 @@
 Postgis connection and setup
 """
 
+from __future__ import annotations
+
 import logging
 import re
-from collections.abc import Callable, Generator, Iterable, Mapping
 from contextlib import contextmanager
 from typing import Any
 
 from odc.geo import CRS
-from sqlalchemy import Connection, create_engine, event
-from sqlalchemy.engine import Engine
-from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
+from sqlalchemy import create_engine, event
 from typing_extensions import override
 
 import datacube
-from datacube.drivers.postgis._fields import PgField
 from datacube.index.exceptions import IndexSetupError, NoIndexError
 from datacube.utils import json, jsonify_document
 
-from ...cfg import ODCEnvironment, psql_url_from_config
+from ...cfg import psql_url_from_config
 from . import _api, _core
-from ._schema import SpatialIndex
 from ._spatial import (
     crs_to_epsg,
     drop_spindex,
@@ -40,6 +37,19 @@ from ._spatial import (
     spindex_for_crs,
     spindexes,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterable, Mapping
+
+    from sqlalchemy import Connection
+    from sqlalchemy.engine import Engine
+    from sqlalchemy.engine.url import URL as EngineUrl  # noqa: N811
+
+    from datacube.drivers.postgis._fields import PgField
+
+    from ...cfg import ODCEnvironment
+    from ._schema import SpatialIndex
 
 _LIB_ID: str = "odc-" + str(datacube.__version__)
 
@@ -75,7 +85,7 @@ class PostGisDb:
         config_env: ODCEnvironment,
         application_name: str | None = None,
         validate_connection: bool = True,
-    ) -> "PostGisDb":
+    ) -> PostGisDb:
         app_name = cls._expand_app_name(application_name)
 
         return PostGisDb.create(
@@ -88,7 +98,7 @@ class PostGisDb:
         config_env: ODCEnvironment,
         application_name: str | None = None,
         validate: bool = True,
-    ) -> "PostGisDb":
+    ) -> PostGisDb:
         url = psql_url_from_config(config_env)
         engine = cls._create_engine(
             url,

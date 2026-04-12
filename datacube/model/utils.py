@@ -2,11 +2,12 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import os
 import platform
 import sys
 import uuid
-from collections.abc import Callable, Generator, Mapping, Sequence
 from datetime import datetime, timezone
 from typing import Any, Literal, overload
 
@@ -15,15 +16,23 @@ import toolz
 import xarray
 import yaml
 from odc.geo import CRS
-from odc.geo.geom import Geometry, point
+from odc.geo.geom import point
 from pandas import to_datetime
-from xarray import DataArray
 
 import datacube
-from datacube.index import Index
-from datacube.model import Dataset, Product
+from datacube.model import Dataset
 from datacube.utils import InvalidDocException, SimpleDocNav
 from datacube.utils.py import sorted_items
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Mapping, Sequence
+
+    from odc.geo.geom import Geometry
+    from xarray import DataArray
+
+    from datacube.index import Index
+    from datacube.model import Product
 
 try:
     from yaml import CSafeDumper as SafeDumper

@@ -6,37 +6,38 @@
 Common methods for index integration tests.
 """
 
+from __future__ import annotations
+
 import itertools
 import os
 import warnings
-from collections.abc import Callable, Generator, Iterable, Sequence
 from copy import copy, deepcopy
 from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Literal
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 import yaml
 from antimeridian import FixWindingWarning
-from click.testing import CliRunner, Result
+from click.testing import CliRunner
 from hypothesis import HealthCheck, settings
 from sqlalchemy import text
 
 import datacube.scripts.cli_app
 import datacube.utils
 from datacube import Datacube
-from datacube.cfg import ODCConfig, ODCEnvironment, psql_url_from_config
+from datacube.cfg import ODCConfig, psql_url_from_config
 from datacube.drivers.common_psql import drop_schema
 from datacube.drivers.postgis import PostGisDb
 from datacube.drivers.postgis import _core as pgis_core
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres import _core as pgres_core
-from datacube.index import Index, index_connect
-from datacube.index.abstract import AbstractIndex, default_metadata_type_docs
-from datacube.model import Dataset, LineageDirection, LineageTree, MetadataType, Product
-from datacube.utils import SimpleDocNav, read_documents
+from datacube.index import index_connect
+from datacube.index.abstract import default_metadata_type_docs
+from datacube.model import LineageDirection, LineageTree
+from datacube.utils import read_documents
 from integration_tests.utils import (
     GEOTIFF,
     _make_geotiffs,
@@ -44,6 +45,19 @@ from integration_tests.utils import (
     load_test_products,
     load_yaml_file,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterable, Sequence
+    from uuid import UUID
+
+    from click.testing import Result
+
+    from datacube.cfg import ODCEnvironment
+    from datacube.index import Index
+    from datacube.index.abstract import AbstractIndex
+    from datacube.model import Dataset, MetadataType, Product
+    from datacube.utils import SimpleDocNav
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 

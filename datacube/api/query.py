@@ -6,28 +6,36 @@
 Storage Query and Access API module
 """
 
+from __future__ import annotations
+
 import collections
 import datetime
 import logging
 import math
 import warnings
-from collections.abc import Callable, Iterable, Sequence
 from typing import Any, Literal
 
 import numpy as np
 import pandas
-import xarray
 from odc.geo import Geometry
-from odc.geo.geobox import GeoBox
 from odc.geo.geom import lonlat_bounds, mid_longitude
 from pandas import to_datetime as pandas_to_datetime
 from typing_extensions import override
 
-from datacube.index import Index
-
 from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
-from ..model import Dataset, QueryField, Range
+from ..model import Range
 from ..utils.dates import normalise_dt, tz_aware
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Sequence
+
+    import xarray
+    from odc.geo.geobox import GeoBox
+
+    from datacube.index import Index
+
+    from ..model import Dataset, QueryField
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

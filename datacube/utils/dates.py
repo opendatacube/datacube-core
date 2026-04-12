@@ -9,8 +9,9 @@ Includes sequence generation functions to be used by statistics apps
 
 """
 
-from collections.abc import Generator
-from datetime import date, datetime, timezone, tzinfo
+from __future__ import annotations
+
+from datetime import datetime, timezone
 
 import dateutil
 import dateutil.parser
@@ -18,6 +19,11 @@ import numpy as np
 import xarray as xr
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, MONTHLY, YEARLY, rrule
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from datetime import date, tzinfo
 
 try:
     from ciso8601 import parse_datetime

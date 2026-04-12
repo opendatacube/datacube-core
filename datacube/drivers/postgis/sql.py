@@ -6,13 +6,19 @@
 Custom types for postgres & sqlalchemy
 """
 
-from sqlalchemy import Connection
+from __future__ import annotations
+
 from sqlalchemy.dialects.postgresql.ranges import AbstractRange, Range
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 from sqlalchemy.types import Double
 
 import datacube.drivers.common_psql.sql as common_psql
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from sqlalchemy import Connection
+
 
 SCHEMA_NAME = "odc"
 

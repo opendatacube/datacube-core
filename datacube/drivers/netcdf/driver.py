@@ -2,14 +2,19 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from importlib.util import find_spec
-from pathlib import Path
-from urllib.parse import urlsplit
+from __future__ import annotations
 
-import xarray as xr
+from importlib.util import find_spec
+from urllib.parse import urlsplit
 
 from datacube.storage._rio import RasterDatasetDataSource
 from datacube.utils.uris import normalise_path
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import xarray as xr
 
 PROTOCOL = "file"
 FORMAT = "NetCDF"

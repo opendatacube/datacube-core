@@ -2,12 +2,18 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import csv
 import io
-from collections.abc import Iterable
 
 import datacube.scripts.search_tool
-from datacube.model import Dataset, Product
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from datacube.model import Dataset, Product
 
 
 def _load_product_query(

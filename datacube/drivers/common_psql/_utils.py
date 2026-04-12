@@ -2,11 +2,17 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import contextlib
-from collections.abc import Generator
 
-from sqlalchemy import Connection, text
+from sqlalchemy import text
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from sqlalchemy import Connection
 
 
 def escape_pg_identifier(conn: Connection, name: str) -> str:

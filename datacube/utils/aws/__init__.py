@@ -6,10 +6,11 @@
 Helper methods for working with AWS
 """
 
+from __future__ import annotations
+
 import functools
 import os
 import time
-from collections.abc import Generator
 from typing import IO, Any, TypeAlias
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -18,12 +19,17 @@ import botocore
 import botocore.session
 from botocore.client import BaseClient
 from botocore.config import Config
-from botocore.credentials import Credentials, ReadOnlyCredentials
-from botocore.session import Session
 from odc.loader._rio import configure_s3_access as rio_configure_s3_access
-from sqlalchemy.engine.url import URL
 
 from datacube.utils.generic import thread_local_cache
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from botocore.credentials import Credentials, ReadOnlyCredentials
+    from botocore.session import Session
+    from sqlalchemy.engine.url import URL
 
 ByteRange: TypeAlias = slice | tuple[int, int]  # pylint: disable=invalid-name
 MaybeS3: TypeAlias = BaseClient | None

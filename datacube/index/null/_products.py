@@ -2,17 +2,25 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import datetime
-import logging
-from collections.abc import Iterable, Sequence
+from __future__ import annotations
 
-from odc.geo import CRS, Geometry
+import logging
+
+from odc.geo import CRS
 from typing_extensions import override
 
 from datacube.index.abstract import AbstractProductResource
-from datacube.model import Product, QueryDict, QueryField
-from datacube.utils.changes import Change
-from datacube.utils.json_types import JsonDict
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Iterable, Sequence
+
+    from odc.geo import Geometry
+
+    from datacube.model import Product, QueryDict, QueryField
+    from datacube.utils.changes import Change
+    from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

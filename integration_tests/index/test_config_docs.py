@@ -6,6 +6,8 @@
 Module
 """
 
+from __future__ import annotations
+
 import copy
 
 import pytest
@@ -22,12 +24,16 @@ from datacube.drivers.postgres._fields import (
     NumericRangeDocField as PgrNumericRangeDocField,
 )
 from datacube.drivers.postgres._fields import PgField as PgrPgField
-from datacube.index import Index
 from datacube.index.abstract import default_metadata_type_docs
-from datacube.model import Dataset, DatasetType, MetadataType, Not, Product, Range
+from datacube.model import Dataset, Not, Range
 from datacube.testutils import sanitise_doc, suppress_deprecations
 from datacube.utils import changes
 from datacube.utils.documents import documents_equal
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.index import Index
+    from datacube.model import DatasetType, MetadataType, Product
 
 _DATASET_METADATA = {
     "id": "f7018d80-8807-11e5-aeaa-1040f381a756",

@@ -2,21 +2,29 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Iterable, MutableMapping
+from __future__ import annotations
+
 from typing import Literal
 
 from alembic import context
-from alembic.config import Config
-from alembic.operations import MigrationScript
-from alembic.runtime.migration import MigrationContext
-from sqlalchemy.engine.base import Connection
-from sqlalchemy.sql.schema import MetaData
 
-from datacube.cfg import ODCConfig, ODCEnvironment
+from datacube.cfg import ODCConfig
 from datacube.drivers.postgis._connections import PostGisDb
 from datacube.drivers.postgis._schema import Base
 from datacube.drivers.postgis._spatial import is_spindex_table_name
 from datacube.drivers.postgis.sql import SCHEMA_NAME
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, MutableMapping
+
+    from alembic.config import Config
+    from alembic.operations import MigrationScript
+    from alembic.runtime.migration import MigrationContext
+    from sqlalchemy.engine.base import Connection
+    from sqlalchemy.sql.schema import MetaData
+
+    from datacube.cfg import ODCEnvironment
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

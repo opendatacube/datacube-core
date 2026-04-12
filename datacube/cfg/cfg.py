@@ -15,14 +15,15 @@ import warnings
 from enum import Enum
 from os import PathLike
 from os.path import expanduser
-from typing import TYPE_CHECKING
 
 from datacube.cfg.exceptions import ConfigException
-from datacube.cfg.utils import ConfigDict, SemaphoreCallback, smells_like_ini
+from datacube.cfg.utils import smells_like_ini
 from datacube.migration import ODC2DeprecationWarning
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
     from datacube.cfg.api import GeneralisedPath
+    from datacube.cfg.utils import ConfigDict, SemaphoreCallback
 
 _DEFAULT_CONFIG_SEARCH_PATH: list[str] = [
     "datacube.conf",  # i.e. in the current working directory.

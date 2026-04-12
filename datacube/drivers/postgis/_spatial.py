@@ -6,8 +6,9 @@
 Tracking spatial indexes
 """
 
+from __future__ import annotations
+
 import logging
-from collections.abc import Mapping
 from threading import Lock
 
 from antimeridian import fix_shape
@@ -17,7 +18,6 @@ from odc.geo import Geometry as Geom
 from odc.geo.geom import multipolygon, polygon
 from sqlalchemy import ForeignKey, delete, select, text
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, mapped_column
 from sqlalchemy.sql.ddl import DropTable
 
@@ -25,6 +25,12 @@ from ..common_psql import as_role
 from ._core import METADATA
 from ._schema import Base, Dataset, SpatialIndex, SpatialIndexRecord, orm_registry
 from .sql import SCHEMA_NAME
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from sqlalchemy.engine import Engine
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

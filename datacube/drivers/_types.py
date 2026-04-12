@@ -4,16 +4,22 @@
 # SPDX-License-Identifier: Apache-2.0
 """Defines abstract types for IO drivers."""
 
+from __future__ import annotations
+
 from abc import ABCMeta, abstractmethod
-from collections.abc import Iterable
 from concurrent.futures import Future
 from typing import Any, TypeAlias
 
 import numpy as np
-from affine import Affine
-from odc.geo.crs import CRS
 
-from datacube.storage import BandInfo
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from affine import Affine
+    from odc.geo.crs import CRS
+
+    from datacube.storage import BandInfo
 
 # pylint: disable=invalid-name,unsubscriptable-object,pointless-statement
 

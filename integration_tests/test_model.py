@@ -2,9 +2,15 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import pytest
 
-from datacube.model import Dataset, Product
+from datacube.model import Dataset
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.model import Product
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))

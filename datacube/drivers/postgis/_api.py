@@ -13,17 +13,14 @@
 Persistence API implementation for postgis.
 """
 
-import datetime
+from __future__ import annotations
+
 import logging
-import uuid
-from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import Any
 from typing import cast as type_cast
 
 from odc.geo import CRS, Geometry
 from sqlalchemy import (
-    Connection,
-    RootTransaction,
     and_,
     cast,
     column,
@@ -37,26 +34,19 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import INTERVAL, insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.expression import Select
 from typing_extensions import override
 
 from datacube.drivers.common_psql import create_user, drop_users, grant_role, has_role
-from datacube.index.abstract import DSID
-from datacube.index.abstract._types import SearchMode
 from datacube.index.fields import OrExpression
 from datacube.model import Range
-from datacube.model.fields import Expression
 from datacube.model.lineage import LineageDirection, LineageRelation
 from datacube.utils import json
 from datacube.utils.uris import split_uri
 
-from ...utils.changes import Offset
 from ._core import UserRole
 from ._fields import (
     DateDocField,
-    DateRangeDocField,
     NativeField,
-    PgExpression,
     PgField,
     SimpleDocField,
     UnindexableValue,
@@ -76,6 +66,22 @@ from ._spatial import (
     generate_dataset_spatial_values,
     geom_alchemy,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import datetime
+    import uuid
+    from collections.abc import Generator, Iterable, Mapping, Sequence
+
+    from sqlalchemy import Connection, RootTransaction
+    from sqlalchemy.sql.expression import Select
+
+    from datacube.index.abstract import DSID
+    from datacube.index.abstract._types import SearchMode
+    from datacube.model.fields import Expression
+
+    from ...utils.changes import Offset
+    from ._fields import DateRangeDocField, PgExpression
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -2,8 +2,9 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
-from collections.abc import Generator
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
@@ -24,6 +25,10 @@ from affine import Affine
 from odc.geo.geobox import GeoBox
 
 from datacube.api.core import Datacube
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 pytest.importorskip(
     "dcio_example.xarray_3d"

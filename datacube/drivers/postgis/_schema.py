@@ -6,6 +6,8 @@
 Tables for indexing the datasets which were ingested into the AGDC.
 """
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime
 from uuid import UUID

@@ -2,14 +2,19 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import datetime
 import itertools
 import tarfile
 import time
-from collections.abc import Generator
 from io import BytesIO
 from pathlib import Path
 from typing import IO
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 def tar_mode(

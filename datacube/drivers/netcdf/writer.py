@@ -6,27 +6,31 @@
 Create netCDF4 Storage Units and write data to them
 """
 
+from __future__ import annotations
+
 import logging
 import numbers
 from collections import namedtuple
-from collections.abc import Sequence
 from datetime import datetime, timezone
-from os import PathLike
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import numpy
-import numpy as np
 from netCDF4 import Dataset
 from odc.geo import CRS
 from odc.geo.geom import box
 from odc.geo.math import data_resolution_and_offset
-from xarray import DataArray
 
 from datacube import __version__
 from datacube.utils.masking import describe_flags_def
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from os import PathLike
+
     import netCDF4
+    import numpy as np
+    from xarray import DataArray
 
 UTC: timezone = timezone.utc
 
@@ -90,7 +94,7 @@ def create_coordinate(
     name: str,
     labels: np.ndarray[tuple[Any, ...], np.dtype[Any]],
     units: str,
-) -> "netCDF4.Variable":
+) -> netCDF4.Variable:
     labels = netcdfy_coord(labels)
 
     nco.createDimension(name, labels.size)
@@ -106,7 +110,7 @@ def create_coordinate(
 
 def create_variable(
     nco, name: str, var: Variable | DataArray, grid_mapping=None, attrs=None, **kwargs
-) -> "netCDF4.Variable":
+) -> netCDF4.Variable:
     assert var.dtype.kind != "U"  # Creates Non CF-Compliant NetCDF File
 
     def clamp_chunksizes(chunksizes: Sequence[int] | None, dim_names: Sequence[str]):

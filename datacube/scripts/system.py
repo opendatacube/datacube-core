@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
 import warnings
 
@@ -10,12 +12,16 @@ from click import echo, style
 from sqlalchemy.exc import OperationalError
 
 import datacube
-from datacube.cfg import ODCEnvironment, psql_url_from_config
+from datacube.cfg import psql_url_from_config
 from datacube.drivers.postgres._connections import IndexSetupError
 from datacube.index import index_connect
 from datacube.migration import ODC2DeprecationWarning
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.cfg import ODCEnvironment
 
 _LOG: logging.Logger = logging.getLogger("datacube-system")
 

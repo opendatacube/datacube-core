@@ -6,12 +6,18 @@
 Common datatypes for DB drivers.
 """
 
+from __future__ import annotations
+
 from datetime import date, datetime, time, timezone
 
 from typing_extensions import override
 
-from datacube.model import Not, QueryField, Range
+from datacube.model import Not, Range
 from datacube.model.fields import Expression, Field
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.model import QueryField
 
 __all__ = [
     "Expression",

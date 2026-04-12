@@ -2,14 +2,19 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Callable
+from __future__ import annotations
 
-import numpy as np
 import odc.geo.testutils as odc_geom
-from affine import Affine
 from odc.geo import CRS
-from odc.geo.geobox import GeoBox
 from odc.geo.gridspec import GridSpec
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    import numpy as np
+    from affine import Affine
+    from odc.geo.geobox import GeoBox
 
 # pylint: disable=invalid-name
 

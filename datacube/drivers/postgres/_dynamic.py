@@ -6,19 +6,26 @@
 Methods for managing dynamic dataset field indexes and views.
 """
 
+from __future__ import annotations
+
 import logging
-from collections.abc import Mapping, Sequence
 
 from sqlalchemy import Index, select, text
-from sqlalchemy.engine.base import Connection, Engine
-from sqlalchemy.engine.mock import MockConnection
 
 from datacube.drivers.common_psql import as_role
-from datacube.drivers.postgres._fields import PgField
 
 from ._core import schema_qualified
 from ._schema import DATASET, METADATA_TYPE, PRODUCT
 from .sql import CreateView, pg_exists
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
+    from sqlalchemy.engine.base import Connection, Engine
+    from sqlalchemy.engine.mock import MockConnection
+
+    from datacube.drivers.postgres._fields import PgField
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

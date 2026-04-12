@@ -2,10 +2,15 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Sequence
+from __future__ import annotations
+
 from typing import Any
 
 from datacube.utils.documents import InvalidDocException
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 required_sys_field_values = [
     "id",

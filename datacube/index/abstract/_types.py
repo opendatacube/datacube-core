@@ -2,7 +2,10 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Iterable, Sequence
+from __future__ import annotations
+
+# Iterable required for Sphinx's documentation plugin for named tuples.
+from collections.abc import Iterable  # noqa: TC003
 from functools import cached_property
 from typing import Literal, NamedTuple, TypeAlias
 from uuid import UUID
@@ -10,8 +13,19 @@ from uuid import UUID
 from deprecat import deprecat
 
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Dataset, Product
-from datacube.utils.documents import JsonDict
+
+# Product required for Sphinx's documentation plugin for named tuples.
+from datacube.model import (
+    Dataset,
+    Product,  # noqa: TC001
+)
+
+# JsonDict required for Sphinx's documentation plugin for named tuples.
+from datacube.utils.documents import JsonDict  # noqa: TC001
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class BatchStatus(NamedTuple):

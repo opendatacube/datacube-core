@@ -9,8 +9,9 @@ This module defines any fixtures or other extensions to py.test to be used throu
 tests in this and sub packages.
 """
 
+from __future__ import annotations
+
 import os
-from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +19,6 @@ import pystac
 import pystac.collection
 import pystac.item
 import pytest
-import xarray as xr
 from affine import Affine
 from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox
@@ -35,6 +35,12 @@ from datacube.model import (
     metadata_from_doc,
 )
 from datacube.utils.documents import load_from_yaml, read_documents
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    import xarray as xr
 
 AWS_ENV_VARS = [
     "AWS_ACCESS_KEY_ID",

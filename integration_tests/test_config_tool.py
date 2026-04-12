@@ -6,12 +6,17 @@
 Module
 """
 
+from __future__ import annotations
+
 import logging
 import random
-from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 EXAMPLE_DATASET_TYPE_DOCS = list(
     map(

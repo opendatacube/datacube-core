@@ -2,24 +2,30 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import csv
 import logging
 import sys
 from collections import OrderedDict
-from collections.abc import Iterable, Sequence
 from getpass import getpass
 
 import click
 import yaml
 import yaml.resolver
 
-from datacube.cfg import ODCEnvironment
-from datacube.index import Index
-from datacube.index.abstract import AbstractIndex
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import gen_password
 from datacube.utils.serialise import SafeDatacubeDumper
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
+    from datacube.cfg import ODCEnvironment
+    from datacube.index import Index
+    from datacube.index.abstract import AbstractIndex
 
 _LOG: logging.Logger = logging.getLogger("datacube-user")
 USER_ROLES = ("user", "manage", "admin")

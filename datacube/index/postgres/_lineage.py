@@ -2,7 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Iterable
+from __future__ import annotations
+
 from time import monotonic
 
 from typing_extensions import override
@@ -10,6 +11,10 @@ from typing_extensions import override
 from datacube.index.abstract import BatchStatus, NoLineageResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.model import LineageRelation
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class LineageResource(NoLineageResource, IndexResourceAddIn):

@@ -2,10 +2,14 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Generator
+from __future__ import annotations
 
 import pytest
 from sqlalchemy import text
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 # These tests use an empty/uninitialised database.
 # Doesn't matter whether it is postgis or postgres - use postgis for future-proofing

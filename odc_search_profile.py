@@ -1,12 +1,19 @@
+from __future__ import annotations
+
 import sys
-from collections.abc import Callable, Iterable
 from datetime import datetime, timezone
 from time import monotonic
 
 from odc.geo.geom import CRS, polygon
 
 from datacube import Datacube
-from datacube.model import Dataset, Range
+from datacube.model import Range
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
+    from datacube.model import Dataset
 
 
 def benchmark(

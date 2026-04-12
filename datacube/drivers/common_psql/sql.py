@@ -6,12 +6,18 @@
 Custom types for postgres & sqlalchemy
 """
 
+from __future__ import annotations
+
 import warnings
 
-from sqlalchemy import Connection, inspect, text
+from sqlalchemy import inspect, text
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import sqltypes
 from sqlalchemy.sql.expression import ClauseElement, Executable
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from sqlalchemy import Connection
 
 INSTALL_TRIGGER_SQL_TEMPLATE = [
     "drop trigger if exists row_update_time_{table} on {schema}.{table}",

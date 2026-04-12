@@ -6,6 +6,8 @@
 Core SQL schema settings.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 
@@ -14,7 +16,6 @@ from alembic.migration import MigrationContext
 from alembic.runtime.environment import EnvironmentContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import MetaData, text
-from sqlalchemy.engine import Engine
 from typing_extensions import Self, override
 
 from datacube.drivers.common_psql import (
@@ -32,6 +33,10 @@ from datacube.drivers.postgis.sql import (
     TYPES_INIT_SQL,
     UPDATE_TIMESTAMP_SQL,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
 
 
 class UserRole(UserRoleBase):

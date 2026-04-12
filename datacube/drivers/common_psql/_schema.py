@@ -2,10 +2,14 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 from sqlalchemy import inspect, text
-from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.schema import DropSchema
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Connection, Engine
 
 
 def has_schema(engine: Engine, schema_name: str) -> bool:
