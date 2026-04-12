@@ -620,7 +620,7 @@ class Datacube:
             grid_spec=grid_spec,
             load_hints=load_hints,
             datasets=datasets,
-            geopolygon=cast(Geometry | None, query.pop("geopolygon", None)),
+            geopolygon=cast("Geometry | None", query.pop("geopolygon", None)),
             **query,
         )
         group_by = query_group_by(**query)  # type: ignore[arg-type]

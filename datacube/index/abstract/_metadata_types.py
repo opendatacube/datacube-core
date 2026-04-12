@@ -307,4 +307,4 @@ class AbstractMetadataTypeResource(ABC):
         """
         # Default implementation calls get_all()
         for mdt in self.get_all():
-            yield cast(JsonDict, mdt.definition)
+            yield cast("JsonDict", mdt.definition)

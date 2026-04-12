@@ -229,7 +229,7 @@ class MockIndex:
 def test_index_dataset() -> None:
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
-    datasets = DatasetResource(cast(PostgresDb, mock_db), cast(Index, mock_index))
+    datasets = DatasetResource(cast("PostgresDb", mock_db), cast("Index", mock_index))
     datasets.add(_EXAMPLE_NBAR_DATASET)
 
     ids = {d.id for d in mock_db.dataset.values()}
@@ -255,7 +255,7 @@ def test_index_dataset() -> None:
 def test_index_already_ingested_source_dataset() -> None:
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
-    datasets = DatasetResource(cast(PostgresDb, mock_db), cast(Index, mock_index))
+    datasets = DatasetResource(cast("PostgresDb", mock_db), cast("Index", mock_index))
     assert _EXAMPLE_NBAR_DATASET.sources is not None
     ds = _EXAMPLE_NBAR_DATASET.sources["ortho"]
     assert ds is not None
@@ -272,7 +272,7 @@ def test_index_already_ingested_source_dataset() -> None:
 def test_index_two_levels_already_ingested() -> None:
     mock_db = MockDb()
     mock_index = MockIndex(mock_db, _EXAMPLE_PRODUCT)
-    datasets = DatasetResource(cast(PostgresDb, mock_db), cast(Index, mock_index))
+    datasets = DatasetResource(cast("PostgresDb", mock_db), cast("Index", mock_index))
     assert _EXAMPLE_NBAR_DATASET.sources is not None
     ds1 = _EXAMPLE_NBAR_DATASET.sources["ortho"]
     assert ds1.sources is not None

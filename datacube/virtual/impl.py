@@ -481,7 +481,7 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
 
         measurement_dicts = self.output_measurements(
             grouped.product_definitions,
-            cast(list[str], load_settings.get("measurements")),
+            cast("list[str]", load_settings.get("measurements")),
         )
 
         if grouped.load_natively:
@@ -561,7 +561,7 @@ class Transform(VirtualProduct):
             isinstance(obj, Transformation), f"not a transformation object: {obj}"
         )
 
-        return cast(Transformation, obj)
+        return cast("Transformation", obj)
 
     @property
     def _input(self) -> VirtualProduct:
@@ -631,7 +631,7 @@ class Aggregate(VirtualProduct):
             isinstance(obj, Transformation), f"not a transformation object: {obj}"
         )
 
-        return cast(Transformation, obj)
+        return cast("Transformation", obj)
 
     @property
     def _input(self) -> VirtualProduct:
@@ -900,7 +900,7 @@ class Juxtapose(VirtualProduct):
             child.output_measurements(product_definitions) for child in self._children
         ]
 
-        result = cast(dict[str, Measurement], {})
+        result = cast("dict[str, Measurement]", {})
         for measurements in input_measurement_list:
             common = set(result) & set(measurements)
             self._assert(not common, f"common measurements {common} between children")

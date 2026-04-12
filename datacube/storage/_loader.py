@@ -143,7 +143,7 @@ def driver_based_load(
                 band=band_idx,
                 subdataset=bi.layer,
                 geobox=ds_geobox(ds, band=n),
-                meta=cast(RasterBandMetadata, template.bands[(n, band_idx or 1)]),
+                meta=cast("RasterBandMetadata", template.bands[(n, band_idx or 1)]),
                 driver_data=bi.driver_data,
             )
 

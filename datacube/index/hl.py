@@ -532,7 +532,7 @@ class Doc2Dataset:
 
         dataset, err = self._ds_resolve(doc, uri, source_tree)
         if dataset is None:
-            return None, cast(str | Exception, err)
+            return None, cast("str | Exception", err)
 
         reason = check_dataset_consistent(dataset)
         if reason is None:

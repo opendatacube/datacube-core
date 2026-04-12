@@ -302,9 +302,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             assert isinstance(f, fields.Field), f"Not a field: {f!r}"
             return f
 
-        group_fields = [cast(PgField, load_field(f)) for f in args]
+        group_fields = [cast("PgField", load_field(f)) for f in args]
         expressions = [
-            cast(PgExpression, dataset_fields.get("product") == product.name)
+            cast("PgExpression", dataset_fields.get("product") == product.name)
         ]
 
         with self._db_connection() as connection:

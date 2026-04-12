@@ -746,7 +746,7 @@ class PostgresDbAPI:
             return self.get_duplicates_with_time(match_fields, expressions)
 
         group_expressions = tuple(
-            type_cast(PgField, f).alchemy_expression for f in match_fields
+            type_cast("PgField", f).alchemy_expression for f in match_fields
         )
 
         select_query = (
@@ -779,9 +779,9 @@ class PostgresDbAPI:
         time_field: Label[Any] | None = None
         for f in match_fields:
             if f.name == "time":
-                time_field = type_cast(DateRangeDocField, f).expression_with_leniency
+                time_field = type_cast("DateRangeDocField", f).expression_with_leniency
             else:
-                fields.append(type_cast(PgField, f).alchemy_expression)
+                fields.append(type_cast("PgField", f).alchemy_expression)
 
         if time_field is None:
             raise Exception("No time field in duplicates query")

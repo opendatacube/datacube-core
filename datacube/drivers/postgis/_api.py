@@ -776,7 +776,7 @@ class PostgisDbAPI:
         fields = []
         for fld in match_fields:
             if fld.name == "time":
-                time_field = type_cast(DateRangeDocField, fld)
+                time_field = type_cast("DateRangeDocField", fld)
             else:
                 fields.append(fld.alchemy_expression)
 

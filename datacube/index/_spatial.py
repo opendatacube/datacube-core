@@ -40,7 +40,7 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
     polygon_candidate = q.get("geopolygon")
     if polygon_candidate is not None:
         # New geometry-style spatial query
-        geom_term = cast(JsonDict | Geometry, polygon_candidate)
+        geom_term = cast("JsonDict | Geometry", polygon_candidate)
         try:
             geom = Geometry(geom_term)
         except ValueError:
@@ -93,7 +93,7 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
             lat = Range(lat - delta, lat + delta)
         else:
             # Treat as tuple
-            begin, end = cast(tuple[int | float, int | float], lat)
+            begin, end = cast("tuple[int | float, int | float]", lat)
             lat = Range(begin, end)
 
         if lon is None:
@@ -102,7 +102,7 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
             lon = Range(lon - delta, lon + delta)
         else:
             # Treat as tuple
-            begin, end = cast(tuple[int | float, int | float], lon)
+            begin, end = cast("tuple[int | float, int | float]", lon)
             lon = Range(begin, end)
         geom = box(lon.begin, lat.begin, lon.end, lat.end, crs=crs)
     return geom
