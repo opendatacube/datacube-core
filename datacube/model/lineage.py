@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, TypeAlias, cast
@@ -11,9 +12,11 @@ from uuid import UUID
 
 from typing_extensions import override
 
+from ._base import dsid_to_uuid
+
 TYPE_CHECKING = False
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Iterable
 
 
 class LineageDirection(Enum):
@@ -40,6 +43,7 @@ class LineageDirection(Enum):
 
 
 SerialisedTree: TypeAlias = dict[str, str | dict[str, list["SerialisedTree"]]]
+Eo3LineageDict: TypeAlias = Mapping[str, Sequence[UUID]]
 
 
 @dataclass
@@ -191,14 +195,24 @@ class LineageTree:
         :param home_derived: Home database for the derived dataset (defaults to None).
         :return: A depth==1 LineageTree
         """
-        lineage = doc.get("lineage")
-        return cls.from_data(doc["id"], lineage, home=home, home_derived=home_derived)
+        lineage: Eo3LineageDict | None = doc.get("lineage")
+        return cls.from_data(
+            dsid_to_uuid(doc["id"]), lineage, home=home, home_derived=home_derived
+        )
+
+    def to_eo3_doc(self) -> Eo3LineageDict:
+        return {
+            classifier: [source.dataset_id for source in sources]
+            for classifier, sources in (
+                () if self.children is None else self.children.items()
+            )
+        }
 
     @classmethod
     def from_data(
         cls,
         dsid: UUID,
-        sources: Mapping[str, Sequence[UUID]] | None = None,
+        sources: Eo3LineageDict | None = None,
         direction: LineageDirection = LineageDirection.SOURCES,
         home: str | None = None,
         home_derived: str | None = None,
@@ -218,7 +232,8 @@ class LineageTree:
         else:
             children = {
                 classifier: [
-                    cls(direction=direction, dataset_id=der, home=home) for der in ders
+                    cls(direction=direction, dataset_id=dsid_to_uuid(der), home=home)
+                    for der in ders
                 ]
                 for classifier, ders in sources.items()
             }
@@ -352,6 +367,38 @@ class LineageRelations:
                 )
         else:
             self._homes[id_] = home
+
+    def merge_from_eo3_doc(
+        self,
+        doc: Mapping[str, Any],
+        home: str | None = None,
+        home_derived: str | None = None,
+    ) -> None:
+        id_derived = doc["id"]
+        lineage = doc.get("lineage")
+        if lineage:
+            self.merge_from_eo3(id_derived, lineage, home, home_derived)
+
+    def merge_from_eo3(
+        self,
+        id_derived: UUID,
+        lineage: Eo3LineageDict,
+        home: str | None = None,
+        home_derived: str | None = None,
+    ) -> None:
+        for classifier, sources in lineage.items():
+            for source in sources:
+                self.merge_new_lineage_relation(
+                    LineageRelation(
+                        classifier=classifier,
+                        derived_id=id_derived,
+                        source_id=source,
+                    )
+                )
+                if home is not None:
+                    self.merge_new_home(source, home)
+        if home_derived is not None:
+            self.merge_new_home(id_derived, home_derived)
 
     def _merge_new_relation(self, ids: LineageIDPair, classifier: str) -> None:
         """

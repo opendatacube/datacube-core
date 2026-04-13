@@ -16,7 +16,13 @@ import toolz
 from pystac import Item
 
 from datacube.metadata import stac2ds
-from datacube.model import Dataset, LineageDirection, LineageTree, Product
+from datacube.model import (
+    Dataset,
+    LineageDirection,
+    LineageTree,
+    Product,
+    dsid_to_uuid,
+)
 from datacube.model.utils import (
     BadMatch,
     dedup_lineage,
@@ -223,9 +229,9 @@ def resolve_with_lineage(
     :param home_index: Home for sources (ignored if source_tree is not none)
     :return:
     """
-    uuid_ = doc.id
-    if not uuid_:
+    if not doc.id:
         return None, "No id defined in dataset doc"
+    uuid_: UUID = dsid_to_uuid(doc.id)
     try:
         product = matcher(doc.doc)
     except BadMatch as e:

@@ -586,7 +586,7 @@ def test_spatiotemporal_extent(mem_eo3_data: tuple) -> None:
         assert tmin2 == tmin and tmax2 == tmax
         ids = [
             doc["id"]
-            for prod, doc, uris in dc.index.datasets.get_all_docs_for_product(
+            for prod, doc, uris, _ in dc.index.datasets.get_all_docs_for_product(
                 product=ds.product
             )
         ]

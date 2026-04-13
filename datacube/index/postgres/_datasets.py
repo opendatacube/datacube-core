@@ -240,7 +240,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             "uris": [],
         }
         dsids = []
-        for prod, metadata_doc, uris in batch_ds:
+        for prod, metadata_doc, uris, _ in batch_ds:
             dsid = UUID(str(metadata_doc["id"]))
             dsids.append(dsid)
             batch["datasets"].append(

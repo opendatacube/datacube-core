@@ -160,7 +160,12 @@ def _mk_dataset_tuples(dss: Iterable[Dataset]) -> Generator[DatasetTuple]:
             ds._uris if ds.has_multiple_uris() else ds.uri if ds.uri is not None else []
         )
         assert isinstance(my_uris, (str, list))
-        yield DatasetTuple(ds.product, ds.metadata_doc, my_uris)
+        yield DatasetTuple(
+            ds.product,
+            ds.metadata_doc,
+            my_uris,
+            ds.source_tree.to_eo3_doc() if ds.source_tree else None,
+        )
 
 
 # Needs to be top level definition so it can be pickled.
