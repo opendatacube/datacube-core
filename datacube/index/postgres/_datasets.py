@@ -27,11 +27,11 @@ from datacube.index.abstract import (
     BatchStatus,
     DatasetSpatialMixin,
     DatasetTuple,
-    dsid_to_uuid,
 )
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset
+from datacube.model._base import dsid_to_uuid
 from datacube.model.fields import Field
 from datacube.model.utils import flatten_datasets
 from datacube.utils import _readable_offset, changes, json, jsonify_document
@@ -43,11 +43,10 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 
     from datacube.drivers.postgres import PostgresDb
-    from datacube.index.abstract import DSID
     from datacube.index.abstract._types import SearchMode
     from datacube.index.postgres.index import Index
     from datacube.model import Product, Range
-    from datacube.model._base import QueryDict, QueryField
+    from datacube.model._base import DSID, QueryDict, QueryField
     from datacube.model.fields import Expression
     from datacube.utils.changes import Offset
 

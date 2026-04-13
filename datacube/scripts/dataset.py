@@ -45,8 +45,8 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from datacube.index import Index
-    from datacube.index.abstract import DSID
     from datacube.model import Dataset
+    from datacube.model._base import DSID
     from datacube.utils import SimpleDocNav
     from datacube.utils.changes import AllowPolicy, Offset
 

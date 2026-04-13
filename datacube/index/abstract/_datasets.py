@@ -29,10 +29,11 @@ if TYPE_CHECKING:
     from odc.geo import Geometry
 
     from datacube.model import Field, Product, QueryDict, QueryField
+    from datacube.model._base import DSID
     from datacube.utils.changes import AllowPolicy, Change, Offset
     from datacube.utils.documents import JsonDict
 
-    from ._types import DSID, SearchMode
+    from ._types import SearchMode
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

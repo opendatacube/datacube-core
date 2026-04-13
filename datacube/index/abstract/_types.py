@@ -8,7 +8,6 @@ from __future__ import annotations
 from collections.abc import Iterable  # noqa: TC003
 from functools import cached_property
 from typing import Literal, NamedTuple, TypeAlias
-from uuid import UUID
 
 from deprecat import deprecat
 
@@ -48,21 +47,7 @@ class BatchStatus(NamedTuple):
     safe: Iterable[str] | None = None
 
 
-# Non-strict Dataset ID representation
-
-DSID: TypeAlias = str | UUID
-
-
 SearchMode: TypeAlias = Literal["exact", "prefix"]
-
-
-def dsid_to_uuid(dsid: DSID) -> UUID:
-    """
-    Convert non-strict dataset ID representation to strict UUID
-    """
-    if isinstance(dsid, UUID):
-        return dsid
-    return UUID(dsid)
 
 
 class DatasetTuple(NamedTuple):

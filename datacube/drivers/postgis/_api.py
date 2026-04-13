@@ -76,8 +76,8 @@ if TYPE_CHECKING:
     from sqlalchemy import Connection, RootTransaction
     from sqlalchemy.sql.expression import Select
 
-    from datacube.index.abstract import DSID
     from datacube.index.abstract._types import SearchMode
+    from datacube.model._base import DSID
     from datacube.model.fields import Expression
 
     from ...utils.changes import Offset

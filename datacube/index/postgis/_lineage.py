@@ -8,9 +8,10 @@ from time import monotonic
 
 from typing_extensions import override
 
-from datacube.index.abstract import AbstractLineageResource, BatchStatus, dsid_to_uuid
+from datacube.index.abstract import AbstractLineageResource, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.model import LineageDirection, LineageRelation
+from datacube.model._base import dsid_to_uuid
 from datacube.model.lineage import LineageRelations
 
 TYPE_CHECKING = False
@@ -19,8 +20,9 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from datacube.drivers.postgis._connections import PostGisDb
-    from datacube.index.abstract import DSID, AbstractIndex
+    from datacube.index.abstract import AbstractIndex
     from datacube.model import LineageTree
+    from datacube.model._base import DSID
 
 
 class LineageResource(AbstractLineageResource, IndexResourceAddIn):

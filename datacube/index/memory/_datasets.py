@@ -24,12 +24,12 @@ from datacube.index.abstract import (
     BatchStatus,
     DatasetSpatialMixin,
     NoLineageResource,
-    dsid_to_uuid,
 )
 from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, LineageRelation, Product, Range, ranges_overlap
+from datacube.model._base import dsid_to_uuid
 from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import get_doc_changes
 from datacube.utils.dates import tz_aware
@@ -42,8 +42,8 @@ if TYPE_CHECKING:
 
     from odc.geo import Geometry
 
-    from datacube.index.abstract import DSID, AbstractIndex
-    from datacube.model._base import QueryField
+    from datacube.index.abstract import AbstractIndex
+    from datacube.model._base import DSID, QueryField
     from datacube.utils.changes import AllowPolicy, Change, Offset
     from datacube.utils.documents import JsonDict
 
