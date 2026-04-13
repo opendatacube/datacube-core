@@ -65,9 +65,9 @@ if TYPE_CHECKING:
     from sqlalchemy.engine import Row
     from sqlalchemy.sql.selectable import NamedFromClause
 
-    from datacube.index.abstract import DSID
     from datacube.index.abstract._types import SearchMode
     from datacube.index.fields import Expression, Field
+    from datacube.model._base import DSID
 
     from ._fields import DateRangeDocField
 

@@ -20,9 +20,8 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from datacube.model import LineageDirection, LineageRelation, LineageTree
+    from datacube.model._base import DSID
     from datacube.model.lineage import LineageRelations
-
-    from ._types import DSID
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -214,7 +213,7 @@ class AbstractLineageResource(ABC):
             if n_in_batch >= batch_size:
                 batch_result = self._add_batch(batch)
                 _LOG.info(
-                    "Batch %d/%d datasets added in %.2fs: (%.2fdatasets/min)",
+                    "Batch %d/%d lineage relations added in %.2fs: (%.2frelations/min)",
                     batch_result.completed,
                     n_in_batch,
                     batch_result.seconds_elapsed,

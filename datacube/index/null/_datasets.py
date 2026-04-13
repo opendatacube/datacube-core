@@ -20,8 +20,8 @@ if TYPE_CHECKING:
 
     from odc.geo import Geometry
 
-    from datacube.index.abstract import DSID
     from datacube.model import Dataset, Product, QueryDict, QueryField
+    from datacube.model._base import DSID
     from datacube.utils.changes import Change, Offset
 
 

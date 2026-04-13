@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
     from datacube.cfg import ODCEnvironment, ODCOptionHandler
     from datacube.model import Field, MetadataType
+    from datacube.model._base import DSID
     from datacube.utils.json_types import JsonDict
 
     from ._datasets import AbstractDatasetResource
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
     from ._metadata_types import AbstractMetadataTypeResource
     from ._products import AbstractProductResource
     from ._transactions import AbstractTransaction
-    from ._types import DSID, BatchStatus
+    from ._types import BatchStatus
     from ._users import AbstractUserResource
 
 _LOG: logging.Logger = logging.getLogger(__name__)

@@ -41,11 +41,11 @@ from datacube.index.abstract import (
     BatchStatus,
     DatasetSpatialMixin,
     DatasetTuple,
-    dsid_to_uuid,
 )
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, Range
+from datacube.model._base import dsid_to_uuid
 from datacube.model.fields import Field
 from datacube.utils import _readable_offset, changes, json, jsonify_document
 from datacube.utils.changes import get_doc_changes
@@ -60,11 +60,10 @@ if TYPE_CHECKING:
 
     from datacube.drivers.postgis import PostGisDb
     from datacube.drivers.postgis._fields import PgExpression, PgField
-    from datacube.index.abstract import DSID
     from datacube.index.abstract._types import SearchMode
     from datacube.index.postgis.index import Index
     from datacube.model import LineageTree, Product
-    from datacube.model._base import QueryDict, QueryField
+    from datacube.model._base import DSID, QueryDict, QueryField
     from datacube.utils.changes import Change, Offset
     from datacube.utils.documents import JsonDict
 

@@ -38,7 +38,15 @@ from datacube.utils import (
 )
 
 from ..utils.uris import pick_uri
-from ._base import Not, QueryDict, QueryField, Range, ranges_overlap  # noqa: F401
+from ._base import (  # noqa: F401
+    DSID,
+    Not,
+    QueryDict,
+    QueryField,
+    Range,
+    dsid_to_uuid,
+    ranges_overlap,
+)
 from .eo3 import validate_eo3_compatible_type
 from .fields import Field, get_dataset_fields
 from .lineage import (
@@ -65,6 +73,7 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "DSID",
     "Dataset",
     "ExtraDimensions",
     "Field",
@@ -79,6 +88,7 @@ __all__ = [
     "QueryDict",
     "QueryField",
     "Range",
+    "dsid_to_uuid",
     "get_dataset_fields",
     "metadata_from_doc",
     "ranges_overlap",

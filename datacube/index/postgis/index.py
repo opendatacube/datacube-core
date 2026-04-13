@@ -35,7 +35,8 @@ if TYPE_CHECKING:
 
     from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
     from datacube.drivers.postgis import PostgisDbAPI
-    from datacube.index.abstract import DSID, AbstractTransaction
+    from datacube.index.abstract import AbstractTransaction
+    from datacube.model._base import DSID
     from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
