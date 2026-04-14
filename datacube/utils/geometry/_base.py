@@ -14,10 +14,8 @@ from typing import Any, NamedTuple, TypeAlias
 
 import cachetools
 import numpy
-import rasterio
 import xarray as xr
 from affine import Affine
-from packaging.version import Version
 from pyproj import CRS as _CRS
 from pyproj.enums import WktVersion
 from pyproj.exceptions import CRSError
@@ -180,11 +178,7 @@ class CRS:
     :raises: `pyproj.exceptions.CRSError`
     """
 
-    DEFAULT_WKT_VERSION = (
-        WktVersion.WKT1_GDAL
-        if Version(rasterio.__gdal_version__) < Version("3.0.0")
-        else WktVersion.WKT2_2019
-    )
+    DEFAULT_WKT_VERSION = WktVersion.WKT2_2019
 
     __slots__ = ("_crs", "_epsg", "_str")
 
