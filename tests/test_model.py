@@ -381,16 +381,6 @@ def test_measurement_pickling(protocol) -> None:
     assert m == restored_m
 
 
-def test_measurement_cloudpickle() -> None:
-    import cloudpickle
-
-    m = Measurement(canonical_name="s", name="t", dtype="uint8", nodata=255, units="1")
-    serialised = cloudpickle.dumps(m)
-
-    deserialised = cloudpickle.loads(serialised)
-    assert m == deserialised
-
-
 def test_output_geobox_load_hints() -> None:
     geobox0 = AlbersGS.tile_geobox((15, -40))
 

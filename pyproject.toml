@@ -31,7 +31,6 @@ dependencies = [
     'attrs>=18.1',
     'cachetools',
     'click>=8.2',  # Support for deprecated argument on options
-    'cloudpickle>=0.4',
     'dask[array]',
     'deprecat',
     'distributed',

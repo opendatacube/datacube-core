@@ -19,7 +19,6 @@ dependencies:
   - boto3
   - cachetools
   - click>=5.0
-  - cloudpickle >=0.4.0
   - dask
   - pyproj >=2.5
   - shapely >=2.0
