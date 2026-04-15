@@ -12,7 +12,7 @@ from uuid import UUID
 
 from typing_extensions import override
 
-from ._base import dsid_to_uuid
+from ._base import DSID, dsid_to_uuid
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ class LineageDirection(Enum):
 
 
 SerialisedTree: TypeAlias = dict[str, str | dict[str, list["SerialisedTree"]]]
-Eo3LineageDict: TypeAlias = Mapping[str, Sequence[UUID]]
+Eo3LineageDict: TypeAlias = Mapping[str, Sequence[DSID]]
 
 
 @dataclass

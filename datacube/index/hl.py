@@ -228,9 +228,9 @@ def resolve_with_lineage(
     :param home_index: Home for sources (ignored if source_tree is not none)
     :return:
     """
-    if not doc.id:
-        return None, "No id defined in dataset doc"
     uuid_ = doc.id
+    if not uuid_:
+        return None, "No id defined in dataset doc"
     try:
         product = matcher(doc.doc)
     except BadMatch as e:

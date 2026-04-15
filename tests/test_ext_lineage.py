@@ -149,18 +149,25 @@ def test_lineage_eo3_merge(src_lineage_tree, src_tree_ids) -> None:
             "id": str(src_tree_ids["root"]),
             "lineage": {
                 "ard": [str(src_tree_ids["ard1"])],
-            }
+            },
         }
     )
     rels.merge_from_eo3(
         src_tree_ids["ard1"],
         home="level1db",
         lineage={
-            "l1": [str(src_tree_ids["l1_1"]), str(src_tree_ids["l1_2"]), str(src_tree_ids["l1_3"])],
+            "l1": [
+                str(src_tree_ids["l1_1"]),
+                str(src_tree_ids["l1_2"]),
+                str(src_tree_ids["l1_3"]),
+            ],
             "atmos_corr": [str(src_tree_ids["atmos"])],
-        }
+        },
     )
-    assert rels.extract_tree(src_tree_ids["root"], LineageDirection.SOURCES) == src_lineage_tree
+    assert (
+        rels.extract_tree(src_tree_ids["root"], LineageDirection.SOURCES)
+        == src_lineage_tree
+    )
 
 
 @pytest.fixture
