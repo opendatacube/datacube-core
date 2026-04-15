@@ -386,15 +386,16 @@ class LineageRelations:
     ) -> None:
         for classifier, sources in lineage.items():
             for source in sources:
+                source_uuid = dsid_to_uuid(source)
                 self.merge_new_lineage_relation(
                     LineageRelation(
                         classifier=classifier,
                         derived_id=id_derived,
-                        source_id=dsid_to_uuid(source),
+                        source_id=source_uuid,
                     )
                 )
                 if home is not None:
-                    self.merge_new_home(source, home)
+                    self.merge_new_home(source_uuid, home)
         if home_derived is not None:
             self.merge_new_home(id_derived, home_derived)
 

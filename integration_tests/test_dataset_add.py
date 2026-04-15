@@ -346,6 +346,7 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
 @pytest.mark.parametrize(
     "datacube_env_name", ("postgis", "postgis3", "datacube", "datacube3")
 )
+@pytest.mark.parametrize("db_tz", ("UTC",))
 def test_dataset_add_stac_ignore_lineage(
     index, clirunner, ls8_stac_doc, eo3_products
 ) -> None:
@@ -359,11 +360,24 @@ def test_dataset_add_stac_ignore_lineage(
     assert ds.source_tree is None
     assert ds.sources == {}
 
-    r = clirunner(["dataset", "add", path])
+    r = clirunner(["dataset", "add", "--ignore-lineage", path])
     assert r.exit_code == 0
 
 
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "datacube"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
+def test_dataset_add_stac_bad_product(index, ls8_stac_doc, eo3_products) -> None:
+    stac_doc, _ = ls8_stac_doc
+    stac_doc["collection"] = "bad_product"
+    doc2ds = Doc2Dataset(index, skip_lineage=True)
+    ds, err = doc2ds(stac_doc, "file:///something")
+    assert err is not None
+    assert "bad_product" in str(err)
+    assert ds is None
+
+
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
 def test_dataset_add_stac_ext_lineage(
     index, clirunner, ls8_stac_doc, eo3_products
 ) -> None:
@@ -387,7 +401,25 @@ def test_dataset_add_stac_ext_lineage(
     assert st == ds.source_tree
 
 
+@pytest.mark.parametrize(
+    "datacube_env_name", ("datacube", "datacube3", "postgis", "postgis3")
+)
+@pytest.mark.parametrize("db_tz", ("UTC",))
+def test_dataset_add_stac_lineage(
+    index, clirunner, ls8_stac_doc, ls8_stac_lvl1_doc, eo3_products
+) -> None:
+    _, l1_path = ls8_stac_lvl1_doc
+    r = clirunner(["dataset", "add", l1_path])
+    assert r.exit_code == 0
+
+    _, path = ls8_stac_doc
+
+    r = clirunner(["dataset", "add", path])
+    assert r.exit_code == 0
+
+
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
 def test_dataset_add_stac_workers_ext_lineage(
     index, clirunner, ls8_stac_doc, eo3_products
 ) -> None:
@@ -407,6 +439,7 @@ def test_dataset_add_stac_workers_ext_lineage(
 @pytest.mark.parametrize(
     "datacube_env_name", ("datacube", "datacube3", "postgis", "postgis3")
 )
+@pytest.mark.parametrize("db_tz", ("UTC",))
 def test_dataset_add_stac_workers_ignore_lineage(
     index, clirunner, ls8_stac_doc, eo3_products
 ) -> None:

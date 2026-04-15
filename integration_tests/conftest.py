@@ -312,6 +312,14 @@ def ls8_stac_doc() -> tuple[dict, str]:
 
 
 @pytest.fixture
+def ls8_stac_lvl1_doc() -> tuple[dict, str]:
+    return (
+        get_eo3_test_data_doc("ga_ls8c_lvl1_stac.json"),
+        str(EO3_TESTDIR / "ga_ls8c_lvl1_stac.json"),
+    )
+
+
+@pytest.fixture
 def ls8_stac_update_path() -> str:
     return str(EO3_TESTDIR / "ga_ls8c_ard_3_stac_update.json")
 
@@ -383,6 +391,19 @@ def ls8_eo3_product(
 
 
 @pytest.fixture
+def ls8_lvl1_eo3_product(
+    index: Index, extended_eo3_metadata_type, extended_eo3_product_doc
+) -> Product:
+    extended_eo3_product_doc["name"] = "ga_ls8c_ard_3_level1"
+    extended_eo3_product_doc["metadata"]["product"]["name"] = "ga_ls8c_ard_3_level1"
+    del extended_eo3_product_doc["metadata"]["properties"]["odc:producer"]
+    del extended_eo3_product_doc["metadata"]["properties"]["odc:product_family"]
+    p = index.products.add_document(extended_eo3_product_doc)
+    assert p is not None
+    return p
+
+
+@pytest.fixture
 def wo_eo3_product(index: Index, base_eo3_product_doc) -> Product:
     p = index.products.add_document(base_eo3_product_doc)
     assert p is not None
@@ -417,10 +438,15 @@ def eo3_products(
     index: Index,
     extended_eo3_metadata_type,
     ls8_eo3_product,
-    wo_eo3_product,
+    ls8_lvl1_eo3_product,
     africa_s2_eo3_product,
 ):
-    return [africa_s2_eo3_product, ls8_eo3_product, wo_eo3_product]
+    return [
+        africa_s2_eo3_product,
+        ls8_eo3_product,
+        wo_eo3_product,
+        ls8_lvl1_eo3_product,
+    ]
 
 
 @pytest.fixture
