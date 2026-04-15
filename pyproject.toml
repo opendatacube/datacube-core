@@ -40,7 +40,6 @@ dependencies = [
     'odc-geo>=0.5.0',
     'odc-loader>=0.6.4', # Consistent custom fuser support from 0.6.4
     'odc-stac>=0.5.0',   # First release compatible with odc-loader 0.6.x
-    'packaging',
     'pandas',
     'pyproj>=2.5',
     'python-dateutil',
