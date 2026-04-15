@@ -142,6 +142,27 @@ def test_lineage_serialisation(src_lineage_tree, src_tree_ids) -> None:
     assert tree_out == src_lineage_tree
 
 
+def test_lineage_eo3_merge(src_lineage_tree, src_tree_ids) -> None:
+    rels = LineageRelations()
+    rels.merge_from_eo3_doc(
+        {
+            "id": str(src_tree_ids["root"]),
+            "lineage": {
+                "ard": [str(src_tree_ids["ard1"])],
+            }
+        }
+    )
+    rels.merge_from_eo3(
+        src_tree_ids["ard1"],
+        home="level1db",
+        lineage={
+            "l1": [str(src_tree_ids["l1_1"]), str(src_tree_ids["l1_2"]), str(src_tree_ids["l1_3"])],
+            "atmos_corr": [str(src_tree_ids["atmos"])],
+        }
+    )
+    assert rels.extract_tree(src_tree_ids["root"], LineageDirection.SOURCES) == src_lineage_tree
+
+
 @pytest.fixture
 def src_lineage_tree_diffhome(src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = src_tree_ids
