@@ -396,8 +396,8 @@ def ls8_lvl1_eo3_product(
 ) -> Product:
     extended_eo3_product_doc["name"] = "ga_ls8c_ard_3_level1"
     extended_eo3_product_doc["metadata"]["product"]["name"] = "ga_ls8c_ard_3_level1"
-    del extended_eo3_product_doc["metadata"]["properties"]["odc:producer"]
-    del extended_eo3_product_doc["metadata"]["properties"]["odc:product_family"]
+    extended_eo3_product_doc["metadata"]["properties"]["odc:producer"] = "upstream"
+    extended_eo3_product_doc["metadata"]["properties"]["odc:product_family"] = "level1"
     p = index.products.add_document(extended_eo3_product_doc)
     assert p is not None
     return p

@@ -48,6 +48,8 @@
       "landsat:wrs_row": 80,
       "odc:dataset_version": "3.1.0",
       "odc:file_format": "GeoTIFF",
+      "odc:producer": "upstream",
+      "odc:product_family": "level1",
       "created": "2020-06-18T05:07:06.303867Z",
       "odc:region_code": "088080",
       "proj:code": "EPSG:32656",
@@ -1134,5 +1136,5 @@
       "https://stac-extensions.github.io/projection/v1.1.0/schema.json",
       "https://stac-extensions.github.io/view/v1.0.0/schema.json"
   ],
-  "collection": "ga_ls8c_ard_3"
+  "collection": "ga_ls8c_ard_3_level1"
 }
