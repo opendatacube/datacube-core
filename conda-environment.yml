@@ -32,7 +32,6 @@ dependencies:
   - python-dateutil
   - pyyaml
   - rasterio >=1.4.4
-  - ruamel.yaml
   - sqlalchemy >=2.0
   - alembic
   - GeoAlchemy2 >= 0.17.0

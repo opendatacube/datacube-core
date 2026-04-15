@@ -46,7 +46,6 @@ dependencies = [
     'python-dateutil',
     'pyyaml',
     'rasterio>=1.4.4',  # Handle changes in recent versions of GDAL
-    'ruamel.yaml',
     'shapely>=2.0',
     'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.
     'toolz',
