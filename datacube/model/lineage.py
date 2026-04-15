@@ -203,9 +203,7 @@ class LineageTree:
     def to_eo3_doc(self) -> Eo3LineageDict:
         return {
             classifier: [source.dataset_id for source in sources]
-            for classifier, sources in (
-                () if self.children is None else self.children.items()
-            )
+            for classifier, sources in (self.children or {}).items()
         }
 
     @classmethod
@@ -374,7 +372,7 @@ class LineageRelations:
         home: str | None = None,
         home_derived: str | None = None,
     ) -> None:
-        id_derived = doc["id"]
+        id_derived = dsid_to_uuid(doc["id"])
         lineage = doc.get("lineage")
         if lineage:
             self.merge_from_eo3(id_derived, lineage, home, home_derived)
@@ -392,7 +390,7 @@ class LineageRelations:
                     LineageRelation(
                         classifier=classifier,
                         derived_id=id_derived,
-                        source_id=source,
+                        source_id=dsid_to_uuid(source),
                     )
                 )
                 if home is not None:

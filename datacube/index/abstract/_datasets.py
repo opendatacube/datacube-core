@@ -8,7 +8,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import timedelta
 from time import monotonic
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 
 from deprecat import deprecat
 from odc.geo import CRS
@@ -683,7 +683,7 @@ class AbstractDatasetResource(ABC):
             batch.append(ds_tup)
             if ds_tup.lineage:
                 lineage_cache.merge_from_eo3(
-                    dsid_to_uuid(str(ds_tup.metadata["id"])), ds_tup.lineage
+                    dsid_to_uuid(cast("str", ds_tup.metadata["id"])), ds_tup.lineage
                 )
             n_in_batch += 1
             if n_in_batch >= batch_size:

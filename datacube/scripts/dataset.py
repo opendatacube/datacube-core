@@ -164,7 +164,7 @@ def _mk_dataset_tuples(dss: Iterable[Dataset]) -> Generator[DatasetTuple]:
             ds.product,
             ds.metadata_doc,
             my_uris,
-            ds.source_tree.to_eo3_doc() if ds.source_tree else None,
+            ds.source_tree.to_eo3_doc() if ds.source_tree else {},
         )
 
 

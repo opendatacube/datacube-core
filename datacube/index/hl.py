@@ -21,7 +21,6 @@ from datacube.model import (
     LineageDirection,
     LineageTree,
     Product,
-    dsid_to_uuid,
 )
 from datacube.model.utils import (
     BadMatch,
@@ -231,7 +230,7 @@ def resolve_with_lineage(
     """
     if not doc.id:
         return None, "No id defined in dataset doc"
-    uuid_: UUID = dsid_to_uuid(doc.id)
+    uuid_ = doc.id
     try:
         product = matcher(doc.doc)
     except BadMatch as e:
