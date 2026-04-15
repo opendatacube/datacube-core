@@ -30,7 +30,6 @@ dependencies = [
     'antimeridian<0.4.5', # All test_index_cloning tests fail with 0.4.5.
     'cachetools',
     'click>=8.2',  # Support for deprecated argument on options
-    'cloudpickle>=0.4',
     'dask[array]',
     'deprecat',
     'distributed',
