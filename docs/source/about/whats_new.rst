@@ -5,6 +5,86 @@
 Release History
 ***************
 
+1.9.18 (16 April 2026)
+======================
+
+Includes functional and performance improvements to indexing, especially from STAC.
+
+What's Changed
+++++++++++++++
+
+Significant Changes
+-------------------
+
+* index: align bulk_add and add API by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2393
+* dataset: use bulk-add for Postgis by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2403
+* dataset: add a --workers parameter by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2409
+* Add orjson extra by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2411
+* drivers/postgis: grant odc_manage permissions by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2413
+* stacconverter: best effort raster bands by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2402
+* user: add --passwd-stdin by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2416
+* Preparations for storing lineage data when indexing from STAC files by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2444
+* Store lineage data when indexing from STAC by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2443
+
+Minor Changes/Maintenance/Cleanup
+---------------------------------
+
+* test_eo3converter: remove hardcoded strings by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2401
+* Replace custom cached_property with stdlib by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2406
+* drivers/postgres: improve type signature by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2405
+* click: stop catching KeyboardInterrupt by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2404
+* tests: run in single time zone by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2415
+* pyproject: restrict setuptools-scm < 10 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2420
+* tests: test CLI input validation by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2417
+* testutils/geom: call odc-geo instead by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2419
+* drivers/common_psql: share more code by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2423
+* metadata: stop showing backtraces by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2422
+* opt: ensure URL can be parsed by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2425
+* Postgis driver: Always use "as_role" for controlling active role. by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2410
+* pyproject: disable orjson optional by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2433
+* click: catch NoIndexError by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2435
+* Add more type signatures by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2434
+* docs: fix rst formatting by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2442
+* Use TYPE_CHECKING block for types by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2441
+* pyproject: remove unused attrs by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2449
+* pyproject: remove unused cloudpickle by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2450
+* pyproject: remove unused ruamel.yaml by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2451
+* Remove GDAL 2.x support by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2452
+* CI: stop persisting credentials by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2453
+* Prepare for 1.9.18 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2455
+
+Automated Updates
+-----------------
+
+* build(deps): bump astral-sh/uv from 0.10.10 to 0.10.11 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2400
+* build(deps): bump astral-sh/uv from 0.10.11 to 0.10.12 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2407
+* build(deps): bump osgeo/gdal from ubuntu-full-3.12.2 to ubuntu-full-3.12.3 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2408
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2412
+* build(deps): bump astral-sh/uv from 0.10.12 to 0.11.0 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2414
+* build(deps): bump astral-sh/uv from 0.11.0 to 0.11.1 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2418
+* build(deps): bump requests from 2.32.5 to 2.33.0 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2421
+* build(deps): bump astral-sh/uv from 0.11.1 to 0.11.2 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2424
+* build(deps): bump cryptography from 46.0.5 to 46.0.6 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2426
+* build(deps): bump actions/cache from 5.0.3 to 5.0.4 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2429
+* ci(mergify): upgrade configuration to current format by @mergify[bot] in https://github.com/opendatacube/datacube-core/pull/2431
+* build(deps): bump astral-sh/uv from 0.11.2 to 0.11.3 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2432
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2436
+* build(deps): bump the actions-deps group with 2 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2437
+* build(deps): bump astral-sh/uv from 0.11.3 to 0.11.5 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2439
+* build(deps): bump cryptography from 46.0.6 to 46.0.7 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2438
+* build(deps): bump astral-sh/uv from 0.11.5 to 0.11.6 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2440
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2445
+* build(deps): bump astral-sh/setup-uv from 7.5.0 to 8.0.0 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2446
+* build(deps): bump pillow from 12.1.1 to 12.2.0 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2447
+* build(deps-dev): bump pytest from 9.0.2 to 9.0.3 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2448
+* build(deps): bump astral-sh/uv from 0.11.6 to 0.11.7 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2454
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2427
+* build(deps): bump pygments from 2.19.2 to 2.20.0 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2428
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.17...1.9.18
+
+The ODC Steering Council thanks RISE and Geoscience Australia for their ongoing support of the project.
+
 1.9.17 (17 March 2026)
 ======================
 
