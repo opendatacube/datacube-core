@@ -349,14 +349,20 @@ def documents_equal(d1: str | float | list | dict, d2) -> bool:
     if isinstance(d1, str):
         return d1 == d2
     if isinstance(d1, dict):
+        if not isinstance(d2, dict):
+            return False
         if set(d1.keys()) != set(d2.keys()):
             return False
         return all(documents_equal(d1[k], d2[k]) for k in d1)
     if isinstance(d1, list):
+        if not isinstance(d2, list):
+            return False
         if len(d1) != len(d2):
             return False
         return all(documents_equal(d1[i], d2[i]) for i in range(len(d1)))
     if isinstance(d1, float):
+        if not isinstance(d2, float):
+            return False
         if math.isnan(d1) and math.isnan(d2):
             return True
         return math.isclose(d1, d2, abs_tol=1e-10)
