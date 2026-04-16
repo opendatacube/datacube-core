@@ -72,7 +72,7 @@ netcdf = ['netcdf4']
 # orjson = ['orjson']
 postgres = ['psycopg2']
 psycopg3 = ['psycopg']
-# tifffile (a scikit-image 2026 says it is Python 3.10 compatible, but isn't.
+# tifffile 2026 (a scikit-image dependency) tells pip/uv it is Python 3.10 compatible, but isn't.
 # Remove pins after we move minimum to Python 3.12
 scikit-image = ['scikit-image<0.26','tifffile<2026']
 
