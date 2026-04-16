@@ -18,6 +18,7 @@ from datacube.model import (
     Dataset,
     Product,  # noqa: TC001
 )
+from datacube.model.lineage import Eo3LineageDict  # noqa: TC001
 
 # JsonDict required for Sphinx's documentation plugin for named tuples.
 from datacube.utils.documents import JsonDict  # noqa: TC001
@@ -56,11 +57,13 @@ class DatasetTuple(NamedTuple):
     :param product: A Product model.
     :param metadata: The dataset metadata document
     :param uri\\_: The dataset location or list of locations
+    :param lineage: An optional EO3 document lineage section.
     """
 
     product: Product
     metadata: JsonDict
     uri_: str | list[str]
+    lineage: Eo3LineageDict = {}
 
     @property
     def uri_is_string(self) -> bool:

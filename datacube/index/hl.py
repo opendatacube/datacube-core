@@ -16,7 +16,12 @@ import toolz
 from pystac import Item
 
 from datacube.metadata import stac2ds
-from datacube.model import Dataset, LineageDirection, LineageTree, Product
+from datacube.model import (
+    Dataset,
+    LineageDirection,
+    LineageTree,
+    Product,
+)
 from datacube.model.utils import (
     BadMatch,
     dedup_lineage,

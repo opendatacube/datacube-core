@@ -343,8 +343,44 @@ def test_dataset_add(dataset_add_configs, index_empty, clirunner) -> None:
     assert "location" not in _ds.metadata_doc
 
 
+@pytest.mark.parametrize(
+    "datacube_env_name", ("postgis", "postgis3", "datacube", "datacube3")
+)
+@pytest.mark.parametrize("db_tz", ("UTC",))
+def test_dataset_add_stac_ignore_lineage(
+    index, clirunner, ls8_stac_doc, eo3_products
+) -> None:
+    stac_doc, path = ls8_stac_doc
+    doc2ds = Doc2Dataset(index, skip_lineage=True)
+    ds, err = doc2ds(stac_doc, "file:///something")
+    assert err is None
+    assert ds is not None
+    assert str(ds.id) == stac_doc.get("id")
+    assert ds.product.name == "ga_ls8c_ard_3"
+    assert ds.source_tree is None
+    assert ds.sources == {}
+
+    r = clirunner(["dataset", "add", "--ignore-lineage", path])
+    assert r.exit_code == 0, f"Output: {r.output}"
+
+
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "datacube"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
+def test_dataset_add_stac_bad_product(index, ls8_stac_doc, eo3_products) -> None:
+    stac_doc, _ = ls8_stac_doc
+    stac_doc["collection"] = "bad_product"
+    doc2ds = Doc2Dataset(index, skip_lineage=True)
+    ds, err = doc2ds(stac_doc, "file:///something")
+    assert err is not None
+    assert "bad_product" in str(err)
+    assert ds is None
+
+
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
-def test_dataset_add_stac(index, clirunner, ls8_stac_doc, eo3_products) -> None:
+@pytest.mark.parametrize("db_tz", ("UTC",))
+def test_dataset_add_stac_ext_lineage(
+    index, clirunner, ls8_stac_doc, eo3_products
+) -> None:
     stac_doc, path = ls8_stac_doc
     doc2ds = Doc2Dataset(index)
     ds, err = doc2ds(stac_doc, "file:///something")
@@ -354,18 +390,81 @@ def test_dataset_add_stac(index, clirunner, ls8_stac_doc, eo3_products) -> None:
     assert ds.product.name == "ga_ls8c_ard_3"
     assert ds.source_tree is not None
     assert (
-        str(ds.source_tree.child_datasets().pop())
+        str(next(iter(ds.source_tree.child_datasets())))
         == "b5f234fe-bba8-5483-9bc0-250360d429cf"
     )
 
     r = clirunner(["dataset", "add", path])
-    assert r.exit_code == 0
+    assert r.exit_code == 0, f"Output: {r.output}"
 
-    stac_doc["collection"] = "foo"
+    st = index.lineage.get_source_tree(ds.id)
+    assert st == ds.source_tree
+
+
+@pytest.mark.parametrize(
+    "datacube_env_name", ("datacube", "datacube3", "postgis", "postgis3")
+)
+@pytest.mark.parametrize("db_tz", ("UTC",))
+def test_dataset_add_stac_lineage(
+    index, clirunner, ls8_stac_doc, ls8_stac_lvl1_doc, eo3_products
+) -> None:
+    l1_metadata, l1_path = ls8_stac_lvl1_doc
+    r = clirunner(["dataset", "add", l1_path])
+    assert r.exit_code == 0, f"Output: {r.output}"
+    ds = index.datasets.get(l1_metadata["id"])
+    assert ds is not None
+
+    ls8_metadata, path = ls8_stac_doc
+
+    r = clirunner(["dataset", "add", path])
+    assert r.exit_code == 0, f"Output: {r.output}"
+
+    ds = index.datasets.get(ls8_metadata["id"], include_sources=True)
+    assert ds is not None
+    if index.supports_external_lineage:
+        assert ds.source_tree is not None
+        assert (
+            str(next(iter(ds.source_tree.child_datasets())))
+            == "b5f234fe-bba8-5483-9bc0-250360d429cf"
+        )
+    else:
+        assert ds.source_tree is None
+        assert ds.sources is not None
+        assert str(ds.sources["level1"].id) == "b5f234fe-bba8-5483-9bc0-250360d429cf"
+
+
+@pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))
+@pytest.mark.parametrize("db_tz", ("UTC",))
+def test_dataset_add_stac_workers_ext_lineage(
+    index, clirunner, ls8_stac_doc, eo3_products
+) -> None:
+    stac_doc, path = ls8_stac_doc
+    doc2ds = Doc2Dataset(index)
     ds, err = doc2ds(stac_doc, "file://something")
-    assert err is not None
+    assert err is None
+    assert ds is not None
 
     r = clirunner(["-v", "dataset", "add", "--workers", "2", path])
+    assert r.exit_code == 0, f"Output: {r.output}"
+
+    st = index.lineage.get_source_tree(ds.id)
+    assert st == ds.source_tree
+
+
+@pytest.mark.parametrize(
+    "datacube_env_name", ("datacube", "datacube3", "postgis", "postgis3")
+)
+@pytest.mark.parametrize("db_tz", ("UTC",))
+def test_dataset_add_stac_workers_ignore_lineage(
+    index, clirunner, ls8_stac_doc, eo3_products
+) -> None:
+    stac_doc, path = ls8_stac_doc
+    doc2ds = Doc2Dataset(index, skip_lineage=True)
+    ds, err = doc2ds(stac_doc, "file://something")
+    assert err is None
+    assert ds is not None
+
+    r = clirunner(["-v", "dataset", "add", "--workers", "2", "--ignore-lineage", path])
     assert r.exit_code == 0, f"Output: {r.output}"
 
 

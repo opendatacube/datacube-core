@@ -8,13 +8,14 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import timedelta
 from time import monotonic
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 
 from deprecat import deprecat
 from odc.geo import CRS
 
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Dataset, Range
+from datacube.model import Dataset, Range, dsid_to_uuid
+from datacube.model.lineage import LineageRelations
 from datacube.utils import report_to_user
 from datacube.utils.changes import DocumentMismatchError
 
@@ -656,6 +657,8 @@ class AbstractDatasetResource(ABC):
         """
         Add a group of Dataset documents in bulk.
 
+        Will add lineage data if provided in the DatasetTuples - use Lineage API for more control
+
         API Note: This API method is not finalised and may be subject to change.
 
         :param datasets: An Iterable of DatasetTuples (i.e. as returned by get_all_docs)
@@ -675,8 +678,13 @@ class AbstractDatasetResource(ABC):
         batch = []
         job_started = monotonic()
         inter_batch_cache = self._init_bulk_add_cache()
+        lineage_cache = LineageRelations()
         for ds_tup in datasets:
             batch.append(ds_tup)
+            if ds_tup.lineage:
+                lineage_cache.merge_from_eo3(
+                    dsid_to_uuid(cast("str", ds_tup.metadata["id"])), ds_tup.lineage
+                )
             n_in_batch += 1
             if n_in_batch >= batch_size:
                 batch_result = self._add_batch(
@@ -699,6 +707,9 @@ class AbstractDatasetResource(ABC):
             added += batch_result.completed
             skipped += batch_result.skipped
             increment_progress()
+
+        if lineage_cache.relations:
+            self._index.lineage.bulk_add(lineage_cache.relations, batch_size=batch_size)
 
         return BatchStatus(added, skipped, monotonic() - job_started)
 

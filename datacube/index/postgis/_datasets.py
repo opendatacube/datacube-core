@@ -235,7 +235,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             spatial_indexes={crs: [] for crs in crses},
         )
         dsids = []
-        for prod, metadata_doc, uri in batch_ds:
+        for prod, metadata_doc, uri, _ in batch_ds:
             dsid = UUID(str(metadata_doc["id"]))
             dsids.append(dsid)
             if isinstance(uri, list):
