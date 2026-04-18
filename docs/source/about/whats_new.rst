@@ -11,10 +11,10 @@ Release History
 Includes functional and performance improvements to indexing, especially from STAC.
 
 What's Changed
-++++++++++++++
+--------------
 
 Significant Changes
--------------------
+^^^^^^^^^^^^^^^^^^^
 
 * index: align bulk_add and add API by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2393
 * dataset: use bulk-add for Postgis by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2403
@@ -27,7 +27,7 @@ Significant Changes
 * Store lineage data when indexing from STAC by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2443
 
 Minor Changes/Maintenance/Cleanup
----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * test_eo3converter: remove hardcoded strings by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2401
 * Replace custom cached_property with stdlib by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2406
@@ -54,7 +54,7 @@ Minor Changes/Maintenance/Cleanup
 * Prepare for 1.9.18 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2455
 
 Automated Updates
------------------
+^^^^^^^^^^^^^^^^^
 
 * build(deps): bump astral-sh/uv from 0.10.10 to 0.10.11 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2400
 * build(deps): bump astral-sh/uv from 0.10.11 to 0.10.12 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2407
