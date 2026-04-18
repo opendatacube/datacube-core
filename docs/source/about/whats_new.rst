@@ -1612,7 +1612,7 @@ v1.7.0rc1 (18 April 2019)
 Virtual Products
 ----------------
 
-Add :ref:`virtual-products` for multi-product loading.
+Add ``virtual-products`` for multi-product loading.
 
 (:pull:`522`, :pull:`597`, :pull:`601`, :pull:`612`, :pull:`644`, :pull:`677`, :pull:`699`, :pull:`700`)
 

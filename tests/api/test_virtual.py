@@ -16,14 +16,18 @@ from odc.geo import CRS
 from odc.geo.gridspec import GridSpec
 from typing_extensions import override
 
+from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, MetadataType, Product
-from datacube.virtual import (
-    DEFAULT_RESOLVER,
-    Transformation,
-    VirtualProductException,
-    catalog_from_yaml,
-    construct_from_yaml,
-)
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", ODC2DeprecationWarning)
+    from datacube.virtual import (
+        DEFAULT_RESOLVER,
+        Transformation,
+        VirtualProductException,
+        catalog_from_yaml,
+        construct_from_yaml,
+    )
 from datacube.virtual.expr import FormulaEvaluator, evaluate_data, formula_parser
 from datacube.virtual.impl import Datacube
 from datacube.virtual.transformations import fiscal_year
