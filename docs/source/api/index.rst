@@ -58,3 +58,5 @@ The following pages provide a full API reference for the ``datacube`` python lib
 
 .. toctree::
    :caption: DB utilities for apps and services
+
+   utilities/common_psql
