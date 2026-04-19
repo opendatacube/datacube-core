@@ -11,7 +11,6 @@ Executive Summary
 
 .. autosummary::
    :nosignatures:
-   :toctree: generate/
 
    ODCConfig.get_environment
 

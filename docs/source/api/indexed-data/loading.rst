@@ -6,7 +6,6 @@ Data Loading
 
 .. autosummary::
    :nosignatures:
-   :toctree: generate/
 
    Datacube.load
 
@@ -20,7 +19,6 @@ for example, to pre-filter the available datasets before loading.
 .. currentmodule:: datacube
 
 .. autosummary::
-   :toctree: generate/
 
    Datacube.find_datasets
    Datacube.group_datasets
