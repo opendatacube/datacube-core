@@ -25,7 +25,7 @@ from datacube import __version__
 from datacube.api.core import Datacube
 from datacube.cfg import ConfigException, ODCConfig
 from datacube.index import index_connect
-from datacube.index.exceptions import NoIndexError
+from datacube.index.exceptions import IndexSetupError, NoIndexError
 from datacube.ui.expression import parse_expressions
 
 TYPE_CHECKING = False
@@ -304,6 +304,7 @@ def pass_index(app_name: str | None = None, expect_initialised: bool = True):
                 _LOG.debug("Connected to datacube index: %s", index)
             except (
                 ConfigException,
+                IndexSetupError,
                 NoIndexError,
                 OperationalError,
                 ProgrammingError,
