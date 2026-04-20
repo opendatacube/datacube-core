@@ -27,9 +27,6 @@ for example, to pre-filter the available datasets before loading.
    Datacube.load_data
 
 
-.. include:: ./../../ops/load_3d_dataset.rst
-
-
 Group by
 ---------
 

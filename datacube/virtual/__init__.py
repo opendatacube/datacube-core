@@ -5,8 +5,10 @@
 from __future__ import annotations
 
 import copy
+import warnings
 from typing import Any, cast
 
+from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Measurement
 from datacube.utils import import_function
 from datacube.utils.documents import parse_yaml
@@ -40,6 +42,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
     from .impl import VirtualProduct
+
+
+warnings.warn(
+    "Virtual products are deprecated and will no longer be supported in Datacube 2.0.",
+    ODC2DeprecationWarning,
+    stacklevel=2,
+)
 
 __all__ = ["Measurement", "Transformation", "construct"]
 
