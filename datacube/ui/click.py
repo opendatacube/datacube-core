@@ -369,13 +369,21 @@ def parsed_search_expressions(f):
     as click arguments, which means your command must take only click options
     or a specified number of arguments.
     """
-    if not f.__doc__:
-        f.__doc__ = ""
-    f.__doc__ += dedent("""
-    EXPRESSIONS
+    return _parse_search_exprs(f, is_option=False)
 
-    Select datasets using [EXPRESSIONS] to filter by date, product type,
-    spatial extents or other searchable fields.
+
+def parsed_query_expressions(f):
+    """
+    Add the --query option to a click application
+
+    Support search expressions as a click option rather than an argument"""
+    return _parse_search_exprs(f, is_option=True)
+
+
+def _parse_search_exprs(f, is_option: bool):
+    msg = dedent(f"""
+    {"Query expressions" if is_option else "Provide [EXPRESSIONS]"} to filter datasets by searchable fields
+    such as date, product name, spatial extents, maturity, or other properties using the following syntax:
 
     \b
         FIELD = VALUE
@@ -396,6 +404,7 @@ def parsed_search_expressions(f):
         'time > 2020-01'
         'lon in [130, 140]' 'lat in [-40, -30]'
         product=ls5_nbar_albers
+        region="101010"
 
     """)
 
@@ -407,7 +416,13 @@ def parsed_search_expressions(f):
                 "Invalid expression. Please refer to command documentation.", e
             )
 
-    return click.argument("expressions", callback=my_parse, nargs=-1)(f)
+    if not is_option:
+        f.__doc__ += f"\n{msg}"
+        return click.argument("expressions", callback=my_parse, nargs=-1)(f)
+    msg += "Can be used multiple times, and should be invoked once per expression."
+    return click.option(
+        "--query", callback=my_parse, multiple=True, type=str, help=msg
+    )(f)
 
 
 def print_help_msg(command: Command) -> None:

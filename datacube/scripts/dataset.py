@@ -34,7 +34,6 @@ from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli, print_help_msg
 from datacube.ui.common import ui_path_doc_stream
-from datacube.ui.expression import parse_expressions
 from datacube.utils import SimpleDocNav, changes, json
 from datacube.utils.changes import AllowPolicy, Offset
 from datacube.utils.dates import tz_as_utc
@@ -731,35 +730,7 @@ def uri_search_cmd(index: Index, paths: list[str], search_mode) -> None:
               - 'archived': count only archived datasets
               - 'all': count both active and archived datasets"""),
 )
-@click.option(
-    "--query",
-    help=dedent("""
-              Query expressions to filter datasets by searchable fields such
-              as date, spatial extents, maturity, or other properties.
-
-              \b
-              FIELD = VALUE
-              FIELD in DATE-RANGE
-              FIELD in [START, END]
-              TIME < DATE
-              TIME > DATE
-
-              \b
-              START and END can be either numbers or dates
-              Dates follow YYYY, YYYY-MM, or YYYY-MM-DD format
-
-              FIELD: x, y, lat, lon, time, region, ...
-
-              \b
-              eg. 'time in [1996-01-01, 1996-12-31]'
-                  'time in 1996'
-                  'time > 2020-01'
-                  'lon in [130, 140]' 'lat in [-40, -30]'
-                  'region="101010"'
-              """),
-    multiple=True,
-    type=str,
-)
+@ui.parsed_query_expressions
 @click.option(
     "-f",
     help="Output format",
@@ -774,14 +745,18 @@ def count_cmd(
     count_only: bool,
     period: str,
     status: str,
-    query: Iterable[str],
+    query: dict[str, Any],
     f: str,
     products: Iterable[str],
 ) -> None:
     archived = {"active": False, "archived": True, "all": None}[status]
-    expressions = parse_expressions(*query) if query else {}
     if products:
-        expressions["product"] = products
+        if q_prod := query.get("product"):
+            query["product"] = products + (
+                (q_prod,) if isinstance(q_prod, str) else q_prod
+            )
+        else:
+            query["product"] = products
 
     if period:
         if count_only:
@@ -793,7 +768,7 @@ def count_cmd(
 
         results = []
         for product, series in index.datasets.count_by_product_through_time(
-            period, archived, **expressions
+            period, archived, **query
         ):
             for timerange, count in series:
                 results.append(
@@ -810,13 +785,13 @@ def count_cmd(
 
     else:
         if count_only:
-            echo(index.datasets.count(archived, **expressions))
+            echo(index.datasets.count(archived, **query))
         else:
             _OUTPUT_WRITERS[f](
                 (
                     OrderedDict((("product", product.name), ("count", count)))
                     for product, count in index.datasets.count_by_product(
-                        archived, **expressions
+                        archived, **query
                     )
                 ),
                 fields=["product", "count"],
@@ -844,6 +819,7 @@ def count_cmd(
     is_flag=True,
     default=False,
 )
+@ui.parsed_query_expressions
 @click.argument("ids", nargs=-1, type=click.UUID)
 @ui.pass_index()
 def archive_cmd(
@@ -851,9 +827,10 @@ def archive_cmd(
     archive_derived: bool,
     dry_run: bool,
     all_ds: bool,
+    query: dict[str, Any],
     ids: Sequence[uuid.UUID],
 ) -> None:
-    if not ids and not all_ds:
+    if not ids and not all_ds and not query:
         echo("Error: no datasets provided\n", err=True)
         print_help_msg(archive_cmd)
         sys.exit(1)
@@ -864,24 +841,29 @@ def archive_cmd(
             index.datasets.get_all_dataset_ids(archived=False), True
         )
     else:
-        datasets_for_archive = dict(zip(ids, index.datasets.bulk_has(ids)))
-
-        if False in datasets_for_archive.values():
-            for dataset_id, exists in datasets_for_archive.items():
-                if not exists:
-                    echo(f"No dataset found with id: {dataset_id}", err=True)
-            sys.exit(-1)
+        if query:
+            found = [
+                ds.id
+                for ds in index.datasets.search_returning(field_names=["id"], **query)
+            ]
+            if not found:
+                echo("No datasets found with the query terms", err=True)
+                sys.exit(1)
+            datasets_for_archive = dict.fromkeys(found, True)
+        else:
+            datasets_for_archive = dict(zip(ids, index.datasets.bulk_has(ids)))
+            if False in datasets_for_archive.values():
+                for dataset_id, exists in datasets_for_archive.items():
+                    if not exists:
+                        echo(f"No dataset found with id: {dataset_id}", err=True)
+                sys.exit(1)
 
         if archive_derived:
-            derived_datasets = [
-                _get_derived_set(index, dataset) for dataset in datasets_for_archive
-            ]
+            derived_datasets = set().union(
+                *[_get_derived_set(index, dataset) for dataset in datasets_for_archive]
+            )
             # Get the UUID of our found derived datasets
-            derived_dataset_ids = [
-                derived.id
-                for derived_dataset in derived_datasets
-                for derived in derived_dataset
-            ]
+            derived_dataset_ids = [derived.id for derived in derived_datasets]
 
     all_datasets = derived_dataset_ids + list(datasets_for_archive.keys())
 
@@ -890,8 +872,7 @@ def archive_cmd(
 
     if not dry_run:
         index.datasets.archive(all_datasets)
-
-    echo("Completed dataset archival.")
+        echo("Completed dataset archival.")
 
 
 @dataset_cmd.command("restore", help="Restore datasets")
