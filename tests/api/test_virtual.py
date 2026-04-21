@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import warnings
 from copy import deepcopy
 from datetime import datetime
@@ -14,17 +16,25 @@ from odc.geo import CRS
 from odc.geo.gridspec import GridSpec
 from typing_extensions import override
 
+from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, MetadataType, Product
-from datacube.virtual import (
-    DEFAULT_RESOLVER,
-    Transformation,
-    VirtualProductException,
-    catalog_from_yaml,
-    construct_from_yaml,
-)
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", ODC2DeprecationWarning)
+    from datacube.virtual import (
+        DEFAULT_RESOLVER,
+        Transformation,
+        VirtualProductException,
+        catalog_from_yaml,
+        construct_from_yaml,
+    )
 from datacube.virtual.expr import FormulaEvaluator, evaluate_data, formula_parser
 from datacube.virtual.impl import Datacube
 from datacube.virtual.transformations import fiscal_year
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.virtual import Catalog
 
 ##########################################
 # Set up some common test data and fixtures
@@ -146,7 +156,7 @@ def example_grid_spatial() -> dict:
 
 
 @pytest.fixture
-def catalog():
+def catalog() -> Catalog:
     return catalog_from_yaml("""
         about: this is a test catalog of virtual products
         products:
@@ -235,18 +245,18 @@ def catalog():
 
 
 @pytest.fixture
-def cloud_free_nbar(catalog):
+def cloud_free_nbar(catalog: Catalog) -> Catalog:
     return catalog["cloud_free_nbar"]
 
 
-def load_data(*args, **kwargs):
+def load_data(*args, **kwargs) -> xr.Dataset:
     sources, geobox, measurements = args
 
     # this returns nodata bands which are good enough for this test
     return Datacube.create_storage(sources.coords, geobox, measurements)
 
 
-def group_datasets(*args, **kwargs):
+def group_datasets(*args, **kwargs) -> xr.DataArray:
     return Datacube.group_datasets(*args, **kwargs)
 
 

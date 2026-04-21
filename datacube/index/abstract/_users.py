@@ -2,8 +2,13 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class AbstractUserResource(ABC):

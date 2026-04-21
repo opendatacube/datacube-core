@@ -4,16 +4,16 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import TYPE_CHECKING
-
 from typing_extensions import override
 
-from datacube.drivers.postgres import PostgresDb
 from datacube.index.abstract import AbstractUserResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from datacube.drivers.postgres import PostgresDb
     from datacube.index.postgres.index import Index
 
 

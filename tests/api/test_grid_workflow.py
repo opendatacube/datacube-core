@@ -18,8 +18,8 @@ from datacube.testutils import mk_sample_product
 
 class PickleableMock(MagicMock):
     @override
-    def __reduce__(self):
-        return (MagicMock, ())
+    def __reduce__(self) -> tuple:
+        return MagicMock, ()
 
 
 def mk_fake_index(products, datasets):

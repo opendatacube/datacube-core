@@ -2,48 +2,57 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import csv
 import datetime
 import logging
 import multiprocessing
 import sys
-import uuid
 from collections import OrderedDict
-from collections.abc import (
-    Generator,
-    Iterable,
-    Mapping,
-    MutableMapping,
-    Sequence,
-)
-from pathlib import Path
 from textwrap import dedent
 from typing import Any, Literal, cast
-from uuid import UUID
 
 import click
 import yaml
 import yaml.resolver
 from click import echo
 
-from datacube.index import Index
 from datacube.index.abstract import DatasetTuple
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.hl import Doc2Dataset
-from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli, print_help_msg
 from datacube.ui.common import ui_path_doc_stream
-from datacube.utils import SimpleDocNav, changes, json
-from datacube.utils.changes import AllowPolicy, Offset
+from datacube.utils import changes, json
 from datacube.utils.dates import tz_as_utc
 from datacube.utils.serialise import SafeDatacubeDumper
 from datacube.utils.uris import uri_resolve
 
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import uuid
+    from collections.abc import (
+        Callable,
+        Generator,
+        Iterable,
+        Mapping,
+        MutableMapping,
+        Sequence,
+    )
+    from pathlib import Path
+    from uuid import UUID
+
+    from datacube.index import Index
+    from datacube.model import Dataset
+    from datacube.model._base import DSID
+    from datacube.utils import SimpleDocNav
+    from datacube.utils.changes import AllowPolicy, Offset
+
 _LOG: logging.Logger = logging.getLogger("datacube-dataset")
 
 
-def report_old_options(mapping):
+def report_old_options(mapping: Mapping[str, str]) -> Callable[[str], str]:
     def maybe_remap(s):
         if s in mapping:
             _LOG.warning(
@@ -150,7 +159,12 @@ def _mk_dataset_tuples(dss: Iterable[Dataset]) -> Generator[DatasetTuple]:
             ds._uris if ds.has_multiple_uris() else ds.uri if ds.uri is not None else []
         )
         assert isinstance(my_uris, (str, list))
-        yield DatasetTuple(ds.product, ds.metadata_doc, my_uris)
+        yield DatasetTuple(
+            ds.product,
+            ds.metadata_doc,
+            my_uris,
+            ds.source_tree.to_eo3_doc() if ds.source_tree else {},
+        )
 
 
 # Needs to be top level definition so it can be pickled.
@@ -608,7 +622,7 @@ def info_cmd(
     # Using an array wrapper to get around the lack of "nonlocal" in py2
     missing_datasets = [0]
 
-    def get_datasets(ids):
+    def get_datasets(ids: Iterable[DSID]) -> Generator[Dataset]:
         for id_ in ids:
             dataset = index.datasets.get(id_, include_sources=show_sources)
             if dataset:
@@ -654,7 +668,7 @@ def _get_derived_set(index: Index, id_: UUID) -> set[Dataset]:
     Get a single flat set of all derived datasets.
     (children, grandchildren, great-grandchildren...)
     """
-    derived_set = {cast(Dataset, index.datasets.get(id_))}
+    derived_set = {cast("Dataset", index.datasets.get(id_))}
     to_process = {id_}
     while to_process:
         derived = index.datasets.get_derived(to_process.pop())
@@ -936,10 +950,12 @@ def restore_cmd(
         to_process = {d for d in to_process if d.is_archived}
         _LOG.debug("%s selected are archived", len(to_process))
 
-        def within_tolerance(dataset):
+        def within_tolerance(dataset: Dataset) -> bool:
             if not dataset.is_archived:
                 return False
+            assert dataset.archived_time is not None
             t = target_dataset.archived_time
+            assert t is not None
             return (t - tolerance) <= dataset.archived_time <= (t + tolerance)
 
         # Only those archived around the same time as the target.

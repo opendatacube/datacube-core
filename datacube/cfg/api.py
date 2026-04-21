@@ -24,9 +24,12 @@ from .opt import (
     BoolOptionHandler,
     IndexDriverOptionHandler,
     IntOptionHandler,
-    ODCOptionHandler,
 )
 from .utils import ConfigDict, check_valid_env_name
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from .opt import ODCOptionHandler
 
 
 class ODCConfig:

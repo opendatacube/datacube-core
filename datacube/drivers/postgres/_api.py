@@ -13,17 +13,13 @@
 Persistence API implementation for postgres.
 """
 
-import datetime
+from __future__ import annotations
+
 import logging
-from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import Any
 from typing import cast as type_cast
 
 from sqlalchemy import (
-    Connection,
-    Label,
-    RootTransaction,
-    Select,
     String,
     and_,
     bindparam,
@@ -39,16 +35,12 @@ from sqlalchemy import (
     values,
 )
 from sqlalchemy.dialects.postgresql import INTERVAL, JSONB, UUID, insert
-from sqlalchemy.engine import Row
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.sql.selectable import NamedFromClause
 from typing_extensions import override
 
 from datacube.drivers.common_psql import create_user, drop_users, grant_role, has_role
-from datacube.index.abstract import DSID
-from datacube.index.abstract._types import SearchMode
 from datacube.index.exceptions import MissingRecordError
-from datacube.index.fields import Expression, Field, OrExpression
+from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.utils.uris import split_uri
 
@@ -56,7 +48,6 @@ from . import _dynamic as dynamic
 from ._core import UserRole
 from ._fields import (  # noqa: F401
     DateDocField,
-    DateRangeDocField,
     NativeField,
     PgExpression,
     PgField,
@@ -65,11 +56,26 @@ from ._fields import (  # noqa: F401
 )
 from ._schema import DATASET, DATASET_LOCATION, DATASET_SOURCE, METADATA_TYPE, PRODUCT
 
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Iterable, Iterator, Mapping, Sequence
+
+    from sqlalchemy import Connection, FromClause, Label, RootTransaction, Select
+    from sqlalchemy.engine import Row
+    from sqlalchemy.sql.selectable import NamedFromClause
+
+    from datacube.index.abstract._types import SearchMode
+    from datacube.index.fields import Expression, Field
+    from datacube.model._base import DSID
+
+    from ._fields import DateRangeDocField
+
 PGCODE_FOREIGN_KEY_VIOLATION = "23503"
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def _dataset_uri_field(table):
+def _dataset_uri_field(table: FromClause):
     return table.c.uri_scheme + ":" + table.c.uri_body
 
 
@@ -337,7 +343,9 @@ class PostgresDbAPI:
             query = query.where(DATASET.c.archived.is_(None))
         return self._connection.execute(query).fetchall()
 
-    def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
+    def insert_dataset_source(
+        self, classifier, dataset_id: DSID, source_dataset_id: DSID
+    ) -> bool:
         try:
             r = self._connection.execute(
                 insert(DATASET_SOURCE).on_conflict_do_nothing(
@@ -353,14 +361,14 @@ class PostgresDbAPI:
         except IntegrityError as e:
             if (
                 hasattr(e.orig, "pgcode")
-                and e.orig.pgcode == PGCODE_FOREIGN_KEY_VIOLATION
+                and e.orig.pgcode == PGCODE_FOREIGN_KEY_VIOLATION  # type:ignore[union-attr]
             ) or "violates foreign key constraint" in str(e.orig):
                 raise MissingRecordError(
                     "Referenced source dataset doesn't exist"
                 ) from None
             raise
 
-    def archive_dataset(self, dataset_id) -> None:
+    def archive_dataset(self, dataset_id: DSID) -> None:
         self._connection.execute(
             DATASET.update()
             .where(DATASET.c.id == dataset_id)
@@ -368,12 +376,12 @@ class PostgresDbAPI:
             .values(archived=func.now())
         )
 
-    def restore_dataset(self, dataset_id) -> None:
+    def restore_dataset(self, dataset_id: DSID) -> None:
         self._connection.execute(
             DATASET.update().where(DATASET.c.id == dataset_id).values(archived=None)
         )
 
-    def delete_dataset(self, dataset_id) -> None:
+    def delete_dataset(self, dataset_id: DSID) -> None:
         self._connection.execute(
             DATASET_LOCATION.delete().where(
                 DATASET_LOCATION.c.dataset_ref == dataset_id
@@ -384,17 +392,17 @@ class PostgresDbAPI:
         )
         self._connection.execute(DATASET.delete().where(DATASET.c.id == dataset_id))
 
-    def get_dataset(self, dataset_id):
+    def get_dataset(self, dataset_id: DSID):
         return self._connection.execute(
             select(*_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
         ).first()
 
-    def get_datasets(self, dataset_ids):
+    def get_datasets(self, dataset_ids: Iterable[DSID]) -> Sequence:
         return self._connection.execute(
             select(*_DATASET_SELECT_FIELDS).where(DATASET.c.id.in_(dataset_ids))
         ).fetchall()
 
-    def get_derived_datasets(self, dataset_id):
+    def get_derived_datasets(self, dataset_id: DSID) -> Sequence:
         return self._connection.execute(
             select(*_DATASET_SELECT_FIELDS)
             .select_from(
@@ -405,7 +413,7 @@ class PostgresDbAPI:
             .where(DATASET_SOURCE.c.source_dataset_ref == dataset_id)
         ).fetchall()
 
-    def get_dataset_sources(self, dataset_id):
+    def get_dataset_sources(self, dataset_id: DSID) -> Sequence:
         # recursively build the list of (dataset_ref, source_dataset_ref) pairs starting from dataset_id
         # include (dataset_ref, NULL) [hence the left join]
         sources = (
@@ -743,7 +751,7 @@ class PostgresDbAPI:
             return self.get_duplicates_with_time(match_fields, expressions)
 
         group_expressions = tuple(
-            type_cast(PgField, f).alchemy_expression for f in match_fields
+            type_cast("PgField", f).alchemy_expression for f in match_fields
         )
 
         select_query = (
@@ -776,9 +784,9 @@ class PostgresDbAPI:
         time_field: Label[Any] | None = None
         for f in match_fields:
             if f.name == "time":
-                time_field = type_cast(DateRangeDocField, f).expression_with_leniency
+                time_field = type_cast("DateRangeDocField", f).expression_with_leniency
             else:
-                fields.append(type_cast(PgField, f).alchemy_expression)
+                fields.append(type_cast("PgField", f).alchemy_expression)
 
         if time_field is None:
             raise Exception("No time field in duplicates query")
@@ -863,7 +871,7 @@ class PostgresDbAPI:
 
     def count_datasets_through_time_query(
         self, start, end, period, time_field, expressions
-    ):
+    ) -> Select:
         raw_expressions = self._alchemify_expressions(expressions)
 
         start_times = select(
@@ -929,12 +937,12 @@ class PostgresDbAPI:
                 from_expression = from_expression.join(table)
         return from_expression
 
-    def get_product(self, id_):
+    def get_product(self, id_: int):
         return self._connection.execute(
             PRODUCT.select().where(PRODUCT.c.id == id_)
         ).first()
 
-    def get_metadata_type(self, id_):
+    def get_metadata_type(self, id_: int):
         return self._connection.execute(
             METADATA_TYPE.select().where(METADATA_TYPE.c.id == id_)
         ).first()
@@ -1184,7 +1192,7 @@ class PostgresDbAPI:
                 except (AttributeError, KeyError, ValueError):
                     continue
 
-    def get_all_products(self):
+    def get_all_products(self) -> Sequence:
         return self._connection.execute(
             PRODUCT.select().order_by(PRODUCT.c.name.asc())
         ).fetchall()
@@ -1192,14 +1200,14 @@ class PostgresDbAPI:
     def get_all_product_docs(self):
         return self._connection.execute(select(PRODUCT.c.definition))
 
-    def _get_products_for_metadata_type(self, id_):
+    def _get_products_for_metadata_type(self, id_: int) -> Sequence:
         return self._connection.execute(
             PRODUCT.select()
             .where(PRODUCT.c.metadata_type_ref == id_)
             .order_by(PRODUCT.c.name.asc())
         ).fetchall()
 
-    def get_all_metadata_types(self):
+    def get_all_metadata_types(self) -> Sequence:
         return self._connection.execute(
             METADATA_TYPE.select().order_by(METADATA_TYPE.c.name.asc())
         ).fetchall()
@@ -1207,7 +1215,7 @@ class PostgresDbAPI:
     def get_all_metadata_type_docs(self):
         return self._connection.execute(select(METADATA_TYPE.c.definition))
 
-    def get_all_metadata_defs(self):
+    def get_all_metadata_defs(self) -> list:
         return [
             r[0]
             for r in self._connection.execute(

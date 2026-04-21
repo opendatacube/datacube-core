@@ -11,12 +11,10 @@ separate file to reduce formatting issues.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Generator, Mapping, Sequence
 from datetime import datetime
 from typing import Literal, cast
 
-import xarray as xr
-from odc.geo.geobox import GeoBox, GeoboxTiles
+from odc.geo.geobox import GeoboxTiles
 from odc.loader import (
     FixedCoord,
     RasterBandMetadata,
@@ -27,10 +25,19 @@ from odc.loader import (
     reader_driver,
     resolve_chunk_shape,
 )
-from odc.loader.types import ReaderDriverSpec
 
-from ..model import Dataset, ExtraDimensions, Measurement
-from . import BandInfo, ProgressFunction
+from . import BandInfo
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Mapping, Sequence
+
+    import xarray as xr
+    from odc.geo.geobox import GeoBox
+    from odc.loader.types import ReaderDriverSpec
+
+    from ..model import Dataset, ExtraDimensions, Measurement
+    from . import ProgressFunction
 
 
 def ds_geobox(ds: Dataset, **kw) -> GeoBox | None:
@@ -143,7 +150,7 @@ def driver_based_load(
                 band=band_idx,
                 subdataset=bi.layer,
                 geobox=ds_geobox(ds, band=n),
-                meta=cast(RasterBandMetadata, template.bands[(n, band_idx or 1)]),
+                meta=cast("RasterBandMetadata", template.bands[(n, band_idx or 1)]),
                 driver_data=bi.driver_data,
             )
 

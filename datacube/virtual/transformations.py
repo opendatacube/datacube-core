@@ -2,8 +2,9 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import warnings
-from collections.abc import Collection, Iterable, Mapping
 
 import numpy
 import pandas as pd
@@ -24,8 +25,14 @@ from .expr import (
 )
 from .impl import Measurement, Transformation, VirtualProductException
 
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Collection, Iterable, Mapping
 
-def selective_apply_dict(dictionary, apply_to=None, key_map=None, value_map=None):
+
+def selective_apply_dict(
+    dictionary, apply_to=None, key_map=None, value_map=None
+) -> dict:
     def skip(key) -> bool:
         return apply_to is not None and key not in apply_to
 
@@ -245,7 +252,7 @@ class ToFloat(Transformation):
 
     @override
     def measurements(self, input_measurements):
-        def worker(_, value):
+        def worker(_, value) -> Measurement:
             result = value.copy()
             result["dtype"] = self.dtype
             return Measurement(**result)
@@ -313,7 +320,7 @@ class Rename(Transformation):
         def key_map(key):
             return self.measurement_names[key]
 
-        def value_map(key, value):
+        def value_map(key, value) -> Measurement:
             result = value.copy()
             result["name"] = self.measurement_names[key]
             return Measurement(**result)
@@ -369,7 +376,7 @@ class Select(Transformation):
         self.measurement_names = measurement_names
 
     @override
-    def measurements(self, input_measurements):
+    def measurements(self, input_measurements) -> dict:
         return {
             key: value
             for key, value in input_measurements.items()
@@ -438,7 +445,7 @@ class Expressions(Transformation):
 
             return result.dtype
 
-        def measurement(output_var, output_desc):
+        def measurement(output_var, output_desc) -> Measurement:
             if isinstance(output_desc, str):
                 # copy measurement over
                 return input_measurements[output_desc]

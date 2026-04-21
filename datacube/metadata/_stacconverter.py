@@ -8,10 +8,11 @@ EO3 -> STAC utilities.
 Utilities for translating EO3 Datasets to STAC Items.
 """
 
+from __future__ import annotations
+
 import math
 import mimetypes
 import warnings
-from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
@@ -36,6 +37,10 @@ from datacube.utils import parse_time
 
 from ..migration import ODC2DeprecationWarning
 from ._utils import EO3_MD_TYPE, EO_MD_TYPE, eo3_to_stac_properties
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 def _lineage_fields(dataset: Dataset) -> dict:
@@ -293,18 +298,24 @@ def ds2stac(
                     epsg=dataset.crs.epsg,
                 )
 
+        product = dataset.product
+        canonical_measurement = None
         try:
-            product = dataset.product
-            m = product.measurements[product.canonical_measurement(name)]
-            raster = RasterExtension.ext(asset)
-            rband = RasterBand.create(
-                nodata=m["nodata"],
-                data_type=DataType(m["dtype"]),
-                unit=m["units"],
-            )
-            raster.apply([rband])
+            canonical_measurement = product.canonical_measurement(name)
         except ValueError:
             undefined_measurements.append(name)
+        if canonical_measurement:
+            m = product.measurements[canonical_measurement]
+            raster = RasterExtension.ext(asset)
+            data_type = m.get("dtype")
+            rband = RasterBand.create(
+                nodata=m.get("nodata"),
+                data_type=None if data_type is None else DataType(data_type),
+                unit=m.get("units"),
+                scale=m.get("scale_factor"),
+                offset=m.get("add_offset"),
+            )
+            raster.apply([rband])
 
         item.add_asset(name, asset=asset)
 

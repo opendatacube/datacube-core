@@ -2,13 +2,18 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import datetime
 
 import pytest
 from odc.geo import CRS
 
-from datacube.index.postgis.index import Index
 from datacube.model import Range
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.index.postgis.index import Index
 
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"))

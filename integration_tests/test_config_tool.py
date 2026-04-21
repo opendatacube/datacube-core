@@ -6,11 +6,17 @@
 Module
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from pathlib import Path
 
 import pytest
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 EXAMPLE_DATASET_TYPE_DOCS = list(
     map(
@@ -29,7 +35,7 @@ INVALID_MAPPING_DOCS = list(
 assert len(INVALID_MAPPING_DOCS) > 0
 
 
-def _dataset_type_count(index):
+def _dataset_type_count(index) -> int:
     with index._active_connection() as connection:
         return len(list(connection.get_all_products()))
 
@@ -90,7 +96,7 @@ def test_add_example_dataset_types(
 
     expect_result = 0 if existing_mappings > 0 else 1
     result = clirunner(["-v", "product", "show"], expect_success=(expect_result == 0))
-    assert result.exit_code == expect_result
+    assert result.exit_code == expect_result, f"Output: {result.output}"
 
     if existing_mappings > 1:
         result = clirunner(
@@ -105,7 +111,14 @@ def test_add_example_dataset_types(
         assert result.exit_code == 0, f"Output: {result.output}"
 
 
-def test_error_returned_on_invalid(clirunner, index) -> None:
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
+@pytest.mark.parametrize("datacube_env_name", ("postgis3",), indirect=True)
+def test_cli_errors(clirunner, index) -> None:
+    for op in [["delete"], ["grant", "user"]]:
+        r = clirunner(["user", *op], expect_success=False)
+        assert r.exit_code != 0, f"Output: {r.output}"
+        assert "No users specified" in r.stdout
+
     assert _dataset_type_count(index) == 0
 
     for mapping_path in INVALID_MAPPING_DOCS:
@@ -115,10 +128,11 @@ def test_error_returned_on_invalid(clirunner, index) -> None:
             catch_exceptions=True,
             expect_success=False,
         )
-        assert result.exit_code != 0, "Success return code for invalid document."
+        assert result.exit_code != 0, f"Output: {result.output}"
         assert _dataset_type_count(index) == 0, "Invalid document was added to DB"
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_config_check(clirunner, index, cfg_env) -> None:
     # This is not a very thorough check, we just check to see that
     # it prints something vaguely related and does not error-out.
@@ -130,10 +144,11 @@ def test_config_check(clirunner, index, cfg_env) -> None:
     assert str(cfg_env["dc_load_limit"]) in result.output
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_list_users_does_not_fail(clirunner, cfg_env, index) -> None:
     # We don't want to make assumptions about available users during test runs.
     # (They are host-global, not specific to the database)
-    # So we're just checking that it doesn't fail (and the SQL etc is well formed)
+    # So we're just checking that it doesn't fail (and the SQL etc. is well-formed)
     result = clirunner(["user", "list"])
     assert result.exit_code == 0, f"Output: {result.output}"
 
@@ -152,7 +167,6 @@ def test_db_init_noop(clirunner, cfg_env, ls8_eo3_product) -> None:
 def test_db_init_rebuild(clirunner, cfg_env, ls8_eo3_product) -> None:
     if cfg_env._name in ("datacube", "datacube3"):
         from datacube.drivers.postgres import _dynamic
-        from datacube.drivers.postgres.sql import SCHEMA_NAME
 
         # Set field creation logging to debug since we assert on debug output.
         _dynamic._LOG.setLevel(logging.DEBUG)
@@ -161,6 +175,8 @@ def test_db_init_rebuild(clirunner, cfg_env, ls8_eo3_product) -> None:
     assert "Updated." in result.output
     # These debug log messages are not present in the Postgis driver.
     if cfg_env._name in ("datacube", "datacube3"):
+        from datacube.drivers.postgres.sql import SCHEMA_NAME
+
         # It should have recreated views and indexes.
         assert f"Dropping index: dix_{ls8_eo3_product.name}" in result.output
         assert f"Creating index: dix_{ls8_eo3_product.name}" in result.output
@@ -199,6 +215,7 @@ def test_db_init(clirunner, index) -> None:
         assert has_schema(index._db._engine, SCHEMA_NAME)
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_add_no_such_product(clirunner, index) -> None:
     result = clirunner(
         ["dataset", "add", "--dtype", "no_such_product", "/tmp"], expect_success=False
@@ -217,7 +234,7 @@ def test_add_no_such_product(clirunner, index) -> None:
         ("test_user_invalid_desc_{n}", "Invalid \"' chars in description"),
     ]
 )
-def example_user(clirunner, index, request):
+def example_user(clirunner, index, request) -> Generator[tuple[str, str | None]]:
     username, description = request.param
 
     username = username.format(n=random.randint(111111, 999999))
@@ -239,6 +256,7 @@ def example_user(clirunner, index, request):
             connection.drop_users([username])
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_user_creation(clirunner, example_user) -> None:
     """
     Add a user, grant them, delete them.
@@ -263,7 +281,23 @@ def test_user_creation(clirunner, example_user) -> None:
     assert_no_user(clirunner, username)
 
 
-def assert_user_with_role(clirunner, role, user_name: str) -> None:
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
+def test_user_creation_passwd_stdin(clirunner, index, tmp_path: Path) -> None:
+    username = "test_user_passwd"
+    password = "some random password"
+
+    args = ["user", "create", "user", username, "--passwd-stdin"]
+    r = clirunner(args, stdin_input=password)
+    assert password not in r.output
+    assert "password taken from stdin" in r.stdout
+    assert_user_with_role(clirunner, "ingest", username)
+
+    # Remove the user just added.
+    clirunner(["user", "delete", username])
+    assert_no_user(clirunner, username)
+
+
+def assert_user_with_role(clirunner, role: str, user_name: str) -> None:
     result = clirunner(["user", "list"])
     assert "{}{}".format("user: ", user_name) in result.output
 

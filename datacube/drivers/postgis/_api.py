@@ -13,17 +13,14 @@
 Persistence API implementation for postgis.
 """
 
-import datetime
+from __future__ import annotations
+
 import logging
-import uuid
-from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import Any
 from typing import cast as type_cast
 
 from odc.geo import CRS, Geometry
 from sqlalchemy import (
-    Connection,
-    RootTransaction,
     and_,
     cast,
     column,
@@ -37,26 +34,19 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import INTERVAL, insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.expression import Select
 from typing_extensions import override
 
 from datacube.drivers.common_psql import create_user, drop_users, grant_role, has_role
-from datacube.index.abstract import DSID
-from datacube.index.abstract._types import SearchMode
 from datacube.index.fields import OrExpression
 from datacube.model import Range
-from datacube.model.fields import Expression
 from datacube.model.lineage import LineageDirection, LineageRelation
 from datacube.utils import json
 from datacube.utils.uris import split_uri
 
-from ...utils.changes import Offset
 from ._core import UserRole
 from ._fields import (
     DateDocField,
-    DateRangeDocField,
     NativeField,
-    PgExpression,
     PgField,
     SimpleDocField,
     UnindexableValue,
@@ -76,6 +66,22 @@ from ._spatial import (
     generate_dataset_spatial_values,
     geom_alchemy,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import datetime
+    import uuid
+    from collections.abc import Generator, Iterable, Mapping, Sequence
+
+    from sqlalchemy import Connection, RootTransaction
+    from sqlalchemy.sql.expression import Select
+
+    from datacube.index.abstract._types import SearchMode
+    from datacube.model._base import DSID
+    from datacube.model.fields import Expression
+
+    from ...utils.changes import Offset
+    from ._fields import DateRangeDocField, PgExpression
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -776,7 +782,7 @@ class PostgisDbAPI:
         fields = []
         for fld in match_fields:
             if fld.name == "time":
-                time_field = type_cast(DateRangeDocField, fld)
+                time_field = type_cast("DateRangeDocField", fld)
             else:
                 fields.append(fld.alchemy_expression)
 
@@ -919,7 +925,7 @@ class PostgisDbAPI:
         return select(time_ranges.c.time_period, count_query.label("dataset_count"))
 
     def update_search_index(
-        self, product_names: Sequence[str] = [], dsids: Sequence[DSID] = []
+        self, product_names: Sequence[str] = (), dsids: Sequence[DSID] = ()
     ) -> int:
         """
         Update search indexes
@@ -967,9 +973,9 @@ class PostgisDbAPI:
 
     def update_spindex(
         self,
-        crs_seq: Sequence[CRS] = [],
-        product_names: Sequence[str] = [],
-        dsids: Sequence[DSID] = [],
+        crs_seq: Sequence[CRS] = (),
+        product_names: Sequence[str] = (),
+        dsids: Sequence[DSID] = (),
     ) -> int:
         """
         Update a spatial index
@@ -1026,7 +1032,7 @@ class PostgisDbAPI:
         # Sort simple joins before qualified joins
         return sorted(join_args, key=len)
 
-    def get_product(self, id_):
+    def get_product(self, id_: int):
         return self._connection.execute(
             select(Product).where(Product.id == id_)
         ).first()
@@ -1150,7 +1156,7 @@ class PostgisDbAPI:
     def get_all_product_docs(self):
         return self._connection.execute(select(Product.definition))
 
-    def _get_products_for_metadata_type(self, id_) -> Sequence:
+    def _get_products_for_metadata_type(self, id_: DSID) -> Sequence:
         return self._connection.execute(
             select(Product)
             .where(Product.metadata_type_ref == id_)
@@ -1168,12 +1174,12 @@ class PostgisDbAPI:
         ):
             yield r[0]
 
-    def get_location(self, dataset_id):
+    def get_location(self, dataset_id: DSID):
         return self._connection.execute(
             select(Dataset.uri).where(Dataset.id == dataset_id)
         ).first()
 
-    def remove_location(self, dataset_id, uri: str) -> bool:
+    def remove_location(self, dataset_id: DSID, uri: str) -> bool:
         """
         Remove a dataset's location
 

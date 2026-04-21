@@ -4,18 +4,25 @@
 # SPDX-License-Identifier: Apache-2.0
 """rasterio environment management tools"""
 
+from __future__ import annotations
+
 import threading
 from types import SimpleNamespace
 from typing import Literal
 
 import rasterio
 import rasterio.env
-from botocore.credentials import Credentials
 from deprecat import deprecat
 from rasterio.session import AWSSession, DummySession
 
 from datacube.migration import ODC2DeprecationWarning
 from datacube.utils.generic import thread_local_cache
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from botocore.credentials import Credentials
 
 _CFG_LOCK = threading.Lock()
 _CFG = SimpleNamespace(aws=None, cloud_defaults=False, kwargs={}, epoch=0)
@@ -24,7 +31,7 @@ _CFG = SimpleNamespace(aws=None, cloud_defaults=False, kwargs={}, epoch=0)
 SECRET_KEYS = ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN")
 
 
-def _sanitize(opts, keys):
+def _sanitize(opts: Mapping, keys) -> dict:
     return {k: (v if k not in keys else "xx..xx") for k, v in opts.items()}
 
 
@@ -120,7 +127,7 @@ def activate_rio_env(
     return get_rio_env()
 
 
-def activate_from_config():
+def activate_from_config() -> dict | None:
     """Check if this threads needs to reconfigure, then does reconfigure.
 
     - Does nothing if this thread is already configured and configuration hasn't changed.

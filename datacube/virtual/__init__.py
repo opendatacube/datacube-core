@@ -2,10 +2,13 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import copy
-from collections.abc import Callable, Mapping
+import warnings
 from typing import Any, cast
 
+from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Measurement
 from datacube.utils import import_function
 from datacube.utils.documents import parse_yaml
@@ -13,7 +16,6 @@ from datacube.utils.documents import parse_yaml
 from .catalog import Catalog
 from .impl import (
     Transformation,
-    VirtualProduct,
     VirtualProductException,
     from_validated_recipe,
     virtual_product_kind,
@@ -35,6 +37,19 @@ from .transformations import (
 )
 from .utils import reject_keys
 
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
+
+    from .impl import VirtualProduct
+
+
+warnings.warn(
+    "Virtual products are deprecated and will no longer be supported in Datacube 2.0.",
+    ODC2DeprecationWarning,
+    stacklevel=2,
+)
+
 __all__ = ["Measurement", "Transformation", "construct"]
 
 
@@ -44,7 +59,7 @@ class NameResolver:
     def __init__(self, lookup_table) -> None:
         self.lookup_table = lookup_table
 
-    def clone(self) -> "NameResolver":
+    def clone(self) -> NameResolver:
         """Safely copy the resolver in order to possibly extend it."""
         return NameResolver(copy.deepcopy(self.lookup_table))
 
@@ -58,9 +73,7 @@ class NameResolver:
 
         get = recipe.get
 
-        def lookup(
-            name: str | Callable | None, namespace=None, kind: str = "transformation"
-        ):
+        def lookup(name: str | Callable, namespace=None, kind: str = "transformation"):
             if callable(name):
                 return name
 
@@ -96,7 +109,7 @@ class NameResolver:
 
         if kind == "transform":
             cls_name = recipe["transform"]
-            input_product = cast(Mapping, get("input"))
+            input_product = cast("Mapping", get("input"))
 
             self._assert(
                 input_product is not None, f"no input for transformation in {recipe}"
@@ -138,13 +151,14 @@ class NameResolver:
 
         if kind == "aggregate":
             cls_name = recipe["aggregate"]
-            input_product = cast(Mapping, get("input"))
+            input_product = cast("Mapping", get("input"))
             group_by = get("group_by")
 
             self._assert(
                 input_product is not None, f"no input for aggregate in {recipe}"
             )
             self._assert(group_by is not None, f"no group_by for aggregate in {recipe}")
+            assert group_by is not None  # For type checker.
 
             return from_validated_recipe(
                 dict(
@@ -156,7 +170,7 @@ class NameResolver:
             )
 
         if kind == "reproject":
-            input_product = cast(Mapping, get("input"))
+            input_product = cast("Mapping", get("input"))
             output_crs = recipe["reproject"].get("output_crs")
             resolution = recipe["reproject"].get("resolution")
 

@@ -13,15 +13,12 @@ import gzip
 import logging
 import math
 from collections import OrderedDict
-from collections.abc import Callable, Generator, Mapping, Sequence
 from contextlib import contextmanager
 from copy import deepcopy
-from io import TextIOWrapper
-from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from urllib.request import urlopen
 from uuid import UUID, uuid5
 
 import numpy
@@ -30,13 +27,9 @@ import yaml
 from typing_extensions import override
 
 from datacube.utils import json
-from datacube.utils.changes import Offset
 
 # Compatibility-imports to preserve the API.
 from datacube.utils.json_types import JsonAtom, JsonDict, JsonLike  # noqa: F401
-
-if TYPE_CHECKING:
-    from datacube.model import Field
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -45,6 +38,19 @@ except ImportError:
 
 from datacube.utils.generic import map_with_lookahead
 from datacube.utils.uris import as_url, mk_part_uri, uri_to_local_path
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Mapping, Sequence
+    from io import TextIOWrapper
+    from os import PathLike
+    from urllib.request import Request
+
+    from referencing import Resource
+    from referencing.typing import URI
+
+    from datacube.model import Field
+    from datacube.utils.changes import Offset
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -250,10 +256,8 @@ def validate_document(
 ) -> None:
     import jsonschema
     import referencing
-    from referencing import Resource
     from referencing.exceptions import NoSuchResource
     from referencing.jsonschema import DRAFT202012
-    from referencing.typing import URI
 
     # Allow schemas to reference other schemas in the given folder.
     def doc_reference(uri: URI) -> Resource:
@@ -345,21 +349,27 @@ def documents_equal(d1: str | float | list | dict, d2) -> bool:
     if isinstance(d1, str):
         return d1 == d2
     if isinstance(d1, dict):
+        if not isinstance(d2, dict):
+            return False
         if set(d1.keys()) != set(d2.keys()):
             return False
         return all(documents_equal(d1[k], d2[k]) for k in d1)
     if isinstance(d1, list):
+        if not isinstance(d2, list):
+            return False
         if len(d1) != len(d2):
             return False
         return all(documents_equal(d1[i], d2[i]) for i in range(len(d1)))
     if isinstance(d1, float):
+        if not isinstance(d2, float):
+            return False
         if math.isnan(d1) and math.isnan(d2):
             return True
         return math.isclose(d1, d2, abs_tol=1e-10)
     return d1 == d2
 
 
-def transform_object_tree(f, o, key_transform=lambda k: k):
+def transform_object_tree(f, o: Any, key_transform=lambda k: k):
     """
     Apply a function (f) on all the values in the given document tree (o), returning a new document of
     the results.
@@ -517,7 +527,7 @@ class SimpleDocNav:
         return self._sources_path
 
     @property
-    def location(self):
+    def location(self) -> str | None:
         if self.is_stac:
             for link in self._doc.get("link", []):
                 if link.get("rel") == "self":
@@ -525,7 +535,7 @@ class SimpleDocNav:
         return self._doc.get("location", None)
 
     @property
-    def is_stac(self):
+    def is_stac(self) -> bool:
         return self._is_stac
 
     def without_location(self) -> SimpleDocNav:
@@ -590,7 +600,7 @@ class DocReader:
         return self.__dict__["_doc"]
 
     @property
-    def search_fields(self):
+    def search_fields(self) -> dict[str, Any]:
         return {
             name: field.extract(self.__dict__["_doc"])
             for name, field in self._search_fields.items()
@@ -598,7 +608,7 @@ class DocReader:
         }
 
     @property
-    def system_fields(self):
+    def system_fields(self) -> dict[str, Any]:
         return {
             name: get_doc_offset(field, self.__dict__["_doc"])
             for name, field in self._system_offsets.items()

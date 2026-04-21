@@ -6,22 +6,28 @@
 Query datasets.
 """
 
+from __future__ import annotations
+
 import csv
 import datetime
 import shutil
 import sys
-from collections.abc import Callable, Collection
 from functools import partial, singledispatch
-from os import terminal_size as t_size
 from typing import Any
 
 import click
 from sqlalchemy.dialects.postgresql import Range
 
-from datacube.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
 from datacube.utils.dates import tz_as_utc
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Collection
+    from os import terminal_size as t_size
+
+    from datacube.index import Index
 
 PASS_INDEX = ui.pass_index("datacube-search")
 

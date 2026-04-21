@@ -2,19 +2,26 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping
 from time import monotonic
-from uuid import UUID
 
 from typing_extensions import override
 
-from datacube.model import LineageDirection, LineageRelation, LineageTree
-from datacube.model.lineage import LineageRelations
 from datacube.utils import report_to_user
 
-from ._types import DSID, BatchStatus
+from ._types import BatchStatus
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+    from uuid import UUID
+
+    from datacube.model import LineageDirection, LineageRelation, LineageTree
+    from datacube.model._base import DSID
+    from datacube.model.lineage import LineageRelations
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -206,7 +213,7 @@ class AbstractLineageResource(ABC):
             if n_in_batch >= batch_size:
                 batch_result = self._add_batch(batch)
                 _LOG.info(
-                    "Batch %d/%d datasets added in %.2fs: (%.2fdatasets/min)",
+                    "Batch %d/%d lineage relations added in %.2fs: (%.2frelations/min)",
                     batch_result.completed,
                     n_in_batch,
                     batch_result.seconds_elapsed,

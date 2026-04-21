@@ -8,17 +8,15 @@ API for dataset indexing, access and search.
 
 from __future__ import annotations
 
-import datetime
 import logging
 import warnings
 from collections import namedtuple
-from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 from time import monotonic
-from typing import TYPE_CHECKING, Any, NamedTuple, cast
+from typing import Any, NamedTuple, cast
 from uuid import UUID
 
 from deprecat import deprecat
-from odc.geo import CRS, Geometry
+from odc.geo import CRS
 from typing_extensions import override
 
 from datacube.drivers.postgis._api import (
@@ -26,7 +24,7 @@ from datacube.drivers.postgis._api import (
     mk_simple_offset_field,
     non_native_fields,
 )
-from datacube.drivers.postgis._fields import PgExpression, PgField, SimpleDocField
+from datacube.drivers.postgis._fields import SimpleDocField
 from datacube.drivers.postgis._schema import Dataset as SQLDataset
 from datacube.drivers.postgis._schema import search_field_map
 from datacube.drivers.postgis._spatial import (
@@ -39,27 +37,35 @@ from datacube.index import (
     strip_all_spatial_fields_from_query,
 )
 from datacube.index.abstract import (
-    DSID,
     AbstractDatasetResource,
     BatchStatus,
     DatasetSpatialMixin,
     DatasetTuple,
-    dsid_to_uuid,
 )
-from datacube.index.abstract._types import SearchMode
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Dataset, LineageTree, Product, Range
-from datacube.model._base import QueryDict, QueryField
+from datacube.model import Dataset, Range
+from datacube.model._base import dsid_to_uuid
 from datacube.model.fields import Field
 from datacube.utils import _readable_offset, changes, json, jsonify_document
-from datacube.utils.changes import Change, Offset, get_doc_changes
-from datacube.utils.documents import JsonDict
+from datacube.utils.changes import get_doc_changes
 from datacube.utils.uris import split_uri
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
+
+    from odc.geo import Geometry
+
     from datacube.drivers.postgis import PostGisDb
+    from datacube.drivers.postgis._fields import PgExpression, PgField
+    from datacube.index.abstract._types import SearchMode
     from datacube.index.postgis.index import Index
+    from datacube.model import LineageTree, Product
+    from datacube.model._base import DSID, QueryDict, QueryField
+    from datacube.utils.changes import Change, Offset
+    from datacube.utils.documents import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -229,7 +235,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             spatial_indexes={crs: [] for crs in crses},
         )
         dsids = []
-        for prod, metadata_doc, uri in batch_ds:
+        for prod, metadata_doc, uri, _ in batch_ds:
             dsid = UUID(str(metadata_doc["id"]))
             dsids.append(dsid)
             if isinstance(uri, list):
@@ -302,9 +308,9 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             assert isinstance(f, fields.Field), f"Not a field: {f!r}"
             return f
 
-        group_fields = [cast(PgField, load_field(f)) for f in args]
+        group_fields = [cast("PgField", load_field(f)) for f in args]
         expressions = [
-            cast(PgExpression, dataset_fields.get("product") == product.name)
+            cast("PgExpression", dataset_fields.get("product") == product.name)
         ]
 
         with self._db_connection() as connection:

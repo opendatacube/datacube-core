@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Dataset -> Raster"""
 
+from __future__ import annotations
+
 from typing import cast
 
 import numpy as np
@@ -11,17 +13,15 @@ from odc.geo import wh_
 from odc.geo.geobox import GeoBox, zoom_out
 from odc.geo.math import is_affine_st, is_almost_int
 from odc.geo.overlap import compute_reproject_roi
-from odc.geo.roi import (
-    roi_is_empty,
-    roi_is_full,
-    roi_pad,
-    roi_shape,
-    w_,
-)
-from odc.geo.types import Nodata
-from odc.geo.warp import Resampling, is_resampling_nn, rio_reproject, warp_affine
+from odc.geo.roi import roi_is_empty, roi_is_full, roi_pad, roi_shape, w_
+from odc.geo.warp import is_resampling_nn, rio_reproject, warp_affine
 
 from ..utils.math import valid_mask
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from odc.geo.types import Nodata
+    from odc.geo.warp import Resampling
 
 
 def rdr_geobox(rdr) -> GeoBox:
@@ -74,11 +74,13 @@ def read_time_slice(
     rr = compute_reproject_roi(src_geobox, dst_geobox, ttol=0.9 if is_nn else 0.01)
 
     if roi_is_empty(rr.roi_dst):
-        return cast(tuple[slice, slice], rr.roi_dst)
+        return cast("tuple[slice, slice]", rr.roi_dst)
 
     scale = pick_read_scale(rr.scale, rdr)
 
-    def norm_read_args(roi, shape, extra_dim_index):
+    def norm_read_args(
+        roi, shape, extra_dim_index
+    ) -> tuple[tuple | None, tuple | None]:
         if roi_is_full(roi, rdr.shape):
             roi = None
 
@@ -170,7 +172,7 @@ def read_time_slice(
                 **gdal_scale_params,
             )
 
-    return cast(tuple[slice, slice], rr.roi_dst)
+    return cast("tuple[slice, slice]", rr.roi_dst)
 
 
 def read_time_slice_v2(
@@ -187,11 +189,11 @@ def read_time_slice_v2(
     rr = compute_reproject_roi(src_geobox, dst_geobox, ttol=0.9 if is_nn else 0.01)
 
     if roi_is_empty(rr.roi_dst):
-        return None, cast(tuple[slice, slice], rr.roi_dst)
+        return None, cast("tuple[slice, slice]", rr.roi_dst)
 
     scale = pick_read_scale(rr.scale, rdr)
 
-    def norm_read_args(roi, shape):
+    def norm_read_args(roi, shape) -> tuple[tuple | None, tuple | None]:
         if roi_is_full(roi, rdr.shape):
             roi = None
 
@@ -252,4 +254,4 @@ def read_time_slice_v2(
                 dst_nodata=dst_nodata,
             )
 
-    return dst, cast(tuple[slice, slice], rr.roi_dst)
+    return dst, cast("tuple[slice, slice]", rr.roi_dst)

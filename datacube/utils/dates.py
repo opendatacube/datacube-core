@@ -9,8 +9,9 @@ Includes sequence generation functions to be used by statistics apps
 
 """
 
-from collections.abc import Generator
-from datetime import date, datetime, timezone, tzinfo
+from __future__ import annotations
+
+from datetime import datetime, timezone
 
 import dateutil
 import dateutil.parser
@@ -18,6 +19,11 @@ import numpy as np
 import xarray as xr
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, MONTHLY, YEARLY, rrule
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from datetime import date, tzinfo
 
 try:
     from ciso8601 import parse_datetime
@@ -29,7 +35,7 @@ DURATIONS = {"y": "years", "m": "months", "d": "days"}
 
 
 def date_sequence(
-    start: date | None, end: date | int | None, stats_duration: str, step_size: str
+    start: date | None, end: date, stats_duration: str, step_size: str
 ) -> Generator[tuple]:
     """
     Generate a sequence of time span tuples
@@ -44,11 +50,11 @@ def date_sequence(
     :return: sequence of (start_date, end_date) tuples
     """
     interval, freq = parse_interval(step_size)
-    stats_duration = parse_duration(stats_duration)
+    duration = parse_duration(stats_duration)
     for start_date in rrule(freq, interval=interval, dtstart=start, until=end):
-        end_date = start_date + stats_duration
+        end_date = start_date + duration
         if end_date <= end:
-            yield start_date, start_date + stats_duration
+            yield start_date, end_date
 
 
 def parse_interval(interval) -> tuple:
@@ -61,7 +67,7 @@ def parse_interval(interval) -> tuple:
         ) from None
 
 
-def parse_duration(duration):
+def parse_duration(duration: str) -> relativedelta:
     count, units = _split_duration(duration)
     try:
         delta = {DURATIONS[units]: count}

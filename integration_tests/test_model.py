@@ -2,12 +2,19 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import pytest
 
-from datacube.model import Dataset, Product
+from datacube.model import Dataset
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.model import Product
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_crs_parse(indexed_ls5_scene_products: list[Product]) -> None:
     product = indexed_ls5_scene_products[2]
 

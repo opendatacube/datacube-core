@@ -7,6 +7,7 @@ import sys
 from collections import namedtuple
 from collections.abc import Iterable
 from typing import Generic, NamedTuple, Protocol, TypeAlias, TypeVar
+from uuid import UUID
 
 from odc.geo import Geometry
 
@@ -65,3 +66,16 @@ QueryField: TypeAlias = (
     str | float | int | Range | datetime.datetime | Iterable[str | Geometry] | Not
 )
 QueryDict: TypeAlias = dict[str, QueryField]
+
+# Non-strict Dataset ID representation
+
+DSID: TypeAlias = str | UUID
+
+
+def dsid_to_uuid(dsid: DSID) -> UUID:
+    """
+    Convert non-strict dataset ID representation to strict UUID
+    """
+    if isinstance(dsid, UUID):
+        return dsid
+    return UUID(dsid)

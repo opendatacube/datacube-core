@@ -2,40 +2,50 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import datetime
 import logging
 import re
 import warnings
 from collections import namedtuple
-from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
+from collections.abc import Iterable
 from itertools import chain
 from time import monotonic
 from typing import Any, NamedTuple, cast
-from uuid import UUID
 
 from deprecat import deprecat
-from odc.geo import CRS, Geometry
+from odc.geo import CRS
 from typing_extensions import override
 
 from datacube.index import fields
 from datacube.index.abstract import (
-    DSID,
     AbstractDatasetResource,
-    AbstractIndex,
     BatchStatus,
     DatasetSpatialMixin,
     NoLineageResource,
-    dsid_to_uuid,
 )
 from datacube.index.fields import Field
 from datacube.index.memory._fields import build_custom_fields, get_dataset_fields
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, LineageRelation, Product, Range, ranges_overlap
-from datacube.model._base import QueryField
+from datacube.model._base import dsid_to_uuid
 from datacube.utils import _readable_offset, changes, jsonify_document
-from datacube.utils.changes import AllowPolicy, Change, Offset, get_doc_changes
+from datacube.utils.changes import get_doc_changes
 from datacube.utils.dates import tz_aware
-from datacube.utils.documents import JsonDict, metadata_subset
+from datacube.utils.documents import metadata_subset
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Mapping, Sequence
+    from uuid import UUID
+
+    from odc.geo import Geometry
+
+    from datacube.index.abstract import AbstractIndex
+    from datacube.model._base import DSID, QueryField
+    from datacube.utils.changes import AllowPolicy, Change, Offset
+    from datacube.utils.documents import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -72,7 +82,7 @@ class DatasetResource(AbstractDatasetResource):
         )  # N.B. raises KeyError if id not in index.
         if include_sources:
             ds.sources = {
-                classifier: cast(Dataset, self.get(dsid, include_sources=True))
+                classifier: cast("Dataset", self.get(dsid, include_sources=True))
                 for classifier, dsid in self._derived_from.get(ds.id, {}).items()
             }
         return ds
@@ -84,7 +94,7 @@ class DatasetResource(AbstractDatasetResource):
     @override
     def get_derived(self, id_: DSID) -> Iterable[Dataset]:
         return (
-            cast(Dataset, self.get(dsid))
+            cast("Dataset", self.get(dsid))
             for dsid in self._derivations.get(dsid_to_uuid(id_), {}).values()
         )
 
@@ -134,7 +144,7 @@ class DatasetResource(AbstractDatasetResource):
             _LOG.warning(
                 "archive-less-mature functionality is not implemented for memory driver"
             )
-        return cast(Dataset, self.get(dataset.id))
+        return cast("Dataset", self.get(dataset.id))
 
     def persist_source_relationship(
         self, ds: Dataset, src: Dataset, classifier: str
@@ -283,7 +293,7 @@ class DatasetResource(AbstractDatasetResource):
             _LOG.warning(
                 "archive-less-mature functionality is not implemented for memory driver"
             )
-        return cast(Dataset, self.get(dataset.id))
+        return cast("Dataset", self.get(dataset.id))
 
     def _update_locations(
         self, dataset: Dataset, existing: Dataset | None = None
@@ -597,7 +607,7 @@ class DatasetResource(AbstractDatasetResource):
             for dsid in dsids:
                 if limit is not None and matches >= limit:
                     break
-                ds = cast(Dataset, self.get(dsid, include_sources=True))
+                ds = cast("Dataset", self.get(dsid, include_sources=True))
                 query_matches = True
                 for expr in query_exprs:
                     if not expr.evaluate(ds.metadata_doc):
@@ -607,7 +617,7 @@ class DatasetResource(AbstractDatasetResource):
                     continue
                 if source_product:
                     matching_source = None
-                    for sds in cast(Mapping[str, Dataset], ds.sources).values():
+                    for sds in cast("Mapping[str, Dataset]", ds.sources).values():
                         if sds.product != source_product:
                             continue
                         source_matches = True
@@ -636,7 +646,7 @@ class DatasetResource(AbstractDatasetResource):
         **query: QueryField,
     ) -> Iterable[Dataset]:
         return cast(
-            Iterable[Dataset],
+            "Iterable[Dataset]",
             self._search(
                 return_format=self.RET_FORMAT_DATASETS,
                 limit=limit,
@@ -654,7 +664,7 @@ class DatasetResource(AbstractDatasetResource):
         **query: QueryField,
     ) -> Iterable[tuple[Product, Iterable[Dataset]]]:
         return cast(
-            Iterable[tuple[Product, Iterable[Dataset]]],
+            "Iterable[tuple[Product, Iterable[Dataset]]]",
             self._search(
                 return_format=self.RET_FORMAT_PRODUCT_GROUPED,
                 limit=limit,
@@ -835,7 +845,7 @@ class DatasetResource(AbstractDatasetResource):
         YieldType = tuple[Product, Iterable[tuple[Range, int]]]  # noqa: N806
         query = dict(query)
         try:
-            start, end = cast(Range, query.pop("time"))
+            start, end = cast("Range", query.pop("time"))
         except KeyError:
             raise ValueError(
                 'Must specify "time" range in period-counting query'
@@ -853,7 +863,7 @@ class DatasetResource(AbstractDatasetResource):
             for p in periods:
                 count = 0
                 for ds in dss:
-                    if ranges_overlap(cast(Range, ds.time), p):
+                    if ranges_overlap(cast("Range", ds.time), p):
                         count += 1
                 period_counts.append((p, count))
             retval = (product, period_counts)
@@ -924,7 +934,7 @@ class DatasetResource(AbstractDatasetResource):
                 min_time = dsmin
             if max_time is None or dsmax > max_time:
                 max_time = dsmax
-        return cast(datetime.datetime, min_time), cast(datetime.datetime, max_time)
+        return cast("datetime.datetime", min_time), cast("datetime.datetime", max_time)
 
     # pylint: disable=redefined-outer-name
     @override

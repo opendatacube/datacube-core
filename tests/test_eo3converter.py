@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # pylint: disable=unused-argument,unused-variable,missing-module-docstring,wrong-import-position,import-error
 # pylint: disable=redefined-outer-name,protected-access,import-outside-toplevel
+from __future__ import annotations
 
 import math
 import uuid
@@ -15,7 +16,7 @@ import pystac
 import pytest
 from odc.geo.geom import Geometry
 from odc.stac import load
-from odc.stac._mdtools import RasterCollectionMetadata, has_proj_ext, has_raster_ext
+from odc.stac._mdtools import has_proj_ext, has_raster_ext
 from pystac.extensions.eo import EOExtension
 from pystac.extensions.item_assets import ItemAssetsExtension
 from pystac.extensions.projection import SCHEMA_URI as PROJECTION_SCHEMA_URI
@@ -32,10 +33,15 @@ from datacube.metadata import (
     stac2ds,
 )
 from datacube.metadata._eo3converter import _compute_uuid, _item_to_ds
-from datacube.model import Dataset, Product
 from datacube.testutils.io import native_geobox
 
 from .common import NO_WARN_CFG, STAC_CFG, mk_stac_item
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from odc.stac._mdtools import RasterCollectionMetadata
+
+    from datacube.model import Dataset, Product
 
 
 def test_infer_product_collection(

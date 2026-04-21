@@ -2,15 +2,19 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import warnings
-from collections.abc import Callable
+from __future__ import annotations
 
-import numpy as np
-from affine import Affine
+import odc.geo.testutils as odc_geom
 from odc.geo import CRS
-from odc.geo.geobox import GeoBox
 from odc.geo.gridspec import GridSpec
-from odc.geo.math import apply_affine
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    import numpy as np
+    from affine import Affine
+    from odc.geo.geobox import GeoBox
 
 # pylint: disable=invalid-name
 
@@ -43,25 +47,14 @@ def mkA(  # noqa: N802
     shear: float = 0.0,
     translation: tuple[float, float] = (0.0, 0.0),
 ) -> Affine:
-    return (
-        Affine.translation(*translation)
-        * Affine.rotation(rot)
-        * Affine.shear(shear)
-        * Affine.scale(*scale)
-    )
+    return odc_geom.mkA(rot, scale, shear, translation)
 
 
 def xy_from_gbox(gbox: GeoBox) -> tuple[np.ndarray, np.ndarray]:
     """
     :returns: Two images with X and Y coordinates for centers of pixels
     """
-    h, w = gbox.shape
-
-    xx, yy = np.meshgrid(
-        np.arange(w, dtype="float64") + 0.5, np.arange(h, dtype="float64") + 0.5
-    )
-
-    return apply_affine(gbox.transform, xx, yy)
+    return odc_geom.xy_from_gbox(gbox)
 
 
 def xy_norm(
@@ -83,24 +76,7 @@ def xy_norm(
     - [x|y]'.min() == 0
     - [x|y]'.max() == 1
     """
-
-    def norm_v(v):
-        vmin = v.min()
-        v -= vmin
-        s = 1.0 / v.max()
-        v *= s
-
-        return s, -vmin * s
-
-    A_rot = Affine.rotation(deg)  # noqa: N806
-    x, y = apply_affine(A_rot, x, y)
-
-    sx, tx = norm_v(x)
-    sy, ty = norm_v(y)
-
-    A = Affine(sx, 0, tx, 0, sy, ty) * A_rot
-
-    return x, y, ~A
+    return odc_geom.xy_norm(x, y, deg)
 
 
 def to_fixed_point(a, dtype: str | np.dtype | type = "uint16"):
@@ -111,18 +87,7 @@ def to_fixed_point(a, dtype: str | np.dtype | type = "uint16"):
 
     Reverse is provided by: ``from_fixed_point``
     """
-    ii = np.iinfo(dtype)
-    a = a * ii.max + 0.5
-    a = np.clip(a, 0, ii.max, out=a)
-    warnings.filterwarnings("error")
-    try:
-        b = a.astype(ii.dtype)
-    except RuntimeWarning as e:
-        raise TypeError(e) from None
-    warnings.resetwarnings()
-    if not (np.abs(a - b) < 1).all():
-        raise TypeError(f"Cannot safely cast float to {dtype}")
-    return b
+    return odc_geom.to_fixed_point(a, dtype)
 
 
 def from_fixed_point(a):
@@ -131,8 +96,7 @@ def from_fixed_point(a):
 
     This is reverse of ``to_fixed_point``
     """
-    ii = np.iinfo(a.dtype)
-    return a.astype("float64") * (1.0 / ii.max)
+    return odc_geom.from_fixed_point(a)
 
 
 def gen_test_image_xy(
@@ -152,42 +116,4 @@ def gen_test_image_xy(
               normalised space, and a callable that can convert from normalised
               space back to coordinate space.
     """
-    dtype = np.dtype(dtype)
-
-    x, y = xy_from_gbox(gbox)
-    x, y, A = xy_norm(x, y, deg)
-
-    xy = np.stack([x, y])
-
-    xy = xy.astype(dtype) if dtype.kind == "f" else to_fixed_point(xy, dtype)
-
-    def denorm(xy=None, y=None, nodata=None):
-        if xy is None:
-            return A
-
-        stacked = y is None
-        x, y = xy if stacked else (xy, y)
-        missing_mask = None
-
-        if nodata is not None:
-            missing_mask = (
-                np.isnan(x) + np.isnan(y)
-                if np.isnan(nodata)
-                else (x == nodata) + (y == nodata)
-            )
-
-        if x.dtype.kind != "f":
-            x = from_fixed_point(x)
-            y = from_fixed_point(y)
-
-        x, y = apply_affine(A, x, y)
-
-        if missing_mask is not None:
-            x[missing_mask] = np.nan
-            y[missing_mask] = np.nan
-
-        if stacked:
-            return np.stack([x, y])
-        return x, y
-
-    return xy, denorm
+    return odc_geom.gen_test_image_xy(gbox, dtype, deg)

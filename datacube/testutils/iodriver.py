@@ -4,13 +4,18 @@
 # SPDX-License-Identifier: Apache-2.0
 """Reader driver construction for tests"""
 
+from __future__ import annotations
+
 from pathlib import Path
 
-from datacube.drivers._types import GeoRasterReader, ReaderDriver
 from datacube.drivers.rio._reader import RDEntry
 from datacube.storage import BandInfo
 from datacube.testutils import mk_sample_dataset
 from datacube.testutils.threads import FakeThreadPoolExecutor
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.drivers._types import GeoRasterReader, ReaderDriver
 
 NetCDF = "NetCDF"  # pylint: disable=invalid-name
 GeoTIFF = "GeoTIFF"  # pylint: disable=invalid-name

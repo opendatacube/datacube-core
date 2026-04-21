@@ -103,7 +103,7 @@ def get_doc_changes(
             )
     elif isinstance(original, tuple) or isinstance(new, tuple):
         if not numpy.array_equal(
-            cast(Sequence[Any], original), cast(Sequence[Any], new)
+            cast("Sequence[Any]", original), cast("Sequence[Any]", new)
         ):
             changed_fields.append((base_prefix, original, new))
     else:

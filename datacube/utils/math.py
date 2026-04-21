@@ -2,7 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Generator
+from __future__ import annotations
+
 from math import ceil
 from typing import Any
 
@@ -10,10 +11,15 @@ import numpy
 import odc.geo.math as geomath
 import xarray as xr
 from deprecat import deprecat
-from odc.geo import SomeResolution
 from odc.geo.xr import spatial_dims as xr_spatial_dims
 
 from datacube.migration import ODC2DeprecationWarning
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from odc.geo import SomeResolution
 
 
 def unsqueeze_data_array(

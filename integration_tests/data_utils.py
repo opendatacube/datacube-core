@@ -11,9 +11,12 @@ Hypothesis is used for most of the data generation, which will hopefully improve
 of our tests when we can roll it into more tests.
 """
 
+from __future__ import annotations
+
 import string
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import rasterio
@@ -29,6 +32,10 @@ from hypothesis.strategies import (
 )
 from odc.geo import CRS
 from odc.geo.geom import point
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -52,7 +59,7 @@ def bounds(draw, bounds):
 
 
 @composite
-def bboxes(draw, lat_bounds=(-90, 90), lon_bounds=(-180, 180)):
+def bboxes(draw, lat_bounds=(-90, 90), lon_bounds=(-180, 180)) -> tuple:
     """
     https://tools.ietf.org/html/rfc7946#section-5
     """
@@ -64,7 +71,7 @@ def bboxes(draw, lat_bounds=(-90, 90), lon_bounds=(-180, 180)):
 
 
 @composite
-def extents(draw, lat_bounds, lon_bounds):
+def extents(draw, lat_bounds, lon_bounds) -> dict:
     center_dt = draw(REASONABLE_DATES)
 
     time_range = timedelta(seconds=12)
@@ -82,10 +89,10 @@ def extents(draw, lat_bounds, lon_bounds):
     }
 
 
-def _extent_point_projector(crs):
+def _extent_point_projector(crs) -> Callable[[dict[str, float]], dict[str, float]]:
     crs = CRS(crs)
 
-    def reproject_point(pos):
+    def reproject_point(pos: dict[str, float]) -> dict[str, float]:
         pos = point(pos["lon"], pos["lat"], CRS("EPSG:4326"))
         coords = pos.to_crs(crs).coords[0]
         return {"x": coords[0], "y": coords[1]}
@@ -93,7 +100,7 @@ def _extent_point_projector(crs):
     return reproject_point
 
 
-def extent_to_grid_spatial(extent, crs):
+def extent_to_grid_spatial(extent, crs) -> dict[str, dict[str, Any]]:
     """Convert an extent in WGS84 to a grid spatial in the supplied CRS"""
     reprojector = _extent_point_projector(crs)
     return {
@@ -107,7 +114,7 @@ def extent_to_grid_spatial(extent, crs):
 
 
 @composite
-def acquisition_details(draw):
+def acquisition_details(draw) -> dict[str, Any]:
     return {
         "aos": draw(REASONABLE_DATES),
         "groundstation": {
@@ -118,7 +125,7 @@ def acquisition_details(draw):
 
 
 @composite
-def scene_datasets(draw):
+def scene_datasets(draw) -> dict[str, Any]:
     """
     Generate random test Landsat 5 Scene Datasets
     """
@@ -140,7 +147,7 @@ def scene_datasets(draw):
     }
 
 
-def write_test_scene_to_disk(dataset_dict, tmpdir):
+def write_test_scene_to_disk(dataset_dict: dict, tmpdir: Path) -> Path:
     tmpdir = Path(str(tmpdir))
     # Make directory name
     dir_name = dataset_dict["platform"]["code"] + dataset_dict["id"]
@@ -156,7 +163,7 @@ def write_test_scene_to_disk(dataset_dict, tmpdir):
     return dataset_file
 
 
-def _make_geotiffs(output_dir, dataset_dict, shape=(100, 100)):
+def _make_geotiffs(output_dir, dataset_dict, shape=(100, 100)) -> dict[int, str]:
     """
     Generate test GeoTIFF files into ``output_dir``, one per band, from a dataset dictionary
 

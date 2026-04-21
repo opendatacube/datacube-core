@@ -7,8 +7,9 @@
 This allows extraction of fields of interest from dataset metadata document.
 """
 
+from __future__ import annotations
+
 import decimal
-from collections.abc import Callable, Mapping
 from typing import Any, Generic, Literal, TypeAlias, get_args
 
 import toolz
@@ -17,6 +18,10 @@ from typing_extensions import override
 from datacube.utils import parse_time
 
 from ._base import OrderedT, Range
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
 
 # Allowed values for field 'type' (specified in a metadata type document)
 _AVAILABLE_TYPES: TypeAlias = Literal[
@@ -59,7 +64,7 @@ class SimpleEqualsExpression(Expression):
         self.value = value
 
     @override
-    def evaluate(self, ctx):
+    def evaluate(self, ctx) -> bool:
         return self.field.extract(ctx) == self.value
 
 

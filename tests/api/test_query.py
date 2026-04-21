@@ -2,17 +2,23 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import datetime
 from types import SimpleNamespace
 
 import numpy as np
 import pandas
 import pytest
-from odc.geo import CRS, Geometry
+from odc.geo import CRS
 
 from datacube.api.query import GroupBy, Query, query_group_by, solar_day, solar_offset
 from datacube.model import Range
 from datacube.utils import parse_time
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from odc.geo import Geometry
 
 
 @pytest.fixture
@@ -25,7 +31,7 @@ def mock_index():
 
 
 @pytest.fixture
-def test_geom():
+def test_geom() -> Geometry:
     from odc.geo.geom import polygon
 
     return polygon(
@@ -150,7 +156,7 @@ def test_query_kwargs_postgis(mock_index, test_geom) -> None:
     assert "geopolygon" in query.search_terms
 
 
-def format_test(start_out, end_out):
+def format_test(start_out, end_out) -> Range:
     return Range(
         pandas.to_datetime(start_out, utc=True).to_pydatetime(),
         pandas.to_datetime(end_out, utc=True).to_pydatetime(),

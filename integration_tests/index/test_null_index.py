@@ -2,14 +2,19 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 from unittest.mock import MagicMock
 from uuid import UUID
 
 import pytest
 
 from datacube import Datacube
-from datacube.cfg import ODCEnvironment
 from datacube.testutils import suppress_deprecations
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.cfg import ODCEnvironment
 
 test_uuid = UUID("4ec8fe97-e8b9-11e4-87ff-1040f381a756")
 

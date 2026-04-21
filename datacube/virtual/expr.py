@@ -2,10 +2,16 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import lark
 import numpy
 
 from datacube.utils.masking import valid_data_mask
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.utils.generic import T
 
 
 def formula_parser() -> lark.Lark:
@@ -113,7 +119,7 @@ class MaskEvaluator(lark.Transformer):
     eq = ne = le = ge = lt = gt = or_
     add = sub = mul = truediv = floordiv = mod = pow = lshift = rshift = or_
 
-    def not_(self, value):
+    def not_(self, value: T) -> T:
         return value
 
     neg = pos = inv = not_

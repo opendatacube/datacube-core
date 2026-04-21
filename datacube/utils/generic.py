@@ -2,11 +2,16 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import itertools
 import threading
-from collections.abc import Callable, Generator, Iterable, Iterator
-from queue import Queue
 from typing import Any, TypeVar
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterable, Iterator
+    from queue import Queue
 
 EOS = object()
 _LCL = threading.local()

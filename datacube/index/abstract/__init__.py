@@ -13,11 +13,10 @@ from ._metadata_types import (
 )
 from ._products import AbstractProductResource
 from ._transactions import AbstractTransaction, UnhandledTransaction
-from ._types import DSID, BatchStatus, DatasetSpatialMixin, DatasetTuple, dsid_to_uuid
+from ._types import BatchStatus, DatasetSpatialMixin, DatasetTuple
 from ._users import AbstractUserResource
 
 __all__ = [
-    "DSID",
     "_DEFAULT_METADATA_TYPES_PATH",
     "AbstractDatasetResource",
     "AbstractIndex",
@@ -33,5 +32,4 @@ __all__ = [
     "NoLineageResource",
     "UnhandledTransaction",
     "default_metadata_type_docs",
-    "dsid_to_uuid",
 ]

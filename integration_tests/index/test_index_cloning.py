@@ -65,3 +65,19 @@ def test_index_clone_cli_small_batch(
         ],
         skip_env=True,
     )
+
+
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
+@pytest.mark.parametrize("datacube_env_name", ("postgis3",), indirect=True)
+def test_cli_errors(clirunner, index) -> None:
+    for op in [
+        ["-E", "nonexistentenvfortest", "system", "clone", "something"],
+        ["system", "clone", "something"],
+    ]:
+        r = clirunner(
+            [*op],
+            expect_success=False,
+            verbose_flag=False,
+        )
+        assert r.exit_code != 0, f"Output: {r.output}"
+        assert "Error Connecting to " in r.stderr

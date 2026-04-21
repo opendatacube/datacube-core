@@ -2,21 +2,20 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import array
+from __future__ import annotations
+
 import functools
 import itertools
 import math
 import warnings
 from collections import OrderedDict
-from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Sequence
-from typing import Any, NamedTuple, Optional, TypeAlias, Union
+from collections.abc import Sequence
+from typing import Any, NamedTuple, TypeAlias
 
 import cachetools
 import numpy
-import rasterio
 import xarray as xr
 from affine import Affine
-from packaging.version import Version
 from pyproj import CRS as _CRS
 from pyproj.enums import WktVersion
 from pyproj.exceptions import CRSError
@@ -25,10 +24,15 @@ from shapely import from_wkt, geometry, ops
 from shapely.geometry import base
 from typing_extensions import override
 
-from datacube.utils.generic import T
-
 from ..math import is_almost_int
 from .tools import is_affine_st, roi_normalise, roi_shape
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    import array
+    from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping
+
+    from datacube.utils.generic import T
 
 
 class Coordinate(NamedTuple):
@@ -54,7 +58,7 @@ class BoundingBox(_BoundingBox):
     Bounding box, defining extent in cartesian coordinates.
     """
 
-    def buffered(self, ybuff: float, xbuff: float) -> "BoundingBox":
+    def buffered(self, ybuff: float, xbuff: float) -> BoundingBox:
         """
         Return a new BoundingBox, buffered in the x and y dimensions.
 
@@ -101,7 +105,7 @@ class BoundingBox(_BoundingBox):
         x0, y0, x1, y1 = self
         return list(itertools.product((x0, x1), (y0, y1)))
 
-    def transform(self, transform: Affine) -> "BoundingBox":
+    def transform(self, transform: Affine) -> BoundingBox:
         """
         Transform bounding box through a linear transform
 
@@ -114,7 +118,7 @@ class BoundingBox(_BoundingBox):
         return BoundingBox(min(xx), min(yy), max(xx), max(yy))
 
     @staticmethod
-    def from_xy(x: tuple[float, float], y: tuple[float, float]) -> "BoundingBox":
+    def from_xy(x: tuple[float, float], y: tuple[float, float]) -> BoundingBox:
         """
         BoundingBox from x and y ranges
 
@@ -126,7 +130,7 @@ class BoundingBox(_BoundingBox):
         return BoundingBox(x1, y1, x2, y2)
 
     @staticmethod
-    def from_points(p1: tuple[float, float], p2: tuple[float, float]) -> "BoundingBox":
+    def from_points(p1: tuple[float, float], p2: tuple[float, float]) -> BoundingBox:
         """
         BoundingBox from 2 points
 
@@ -174,11 +178,7 @@ class CRS:
     :raises: `pyproj.exceptions.CRSError`
     """
 
-    DEFAULT_WKT_VERSION = (
-        WktVersion.WKT1_GDAL
-        if Version(rasterio.__gdal_version__) < Version("3.0.0")
-        else WktVersion.WKT2_2019
-    )
+    DEFAULT_WKT_VERSION = WktVersion.WKT2_2019
 
     __slots__ = ("_crs", "_epsg", "_str")
 
@@ -334,7 +334,7 @@ class CRS:
         return self._crs
 
     @property
-    def valid_region(self) -> Optional["Geometry"]:
+    def valid_region(self) -> Geometry | None:
         """
         Return valid region of this CRS.
 
@@ -358,7 +358,7 @@ class CRS:
         return self._str
 
     def transformer_to_crs(
-        self, other: "CRS", always_xy: bool = True
+        self, other: CRS, always_xy: bool = True
     ) -> Callable[[Any, Any], tuple[Any, Any]]:
         """
         Returns a function that maps x, y -> x', y' where x, y are coordinates in
@@ -367,7 +367,7 @@ class CRS:
         """
         transform = _make_crs_transform(self._crs, other._crs, always_xy=always_xy)
 
-        def result(x, y):
+        def result(x, y) -> tuple[Any, Any]:
             rx, ry = transform(x, y)
 
             if not isinstance(rx, numpy.ndarray) or not isinstance(ry, numpy.ndarray):
@@ -415,7 +415,7 @@ def wrap_shapely(suppress_geos_warnings: bool = False):
     objects that carry their CRSs.
     """
 
-    def wrap_func(method):
+    def wrap_func(method: Callable) -> Callable:
         @functools.wraps(method, assigned=("__doc__",))
         def wrapped(*args):
             first = args[0]
@@ -442,7 +442,7 @@ def force_2d(geojson: dict[str, Any]) -> dict[str, Any]:
     assert "type" in geojson
     assert "coordinates" in geojson
 
-    def is_scalar(x):
+    def is_scalar(x) -> bool:
         return isinstance(x, int | float)
 
     def go(x):
@@ -465,7 +465,7 @@ def densify(coords: CoordList, resolution: float) -> CoordList:
     """
     d2 = resolution**2
 
-    def short_enough(p1, p2):
+    def short_enough(p1: tuple[float, float], p2: tuple[float, float]) -> bool:
         return (p1[0] ** 2 + p2[0] ** 2) < d2
 
     new_coords = [coords[0]]
@@ -499,7 +499,7 @@ class Geometry:
 
     def __init__(
         self,
-        geom: Union[base.BaseGeometry, dict[str, Any], "Geometry"],
+        geom: base.BaseGeometry | dict[str, Any] | Geometry,
         crs: MaybeCRS = None,
     ) -> None:
         if isinstance(geom, Geometry):
@@ -517,67 +517,67 @@ class Geometry:
         else:
             raise ValueError(f"Unexpected type {type(geom)}")
 
-    def clone(self) -> "Geometry":
+    def clone(self) -> Geometry:
         return Geometry(self)
 
     @wrap_shapely()
-    def contains(self, other: "Geometry") -> bool:
+    def contains(self, other: Geometry) -> bool:
         return self.contains(other)
 
     @wrap_shapely()
-    def crosses(self, other: "Geometry") -> bool:
+    def crosses(self, other: Geometry) -> bool:
         return self.crosses(other)
 
     @wrap_shapely()
-    def disjoint(self, other: "Geometry") -> bool:
+    def disjoint(self, other: Geometry) -> bool:
         return self.disjoint(other)
 
     @wrap_shapely(suppress_geos_warnings=True)
-    def intersects(self, other: "Geometry") -> bool:
+    def intersects(self, other: Geometry) -> bool:
         return self.intersects(other)
 
     @wrap_shapely()
-    def touches(self, other: "Geometry") -> bool:
+    def touches(self, other: Geometry) -> bool:
         return self.touches(other)
 
     @wrap_shapely()
-    def within(self, other: "Geometry") -> bool:
+    def within(self, other: Geometry) -> bool:
         return self.within(other)
 
     @wrap_shapely()
-    def overlaps(self, other: "Geometry") -> bool:
+    def overlaps(self, other: Geometry) -> bool:
         return self.overlaps(other)
 
     @wrap_shapely()
-    def difference(self, other: "Geometry") -> "Geometry":
+    def difference(self, other: Geometry) -> Geometry:
         return self.difference(other)
 
     @wrap_shapely(suppress_geos_warnings=True)
-    def intersection(self, other: "Geometry") -> "Geometry":
+    def intersection(self, other: Geometry) -> Geometry:
         return self.intersection(other)
 
     @wrap_shapely()
-    def symmetric_difference(self, other: "Geometry") -> "Geometry":
+    def symmetric_difference(self, other: Geometry) -> Geometry:
         return self.symmetric_difference(other)
 
     @wrap_shapely()
-    def union(self, other: "Geometry") -> "Geometry":
+    def union(self, other: Geometry) -> Geometry:
         return self.union(other)
 
     @wrap_shapely()
-    def __and__(self, other: "Geometry") -> "Geometry":
+    def __and__(self, other: Geometry) -> Geometry:
         return self.__and__(other)
 
     @wrap_shapely()
-    def __or__(self, other: "Geometry") -> "Geometry":
+    def __or__(self, other: Geometry) -> Geometry:
         return self.__or__(other)
 
     @wrap_shapely()
-    def __xor__(self, other: "Geometry") -> "Geometry":
+    def __xor__(self, other: Geometry) -> Geometry:
         return self.__xor__(other)
 
     @wrap_shapely()
-    def __sub__(self, other: "Geometry") -> "Geometry":
+    def __sub__(self, other: Geometry) -> Geometry:
         return self.__sub__(other)
 
     def svg(self) -> str:
@@ -599,19 +599,19 @@ class Geometry:
         return self.geom.is_valid
 
     @property
-    def boundary(self) -> "Geometry":
+    def boundary(self) -> Geometry:
         return Geometry(self.geom.boundary, self.crs)
 
     @property
-    def exterior(self) -> "Geometry":
+    def exterior(self) -> Geometry:
         return Geometry(self.geom.exterior, self.crs)
 
     @property
-    def interiors(self) -> list["Geometry"]:
+    def interiors(self) -> list[Geometry]:
         return [Geometry(g, self.crs) for g in self.geom.interiors]
 
     @property
-    def centroid(self) -> "Geometry":
+    def centroid(self) -> Geometry:
         return Geometry(self.geom.centroid, self.crs)
 
     @property
@@ -635,11 +635,11 @@ class Geometry:
         return self.geom.xy
 
     @property
-    def convex_hull(self) -> "Geometry":
+    def convex_hull(self) -> Geometry:
         return Geometry(self.geom.convex_hull, self.crs)
 
     @property
-    def envelope(self) -> "Geometry":
+    def envelope(self) -> Geometry:
         return Geometry(self.geom.envelope, self.crs)
 
     @property
@@ -666,7 +666,7 @@ class Geometry:
     def json(self):
         return self.__geo_interface__
 
-    def segmented(self, resolution: float) -> "Geometry":
+    def segmented(self, resolution: float) -> Geometry:
         """
         Possibly add more points to the geometry so that no edge is longer than `resolution`.
         """
@@ -697,22 +697,22 @@ class Geometry:
 
         return Geometry(segmentize_shapely(self.geom), self.crs)
 
-    def interpolate(self, distance: float) -> "Geometry":
+    def interpolate(self, distance: float) -> Geometry:
         """
         Returns a point distance units along the line.
         Raises TypeError if geometry doesn't support this operation.
         """
         return Geometry(self.geom.interpolate(distance), self.crs)
 
-    def buffer(self, distance: float, resolution: float = 30) -> "Geometry":
+    def buffer(self, distance: float, resolution: float = 30) -> Geometry:
         return Geometry(self.geom.buffer(distance, resolution=resolution), self.crs)
 
-    def simplify(self, tolerance: float, preserve_topology: bool = True) -> "Geometry":
+    def simplify(self, tolerance: float, preserve_topology: bool = True) -> Geometry:
         return Geometry(
             self.geom.simplify(tolerance, preserve_topology=preserve_topology), self.crs
         )
 
-    def transform(self, func) -> "Geometry":
+    def transform(self, func) -> Geometry:
         """
         Applies func to all coordinates of Geometry and returns a new Geometry
         of the same type and in the same projection from the transformed coordinates.
@@ -724,13 +724,13 @@ class Geometry:
         """
         return Geometry(ops.transform(func, self.geom), self.crs)
 
-    def _to_crs(self, crs: CRS) -> "Geometry":
+    def _to_crs(self, crs: CRS) -> Geometry:
         assert self.crs is not None
         return Geometry(ops.transform(self.crs.transformer_to_crs(crs), self.geom), crs)
 
     def to_crs(
         self, crs: SomeCRS, resolution: float | None = None, wrapdateline: bool = False
-    ) -> "Geometry":
+    ) -> Geometry:
         """
         Convert geometry to a different Coordinate Reference System
 
@@ -766,7 +766,7 @@ class Geometry:
 
         return geom._to_crs(crs)
 
-    def split(self, splitter: "Geometry") -> Iterable["Geometry"]:
+    def split(self, splitter: Geometry) -> Iterable[Geometry]:
         """
         shapely.ops.split
         """
@@ -776,7 +776,7 @@ class Geometry:
         for g in ops.split(self.geom, splitter.geom).geoms:
             yield Geometry(g, self.crs)
 
-    def __iter__(self) -> Iterator["Geometry"]:
+    def __iter__(self) -> Iterator[Geometry]:
         sub_geoms = getattr(self.geom, "geoms", [])
         for geom in sub_geoms:
             yield Geometry(geom, self.crs)
@@ -807,7 +807,7 @@ class Geometry:
     # Implement pickle/unpickle
     # It does work without these two methods, but gdal/ogr prints 'ERROR 1: Empty geometries cannot be constructed'
     # when unpickling, which is quite unpleasant.
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
         return {"geom": self.json, "crs": self.crs}
 
     def __setstate__(self, state):
@@ -861,17 +861,17 @@ def clip_lon180(geom: Geometry, tol: float = 1e-6) -> Geometry:
     """
     thresh = 180 - tol
 
-    def _clip_180(xx, clip):
+    def _clip_180(xx, clip) -> list:
         return [x if abs(x) < thresh else clip for x in xx]
 
-    def _pick_clip(xx: list[float]):
+    def _pick_clip(xx: list[float]) -> int:
         cc = 0
         for x in xx:
             if abs(x) < thresh:
                 cc += 1 if x > 0 else -1
         return 180 if cc >= 0 else -180
 
-    def transformer(xx, yy):
+    def transformer(xx, yy) -> tuple[list, Any]:
         clip = _pick_clip(xx)
         return _clip_180(xx, clip), yy
 
@@ -1108,7 +1108,7 @@ class GeoBox:
         resolution: tuple[float, float],
         crs: MaybeCRS = None,
         align: tuple[float, float] | None = None,
-    ) -> "GeoBox":
+    ) -> GeoBox:
         """
         :param resolution: (y_resolution, x_resolution)
         :param crs: CRS to use, if different from the geopolygon
@@ -1139,7 +1139,7 @@ class GeoBox:
         )
         return GeoBox(crs=crs, affine=affine, width=width, height=height)
 
-    def buffered(self, ybuff, xbuff) -> "GeoBox":
+    def buffered(self, ybuff, xbuff) -> GeoBox:
         """
         Produce a tile buffered by ybuff, xbuff (in CRS units)
         """
@@ -1155,7 +1155,7 @@ class GeoBox:
             crs=self.crs,
         )
 
-    def __getitem__(self, roi) -> "GeoBox":
+    def __getitem__(self, roi) -> GeoBox:
         if isinstance(roi, int):
             roi = (slice(roi, roi + 1), slice(None, None))
 
@@ -1176,13 +1176,13 @@ class GeoBox:
 
         return GeoBox(width=w, height=h, affine=affine, crs=self.crs)
 
-    def __or__(self, other) -> "GeoBox":
+    def __or__(self, other) -> GeoBox:
         """
         A geobox that encompasses both self and other.
         """
         return geobox_union_conservative([self, other])
 
-    def __and__(self, other) -> "GeoBox":
+    def __and__(self, other) -> GeoBox:
         """
         A geobox that is contained in both self and other.
         """

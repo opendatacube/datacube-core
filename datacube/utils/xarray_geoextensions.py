@@ -14,6 +14,8 @@ This extension is reliant on an `xarray` object having a `.crs` property of type
 
 """
 
+from __future__ import annotations
+
 import warnings
 
 import xarray
@@ -21,6 +23,10 @@ from odc.geo import resxy_
 from odc.geo._xr_interop import _xarray_geobox as _xr_geobox
 from odc.geo.math import affine_from_axis
 from odc.geo.xr import spatial_dims
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from affine import Affine
 
 
 def _xarray_affine_impl(obj):
@@ -35,7 +41,7 @@ def _xarray_affine_impl(obj):
     return affine_from_axis(xx.values, yy.values, fallback_res), sdims
 
 
-def _xarray_affine(obj):
+def _xarray_affine(obj) -> Affine:
     transform, _ = _xarray_affine_impl(obj)
     return transform
 

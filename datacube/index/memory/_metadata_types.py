@@ -2,8 +2,9 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
-from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from typing import Any, cast
 
@@ -16,14 +17,14 @@ from datacube.index.abstract import (
 from datacube.index.memory._fields import get_dataset_fields
 from datacube.model import MetadataType
 from datacube.utils import _readable_offset, changes, jsonify_document
-from datacube.utils.changes import (
-    AllowPolicy,
-    Change,
-    Offset,
-    check_doc_unchanged,
-    get_doc_changes,
-)
-from datacube.utils.documents import JsonDict
+from datacube.utils.changes import check_doc_unchanged, get_doc_changes
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
+    from datacube.utils.changes import AllowPolicy, Change, Offset
+    from datacube.utils.documents import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource):
             self.next_id += 1
             self.by_id[persisted.id] = persisted
             self.by_name[persisted.name] = persisted
-        return cast(MetadataType, self.get_by_name(metadata_type.name))
+        return cast("MetadataType", self.get_by_name(metadata_type.name))
 
     @override
     def can_update(

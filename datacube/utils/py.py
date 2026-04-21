@@ -2,9 +2,10 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import importlib
 import logging
-from collections.abc import Callable, Mapping
 from contextlib import contextmanager
 
 import toolz
@@ -12,10 +13,14 @@ from deprecat import deprecat
 
 from datacube.migration import ODC2DeprecationWarning
 
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
+
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def import_function(func_ref):
+def import_function(func_ref: str) -> Callable:
     """
     Import a function available in the python path.
 

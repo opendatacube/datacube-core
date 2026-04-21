@@ -5,32 +5,35 @@
 from __future__ import annotations
 
 import logging
-import typing
 from collections import OrderedDict
-from collections.abc import Generator, Hashable, Iterable, Mapping
 from typing import Literal
 
-import numpy as np
 import pandas as pd
 import xarray as xr
-from odc.geo.geom import Geometry, intersects
-from odc.geo.gridspec import GridSpec
+from odc.geo.geom import intersects
 from typing_extensions import override
 
-from datacube.model import Dataset, QueryField
 from datacube.utils import DatacubeException
 
 from .core import Datacube
-from .query import GroupBy, Query, query_group_by
+from .query import Query, query_group_by
 
-_LOG: logging.Logger = logging.getLogger(__name__)
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator, Hashable, Iterable, Mapping
 
-if typing.TYPE_CHECKING:
+    import numpy as np
     from odc.geo.geobox import GeoBox
+    from odc.geo.geom import Geometry
+    from odc.geo.gridspec import GridSpec
 
     from datacube.index import Index
+    from datacube.model import Dataset, Product, QueryField
     from datacube.model import GridSpec as OldGridSpec
-    from datacube.model import Product
+
+    from .query import GroupBy
+
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class GridWorkflowException(DatacubeException):
@@ -298,7 +301,7 @@ class GridWorkflow:
 
         return cells
 
-    def _find_datasets(self, geopolygon, indexers):
+    def _find_datasets(self, geopolygon, indexers) -> tuple:
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
         if not query.product:
             raise RuntimeError("must specify a product")

@@ -2,23 +2,33 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-import datetime
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Iterable, Sequence
 from time import monotonic
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
-from odc.geo import CRS, Geometry
+from odc.geo import CRS
 
-from datacube.model import MetadataType, Product, QueryDict, QueryField
+from datacube.model import Product
 from datacube.utils import InvalidDocException, jsonify_document
-from datacube.utils.changes import Change, DocumentMismatchError, check_doc_unchanged
-from datacube.utils.documents import JsonDict, JsonLike, UnknownMetadataType
+from datacube.utils.changes import DocumentMismatchError, check_doc_unchanged
+from datacube.utils.documents import UnknownMetadataType
 
 from ._types import BatchStatus
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Generator, Iterable, Sequence
+
+    from odc.geo import Geometry
+
+    from datacube.model import MetadataType, QueryDict, QueryField
+    from datacube.utils.changes import Change
+    from datacube.utils.documents import JsonDict, JsonLike
+
     from ._index import AbstractIndex
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -35,7 +45,7 @@ class AbstractProductResource(ABC):
     raise a NotImplementedError)
     """
 
-    def __init__(self, index: "AbstractIndex") -> None:
+    def __init__(self, index: AbstractIndex) -> None:
         self._index = index
 
     def from_doc(
@@ -80,7 +90,7 @@ class AbstractProductResource(ABC):
         else:
             # Otherwise they embedded a document, add it if needed:
             metadata_type = self._index.metadata_types.from_doc(
-                cast(JsonDict, metadata_type_in)
+                cast("JsonDict", metadata_type_in)
             )
             definition = dict(definition)
             definition["metadata_type"] = metadata_type.name
@@ -441,7 +451,7 @@ class AbstractProductResource(ABC):
         :returns: Iterable of metadata documents for all known products
         """
         for prod in self.get_all():
-            yield cast(JsonDict, prod.definition)
+            yield cast("JsonDict", prod.definition)
 
     @abstractmethod
     def spatial_extent(

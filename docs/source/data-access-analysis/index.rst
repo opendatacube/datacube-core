@@ -42,7 +42,6 @@ To make it easier to get started with Open Data Cube, the following reference po
     :maxdepth: 4
     :caption: Advanced Topics
 
-    advanced-topics/virtual-products.rst
     advanced-topics/data-loading.rst
 
 .. toctree::

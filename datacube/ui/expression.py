@@ -17,13 +17,20 @@ Where DATE or DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
 and START, END are either numbers or dates.
 """
 
-from datetime import datetime
+from __future__ import annotations
+
 from typing import Any
 
 from lark import Lark, Transformer, v_args
 
 from datacube.api.query import _time_to_search_dims
 from datacube.model import Range
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from datacube.utils.generic import T
 
 search_grammar = r"""
     start: expression*
@@ -82,7 +89,7 @@ search_grammar = r"""
 """
 
 
-def identity(x):
+def identity(x: T) -> T:
     return x
 
 

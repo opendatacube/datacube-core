@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import os
 from uuid import uuid4 as random_uuid
 
@@ -10,6 +12,10 @@ import pytest
 from datacube.model import InconsistentLineageException, LineageDirection, LineageTree
 from datacube.model.lineage import LineageIDPair, LineageRelations
 from datacube.utils import read_documents
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from uuid import UUID
 
 
 def test_directions() -> None:
@@ -41,7 +47,7 @@ def test_ltree_clsmethods(data_folder) -> None:
 
 
 @pytest.fixture
-def shared_tree_ids():
+def shared_tree_ids() -> dict[str, UUID]:
     return {
         "ard1": random_uuid(),
         "l1_1": random_uuid(),
@@ -52,7 +58,7 @@ def shared_tree_ids():
 
 
 @pytest.fixture
-def src_tree_ids(shared_tree_ids):
+def src_tree_ids(shared_tree_ids: dict[str, UUID]) -> dict[str, UUID]:
     return {
         "root": random_uuid(),
         "ard1": shared_tree_ids["ard1"],
@@ -64,7 +70,7 @@ def src_tree_ids(shared_tree_ids):
 
 
 @pytest.fixture
-def src_lineage_tree(src_tree_ids):
+def src_lineage_tree(src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = src_tree_ids
     direction = LineageDirection.SOURCES
     return LineageTree(
@@ -136,8 +142,36 @@ def test_lineage_serialisation(src_lineage_tree, src_tree_ids) -> None:
     assert tree_out == src_lineage_tree
 
 
+def test_lineage_eo3_merge(src_lineage_tree, src_tree_ids) -> None:
+    rels = LineageRelations()
+    rels.merge_from_eo3_doc(
+        {
+            "id": str(src_tree_ids["root"]),
+            "lineage": {
+                "ard": [str(src_tree_ids["ard1"])],
+            },
+        }
+    )
+    rels.merge_from_eo3(
+        src_tree_ids["ard1"],
+        home="level1db",
+        lineage={
+            "l1": [
+                str(src_tree_ids["l1_1"]),
+                str(src_tree_ids["l1_2"]),
+                str(src_tree_ids["l1_3"]),
+            ],
+            "atmos_corr": [str(src_tree_ids["atmos"])],
+        },
+    )
+    assert (
+        rels.extract_tree(src_tree_ids["root"], LineageDirection.SOURCES)
+        == src_lineage_tree
+    )
+
+
 @pytest.fixture
-def src_lineage_tree_diffhome(src_tree_ids):
+def src_lineage_tree_diffhome(src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = src_tree_ids
     direction = LineageDirection.SOURCES
     return LineageTree(
@@ -181,7 +215,7 @@ def src_lineage_tree_diffhome(src_tree_ids):
 
 
 @pytest.fixture
-def mixed_dir_lineage_tree(src_tree_ids):
+def mixed_dir_lineage_tree(src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = src_tree_ids
     direction = LineageDirection.SOURCES
     return LineageTree(
@@ -219,7 +253,7 @@ def mixed_dir_lineage_tree(src_tree_ids):
 
 
 @pytest.fixture
-def big_src_tree_ids(shared_tree_ids):
+def big_src_tree_ids(shared_tree_ids: dict[str, UUID]) -> dict[str, UUID]:
     ids = shared_tree_ids
     return {
         "root": random_uuid(),
@@ -237,7 +271,7 @@ def big_src_tree_ids(shared_tree_ids):
 
 
 @pytest.fixture
-def big_src_lineage_tree(big_src_tree_ids):
+def big_src_lineage_tree(big_src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = big_src_tree_ids
     direction = LineageDirection.SOURCES
     return LineageTree(
@@ -307,7 +341,7 @@ def big_src_lineage_tree(big_src_tree_ids):
 
 
 @pytest.fixture
-def classifier_mismatch(big_src_tree_ids):
+def classifier_mismatch(big_src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = big_src_tree_ids
     direction = LineageDirection.SOURCES
     return LineageTree(
@@ -377,7 +411,7 @@ def classifier_mismatch(big_src_tree_ids):
 
 
 @pytest.fixture
-def src_lineage_tree_with_bad_diamond(big_src_tree_ids):
+def src_lineage_tree_with_bad_diamond(big_src_tree_ids: dict[str, UUID]) -> LineageTree:
     ids = big_src_tree_ids
     direction = LineageDirection.SOURCES
     # This is a test tree with a malformed diamond relationship.

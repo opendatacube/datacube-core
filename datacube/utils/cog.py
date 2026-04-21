@@ -2,26 +2,33 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import warnings
-from pathlib import Path
 from typing import Any
 
 import dask
 import numpy as np
 import rasterio
 import toolz
-import xarray as xr
 from dask.base import is_dask_collection
 from dask.delayed import Delayed
 from deprecat import deprecat
-from odc.geo.geobox import GeoBox
 from odc.geo.math import align_up
-from odc.geo.warp import Resampling, resampling_s2rio
+from odc.geo.warp import resampling_s2rio
 from rasterio.shutil import copy as rio_copy
 
 from datacube.migration import ODC2DeprecationWarning
 
 from .io import check_write_path
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import xarray as xr
+    from odc.geo.geobox import GeoBox
+    from odc.geo.warp import Resampling
 
 __all__ = ["to_cog", "write_cog"]
 

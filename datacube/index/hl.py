@@ -6,17 +6,22 @@
 High level indexing operations/utilities
 """
 
+from __future__ import annotations
+
 import logging
-from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
+from collections.abc import Callable, Mapping
 from typing import Any, TypeAlias, cast
-from uuid import UUID
 
 import toolz
 from pystac import Item
 
-from datacube.index.abstract import AbstractIndex
 from datacube.metadata import stac2ds
-from datacube.model import Dataset, LineageDirection, LineageTree, Product
+from datacube.model import (
+    Dataset,
+    LineageDirection,
+    LineageTree,
+    Product,
+)
 from datacube.model.utils import (
     BadMatch,
     dedup_lineage,
@@ -30,9 +35,17 @@ from datacube.utils import (
     json,
     jsonify_document,
 )
-from datacube.utils.changes import Offset, get_doc_changes
+from datacube.utils.changes import get_doc_changes
 
 from .eo3 import is_doc_eo3, is_doc_geo, prep_eo3
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, MutableMapping, Sequence
+    from uuid import UUID
+
+    from datacube.index.abstract import AbstractIndex
+    from datacube.utils.changes import Offset
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -83,7 +96,9 @@ def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
     def matches(doc: Mapping[str, Any], rule: ProductRule) -> bool:
         return changes.contains(doc, rule.signature)
 
-    def single_product_matcher(rule):
+    def single_product_matcher(
+        rule: ProductRule,
+    ) -> Callable[[Mapping[str, Any]], Product]:
         def matcher(doc: Mapping[str, Any]) -> Product:
             if matches(doc, rule):
                 return rule.product
@@ -530,7 +545,7 @@ class Doc2Dataset:
 
         dataset, err = self._ds_resolve(doc, uri, source_tree)
         if dataset is None:
-            return None, cast(str | Exception, err)
+            return None, cast("str | Exception", err)
 
         reason = check_dataset_consistent(dataset)
         if reason is None:

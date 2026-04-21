@@ -2,16 +2,21 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import pytest
 from sqlalchemy import text
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 # These tests use an empty/uninitialised database.
 # Doesn't matter whether it is postgis or postgres - use postgis for future-proofing
 
 
 @pytest.fixture
-def specific_user(uninitialised_postgres_db, cfg_env):
+def specific_user(uninitialised_postgres_db, cfg_env) -> Generator[str]:
     from datacube.drivers.common_psql import (
         create_user,
         drop_users,
@@ -31,7 +36,7 @@ def specific_user(uninitialised_postgres_db, cfg_env):
 
 
 @pytest.fixture
-def bare_user(uninitialised_postgres_db, cfg_env):
+def bare_user(uninitialised_postgres_db, cfg_env) -> Generator[str]:
     from datacube.drivers.common_psql import drop_users
 
     engine = uninitialised_postgres_db._engine
@@ -44,7 +49,7 @@ def bare_user(uninitialised_postgres_db, cfg_env):
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"), indirect=True)
 @pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
-def test_transfer_perms(uninitialised_postgres_db, specific_user, bare_user):
+def test_transfer_perms(uninitialised_postgres_db, specific_user, bare_user) -> None:
     from datacube.drivers.common_psql import (
         as_role,
         create_schema,
@@ -122,7 +127,7 @@ def test_transfer_perms(uninitialised_postgres_db, specific_user, bare_user):
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"), indirect=True)
 @pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
-def test_has_roles(uninitialised_postgres_db, specific_user):
+def test_has_roles(uninitialised_postgres_db, specific_user) -> None:
     from datacube.drivers.common_psql import has_roles
 
     engine = uninitialised_postgres_db._engine
@@ -132,7 +137,7 @@ def test_has_roles(uninitialised_postgres_db, specific_user):
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"), indirect=True)
 @pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
-def test_ensure_role(uninitialised_postgres_db, bare_user):
+def test_ensure_role(uninitialised_postgres_db, bare_user) -> None:
     from datacube.drivers.common_psql import as_role, ensure_role, has_role
     from datacube.drivers.postgis._core import UserRole
 
@@ -154,7 +159,7 @@ def test_ensure_role(uninitialised_postgres_db, bare_user):
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"), indirect=True)
 @pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
-def test_create_user(uninitialised_postgres_db, specific_user, bare_user):
+def test_create_user(uninitialised_postgres_db, specific_user, bare_user) -> None:
     from datacube.drivers.common_psql import as_role, create_user
     from datacube.drivers.postgis._core import UserRole
 
@@ -168,7 +173,7 @@ def test_create_user(uninitialised_postgres_db, specific_user, bare_user):
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"), indirect=True)
 @pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
-def test_drop_users(uninitialised_postgres_db, specific_user, bare_user):
+def test_drop_users(uninitialised_postgres_db, specific_user, bare_user) -> None:
     from datacube.drivers.common_psql import as_role, drop_users
 
     engine = uninitialised_postgres_db._engine
@@ -178,7 +183,7 @@ def test_drop_users(uninitialised_postgres_db, specific_user, bare_user):
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"), indirect=True)
 @pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
-def test_grant_role(uninitialised_postgres_db, specific_user, bare_user):
+def test_grant_role(uninitialised_postgres_db, specific_user, bare_user) -> None:
     from datacube.drivers.common_psql import as_role, grant_role
     from datacube.drivers.postgis._core import UserRole
 
@@ -189,7 +194,7 @@ def test_grant_role(uninitialised_postgres_db, specific_user, bare_user):
 
 @pytest.mark.parametrize("datacube_env_name", ("postgis", "postgis3"), indirect=True)
 @pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
-def test_as_role(uninitialised_postgres_db, specific_user, bare_user):
+def test_as_role(uninitialised_postgres_db, specific_user, bare_user) -> None:
     from datacube.drivers.common_psql import as_role, get_connection_info
 
     engine = uninitialised_postgres_db._engine
@@ -210,7 +215,7 @@ def test_as_role(uninitialised_postgres_db, specific_user, bare_user):
         assert as_user == init_user
 
 
-def test_driver_roles():
+def test_driver_roles() -> None:
     from datacube.drivers.postgis._core import UserRole as PostgisUserRole
     from datacube.drivers.postgres._core import UserRole as PostgresUserRole
 

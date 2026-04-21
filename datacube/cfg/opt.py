@@ -2,10 +2,11 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import os
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from urllib.parse import quote_plus, urlparse
 
 from typing_extensions import override
@@ -14,6 +15,7 @@ from ..migration import ODC2DeprecationWarning
 from .exceptions import ConfigException
 from .utils import check_valid_option
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
     from .api import ODCEnvironment
 
@@ -45,7 +47,7 @@ class ODCOptionHandler:
     def __init__(
         self,
         name: str,
-        env: "ODCEnvironment",
+        env: ODCEnvironment,
         default: Any = None,
         legacy_env_aliases=None,
     ) -> None:
@@ -260,7 +262,12 @@ class PostgresURLOptionHandler(ODCOptionHandler):
             and not value.startswith("postgresql+psycopg://")
         ):
             raise ConfigException("Database URL is not a postgresql connection URL")
-        # Don't bother splitting up the url, we'd just have to put it back together again later
+        # Ensure the database URL can be parsed.
+        try:
+            for field in ["username", "password", "hostname", "port", "path"]:
+                getattr(components, field)
+        except ValueError as e:
+            raise ConfigException(str(e)) from None
         return value
 
     @override
@@ -316,7 +323,7 @@ class PostgresURLPartHandler(ODCOptionHandler):
         urlhandler: PostgresURLOptionHandler,
         urlpart: str,
         name: str,
-        env: "ODCEnvironment",
+        env: ODCEnvironment,
     ) -> None:
         self.urlhandler = urlhandler
         self.urlpart = urlpart
@@ -338,7 +345,7 @@ class PostgresURLPartHandler(ODCOptionHandler):
         return None
 
 
-def config_options_for_psql_driver(env: "ODCEnvironment") -> list[ODCOptionHandler]:
+def config_options_for_psql_driver(env: ODCEnvironment) -> list[ODCOptionHandler]:
     """
     Config options for shared use by postgres-based index drivers
     (i.e. postgres and postgis drivers)
@@ -356,7 +363,7 @@ def config_options_for_psql_driver(env: "ODCEnvironment") -> list[ODCOptionHandl
     ]
 
 
-def psql_url_from_config(env: "ODCEnvironment"):
+def psql_url_from_config(env: ODCEnvironment):
     if env.db_url:
         return env.db_url
     if not env.db_database:

@@ -6,14 +6,20 @@
 Mirrored helper functions for STAC/EO3 conversion
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Any
 
 from pystac.utils import datetime_to_str
 
 from datacube.index.abstract import default_metadata_type_docs
-from datacube.model import Dataset, MetadataType, metadata_from_doc
+from datacube.model import metadata_from_doc
 from datacube.utils import parse_time
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.model import Dataset, MetadataType
 
 # Mapping between EO3 field names and STAC properties object field names
 # EO3 metadata was defined before STAC 1.0, so we used some extensions

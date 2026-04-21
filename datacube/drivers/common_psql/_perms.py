@@ -2,19 +2,24 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import contextlib
 import logging
 from abc import ABCMeta, abstractmethod
-from collections.abc import Generator, Iterable
 from enum import Enum, EnumMeta
 
 from sqlalchemy import text
-from sqlalchemy.engine import Connection
 from sqlalchemy.exc import ProgrammingError
 from typing_extensions import Self
 
 from ._utils import escape_pg_identifier
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+
+    from sqlalchemy.engine import Connection
 
 _LOG = logging.getLogger(__name__)
 

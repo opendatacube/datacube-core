@@ -2,16 +2,15 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
-from collections.abc import Mapping
 from threading import Lock
 from typing import Any
 
 from deprecat import deprecat
-from odc.geo import CRS
 from typing_extensions import override
 
-from datacube.cfg import ODCEnvironment
 from datacube.index.abstract import (
     AbstractIndex,
     AbstractIndexDriver,
@@ -23,8 +22,17 @@ from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.index.memory._products import ProductResource
 from datacube.index.memory._users import UserResource
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Field, MetadataType
-from datacube.utils.json_types import JsonDict
+from datacube.model import MetadataType
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from odc.geo import CRS
+
+    from datacube.cfg import ODCEnvironment
+    from datacube.model import Field
+    from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -120,7 +128,7 @@ class Index(AbstractIndex):
         cfg_env: ODCEnvironment,
         application_name: str | None = None,
         validate_connection: bool = True,
-    ) -> "Index":
+    ) -> Index:
         return cls(cfg_env)
 
     @classmethod

@@ -6,6 +6,8 @@
 Useful methods for tests (particularly: reading/writing and checking files)
 """
 
+from __future__ import annotations
+
 import atexit
 import contextlib
 import math
@@ -23,7 +25,6 @@ from typing import Any
 import numpy as np
 import xarray as xr
 from affine import Affine
-from numpy.typing import NDArray
 from odc.geo import CRS, wh_
 from odc.geo.geobox import GeoBox
 
@@ -33,6 +34,12 @@ from datacube.ui.common import get_metadata_path
 from datacube.utils import SimpleDocNav, json, read_documents
 from datacube.utils.dates import mk_time_coord
 from datacube.utils.documents import parse_yaml
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
+
+    from numpy.typing import NDArray
 
 _DEFAULT = object()
 
@@ -212,7 +219,9 @@ def mk_sample_product(
     if metadata_type is None:
         metadata_type = mk_sample_eo3() if eo3 else mk_sample_eo("eo")
 
-    def mk_measurement(m):
+    def mk_measurement(
+        m: str | tuple | dict,
+    ) -> dict[str, str | Any] | dict[str, str | int | list[Any]]:
         if isinstance(m, str):
             return dict(name=m, **common)
         if isinstance(m, tuple):
@@ -361,12 +370,12 @@ def gen_dataset_test_dag(
 ) -> Any:
     """Build document suitable for consumption by dataset add
 
-    when force_tree is True pump the object graph through json
+    when force_tree is True pump the object graph through JSON
     serialise->deserialise, this converts DAG to a tree (no object sharing,
     copies instead).
     """
 
-    def node_maker(n, t):
+    def node_maker(n, t: datetime | None) -> Callable[..., dict[str, Any]]:
         mk = dataset_maker(n, t)
 
         def node(name: str, **kwargs):
@@ -374,7 +383,7 @@ def gen_dataset_test_dag(
 
         return node
 
-    def deref(a):
+    def deref(a: object) -> Any:
         return json.loads(json.dumps(a))
 
     root, *_ = make_graph_abcde(node_maker(idx, t))
@@ -427,7 +436,7 @@ def mk_test_image(
     return aa
 
 
-def split_test_image(aa):
+def split_test_image(aa: np.ndarray) -> tuple:
     """
     Separate image created by mk_test_image into x,y components
     """
@@ -537,7 +546,7 @@ def mk_sample_xr_dataset(
     )
 
 
-def remove_crs(xx):
+def remove_crs(xx: xr.Dataset) -> xr.Dataset:
     xx = xx.reset_coords(["spatial_ref"], drop=True)
 
     for attribute_to_remove in ("crs", "grid_mapping"):
@@ -565,7 +574,7 @@ def sanitise_doc(d: str | Mapping | list) -> str | float | dict | list:
 
 
 @contextlib.contextmanager
-def suppress_deprecations():
+def suppress_deprecations() -> Generator[None]:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
         try:

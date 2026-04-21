@@ -2,13 +2,19 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 from typing import cast
 
 from odc.geo.crs import CRS
 from odc.geo.geom import Geometry, box
 
-from datacube.model import QueryDict, QueryField, Range
-from datacube.utils.documents import JsonDict
+from datacube.model import Range
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.model import QueryDict, QueryField
+    from datacube.utils.documents import JsonDict
 
 H_SPATIAL_KEYS = ("lon", "longitude", "x")
 V_SPATIAL_KEYS = ("lat", "latitude", "y")
@@ -40,7 +46,7 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
     polygon_candidate = q.get("geopolygon")
     if polygon_candidate is not None:
         # New geometry-style spatial query
-        geom_term = cast(JsonDict | Geometry, polygon_candidate)
+        geom_term = cast("JsonDict | Geometry", polygon_candidate)
         try:
             geom = Geometry(geom_term)
         except ValueError:
@@ -93,7 +99,7 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
             lat = Range(lat - delta, lat + delta)
         else:
             # Treat as tuple
-            begin, end = cast(tuple[int | float, int | float], lat)
+            begin, end = cast("tuple[int | float, int | float]", lat)
             lat = Range(begin, end)
 
         if lon is None:
@@ -102,7 +108,7 @@ def extract_geom_from_query(**q: QueryField) -> Geometry | None:
             lon = Range(lon - delta, lon + delta)
         else:
             # Treat as tuple
-            begin, end = cast(tuple[int | float, int | float], lon)
+            begin, end = cast("tuple[int | float, int | float]", lon)
             lon = Range(begin, end)
         geom = box(lon.begin, lat.begin, lon.end, lat.end, crs=crs)
     return geom

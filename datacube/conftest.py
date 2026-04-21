@@ -2,7 +2,11 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from pathlib import Path
+from __future__ import annotations
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 # The only thing tested under datacube/ is doctests, so only collect files

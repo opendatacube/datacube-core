@@ -18,7 +18,7 @@ from datacube.utils.masking import (
 
 
 @pytest.fixture
-def simple_var():
+def simple_var() -> DataArray:
     flags = SimpleVariableWithFlagsDef().flags_definition
     return DataArray(
         np.zeros((2, 3)),

@@ -55,6 +55,9 @@ The following pages provide a full API reference for the ``datacube`` python lib
    Writing GeoTIFFs <utilities/cogs>
    utilities/dask
    geometry/index
+   grid-processing/gridWorkflow
 
 .. toctree::
    :caption: DB utilities for apps and services
+
+   utilities/common_psql

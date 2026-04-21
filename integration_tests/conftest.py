@@ -6,37 +6,38 @@
 Common methods for index integration tests.
 """
 
+from __future__ import annotations
+
 import itertools
 import os
 import warnings
-from collections.abc import Generator, Iterable, Sequence
 from copy import copy, deepcopy
 from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Literal
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 import yaml
 from antimeridian import FixWindingWarning
-from click.testing import CliRunner, Result
+from click.testing import CliRunner
 from hypothesis import HealthCheck, settings
 from sqlalchemy import text
 
 import datacube.scripts.cli_app
 import datacube.utils
 from datacube import Datacube
-from datacube.cfg import ODCConfig, ODCEnvironment, psql_url_from_config
+from datacube.cfg import ODCConfig, psql_url_from_config
 from datacube.drivers.common_psql import drop_schema
 from datacube.drivers.postgis import PostGisDb
 from datacube.drivers.postgis import _core as pgis_core
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres import _core as pgres_core
-from datacube.index import Index, index_connect
-from datacube.index.abstract import AbstractIndex, default_metadata_type_docs
-from datacube.model import Dataset, LineageDirection, LineageTree, MetadataType, Product
-from datacube.utils import SimpleDocNav, read_documents
+from datacube.index import index_connect
+from datacube.index.abstract import default_metadata_type_docs
+from datacube.model import LineageDirection, LineageTree
+from datacube.utils import read_documents
 from integration_tests.utils import (
     GEOTIFF,
     _make_geotiffs,
@@ -44,6 +45,19 @@ from integration_tests.utils import (
     load_test_products,
     load_yaml_file,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterable, Sequence
+    from uuid import UUID
+
+    from click.testing import Result
+
+    from datacube.cfg import ODCEnvironment
+    from datacube.index import Index
+    from datacube.index.abstract import AbstractIndex
+    from datacube.model import Dataset, MetadataType, Product
+    from datacube.utils import SimpleDocNav
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 
@@ -298,6 +312,14 @@ def ls8_stac_doc() -> tuple[dict, str]:
 
 
 @pytest.fixture
+def ls8_stac_lvl1_doc() -> tuple[dict, str]:
+    return (
+        get_eo3_test_data_doc("ga_ls8c_lvl1_stac.json"),
+        str(EO3_TESTDIR / "ga_ls8c_lvl1_stac.json"),
+    )
+
+
+@pytest.fixture
 def ls8_stac_update_path() -> str:
     return str(EO3_TESTDIR / "ga_ls8c_ard_3_stac_update.json")
 
@@ -369,6 +391,19 @@ def ls8_eo3_product(
 
 
 @pytest.fixture
+def ls8_lvl1_eo3_product(
+    index: Index, extended_eo3_metadata_type, extended_eo3_product_doc
+) -> Product:
+    extended_eo3_product_doc["name"] = "ga_ls8c_ard_3_level1"
+    extended_eo3_product_doc["metadata"]["product"]["name"] = "ga_ls8c_ard_3_level1"
+    extended_eo3_product_doc["metadata"]["properties"]["odc:producer"] = "upstream"
+    extended_eo3_product_doc["metadata"]["properties"]["odc:product_family"] = "level1"
+    p = index.products.add_document(extended_eo3_product_doc)
+    assert p is not None
+    return p
+
+
+@pytest.fixture
 def wo_eo3_product(index: Index, base_eo3_product_doc) -> Product:
     p = index.products.add_document(base_eo3_product_doc)
     assert p is not None
@@ -403,10 +438,15 @@ def eo3_products(
     index: Index,
     extended_eo3_metadata_type,
     ls8_eo3_product,
-    wo_eo3_product,
+    ls8_lvl1_eo3_product,
     africa_s2_eo3_product,
 ):
-    return [africa_s2_eo3_product, ls8_eo3_product, wo_eo3_product]
+    return [
+        africa_s2_eo3_product,
+        ls8_eo3_product,
+        wo_eo3_product,
+        ls8_lvl1_eo3_product,
+    ]
 
 
 @pytest.fixture
@@ -528,7 +568,7 @@ def mem_index_eo3(
     extended_eo3_metadata_type_doc,
     extended_eo3_product_doc,
     base_eo3_product_doc,
-):
+) -> Datacube:
     mem_index_fresh.index.metadata_types.add(
         mem_index_fresh.index.metadata_types.from_doc(extended_eo3_metadata_type_doc)
     )
@@ -538,14 +578,16 @@ def mem_index_eo3(
 
 
 @pytest.fixture
-def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc):
+def mem_eo3_data(mem_index_eo3, datasets_with_unembedded_lineage_doc) -> tuple:
     (doc_ls8, loc_ls8), (doc_wo, loc_wo) = datasets_with_unembedded_lineage_doc
     from datacube.index.hl import Doc2Dataset
 
     resolver = Doc2Dataset(mem_index_eo3.index)
     ds_ls8, _ = resolver(doc_ls8, loc_ls8)
+    assert ds_ls8 is not None
     mem_index_eo3.index.datasets.add(ds_ls8)
     ds_wo, _ = resolver(doc_wo, loc_wo)
+    assert ds_wo is not None
     mem_index_eo3.index.datasets.add(ds_wo)
     return mem_index_eo3, ds_ls8.id, ds_wo.id
 
@@ -933,7 +975,9 @@ def default_metadata_type_doc() -> dict:
 
 
 @pytest.fixture
-def eo3_metadata_type_docs(eo3_base_metadata_type_doc, extended_eo3_metadata_type_doc):
+def eo3_metadata_type_docs(
+    eo3_base_metadata_type_doc, extended_eo3_metadata_type_doc
+) -> list:
     return [eo3_base_metadata_type_doc, extended_eo3_metadata_type_doc]
 
 
@@ -1022,6 +1066,7 @@ def clirunner(datacube_env_name: str):
         skip_env: bool = False,
         skip_config_paths: bool = False,
         verbose_flag: Literal[False] | str = "-v",
+        stdin_input: str | None = None,
     ) -> Result:
         # If raw config passed in, skip default test config
         exe_opts: list[str] = (
@@ -1036,7 +1081,7 @@ def clirunner(datacube_env_name: str):
         exe_opts.extend(opts)
 
         result = CliRunner().invoke(
-            cli_method, exe_opts, catch_exceptions=catch_exceptions
+            cli_method, exe_opts, input=stdin_input, catch_exceptions=catch_exceptions
         )
         if expect_success:
             assert result.exit_code == 0, (
@@ -1048,7 +1093,7 @@ def clirunner(datacube_env_name: str):
 
 
 @pytest.fixture
-def clirunner_raw():
+def clirunner_raw() -> Callable[..., Result]:
     def _run_cli(
         opts: Sequence[str],
         catch_exceptions: bool = False,
@@ -1073,7 +1118,7 @@ def clirunner_raw():
 
 
 @pytest.fixture
-def dataset_add_configs():
+def dataset_add_configs() -> SimpleNamespace:
     B = INTEGRATION_TESTS_DIR / "data" / "dataset_add"
     return SimpleNamespace(
         metadata=str(B / "metadata.yml"),

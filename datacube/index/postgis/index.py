@@ -2,8 +2,9 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
-from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -12,14 +13,11 @@ from deprecat import deprecat
 from odc.geo import CRS
 from typing_extensions import override
 
-from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
 from datacube.cfg.opt import config_options_for_psql_driver
-from datacube.drivers.postgis import PostGisDb, PostgisDbAPI
+from datacube.drivers.postgis import PostGisDb
 from datacube.index.abstract import (
-    DSID,
     AbstractIndex,
     AbstractIndexDriver,
-    AbstractTransaction,
     default_metadata_type_docs,
 )
 from datacube.index.postgis._datasets import DatasetResource
@@ -30,7 +28,16 @@ from datacube.index.postgis._transaction import PostgisTransaction
 from datacube.index.postgis._users import UserResource
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import MetadataType
-from datacube.utils.json_types import JsonDict
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping, Sequence
+
+    from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
+    from datacube.drivers.postgis import PostgisDbAPI
+    from datacube.index.abstract import AbstractTransaction
+    from datacube.model._base import DSID
+    from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -133,7 +140,7 @@ class Index(AbstractIndex):
         cfg_env: ODCEnvironment,
         application_name: str | None = None,
         validate_connection: bool = True,
-    ) -> "Index":
+    ) -> Index:
         db = PostGisDb.from_config(
             cfg_env,
             application_name=application_name,

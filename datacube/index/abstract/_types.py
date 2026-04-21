@@ -2,16 +2,30 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Iterable, Sequence
+from __future__ import annotations
+
+# Iterable required for Sphinx's documentation plugin for named tuples.
+from collections.abc import Iterable  # noqa: TC003
 from functools import cached_property
 from typing import Literal, NamedTuple, TypeAlias
-from uuid import UUID
 
 from deprecat import deprecat
 
 from datacube.migration import ODC2DeprecationWarning
-from datacube.model import Dataset, Product
-from datacube.utils.documents import JsonDict
+
+# Product required for Sphinx's documentation plugin for named tuples.
+from datacube.model import (
+    Dataset,
+    Product,  # noqa: TC001
+)
+from datacube.model.lineage import Eo3LineageDict  # noqa: TC001
+
+# JsonDict required for Sphinx's documentation plugin for named tuples.
+from datacube.utils.documents import JsonDict  # noqa: TC001
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class BatchStatus(NamedTuple):
@@ -34,21 +48,7 @@ class BatchStatus(NamedTuple):
     safe: Iterable[str] | None = None
 
 
-# Non-strict Dataset ID representation
-
-DSID: TypeAlias = str | UUID
-
-
 SearchMode: TypeAlias = Literal["exact", "prefix"]
-
-
-def dsid_to_uuid(dsid: DSID) -> UUID:
-    """
-    Convert non-strict dataset ID representation to strict UUID
-    """
-    if isinstance(dsid, UUID):
-        return dsid
-    return UUID(dsid)
 
 
 class DatasetTuple(NamedTuple):
@@ -57,11 +57,13 @@ class DatasetTuple(NamedTuple):
     :param product: A Product model.
     :param metadata: The dataset metadata document
     :param uri\\_: The dataset location or list of locations
+    :param lineage: An optional EO3 document lineage section.
     """
 
     product: Product
     metadata: JsonDict
     uri_: str | list[str]
+    lineage: Eo3LineageDict = {}
 
     @property
     def uri_is_string(self) -> bool:

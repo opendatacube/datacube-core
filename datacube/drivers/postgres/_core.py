@@ -6,10 +6,11 @@
 Core SQL schema settings.
 """
 
+from __future__ import annotations
+
 import logging
 
 from sqlalchemy import MetaData, text
-from sqlalchemy.engine import Engine
 from typing_extensions import Self, override
 
 from datacube.drivers.common_psql import (
@@ -22,10 +23,10 @@ from datacube.drivers.common_psql import (
     transfer_ownership,
     transfers_required,
 )
+from datacube.drivers.common_psql.sql import INSTALL_TRIGGER_SQL_TEMPLATE
 from datacube.drivers.postgres.sql import (
     ADDED_COLUMN_INDEX_SQL_TEMPLATE,
     ADDED_COLUMN_MIGRATE_SQL_TEMPLATE,
-    INSTALL_TRIGGER_SQL_TEMPLATE,
     SCHEMA_NAME,
     TYPES_INIT_SQL,
     UPDATE_COLUMN_INDEX_SQL_TEMPLATE,
@@ -33,6 +34,10 @@ from datacube.drivers.postgres.sql import (
     UPDATE_TIMESTAMP_SQL,
     pg_column_exists,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
 
 
 class UserRole(UserRoleBase):

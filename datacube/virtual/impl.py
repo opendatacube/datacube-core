@@ -8,11 +8,12 @@ to query and to load data, and combinators to combine multiple products into "vi
 products implementing the same interface.
 """
 
+from __future__ import annotations
+
 import uuid
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from collections.abc import Hashable, Iterable, Iterator, Mapping, Sequence
-from collections.abc import Mapping as TypeMapping
+from collections.abc import Mapping, Sequence
 from typing import Any, cast
 
 import dask.array
@@ -30,7 +31,6 @@ from typing_extensions import override
 from datacube import Datacube
 from datacube.api.core import output_geobox, per_band_load_data_settings
 from datacube.api.query import Query, query_group_by
-from datacube.index import Index
 from datacube.model import Measurement, Product
 from datacube.model.utils import SafeDumper, xr_apply, xr_iter
 from datacube.testutils.io import native_geobox
@@ -43,6 +43,13 @@ from .utils import (
     select_keys,
     select_unique,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Hashable, Iterable, Iterator
+    from collections.abc import Mapping as TypeMapping
+
+    from datacube.index import Index
 
 
 class VirtualProductException(Exception):  # noqa: N818
@@ -152,7 +159,7 @@ class VirtualDatasetBox:
 
         return self.box.shape + self.geobox.shape
 
-    def __getitem__(self, chunk) -> "VirtualDatasetBox":
+    def __getitem__(self, chunk) -> VirtualDatasetBox:
         if self.load_natively:
             raise VirtualProductException("slicing requires known geobox")
 
@@ -167,7 +174,7 @@ class VirtualDatasetBox:
             geopolygon=self.geopolygon,
         )
 
-    def map(self, func, dtype: str = "O") -> "VirtualDatasetBox":
+    def map(self, func, dtype: str = "O") -> VirtualDatasetBox:
         return VirtualDatasetBox(
             xr_apply(self.box, func, dtype=dtype),
             self.geobox,
@@ -176,7 +183,7 @@ class VirtualDatasetBox:
             geopolygon=self.geopolygon,
         )
 
-    def filter(self, predicate) -> "VirtualDatasetBox":
+    def filter(self, predicate) -> VirtualDatasetBox:
         mask = self.map(predicate, dtype="bool")
 
         # NOTE: this could possibly result in an empty box
@@ -358,7 +365,7 @@ class VirtualProduct(Mapping):
         return self.fetch(grouped, **query)
 
 
-class Product(VirtualProduct):  # type: ignore[no-redef]
+class Product(VirtualProduct):  # type: ignore[no-redef]  # noqa: F811
     """An existing datacube product."""
 
     # TODO: We have ODC model Products throughout this source file as type hints.  Are the Product type hints in this
@@ -481,7 +488,7 @@ class Product(VirtualProduct):  # type: ignore[no-redef]
 
         measurement_dicts = self.output_measurements(
             grouped.product_definitions,
-            cast(list[str], load_settings.get("measurements")),
+            cast("list[str]", load_settings.get("measurements")),
         )
 
         if grouped.load_natively:
@@ -561,7 +568,7 @@ class Transform(VirtualProduct):
             isinstance(obj, Transformation), f"not a transformation object: {obj}"
         )
 
-        return cast(Transformation, obj)
+        return cast("Transformation", obj)
 
     @property
     def _input(self) -> VirtualProduct:
@@ -631,7 +638,7 @@ class Aggregate(VirtualProduct):
             isinstance(obj, Transformation), f"not a transformation object: {obj}"
         )
 
-        return cast(Transformation, obj)
+        return cast("Transformation", obj)
 
     @property
     def _input(self) -> VirtualProduct:
@@ -900,7 +907,7 @@ class Juxtapose(VirtualProduct):
             child.output_measurements(product_definitions) for child in self._children
         ]
 
-        result = cast(dict[str, Measurement], {})
+        result = cast("dict[str, Measurement]", {})
         for measurements in input_measurement_list:
             common = set(result) & set(measurements)
             self._assert(not common, f"common measurements {common} between children")
@@ -989,7 +996,7 @@ class Reproject(VirtualProduct):
     """
 
     @property
-    def _input(self) -> "VirtualProduct":
+    def _input(self) -> VirtualProduct:
         """The input product of a transform product."""
         return from_validated_recipe(self["input"])
 

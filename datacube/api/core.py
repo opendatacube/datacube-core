@@ -9,44 +9,59 @@ import datetime
 import logging
 import uuid
 import warnings
-from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
+from collections.abc import Mapping
 from itertools import groupby
-from types import TracebackType
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
+from typing import Any, Literal, TypeAlias, cast
 
 import deprecat
 import numpy
 import xarray
 from dask import array as da
-from odc.geo import CRS, XY, Resolution, res_, resyx_, yx_
+from odc.geo import CRS, res_, resyx_, yx_
 from odc.geo.geobox import GeoBox, GeoboxTiles
-from odc.geo.geom import Geometry, bbox_union, box, intersects
-from odc.geo.warp import Resampling
+from odc.geo.geom import bbox_union, box, intersects
 from odc.geo.xr import xr_coords
-from odc.loader.types import FuserFunc, ReaderDriverSpec
 from typing_extensions import override
 from xarray.core.coordinates import DataArrayCoordinates
 
-from datacube.cfg import GeneralisedCfg, GeneralisedEnv, GeneralisedRawCfg, ODCConfig
-from datacube.model import Dataset, ExtraDimensions, ExtraDimensionSlices, Measurement
+from datacube.cfg import ODCConfig
 from datacube.model.utils import xr_apply
 from datacube.storage import BandInfo, reproject_and_fuse
 from datacube.utils import ignore_exceptions_if
 from datacube.utils.dates import normalise_dt
 
+from ..drivers import new_datasource
+from ..index import extract_geom_from_query, index_connect
+from ..migration import ODC2DeprecationWarning
+from .query import Query, query_group_by
+
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    from collections.abc import Callable, Hashable, Iterable, Sequence
+    from types import TracebackType
+
+    from odc.geo import XY, Resolution
     from odc.geo.crs import MaybeCRS
+    from odc.geo.geom import Geometry
+    from odc.geo.warp import Resampling
+    from odc.loader.types import FuserFunc, ReaderDriverSpec
     from pandas import DataFrame
 
-    from datacube.model import GridSpec
+    from datacube.cfg import GeneralisedCfg, GeneralisedEnv, GeneralisedRawCfg
+    from datacube.model import (
+        Dataset,
+        ExtraDimensions,
+        ExtraDimensionSlices,
+        GridSpec,
+        Measurement,
+        Product,
+    )
     from datacube.utils.geometry import GeoBox as LegacyGeoBox
 
-from ..drivers import new_datasource
-from ..index import Index, extract_geom_from_query, index_connect
-from ..migration import ODC2DeprecationWarning
-from ..model import QueryField
-from ..storage import ProgressFunction
-from .query import GroupBy, Query, query_group_by
+    from ..index import Index
+    from ..model import QueryField
+    from ..storage import ProgressFunction
+    from .query import GroupBy
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -166,7 +181,7 @@ class Datacube:
         :return: A table or list of every product in the datacube.
         """
 
-        def _get_non_default(product, col):
+        def _get_non_default(product: Product, col):
             load_hints = product.load_hints()
             if load_hints:
                 if col == "crs":
@@ -614,7 +629,7 @@ class Datacube:
             grid_spec=grid_spec,
             load_hints=load_hints,
             datasets=datasets,
-            geopolygon=cast(Geometry | None, query.pop("geopolygon", None)),
+            geopolygon=cast("Geometry | None", query.pop("geopolygon", None)),
             **query,
         )
         group_by = query_group_by(**query)  # type: ignore[arg-type]
@@ -914,8 +929,8 @@ class Datacube:
         gbt = GeoboxTiles(geobox, grid_chunks)
         dsk = {}
 
-        def chunk_datasets(dss, gbt):
-            out = {}
+        def chunk_datasets(dss: Iterable[Dataset], gbt) -> dict:
+            out: dict = {}
             for ds in dss:
                 dsk[_tokenize_dataset(ds)] = ds
                 for idx in gbt.tiles(ds.extent):
@@ -926,7 +941,7 @@ class Datacube:
             sources, lambda _, dss: chunk_datasets(dss, gbt), dtype=object
         )
 
-        def data_func(measurement, shape):
+        def data_func(measurement: Measurement, shape):
             if "extra_dim" in measurement:
                 chunks = needed_irr_chunks + extra_dim_chunks + grid_chunks
             else:
@@ -1219,7 +1234,9 @@ def per_band_load_data_settings(
     fuse_func: FuserFunc | str | Mapping[str, FuserFunc | None | str] | None = None,
     legacy_load: bool = True,
 ) -> list[Measurement]:
-    def with_resampling(m, resampling, default=None):
+    def with_resampling(
+        m: Measurement, resampling: Mapping[str, Resampling], default=None
+    ) -> Measurement:
         m = m.copy()
         m["resampling_method"] = resampling.get(m.name, default)
         return m
@@ -1249,13 +1266,13 @@ def per_band_load_data_settings(
         m["fuser"] = fuser.get(m.name, default)
         return m
 
-    if resampling is not None and not isinstance(resampling, dict):
+    if resampling is not None and not isinstance(resampling, (dict, Mapping)):
         resampling = {"*": resampling}
 
     if fuse_func is None or not isinstance(fuse_func, Mapping):
         fuse_func = {"*": fuse_func}
 
-    if isinstance(measurements, dict):
+    if isinstance(measurements, (dict, Mapping)):
         measurements = list(measurements.values())
 
     if resampling is not None:

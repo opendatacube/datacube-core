@@ -6,9 +6,10 @@
 Build and index fields within documents.
 """
 
+from __future__ import annotations
+
 import math
 from collections import namedtuple
-from collections.abc import Callable, Sequence
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from functools import cached_property
@@ -26,10 +27,16 @@ from typing_extensions import override
 from datacube import utils
 from datacube.drivers.postgis._schema import Dataset, search_field_index_map
 from datacube.model import Range
-from datacube.model.fields import _AVAILABLE_TYPES, Expression, Field
+from datacube.model.fields import Expression, Field
 from datacube.utils import get_doc_offset, parse_time
-from datacube.utils.changes import Offset
 from datacube.utils.dates import tz_as_utc
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+    from datacube.model.fields import _AVAILABLE_TYPES
+    from datacube.utils.changes import Offset
 
 DatasetJoinArgs: TypeAlias = (
     tuple[FromClause] | tuple[FromClause, ColumnExpressionArgument]
@@ -108,13 +115,12 @@ class PgField(Field):
         return self.alchemy_expression
 
     @property
-    def sql_expression(self):
+    def sql_expression(self) -> str:
         """
         Get the raw SQL expression for this field as a string.
-        :rtype: str
         """
         return str(
-            self.alchemy_expression.compile(
+            self.alchemy_expression.compile(  # type:ignore[union-attr]
                 dialect=postgres.dialect(), compile_kwargs={"literal_binds": True}
             )
         )
@@ -332,7 +338,7 @@ class NumericDocField(SimpleDocField):
         )
 
     @override
-    def between(self, low, high) -> "RangeBetweenExpression":
+    def between(self, low, high) -> RangeBetweenExpression:
         # Numeric fields actually stored as ranges in current schema.
         # return ValueBetweenExpression(self, low, high)
         return RangeBetweenExpression(self, low, high, _range_class=PgRange)
@@ -429,7 +435,7 @@ class DateDocField(SimpleDocField):
         )
 
     @override
-    def between(self, low, high) -> "ValueBetweenExpression":
+    def between(self, low, high) -> ValueBetweenExpression:
         return ValueBetweenExpression(self, low, high)
 
     @override
@@ -719,11 +725,11 @@ class EqualsExpression(PgExpression):
         return self.field.search_alchemy_expression == self.value
 
     @override
-    def evaluate(self, ctx):
-        return self.field.evaluate(ctx) == self.value
+    def evaluate(self, ctx) -> bool:
+        return self.field.evaluate(ctx) == self.value  # type:ignore[attr-defined]
 
 
-def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
+def parse_fields(doc: dict, table_column) -> dict[str, PgDocField]:
     """
     Parse a field spec document into objects.
 
@@ -769,7 +775,7 @@ def parse_fields(doc: dict, table_column) -> dict[str, PgField]:
     # No later field should have overridden string
     assert type_map["string"] == SimpleDocField
 
-    def _get_field(name: str, descriptor: dict, column) -> PgField:
+    def _get_field(name: str, descriptor: dict, column) -> PgDocField:
         """
         :param column: SQLAlchemy table column
         """

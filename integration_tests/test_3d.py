@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import logging
 from copy import deepcopy
 from pathlib import Path
@@ -23,6 +25,10 @@ from affine import Affine
 from odc.geo.geobox import GeoBox
 
 from datacube.api.core import Datacube
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 pytest.importorskip(
     "dcio_example.xarray_3d"
@@ -105,7 +111,7 @@ ignore_me = pytest.mark.xfail(
 
 
 @pytest.fixture(scope="module")
-def original_data():
+def original_data() -> Generator[dict]:
     """Load and cache the original NetCDF data from disk.
 
     This is the same data that gets indexed, hence the files have the suffix
@@ -124,17 +130,17 @@ def original_data():
 
 
 @pytest.fixture(scope="function", params=["3D", "3D2", "2D"])
-def product_def(request):
+def product_def(request) -> Generator:
     """GEDI 3D and 2D product parameters."""
     yield GEDI_PRODUCTS[request.param]
 
 
 @pytest.fixture
-def invalid_dataset_type_paths(tmpdir):
-    """Prepare a series of invalid dataset type yamls.
+def invalid_dataset_type_paths(tmpdir) -> Generator:
+    """Prepare a series of invalid dataset type YAMLs.
 
-    Returns: a dict of {<expected error message>: <yaml path>} for each invalid
-    yaml.
+    Returns: a dict of {<expected error message>: <YAML path>} for each invalid
+    YAML.
     """
     with GEDI_PRODUCT.dataset_types.open() as fh:
         documents = [
@@ -194,8 +200,8 @@ def invalid_dataset_type_paths(tmpdir):
 
 
 @pytest.fixture
-def product_with_spectral_map(tmpdir):
-    """Create a copy of input yaml with a spectral map.
+def product_with_spectral_map(tmpdir) -> Path:
+    """Create a copy of input YAML with a spectral map.
 
     Returns the path string to the copy.
     """
@@ -224,7 +230,7 @@ def product_with_spectral_map(tmpdir):
     scope="function",
     params=["Without_spectral_map", "With_spectral_map"],
 )
-def dataset_types(product_with_spectral_map, request):
+def dataset_types(product_with_spectral_map, request) -> Generator:
     """GEDI datasets types with/out spectral_map."""
     if request.param.startswith("Without"):
         yield GEDI_PRODUCT.dataset_types
@@ -233,6 +239,7 @@ def dataset_types(product_with_spectral_map, request):
 
 
 @pytest.mark.usefixtures("default_metadata_type")
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_missing_extra_dimensions(clirunner, invalid_dataset_type_paths) -> None:
     """Test error on invalid product definition."""
     for expected_msg, path in invalid_dataset_type_paths.items():
@@ -385,7 +392,7 @@ def check_loaded_vs_original(data, orig, product_def) -> None:
 
 
 def load_with_dc(
-    dc,
+    dc: Datacube,
     product_def,
     product_id,
     measurement,
@@ -491,7 +498,7 @@ def check_open_with_dc_contents(
         )
 
 
-def dataarray_has_valid_data(da):
+def dataarray_has_valid_data(da: xr.DataArray):
     """Check xarray has valid data."""
     return da.size and not (da.values == da.nodata).all()
 

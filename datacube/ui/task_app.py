@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import functools
 import itertools
 import logging
@@ -9,15 +11,19 @@ import os
 import pickle
 import re
 import time
-from collections.abc import Generator, Sequence
 from pathlib import Path
 
 import click
 import pandas as pd
 
-from datacube.index import Index
 from datacube.ui import click as dc_ui
 from datacube.utils import read_documents
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator, Sequence
+
+    from datacube.index import Index
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -45,7 +51,7 @@ def pickle_stream(objs, filename) -> int:
     return idx
 
 
-def unpickle_stream(filename):
+def unpickle_stream(filename) -> Generator:
     with open(filename, "rb") as stream:
         while True:
             try:
@@ -71,7 +77,7 @@ def save_tasks(config: dict, tasks, taskfile: str) -> int:
     return i - 1
 
 
-def load_tasks(taskfile):
+def load_tasks(taskfile) -> tuple:
     stream = unpickle_stream(taskfile)
     config = next(stream)
     return config, stream
@@ -117,7 +123,7 @@ task_app_options = dc_ui.compose(
 )
 
 
-def _cell_list_from_file(filename):
+def _cell_list_from_file(filename: str) -> Generator[tuple]:
     cell_matcher = re.compile(r"(-?\d+)(?:\s*(?:,|_|\s)\s*)(-?\d+)")
     with open(filename) as cell_file:
         for line in cell_file:
@@ -126,12 +132,12 @@ def _cell_list_from_file(filename):
                 yield tuple(int(i) for i in match.groups())
 
 
-def cell_list_to_file(filename, cell_list) -> None:
+def cell_list_to_file(filename: str, cell_list) -> None:
     with open(filename, "w") as cell_file:
         cell_file.writelines("{},{}\n".format(*cell) for cell in cell_list)
 
 
-def validate_cell_list(ctx, param, value):
+def validate_cell_list(ctx, param, value) -> list | None:
     try:
         if value is None:
             return None

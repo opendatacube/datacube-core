@@ -5,20 +5,13 @@
 # TODO: type hints need attention
 """Tools for working with EO3 metadata"""
 
-from collections.abc import Iterable, Mapping
+from __future__ import annotations
+
 from functools import reduce
 from typing import Any, cast
-from uuid import UUID
 
 from affine import Affine
-from odc.geo import (
-    CRS,
-    BoundingBox,
-    CoordList,
-    Geometry,
-    SomeCRS,
-    xy_,
-)
+from odc.geo import CRS, xy_
 from odc.geo.crs import norm_crs
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import lonlat_bounds, multipolygon, polygon
@@ -28,7 +21,17 @@ from toolz.dicttoolz import get_in
 from datacube.model import Dataset, GridSpec, Product, Range
 from datacube.storage import BandInfo
 from datacube.storage._rio import RasterDatasetDataSource
-from datacube.utils import DatacubeException, DocReader
+from datacube.utils import DatacubeException
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable, Mapping
+    from uuid import UUID
+
+    from odc.geo import BoundingBox, CoordList, Geometry, SomeCRS
+
+    from datacube.utils import DocReader
+    from datacube.utils.generic import T
 
 EO3_SCHEMA = "https://schemas.opendatacube.org/dataset"
 
@@ -40,7 +43,7 @@ class EO3Grid:
             raise ValueError("Each grid must have a shape")
         if len(shape) != 2:
             raise ValueError("Grid shape must be two dimensional")
-        self.shape = cast(tuple[int, int], tuple(int(x) for x in shape))
+        self.shape = cast("tuple[int, int]", tuple(int(x) for x in shape))
         xform = grid.get("transform")
         if xform is None:
             raise ValueError("Each grid must have a transform")
@@ -313,23 +316,23 @@ def _accessories_from_eo1(metadata_doc: dict) -> dict[str, Any]:
     return accessories
 
 
-def field_label(key, value):
+def field_label(key, value: T) -> Generator[tuple[str, T]]:
     yield "title", value
 
 
-def field_platform(key, value):
+def field_platform(key, value: str) -> Generator[tuple[str, str]]:
     yield "eo:platform", value.lower().replace("_", "-")
 
 
-def field_instrument(key, value):
+def field_instrument(key, value: str) -> Generator[tuple[str, str]]:
     yield "eo:instrument", value
 
 
-def field_format(key, value):
+def field_format(key, value: str) -> Generator[tuple[str, str]]:
     yield "odc:file_format", value
 
 
-def field_product(key, value):
+def field_product(key, value: str) -> Generator[tuple[str, str]]:
     yield "odc:product_family", value
 
 
@@ -384,7 +387,7 @@ _EO1_PROPERTY_MAP = {
 }
 
 
-def _build_properties(d: DocReader):
+def _build_properties(d: DocReader) -> Generator:
     for key, val in d.fields.items():
         if val is None:
             continue
@@ -501,7 +504,7 @@ def make_grids(
 def convert_bands(
     ds: Dataset, grid_mappings: dict[str, str]
 ) -> dict[str, dict[str, str]]:
-    def _to_measurement(name, band):
+    def _to_measurement(name: str, band: dict[str, Any]) -> dict[str, Any]:
         m = {"path": band.get("path", "")}
         if grid_mappings.get(name, "default") != "default":
             m["grid"] = grid_mappings[name]

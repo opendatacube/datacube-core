@@ -6,26 +6,37 @@
 Common functions for click-based cli scripts.
 """
 
+from __future__ import annotations
+
 import copy
 import functools
 import logging
 import os
 import sys
-from collections.abc import Mapping
 from textwrap import dedent
 from typing import Literal
 
 import click
-from click import Command
 from lark.exceptions import UnexpectedEOF
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from typing_extensions import override
 
 from datacube import __version__
 from datacube.api.core import Datacube
-from datacube.cfg import ConfigException, ODCConfig, ODCEnvironment
-from datacube.index import Index, index_connect
+from datacube.cfg import ConfigException, ODCConfig
+from datacube.index import index_connect
+from datacube.index.exceptions import IndexSetupError, NoIndexError
 from datacube.ui.expression import parse_expressions
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping, Sequence
+    from pathlib import Path
+
+    from click import Command
+
+    from datacube.cfg import ODCEnvironment
+    from datacube.index import Index
 
 _LOG_FORMAT_STRING = "%(asctime)s %(process)d %(name)s %(levelname)s %(message)s"
 CLICK_SETTINGS: dict[str, list[str]] = {"help_option_names": ["-h", "--help"]}
@@ -50,7 +61,7 @@ def compose(*functions):
     4
     """
 
-    def compose2(f, g):
+    def compose2(f: Callable, g: Callable) -> Callable:
         return lambda x: f(g(x))
 
     return functools.reduce(compose2, functions, lambda x: x)
@@ -129,7 +140,7 @@ def _log_queries(ctx, param, value) -> None:
         logging.getLogger("sqlalchemy.engine").setLevel("INFO")
 
 
-def _set_config(ctx, param, value):
+def _set_config(ctx, param, value: Sequence[str | Path]) -> Sequence[str | Path]:
     if value:
         if not any(os.path.exists(p) for p in value):
             raise ValueError(f"No specified config paths exist: {value}")
@@ -291,7 +302,13 @@ def pass_index(app_name: str | None = None, expect_initialised: bool = True):
                     validate_connection=expect_initialised,
                 )
                 _LOG.debug("Connected to datacube index: %s", index)
-            except (OperationalError, ProgrammingError, ConfigException) as e:
+            except (
+                ConfigException,
+                IndexSetupError,
+                NoIndexError,
+                OperationalError,
+                ProgrammingError,
+            ) as e:
                 handle_exception("Error Connecting to database: %s", e)
                 return None
 

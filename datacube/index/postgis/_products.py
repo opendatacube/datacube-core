@@ -4,29 +4,32 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-import datetime
 import logging
-from collections.abc import Generator, Iterable, Mapping, Sequence
 from time import monotonic
-from typing import TYPE_CHECKING
 
 from cachetools.func import lru_cache
 from odc.geo.crs import CRS
-from odc.geo.geom import Geometry
 from typing_extensions import override
 
-from datacube.drivers.postgis import PostGisDb
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource, BatchStatus
-from datacube.index.abstract._metadata_types import AbstractMetadataTypeResource
 from datacube.index.postgis._transaction import IndexResourceAddIn
-from datacube.model import Product, QueryDict, QueryField
+from datacube.model import Product
 from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
-from datacube.utils.documents import JsonDict
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Generator, Iterable, Mapping, Sequence
+
+    from odc.geo.geom import Geometry
+
+    from datacube.drivers.postgis import PostGisDb
+    from datacube.index.abstract._metadata_types import AbstractMetadataTypeResource
     from datacube.index.postgis.index import Index
+    from datacube.model import QueryDict, QueryField
+    from datacube.utils.documents import JsonDict
 
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -365,7 +368,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
         """
 
-        def _listify(v):
+        def _listify(v) -> list:
             if isinstance(v, tuple):
                 return list(v)
             if isinstance(v, list):

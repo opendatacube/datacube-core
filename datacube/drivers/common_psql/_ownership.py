@@ -2,14 +2,19 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import logging
 from typing import Literal
 
-from sqlalchemy import Connection, text
+from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
 from ._utils import as_role
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from sqlalchemy import Connection
 
 _LOG = logging.getLogger(__name__)
 

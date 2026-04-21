@@ -6,7 +6,6 @@
 Module
 """
 
-from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import pytest
@@ -17,6 +16,10 @@ from datacube.ui.common import (
     get_metadata_path,
     ui_path_doc_stream,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 
 def test_get_metadata_path() -> None:

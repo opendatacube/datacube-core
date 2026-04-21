@@ -6,7 +6,8 @@
 Common methods for UI code.
 """
 
-from collections.abc import Generator, Iterable
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Literal, overload
 
@@ -19,6 +20,10 @@ from datacube.utils import (
     is_url,
     read_documents,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
 
 
 def get_metadata_path(possible_path: str | Path) -> str:

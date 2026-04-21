@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 from collections import OrderedDict
 from pathlib import Path
@@ -11,6 +12,10 @@ import pytest
 from datacube.model import Product
 from datacube.utils.documents import read_documents
 
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
 PROJECT_ROOT = Path(__file__).parents[1]
 GEDI_PRODUCT = (
     PROJECT_ROOT / "tests" / "data" / "lbg" / "gedi" / "GEDI02_B_3d_format.yaml"
@@ -19,7 +24,7 @@ GEDI_PRODUCT = (
 
 
 @pytest.fixture
-def cover_z_product():
+def cover_z_product() -> Generator:
     """The GEDI product for cover_z."""
     for doc in read_documents(GEDI_PRODUCT):
         if doc[1]["name"] == "gedi_l2b_cover_z":

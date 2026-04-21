@@ -4,27 +4,31 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-import datetime
 import logging
-from collections.abc import Generator, Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING
 
 from cachetools.func import lru_cache
-from odc.geo import CRS, Geometry
+from odc.geo import CRS
 from typing_extensions import override
 
-from datacube.drivers.postgres import PostgresDb
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
-from datacube.index.abstract._metadata_types import AbstractMetadataTypeResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
-from datacube.model import Product, QueryField
+from datacube.model import Product
 from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
-from datacube.utils.documents import JsonDict
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    import datetime
+    from collections.abc import Generator, Iterable, Mapping, Sequence
+
+    from odc.geo import Geometry
+
+    from datacube.drivers.postgres import PostgresDb
+    from datacube.index.abstract._metadata_types import AbstractMetadataTypeResource
     from datacube.index.postgres.index import Index
+    from datacube.model import QueryField
+    from datacube.utils.documents import JsonDict
 
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -361,7 +365,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         :param query:
         """
 
-        def _listify(v):
+        def _listify(v) -> list:
             if isinstance(v, tuple):
                 return list(v)
             if isinstance(v, list):
