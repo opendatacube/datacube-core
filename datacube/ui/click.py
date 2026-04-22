@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from click import Command
+    from click.decorators import FC
 
     from datacube.cfg import ODCEnvironment
     from datacube.index import Index
@@ -373,7 +374,7 @@ def handle_exception(msg: str, e: Exception) -> None:
     ctx.exit(1)
 
 
-def parsed_search_expressions(f):
+def parsed_search_expressions(f: FC):
     """
     Add [EXPRESSIONs] arguments to a click application
 
@@ -389,7 +390,7 @@ def parsed_search_expressions(f):
     return _parse_search_exprs(f, is_option=False)
 
 
-def parsed_query_expressions(f):
+def parsed_query_expressions(f: FC):
     """
     Add the --query option to a click application
 
@@ -397,7 +398,7 @@ def parsed_query_expressions(f):
     return _parse_search_exprs(f, is_option=True)
 
 
-def _parse_search_exprs(f, is_option: bool):
+def _parse_search_exprs(f: FC, is_option: bool):
     msg = dedent(f"""
     {"Query expressions" if is_option else "Provide [EXPRESSIONS]"} to filter datasets by searchable fields
     such as date, product name, spatial extents, maturity, or other properties using the following syntax:
@@ -434,6 +435,8 @@ def _parse_search_exprs(f, is_option: bool):
             )
 
     if not is_option:
+        if not f.__doc__:
+            f.__doc__ = ""
         f.__doc__ += f"\n{msg}"
         return click.argument("expressions", callback=my_parse, nargs=-1)(f)
     msg += "Can be used multiple times, and should be invoked once per expression."

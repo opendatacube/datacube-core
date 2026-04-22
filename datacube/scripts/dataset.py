@@ -766,7 +766,7 @@ def count_cmd(
     archived = {"active": False, "archived": True, "all": None}[status]
     if products:
         if q_prod := query.get("product"):
-            query["product"] = products + (
+            query["product"] = products + (  # type: ignore[operator]
                 (q_prod,) if isinstance(q_prod, str) else q_prod
             )
         else:
@@ -857,7 +857,7 @@ def archive_cmd(
     else:
         if query:
             found = [
-                ds.id
+                ds.id  # type: ignore[attr-defined]
                 for ds in index.datasets.search_returning(field_names=["id"], **query)
             ]
             if not found:
