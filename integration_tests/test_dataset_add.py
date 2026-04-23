@@ -695,7 +695,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) ->
     single_invalid_uuid = clirunner(
         ["dataset", "archive", "--dry-run", non_existent_uuid], expect_success=False
     )
-    assert single_invalid_uuid.exit_code is -1, f"Output: {single_invalid_uuid.output}"
+    assert single_invalid_uuid.exit_code == 1, f"Output: {single_invalid_uuid.output}"
     assert non_existent_uuid in single_invalid_uuid.output
     assert index.datasets.has(ds.id) is True
 
@@ -706,7 +706,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) ->
         expect_success=False,
     )
     assert non_existent_uuid in valid_and_invalid_uuid.output
-    assert single_invalid_uuid.exit_code is -1, f"Output: {single_invalid_uuid.output}"
+    assert single_invalid_uuid.exit_code == 1, f"Output: {single_invalid_uuid.output}"
     assert index.datasets.has(ds.id) is True
 
     valid_and_invalid_uuid = clirunner(
@@ -720,7 +720,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) ->
         ],
         expect_success=False,
     )
-    assert single_invalid_uuid.exit_code is -1, f"Output: {single_invalid_uuid.output}"
+    assert single_invalid_uuid.exit_code == 1, f"Output: {single_invalid_uuid.output}"
     assert non_existent_uuid in valid_and_invalid_uuid.output
     assert index.datasets.has(ds.id) is True
 
@@ -757,9 +757,7 @@ def test_dataset_archive_dry_run(dataset_add_configs, index_empty, clirunner) ->
 
 # Current formulation of this test relies on non-EO3 test data
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
-def test_dataset_archive_restore_invalid(
-    dataset_add_configs, index_empty, clirunner
-) -> None:
+def test_dataset_archive_invalid(dataset_add_configs, index_empty, clirunner) -> None:
     _, index, ds = dataset_archive_prep(dataset_add_configs, index_empty, clirunner)
 
     non_existent_uuid = "00000000-1036-5607-a62f-fde5e3fec985"
