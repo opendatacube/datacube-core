@@ -420,7 +420,7 @@ def _parse_search_exprs(f: FC, is_option: bool):
     eg. 'time in [1996-01-01, 1996-12-31]'
         'time in 1996'
         'time > 2020-01'
-        'lon in [130, 140]' 'lat in [-40, -30]'
+        'lon in [130, 140] lat in [-40, -30]'
         product=ls5_nbar_albers
         region="101010"
 
@@ -439,7 +439,13 @@ def _parse_search_exprs(f: FC, is_option: bool):
             f.__doc__ = ""
         f.__doc__ += f"\n{msg}"
         return click.argument("expressions", callback=my_parse, nargs=-1)(f)
-    msg += "Can be used multiple times, and should be invoked once per expression."
+    msg += dedent("""
+    \b
+    For multiple expressions, provide the expressions as one string:
+        e.g. --query 'product=ga_ls8c_ard_3 time in 2020'
+    Alternatively, invoke the option once per expression:
+        e.g. --query product=ga_ls8c_ard_3 --query 'time in 2020'
+    """)
     return click.option(
         "--query", callback=my_parse, multiple=True, type=str, help=msg
     )(f)
