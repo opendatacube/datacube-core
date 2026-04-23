@@ -886,7 +886,8 @@ def archive_cmd(
 
     if not dry_run:
         index.datasets.archive(all_datasets)
-        echo("Completed dataset archival.")
+
+    echo("Completed dataset archival.")
 
 
 @dataset_cmd.command("restore", help="Restore datasets")
