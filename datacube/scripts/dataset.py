@@ -858,11 +858,13 @@ def archive_cmd(
         if query:
             found = [
                 ds.id  # type: ignore[attr-defined]
-                for ds in index.datasets.search_returning(field_names=["id"], **query)
+                for ds in index.datasets.search_returning(
+                    field_names=["id"], archived=None, **query
+                )
             ]
             if not found:
-                echo("No datasets found with the query terms", err=True)
-                sys.exit(1)
+                echo("No datasets found with the query terms")
+                sys.exit(0)
             datasets_for_archive = dict.fromkeys(found, True)
         else:
             datasets_for_archive = dict(zip(ids, index.datasets.bulk_has(ids)))
