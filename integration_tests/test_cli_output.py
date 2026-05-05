@@ -291,7 +291,7 @@ def test_cli_dataset_subcommand(
     assert "count: 3" in runner.output
 
     runner = clirunner(
-        ["dataset", "archive", "--query", "product=foo"],
+        ["dataset", "archive", "--query", "product=ga_ls8c_ard_3 time in 1980"],
         verbose_flag=False,
     )
     assert "No datasets found" in runner.output
