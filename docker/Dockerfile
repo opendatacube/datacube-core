@@ -8,7 +8,7 @@
 # syntax=docker/dockerfile:1
 FROM ghcr.io/astral-sh/uv:0.11.12@sha256:3a59a3cdd5f7c217faa36e32dbc7fddbb0412889c2a0a5229f6d790e5a019dd7 AS uv
 
-FROM ghcr.io/osgeo/gdal:ubuntu-full-3.12.4@sha256:5828162cffed3af330034ae0c3ada30deb1cfdaecf37585f96ed0924f1d1dfb7 AS base
+FROM ghcr.io/osgeo/gdal:ubuntu-full-3.13.0@sha256:83d114a6891ae18aa175d81a14c92a96d23944667b36fde9c15c4a10215d8939 AS base
 
 ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8 \
@@ -42,7 +42,7 @@ ENV UV_COMPILE_BYTECODE=0 \
     UV_HTTP_RETRIES=10 \
     UV_PROJECT_ENVIRONMENT=/app \
     UV_PYTHON_DOWNLOADS=never \
-    UV_PYTHON=python3.12
+    UV_PYTHON=python3.14
 
 WORKDIR /build
 
@@ -78,7 +78,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$pg_key" \
     && gpg --batch --export --armor "$pg_key" > /etc/apt/keyrings/postgres.gpg.asc \
     && gpgconf --kill all \
-    && echo "deb [signed-by=/etc/apt/keyrings/postgres.gpg.asc] http://apt.postgresql.org/pub/repos/apt noble-pgdg main $V_PG" | tee /etc/apt/sources.list.d/postgres.list \
+    && echo "deb [signed-by=/etc/apt/keyrings/postgres.gpg.asc] http://apt.postgresql.org/pub/repos/apt resolute-pgdg main $V_PG" | tee /etc/apt/sources.list.d/postgres.list \
     && apt-get -qq update \
     && apt-get install -y --no-install-recommends \
         gosu \
@@ -123,7 +123,7 @@ RUN  --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     && export UV_COMPILE_BYTECODE=0 \
     && export UV_PROJECT_ENVIRONMENT=/app \
     && export UV_PYTHON_DOWNLOADS=never \
-    && export UV_PYTHON=python3.12 \
+    && export UV_PYTHON=python3.14 \
     && uv pip install /code/ \
     && uv pip install /code/examples/io_plugin \
     && uv pip install /code/tests/drivers/fail_drivers \
