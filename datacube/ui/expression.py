@@ -137,8 +137,15 @@ class TreeToSearchExprs(Transformer):
 
     # Merge everything into a single dict
     def start(self, *search_exprs) -> dict:
-        combined = {}
+        combined: dict[str, Any] = {}
         for expr in search_exprs:
+            k, v = next(iter(expr.items()))
+            # Support duplicate keys by merging the values into one tuple
+            if (existing := combined.get(k)) is not None:
+                expr = {
+                    # have to use type over isinstance to account for Range
+                    k: (existing, v) if type(existing) != tuple else (*existing, v)  # noqa: E721
+                }
             combined.update(expr)
         return combined
 

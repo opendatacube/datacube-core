@@ -161,3 +161,28 @@ def test_parse_multiple_simple_expressions() -> None:
     }
     # Range(x,y) is "equal" to (x, y). Check explicitly that it's a range:
     assert between_exp["lat"].begin == -4
+
+
+def test_parse_duplicate_fields() -> None:
+    # Multiple expressions referencing the same field
+    products_exp = parse_expressions("product=ga_ls8c_ard_3 product=ga_ls9c_ard_3")
+    assert products_exp == {
+        "product": ("ga_ls8c_ard_3", "ga_ls9c_ard_3"),
+    }
+    times_exp = parse_expressions("time in 2013-01 time in 2013-4 time in 2014")
+    assert times_exp == {
+        "time": (
+            Range(
+                datetime(2013, 1, 1, tzinfo=timezone.utc),
+                datetime(2013, 1, 31, 23, 59, 59, 999999, tzinfo=timezone.utc),
+            ),
+            Range(
+                datetime(2013, 4, 1, tzinfo=timezone.utc),
+                datetime(2013, 4, 30, 23, 59, 59, 999999, tzinfo=timezone.utc),
+            ),
+            Range(
+                datetime(2014, 1, 1, tzinfo=timezone.utc),
+                datetime(2014, 12, 31, 23, 59, 59, 999999, tzinfo=timezone.utc),
+            ),
+        ),
+    }

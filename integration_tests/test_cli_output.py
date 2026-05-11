@@ -139,6 +139,7 @@ def test_cli_dataset_subcommand(
     for path in eo3_dataset_paths:
         clirunner(["dataset", "add", "--ignore-lineage", path])
 
+    # find-duplicates
     runner = clirunner(
         ["dataset", "find-duplicates"], verbose_flag=False, expect_success=False
     )
@@ -190,6 +191,11 @@ def test_cli_dataset_subcommand(
     assert "region_code: '101077'\ndataset_maturity: final" in runner.output
     assert runner.exit_code == 0, f"Output: {runner.output}"
 
+    # count
+    runner = clirunner(["dataset", "count", "--count-only"], verbose_flag=False)
+    assert runner.output == "7\n"
+    assert runner.exit_code == 0, f"Output: {runner.output}"
+
     runner = clirunner(
         ["dataset", "count", "--count-only", "ga_ls8c_ard_3", "ga_ls_wo_3"],
         verbose_flag=False,
@@ -201,6 +207,14 @@ def test_cli_dataset_subcommand(
         ["dataset", "count", "ga_ls8c_ard_3", "ga_ls_wo_3"], verbose_flag=False
     )
     assert "product: ga_ls8c_ard_3\ncount: 4" in runner.output
+    assert runner.exit_code == 0, f"Output: {runner.output}"
+
+    runner = clirunner(
+        ["dataset", "count", "--query", "product=ga_ls8c_ard_3", "ga_ls_wo_3"],
+        verbose_flag=False,
+    )
+    assert "ga_ls8c_ard_3" in runner.output
+    assert "ga_ls_wo_3" in runner.output
     assert runner.exit_code == 0, f"Output: {runner.output}"
 
     runner = clirunner(
@@ -251,6 +265,7 @@ def test_cli_dataset_subcommand(
     )
     assert "count: 1" in runner.output
 
+    # search
     runner = clirunner(
         ["dataset", "search", "foo"], verbose_flag=False, expect_success=False
     )
@@ -262,6 +277,24 @@ def test_cli_dataset_subcommand(
         verbose_flag=False,
     )
     assert "id: 4a30d008-4e82-4d67-99af-28bc1629f766" in runner.output
+    assert runner.exit_code == 0, f"Output: {runner.output}"
+
+    # archive
+    clirunner(
+        ["dataset", "archive", "--query", "product=ga_ls8c_ard_3 time in 2013"],
+        verbose_flag=False,
+    )
+    runner = clirunner(
+        ["dataset", "count", "--status", "archived", "ga_ls8c_ard_3"],
+        verbose_flag=False,
+    )
+    assert "count: 3" in runner.output
+
+    runner = clirunner(
+        ["dataset", "archive", "--query", "product=ga_ls8c_ard_3 time in 1980"],
+        verbose_flag=False,
+    )
+    assert "No datasets found" in runner.output
     assert runner.exit_code == 0, f"Output: {runner.output}"
 
     runner = clirunner(["dataset", "archive"], verbose_flag=False, expect_success=False)
@@ -277,6 +310,7 @@ def test_cli_dataset_subcommand(
     assert "Archive datasets" not in runner.output
     assert runner.exit_code == 0, f"Output: {runner.output}"
 
+    # restore
     runner = clirunner(["dataset", "restore"], verbose_flag=False, expect_success=False)
     assert "Usage:  [OPTIONS] [IDS]" in runner.output
     assert "Restore datasets" in runner.output
@@ -295,6 +329,7 @@ def test_cli_dataset_subcommand(
     assert "Restore datasets" not in runner.output
     assert runner.exit_code == 0, f"Output: {runner.output}"
 
+    # purge
     runner = clirunner(["dataset", "purge"], verbose_flag=False, expect_success=False)
     assert "Completed dataset purge." not in runner.output
     assert "Usage:  [OPTIONS] [IDS]" in runner.output
