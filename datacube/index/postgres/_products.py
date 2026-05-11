@@ -13,7 +13,7 @@ from typing_extensions import override
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
-from datacube.model import Product
+from datacube.model import Not, Product
 from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
@@ -367,21 +367,35 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         def _listify(v) -> list:
             if isinstance(v, tuple):
-                return list(v)
+                return [v] if isinstance(v, Not) else list(v)
             if isinstance(v, list):
                 return v
             return [v]
 
+        def _is_not_match(value: str, matching: list) -> bool:
+            # determine if product/metadata-types are non-matches, accounting for Not values
+            if any(isinstance(m, Not) for m in matching):
+                for m in matching:
+                    # value is a non-match if it matches any of the Not values
+                    if isinstance(m, Not):
+                        if value == m.value:
+                            return True
+                        continue
+                    # standard non-match
+                    if value != m:
+                        return True
+                # if the for loop exits, we only had matches
+                return False
+            return value not in matching
+
         for type_ in self.get_all():
             remaining_matchable = query.copy()
             # If they specified specific product/metadata-types, we can quickly skip non-matches.
-            if type_.name not in _listify(
-                remaining_matchable.pop("product", type_.name)
-            ):
+            product = _listify(remaining_matchable.pop("product", []))
+            if product and _is_not_match(type_.name, product):
                 continue
-            if type_.metadata_type.name not in _listify(
-                remaining_matchable.pop("metadata_type", type_.metadata_type.name)
-            ):
+            metadata_type = _listify(remaining_matchable.pop("metadata_type", []))
+            if metadata_type and _is_not_match(type_.metadata_type.name, metadata_type):
                 continue
 
             # Check that all the keys they specified match this product.

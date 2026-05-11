@@ -38,7 +38,7 @@ from datacube.utils import (
 )
 
 from ..utils.uris import pick_uri
-from ._base import (  # noqa: F401
+from ._base import (
     DSID,
     Not,
     QueryDict,
@@ -84,6 +84,7 @@ __all__ = [
     "LineageTree",
     "Measurement",
     "MetadataType",
+    "Not",
     "Product",
     "QueryDict",
     "QueryField",
