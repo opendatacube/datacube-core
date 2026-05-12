@@ -383,7 +383,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 else:
                     to_match.append(m)
             # if to_match is empty, all the 'matching' values were 'Not's and we have a match
-            return to_match and value not in to_match
+            return len(to_match) > 0 and value not in to_match
 
         for type_ in self.get_all():
             remaining_matchable = query.copy()
