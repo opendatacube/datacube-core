@@ -374,19 +374,16 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
         def _is_not_match(value: str, matching: list) -> bool:
             # determine if product/metadata-types are non-matches, accounting for Not values
-            if any(isinstance(m, Not) for m in matching):
-                for m in matching:
-                    # value is a non-match if it matches any of the Not values
-                    if isinstance(m, Not):
-                        if value == m.value:
-                            return True
-                        continue
-                    # standard non-match
-                    if value != m:
+            to_match = []
+            for m in matching:
+                if isinstance(m, Not):
+                    mval = m.value
+                    if (isinstance(mval, list) and value in mval) or value == mval:
                         return True
-                # if the for loop exits, we only had matches
-                return False
-            return value not in matching
+                else:
+                    to_match.append(m)
+            # if to_match is empty, all the 'matching' values were 'Not's and we have a match
+            return to_match and value not in to_match
 
         for type_ in self.get_all():
             remaining_matchable = query.copy()

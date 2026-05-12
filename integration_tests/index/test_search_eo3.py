@@ -554,6 +554,11 @@ def test_search_not_expressions_eo3(
     assert len(datasets) == 2
     assert africa_eo3_dataset in datasets
     assert s1_eo3_dataset in datasets
+    # a list of Nots should be equivalent to a Not of lists
+    assert (
+        list(index.datasets.search(product=Not(["ga_ls8c_ard_3", "ga_ls_wo_3"])))
+        == datasets
+    )
 
 
 def test_search_returning_eo3(
