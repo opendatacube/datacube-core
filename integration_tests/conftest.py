@@ -8,6 +8,7 @@ Common methods for index integration tests.
 
 from __future__ import annotations
 
+import gc
 import itertools
 import os
 import warnings
@@ -684,6 +685,11 @@ def cleanup_db(cfg_env: ODCEnvironment, db: PostgresDb | PostGisDb) -> None:
             else pgis_core.SCHEMA_NAME,
         )
     db.close()
+    # The SQLAlchemy pools belonging to the engine are not garbage collected frequently
+    # enough with the new GC in Python 3.14.0-3.14.4 so postgres runs out of
+    # connections. Trigger a collection manually as workaround.
+    # Python 3.14.5 will contain the same GC as Python 3.13.
+    gc.collect()
 
 
 @pytest.fixture(params=["America/Los_Angeles", "UTC"])
