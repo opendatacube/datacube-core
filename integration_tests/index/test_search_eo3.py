@@ -560,6 +560,12 @@ def test_search_not_expressions_eo3(
         == datasets
     )
 
+    # product=(Not(Not("x"))) should evaluate to product="x"
+    datasets = list(index.datasets.search(product=Not(Not("ga_ls8c_ard_3"))))
+    assert len(datasets) == 2
+    assert ls8_eo3_dataset in datasets
+    assert ls8_eo3_dataset2 in datasets
+
 
 def test_search_returning_eo3(
     index: Index,

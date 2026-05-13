@@ -14,6 +14,7 @@ from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.model import Not, Product
+from datacube.model._base import nested_nots
 from datacube.utils import _readable_offset, changes, jsonify_document
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
@@ -377,8 +378,9 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             to_match = []
             for m in matching:
                 if isinstance(m, Not):
-                    mval = m.value
-                    if (isinstance(mval, list) and value in mval) or value == mval:
+                    if not isinstance(mval := nested_nots(m), Not):
+                        to_match.extend(_listify(mval))
+                    elif value in mval.value:
                         return True
                 else:
                     to_match.append(m)
