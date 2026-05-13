@@ -367,8 +367,9 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         """
 
         def _listify(v) -> list:
-            if isinstance(v, tuple):
-                return [v] if isinstance(v, Not) else list(v)
+            if isinstance(v, tuple) and not isinstance(v, Not):
+                # Not is a namedtumple
+                return list(v)
             if isinstance(v, list):
                 return v
             return [v]
