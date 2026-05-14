@@ -22,7 +22,7 @@ import datacube.scripts.cli_app
 import datacube.scripts.search_tool
 from datacube import Datacube
 from datacube.cfg.opt import _DEFAULT_DB_USER
-from datacube.model import Range
+from datacube.model import Not, Range
 from datacube.testutils import suppress_deprecations
 from datacube.utils.dates import tz_as_utc
 
@@ -514,6 +514,57 @@ def test_search_or_expressions_eo3(
     )
     assert len(datasets) == 1
     assert datasets[0].id == wo_eo3_dataset.id
+
+
+def test_search_not_expressions_eo3(
+    index: Index,
+    ls8_eo3_dataset: Dataset,
+    ls8_eo3_dataset2: Dataset,
+    wo_eo3_dataset: Dataset,
+    africa_eo3_dataset: Dataset,
+    s1_eo3_dataset: Dataset,
+) -> None:
+    datasets = list(index.datasets.search(product_family=Not("ard")))
+    assert len(datasets) == 2
+    assert wo_eo3_dataset in datasets
+    assert s1_eo3_dataset in datasets
+    # africa_eo3_dataset (product s2_l2a) doesn't have product_family property
+
+    datasets = list(index.datasets.search(product=Not("ga_ls_wo_3")))
+    assert len(datasets) == 4
+    assert wo_eo3_dataset not in datasets
+
+    datasets = list(
+        index.datasets.search(
+            product="ga_ls8c_ard_3",
+            time=Not(
+                Range(
+                    begin=datetime.datetime(2016, 5, 1, tzinfo=datetime.timezone.utc),
+                    end=datetime.datetime(2016, 5, 15, tzinfo=datetime.timezone.utc),
+                )
+            ),
+        )
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset2.id
+
+    datasets = list(
+        index.datasets.search(product=[Not("ga_ls8c_ard_3"), Not("ga_ls_wo_3")])
+    )
+    assert len(datasets) == 2
+    assert africa_eo3_dataset in datasets
+    assert s1_eo3_dataset in datasets
+    # a list of Nots should be equivalent to a Not of lists
+    assert (
+        list(index.datasets.search(product=Not(["ga_ls8c_ard_3", "ga_ls_wo_3"])))
+        == datasets
+    )
+
+    # product=(Not(Not("x"))) should evaluate to product="x"
+    datasets = list(index.datasets.search(product=Not(Not("ga_ls8c_ard_3"))))
+    assert len(datasets) == 2
+    assert ls8_eo3_dataset in datasets
+    assert ls8_eo3_dataset2 in datasets
 
 
 def test_search_returning_eo3(

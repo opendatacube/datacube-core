@@ -62,6 +62,21 @@ def ranges_overlap(ra: Range, rb: Range) -> bool:
     return rb.end > ra.begin
 
 
+def unnest_nots(n: Not) -> Not | object:
+    """
+    Handle an arbitrary amount of nested Nots, such that:
+    - Not(Not(x)) == x;
+    - Not(Not(Not(x))) == Not(x);
+    - and so on.
+    """
+    if isinstance(n.value, Not):
+        if isinstance(n.value.value, Not):
+            nested = Not(unnest_nots(n.value))
+            return unnest_nots(nested)
+        return n.value.value
+    return n
+
+
 QueryField: TypeAlias = (
     str | float | int | Range | datetime.datetime | Iterable[str | Geometry] | Not
 )

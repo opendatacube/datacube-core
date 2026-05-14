@@ -29,6 +29,7 @@ from sqlalchemy import (
     distinct,
     func,
     literal,
+    not_,
     or_,
     select,
     text,
@@ -40,7 +41,7 @@ from typing_extensions import override
 
 from datacube.drivers.common_psql import create_user, drop_users, grant_role, has_role
 from datacube.index.exceptions import MissingRecordError
-from datacube.index.fields import OrExpression
+from datacube.index.fields import NotExpression, OrExpression
 from datacube.model import Range
 from datacube.utils.uris import split_uri
 
@@ -498,6 +499,8 @@ class PostgresDbAPI:
         def raw_expr(expression):
             if isinstance(expression, OrExpression):
                 return or_(raw_expr(expr) for expr in expression.exprs)
+            if isinstance(expression, NotExpression):
+                return not_(raw_expr(expression.expr))
             return expression.alchemy_expression
 
         return [raw_expr(expression) for expression in expressions]

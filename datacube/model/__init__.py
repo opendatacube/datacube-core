@@ -38,7 +38,7 @@ from datacube.utils import (
 )
 
 from ..utils.uris import pick_uri
-from ._base import (  # noqa: F401
+from ._base import (
     DSID,
     Not,
     QueryDict,
@@ -46,6 +46,7 @@ from ._base import (  # noqa: F401
     Range,
     dsid_to_uuid,
     ranges_overlap,
+    unnest_nots,
 )
 from .eo3 import validate_eo3_compatible_type
 from .fields import Field, get_dataset_fields
@@ -84,6 +85,7 @@ __all__ = [
     "LineageTree",
     "Measurement",
     "MetadataType",
+    "Not",
     "Product",
     "QueryDict",
     "QueryField",
@@ -92,6 +94,7 @@ __all__ = [
     "get_dataset_fields",
     "metadata_from_doc",
     "ranges_overlap",
+    "unnest_nots",
 ]
 
 _LOG: logging.Logger = logging.getLogger(__name__)
