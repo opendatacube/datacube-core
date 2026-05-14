@@ -62,7 +62,7 @@ def ranges_overlap(ra: Range, rb: Range) -> bool:
     return rb.end > ra.begin
 
 
-def nested_nots(n: Not) -> Not | T:
+def unnest_nots(n: Not) -> Not | object:
     """
     Handle an arbitrary amount of nested Nots, such that:
     - Not(Not(x)) == x;
@@ -71,8 +71,8 @@ def nested_nots(n: Not) -> Not | T:
     """
     if isinstance(n.value, Not):
         if isinstance(n.value.value, Not):
-            nested = Not(nested_nots(n.value))
-            return nested_nots(nested)
+            nested = Not(unnest_nots(n.value))
+            return unnest_nots(nested)
         return n.value.value
     return n
 
