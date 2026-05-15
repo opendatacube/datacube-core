@@ -17,7 +17,7 @@ from textwrap import dedent
 from typing import Literal
 
 import click
-from lark.exceptions import UnexpectedEOF
+from lark.exceptions import UnexpectedCharacters, UnexpectedEOF
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from typing_extensions import override
 
@@ -429,7 +429,7 @@ def _parse_search_exprs(f: FC, is_option: bool):
     def my_parse(ctx, param, value):
         try:
             return parse_expressions(*list(value))
-        except UnexpectedEOF as e:
+        except (UnexpectedEOF, UnexpectedCharacters) as e:
             handle_exception(
                 "Invalid expression. Please refer to command documentation.", e
             )

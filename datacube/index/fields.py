@@ -83,7 +83,10 @@ def _to_expression(get_field, name: str, value) -> Expression:
     if field is None:
         raise UnknownFieldError(f"Unknown field {name!r}")
 
-    return as_expression(field, value)
+    try:
+        return as_expression(field, value)
+    except ValueError as e:
+        raise ValueError(f"Invalid value for field '{name}', {e!s}") from None
 
 
 def to_expressions(get_field, **query) -> list[Expression]:

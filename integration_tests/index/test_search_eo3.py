@@ -1370,3 +1370,58 @@ def test_search_boolean_eo3(index: Index, s1_eo3_dataset) -> None:
         )
     )
     assert len(res) == 0
+
+
+def test_invalid_search_terms_eo3(
+    index: Index, ls8_eo3_dataset, s1_eo3_dataset
+) -> None:
+    # Invalid field across all products
+    with pytest.raises(ValueError) as e:
+        list(index.datasets.search(foo="bar"))
+    assert "No products match search terms" in str(e.value)
+    # Non-existent product
+    with pytest.raises(ValueError) as e:
+        list(index.datasets.search(product="foo"))
+    assert "No such product(s): foo" in str(e.value)
+    # Invalid field for product
+    with pytest.raises(ValueError) as e:
+        list(index.datasets.search(product="ga_ls8c_ard_3", instrument_mode="SM"))
+    assert "Specified products do not match search terms" in str(e.value)
+    # Invalid time range
+    with pytest.raises(ValueError) as e:
+        list(index.datasets.search(time=Range(2014, 20145)))
+    assert "Invalid value for field 'time'" in str(e.value)
+    # Range value to simple field
+    with pytest.raises(NotImplementedError) as e:
+        list(index.datasets.search(instrument=Range(1, 2)))
+    # Valid field with invalid value type that can't be converted
+    with pytest.raises(ValueError) as e:
+        list(index.datasets.search(product="ga_ls8c_ard_3", eo_gsd="foo"))
+    assert "Invalid value for field 'eo_gsd'" in str(e.value)
+    # Invalid value type that can be converted
+    res = list(index.datasets.search(product="ga_ls8c_ard_3", eo_gsd="15.0"))
+    assert len(res)
+    res = list(index.datasets.search(instrument=1))
+    assert len(res) == 0
+
+
+def test_graceful_errors_cli(clirunner: Any, ls8_eo3_dataset) -> None:
+    # invalid search expression grammar
+    result = clirunner(
+        ["dataset", "search", "product in [a, b]"],
+        cli_method=datacube.scripts.cli_app.cli,
+        verbose_flag="",
+        expect_success=False,
+    )
+    assert "Invalid expression." in result.output
+
+    # Errors raised by invalid query terms should be handled gracefully
+    # rather than spitting out the whole stack trace
+    result = clirunner(
+        ["dataset", "count", "--query", "product=foo"],
+        cli_method=datacube.scripts.cli_app.cli,
+        verbose_flag="",
+        expect_success=False,
+    )
+    assert result.exit_code == 1
+    assert result.output == "No such product(s): foo\n"

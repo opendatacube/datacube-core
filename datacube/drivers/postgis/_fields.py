@@ -297,7 +297,7 @@ class SimpleDocField(PgDocField):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
-        return EqualsExpression(self, value)
+        return EqualsExpression(self, self.parse_value(value))
 
     @override
     def between(self, low, high) -> Expression:
@@ -311,6 +311,10 @@ class SimpleDocField(PgDocField):
 
     def evaluate(self, ctx):
         return self.extract(ctx)
+
+    @override
+    def parse_value(self, value) -> str:
+        return str(value)
 
 
 class UnindexableValue(Exception):  # noqa: N818
