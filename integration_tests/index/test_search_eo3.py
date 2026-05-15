@@ -1392,7 +1392,7 @@ def test_invalid_search_terms_eo3(
         list(index.datasets.search(time=Range(2014, 20145)))
     assert "Invalid value for field 'time'" in str(e.value)
     # Range value to simple field
-    with pytest.raises(NotImplementedError) as e:
+    with pytest.raises(NotImplementedError):
         list(index.datasets.search(instrument=Range(1, 2)))
     # Valid field with invalid value type that can't be converted
     with pytest.raises(ValueError) as e:
