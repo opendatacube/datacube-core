@@ -19,9 +19,11 @@ Open Data Cube Cheatsheet
 To make it easier to get started with Open Data Cube, the following reference poster demonstrates how to perform common analysis tasks including loading data, data preparation, plotting and exporting, and geospatial manipulation:
 
 .. image:: ../cheatsheets/ODC_Cheatsheet.jpg
-   :target: https://raw.githubusercontent.com/opendatacube/datacube-core/develop/docs/cheatsheets/ODC_Cheatsheet.pdf
+   :target: /_images/ODC_Cheatsheet.jpg
    :alt: ODC Cheatsheet
-   :width: 400px
+
+
+For printing, download :download:`the cheatsheet PDF <../cheatsheets/ODC_Cheatsheet.pdf>`.
 
 
 .. _`Digital Earth Australia Sandbox`: https://www.dea.ga.gov.au/developers/sandbox
