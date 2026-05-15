@@ -11,12 +11,14 @@ how to access data through ODC, along with example algorithms and visualisations
 Digital Earth Australia Notebooks
 ---------------------------------
 
-.. image:: https://raw.githubusercontent.com/GeoscienceAustralia/dea-notebooks/develop/Supplementary_data/dea_logo_wide.jpg
+.. Image from: https://raw.githubusercontent.com/GeoscienceAustralia/dea-notebooks/develop/Supplementary_data/dea_logo_wide.jpg
+
+.. image:: ./deaustralia-banner.jpg
   :width: 900
   :alt: Digital Earth Australia Notebooks banner
   :target: https://github.com/GeoscienceAustralia/dea-notebooks/
 
-`Digital Earth Australia Notebooks`_ hosts `Jupyter Notebooks`_, Python scripts and workflows for analysing data from the Digital Earth Australia (DEA) instance of the Open Data Cube. This documentation provides a guide to the wide range of geospatial analyses that can be achieved using Open Data Cube and ``xarray``. The repository contains the following key content:
+`Digital Earth Australia Notebooks`_ hosts `Jupyter Notebooks`_, Python scripts and workflows for analysing data from the Digital Earth Australia (DEA) instance of the Open Data Cube. This documentation provides a guide to the wide range of geospatial analyses that can be achieved using Open Data Cube and Xarray_. The repository contains the following key content:
 
 * `Beginners guide`_: Introductory notebooks aimed at introducing `Jupyter Notebooks`_ and how to load, plot and interact with Open Data Cube data
 * `Frequently used code`_: A recipe book of simple code examples demonstrating how to perform common geospatial analysis tasks using Open Data Cube
@@ -27,12 +29,15 @@ Digital Earth Australia Notebooks
 .. _`Frequently used code`: https://knowledge.dea.ga.gov.au/notebooks/Frequently_used_code/README.html
 .. _`Real world examples`: https://knowledge.dea.ga.gov.au/notebooks/Real_world_examples/README.html
 .. _Jupyter Notebooks: https://jupyter.org/
+.. _Xarray: https://docs.xarray.dev/en/stable/index.html
 
 
 Digital Earth Africa Notebooks
 ------------------------------
 
-.. image:: https://raw.githubusercontent.com/digitalearthafrica/deafrica-sandbox-notebooks/master/Supplementary_data/Github_banner.jpg
+.. Image from https://raw.githubusercontent.com/digitalearthafrica/deafrica-sandbox-notebooks/master/Supplementary_data/Github_banner.jpg
+
+.. image:: ./deaafrica-banner.webp
   :width: 900
   :alt: Digital Earth Africa Notebooks banner
   :target: https://github.com/digitalearthafrica/deafrica-sandbox-notebooks/
@@ -47,5 +52,5 @@ DEA and DE Africa Tools code
 
 Both `Digital Earth Australia Notebooks`_ and `Digital Earth Africa Notebooks`_ provide pip-installable Python modules containing useful tools for analysing Open Data Cube data, including functions for loading and plotting satellite imagery, calculating band indices, analysing spatial datasets, and machine learning. These tools can be accessed here:
 
-* ``DEA Tools``: https://github.com/GeoscienceAustralia/dea-notebooks/tree/stable/Tools
-* ``DE Africa Tools``: https://github.com/digitalearthafrica/deafrica-sandbox-notebooks/tree/main/Tools
+* DEA Tools: https://github.com/GeoscienceAustralia/dea-notebooks/tree/stable/Tools
+* DE Africa Tools: https://github.com/digitalearthafrica/deafrica-sandbox-notebooks/tree/main/Tools
