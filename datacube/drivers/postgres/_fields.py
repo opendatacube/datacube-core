@@ -230,6 +230,9 @@ class SimpleDocField(PgDocField):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
+        if isinstance(value, PgDocField):
+            # For checking DocField equality in tests
+            return self.__dict__ == value.__dict__
         return EqualsExpression(self, self.parse_value(value))
 
     @override
