@@ -388,10 +388,11 @@ class BoolDocField(SimpleDocField):
 
     @override
     def parse_value(self, value) -> bool:
-        if value.lower() == "false":
-            return False
-        if value.lower() == "true":
-            return True
+        if isinstance(value, str):
+            if value.lower() == "false":
+                return False
+            if value.lower() == "true":
+                return True
         return bool(value)
 
     @override
