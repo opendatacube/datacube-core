@@ -316,7 +316,7 @@ class SimpleDocField(PgDocField):
         return self.extract(ctx)
 
     @override
-    def parse_value(self, value) -> Any:
+    def parse_value(self, value) -> str:  #  type: ignore[override]
         return str(value)
 
 
