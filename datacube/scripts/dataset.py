@@ -9,6 +9,7 @@ import datetime
 import logging
 import multiprocessing
 import sys
+import warnings
 from collections import OrderedDict
 from textwrap import dedent
 from typing import Any, Literal, cast
@@ -659,12 +660,20 @@ def search_cmd(index: Index, limit: int, f: str, expressions) -> None:
     """
     Search available Datasets
     """
-    try:
-        datasets = index.datasets.search(limit=limit, **expressions)
-        _OUTPUT_WRITERS[f](build_dataset_info(index, dataset) for dataset in datasets)
-    except (NotImplementedError, ValueError, RuntimeError) as e:
-        echo(str(e), err=True)
-        sys.exit(1)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        try:
+            datasets = index.datasets.search(limit=limit, **expressions)
+            _OUTPUT_WRITERS[f](
+                build_dataset_info(index, dataset) for dataset in datasets
+            )
+        except (NotImplementedError, ValueError, RuntimeError) as e:
+            echo(str(e), err=True)
+            sys.exit(1)
+        # Print warning message for empty result cleanly bit don't return an error code
+        except UserWarning as w:
+            echo(str(w))
+            sys.exit(0)
 
 
 def _get_derived_set(index: Index, id_: UUID) -> set[Dataset]:
@@ -785,47 +794,65 @@ def count_cmd(
             sys.exit(1)
 
         results = []
-        try:
-            for product, series in index.datasets.count_by_product_through_time(
-                period, archived, **query
-            ):
-                for timerange, count in series:
-                    results.append(
-                        OrderedDict(
-                            (
-                                ("product", product.name),
-                                ("time", tz_as_utc(timerange[0]).strftime("%Y-%m-%d")),
-                                ("count", count),
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            try:
+                for product, series in index.datasets.count_by_product_through_time(
+                    period, archived, **query
+                ):
+                    for timerange, count in series:
+                        results.append(
+                            OrderedDict(
+                                (
+                                    ("product", product.name),
+                                    (
+                                        "time",
+                                        tz_as_utc(timerange[0]).strftime("%Y-%m-%d"),
+                                    ),
+                                    ("count", count),
+                                )
                             )
                         )
-                    )
-        except (NotImplementedError, ValueError) as e:
-            echo(str(e), err=True)
-            sys.exit(1)
+            except (NotImplementedError, ValueError) as e:
+                echo(str(e), err=True)
+                sys.exit(1)
+            except UserWarning as w:
+                echo(str(w))
+                sys.exit(0)
 
         _OUTPUT_WRITERS[f](results, fields=["product", "time", "count"])
 
     else:
         if count_only:
-            try:
-                echo(index.datasets.count(archived, **query))
-            except (NotImplementedError, ValueError) as e:
-                echo(str(e), err=True)
-                sys.exit(1)
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", UserWarning)
+                try:
+                    echo(index.datasets.count(archived, **query))
+                except (NotImplementedError, ValueError) as e:
+                    echo(str(e), err=True)
+                    sys.exit(1)
+                except UserWarning as w:
+                    echo(str(w))
+                    sys.exit(0)
         else:
-            try:
-                _OUTPUT_WRITERS[f](
-                    (
-                        OrderedDict((("product", product.name), ("count", count)))
-                        for product, count in index.datasets.count_by_product(
-                            archived, **query
-                        )
-                    ),
-                    fields=["product", "count"],
-                )
-            except (NotImplementedError, ValueError) as e:
-                echo(str(e), err=True)
-                sys.exit(1)
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", UserWarning)
+                try:
+                    _OUTPUT_WRITERS[f](
+                        (
+                            OrderedDict((("product", product.name), ("count", count)))
+                            for product, count in index.datasets.count_by_product(
+                                archived, **query
+                            )
+                        ),
+                        fields=["product", "count"],
+                    )
+                except (NotImplementedError, ValueError) as e:
+                    echo(str(e), err=True)
+                    sys.exit(1)
+                except UserWarning as w:
+                    echo(str(w))
+                    sys.exit(0)
 
 
 @dataset_cmd.command("archive", help="Archive datasets")
@@ -872,16 +899,21 @@ def archive_cmd(
         )
     else:
         if query:
-            try:
-                found = [
-                    ds.id  # type: ignore[attr-defined]
-                    for ds in index.datasets.search_returning(
-                        field_names=["id"], archived=None, **query
-                    )
-                ]
-            except (NotImplementedError, ValueError, RuntimeError) as e:
-                echo(str(e), err=True)
-                sys.exit(1)
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", UserWarning)
+                try:
+                    found = [
+                        ds.id  # type: ignore[attr-defined]
+                        for ds in index.datasets.search_returning(
+                            field_names=["id"], archived=None, **query
+                        )
+                    ]
+                except (NotImplementedError, ValueError, RuntimeError) as e:
+                    echo(str(e), err=True)
+                    sys.exit(1)
+                except UserWarning as w:
+                    echo(str(w))
+                    sys.exit(0)
             if not found:
                 echo("No datasets found with the query terms")
                 sys.exit(0)

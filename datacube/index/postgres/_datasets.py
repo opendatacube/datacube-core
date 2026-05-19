@@ -908,17 +908,17 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             q["product_id"] = product.id
             yield q, product
 
-    def _handle_empty_product_queries(self, query) -> None:
+    def _empty_product_queries_reason(self, query) -> str:
         product = query.pop("product", None)
         if product is None:
-            raise ValueError(f"No products match search terms: {query!r}")
+            return f"No products match search terms: {query!r}"
         # If products were specified in the query but no matching products were found,
         # it could either be because none of the products exist in the database,
         # or because none of the products define the specified fields
         product = [product] if isinstance(product, str) else list(product)
         if all(self.products.get_by_name(p) is None for p in product):
-            raise ValueError(f"No such product(s): {(', ').join(product)}")
-        raise ValueError(f"Specified products do not match search terms: {query!r}")
+            return f"No such product(s): {(', ').join(product)}"
+        return f"Specified products do not match search terms: {query!r}"
 
     # pylint: disable=too-many-locals
     def _do_search_by_product(
@@ -955,7 +955,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         product_queries = list(self._get_product_queries(query))
         if not product_queries:
-            self._handle_empty_product_queries(query)
+            warnings.warn(self._empty_product_queries_reason(query), stacklevel=2)
+            return
 
         for q, product in product_queries:
             dataset_fields = product.metadata_type.dataset_fields.copy()
@@ -994,7 +995,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             raise NotImplementedError("Spatial index API not supported by this index.")
         product_queries = list(self._get_product_queries(query))
         if not product_queries:
-            self._handle_empty_product_queries(query)
+            warnings.warn(self._empty_product_queries_reason(query), stacklevel=2)
+            return
 
         for q, product in product_queries:
             dataset_fields = product.metadata_type.dataset_fields
@@ -1019,7 +1021,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         product_queries = list(self._get_product_queries(query))
         if not product_queries:
-            self._handle_empty_product_queries(query)
+            warnings.warn(self._empty_product_queries_reason(query), stacklevel=2)
+            return
         if ensure_single and len(product_queries) > 1:
             raise RuntimeError(
                 "Multiple products match single query search: "

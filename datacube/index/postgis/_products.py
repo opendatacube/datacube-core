@@ -390,7 +390,11 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
             # if to_match is empty, all the 'matching' values were 'Not's and we have a match
             return len(to_match) > 0 and value not in to_match
 
-        for type_ in self.get_all():
+        all_products = list(self.get_all())
+        if not all_products:
+            _LOG.warning("No products in the database.")
+            return
+        for type_ in all_products:
             remaining_matchable = query.copy()
             # If they specified specific product/metadata-types, we can quickly skip non-matches.
             product = _listify(remaining_matchable.pop("product", []))
