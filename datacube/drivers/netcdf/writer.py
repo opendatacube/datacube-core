@@ -135,7 +135,7 @@ def create_variable(
         dims = var.dims
         datatype = var.dtype
 
-    chunksizes = clamp_chunksizes(kwargs.pop("chunksizes", None), dims)
+    chunksizes = clamp_chunksizes(kwargs.pop("chunksizes", None), dims)  # type: ignore[arg-type]
 
     data_var = nco.createVariable(
         varname=name,

@@ -188,7 +188,20 @@ def parse_search_field(
         "datetime": parse_time,
         "object": lambda x: x,
     }
-    _type = doc.get("type", "string")
+    _type: Literal[
+        "any",
+        "numeric-range",
+        "double-range",
+        "integer-range",
+        "datetime-range",
+        "string",
+        "numeric",
+        "double",
+        "integer",
+        "boolean",
+        "datetime",
+        "float-range",
+    ] = doc.get("type", "string")
 
     if _type in parsers:
         offset = doc.get("offset", None)

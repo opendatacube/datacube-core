@@ -139,7 +139,7 @@ def load_documents(path: str) -> Generator[dict]:
 
             parser = _PARSERS[suffix]
 
-            yield from parser(fh)
+            yield from parser(fh)  # type: ignore[arg-type]
 
 
 def read_documents(*paths, uri: bool = False) -> Generator[tuple[str, dict]]:

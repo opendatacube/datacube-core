@@ -5,6 +5,58 @@
 Release History
 ***************
 
+1.9.19 (19 May 2026)
+======================
+
+Regular release with some query functionality enhancements, improved error handling
+and an update of the Docker image to GDAL 3.13.0.
+
+What's Changed
+--------------
+
+Significant Changes
+^^^^^^^^^^^^^^^^^^^
+
+* Deprecate virtual products by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2456
+* docs: fix docutils warnings by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2457
+* docs: avoid double publishing by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2458
+* docs: fail on warnings by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2459
+* click: catch IndexSetupError by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2460
+* Add `--query` option to dataset archive cli command by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2463
+* Dockerfile: update to GDAL 3.13.0 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2476
+* Fix Not expression handling in dataset search by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2477
+* [docs] Fix cheatsheet PDF link, include external images in repo by @omad in https://github.com/opendatacube/datacube-core/pull/2484
+* Prepare for 1.9.19 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2488
+
+Automated Updates
+^^^^^^^^^^^^^^^^^
+
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2461
+* build(deps): bump the actions-deps group with 2 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2462
+* build(deps): bump osgeo/gdal from ubuntu-full-3.12.3 to ubuntu-full-3.12.4 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2464
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2465
+* build(deps): bump astral-sh/uv from 0.11.7 to 0.11.8 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2466
+* build(deps): bump the actions-deps group with 3 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2467
+* build(deps): bump aquasecurity/trivy-action from 0.35.0 to 0.36.0 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2469
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2468
+* build(deps): bump astral-sh/uv from 0.11.8 to 0.11.10 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2470
+* build(deps): bump astral-sh/uv from 0.11.10 to 0.11.11 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2471
+* build(deps): bump mistune from 3.2.0 to 3.2.1 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2472
+* build(deps): bump mako from 1.3.11 to 1.3.12 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2473
+* build(deps): bump astral-sh/uv from 0.11.11 to 0.11.12 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2474
+* build(deps): bump urllib3 from 2.6.3 to 2.7.0 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2479
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2478
+* build(deps): bump astral-sh/uv from 0.11.12 to 0.11.13 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2480
+* build(deps): bump github/codeql-action from 4.35.2 to 4.35.3 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2481
+* build(deps): bump astral-sh/uv from 0.11.13 to 0.11.14 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2482
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2487
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.18...1.9.19
+
+The Open Data Cube Steering Council thanks and acknowledges RISE, Geoscience Australia and CSIRO
+for their contributions to this release and ongoing support of the project.
+
+
 1.9.18 (16 April 2026)
 ======================
 

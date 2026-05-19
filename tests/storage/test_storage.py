@@ -98,7 +98,7 @@ def test_progress_cbk() -> None:
 
     assert cbk_args == [(1, 1)]
 
-    cbk_args: list = []
+    cbk_args = []
     reproject_and_fuse(
         [src, src],
         output_data,

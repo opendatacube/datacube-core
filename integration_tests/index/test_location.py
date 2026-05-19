@@ -76,6 +76,7 @@ def test_legacy_location_behaviour(index: Index, ls8_eo3_dataset) -> None:
         index.datasets.remove_location(ls8_eo3_dataset.id, "s3:/bucket/hole/straw.axe")
         index.datasets.remove_location(ls8_eo3_dataset.id, ls8_eo3_dataset.uri)
         ls8_eo3_dataset = index.datasets.get(ls8_eo3_dataset.id)
+        assert ls8_eo3_dataset is not None
         assert ls8_eo3_dataset.uri is None
         assert index.datasets.get_location(ls8_eo3_dataset.id) is None
 

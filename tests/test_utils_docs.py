@@ -155,7 +155,7 @@ def test_without_lineage_sources() -> None:
 
     x = mk_sample(1)
     assert without_lineage_sources(x, spec) != x
-    assert x["lineage"]["source_datasets"] == 1
+    assert x["lineage"]["source_datasets"] == 1  # type: ignore[index]
 
     assert mk_sample(10) != mk_sample({})
     assert without_lineage_sources(mk_sample(10), spec) == mk_sample({})

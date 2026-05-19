@@ -644,7 +644,7 @@ class PostgisDbAPI:
             query = query.join(*joins)
         if spatialquery is not None:
             where_expr = and_(where_expr, spatialquery)
-            query = query.join(SpatialIndex)
+            query = query.join(SpatialIndex)  # type: ignore[arg-type]
         return query.where(where_expr).order_by(*order_by).limit(limit)
 
     def search_datasets(

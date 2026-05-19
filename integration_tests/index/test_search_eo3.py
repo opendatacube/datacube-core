@@ -608,9 +608,11 @@ def test_search_returning_eo3(
     assert id_ == ls8_eo3_dataset.id
     assert document == ls8_eo3_dataset.metadata_doc
 
-    my_username = cfg_env.db_username
+    my_username: str | None = cfg_env.db_username
     if not my_username:
         my_username = _DEFAULT_DB_USER
+
+    assert my_username is not None
 
     # Mixture of document and native fields
     results = list(
