@@ -59,7 +59,7 @@ def test_grouping_datasets() -> None:
 
     assert str(grouped.time.dtype) == "datetime64[ns]"
     # FIXME: Illegal slice index.
-    assert grouped.loc["2016-01-01":"2016-01-15"]  # type: ignore[misc]
+    assert grouped.loc["2016-01-01":"2016-01-15"]
 
 
 def test_group_datasets_by_time() -> None:

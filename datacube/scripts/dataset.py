@@ -936,7 +936,7 @@ def restore_cmd(
 
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
     if all_ds:
-        ids = index.datasets.get_all_dataset_ids(archived=True)  # type: ignore[assignment]
+        ids = index.datasets.get_all_dataset_ids(archived=True)
 
     for id_ in ids:
         target_dataset = index.datasets.get(id_)
