@@ -11,6 +11,7 @@ from __future__ import annotations
 import copy
 import datetime
 import uuid
+import warnings
 from datetime import timezone
 from decimal import Decimal
 from typing import Any
@@ -248,13 +249,15 @@ def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset) -> Non
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Wrong sensor name
-    with pytest.raises(ValueError):
-        next(
-            index.datasets.search(
-                platform="LANDSAT-8",
-                instrument="TM",
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        with pytest.raises(UserWarning):
+            next(
+                index.datasets.search(
+                    platform="LANDSAT-8",
+                    instrument="TM",
+                )
             )
-        )
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
@@ -708,12 +711,16 @@ def test_searches_only_type(
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # No results when searching for a different dataset type.
-    with pytest.raises(ValueError):
-        next(
-            index.datasets.search(
-                product=ls5_telem_type.name, platform="LANDSAT_8", instrument="OLI_TIRS"
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        with pytest.raises(UserWarning):
+            next(
+                index.datasets.search(
+                    product=ls5_telem_type.name,
+                    platform="LANDSAT_8",
+                    instrument="OLI_TIRS",
+                )
             )
-        )
 
     # One result when no types specified.
     datasets = list(index.datasets.search(platform="LANDSAT_8", instrument="OLI_TIRS"))
@@ -721,12 +728,16 @@ def test_searches_only_type(
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # No results for different metadata type.
-    with pytest.raises(ValueError):
-        next(
-            index.datasets.search(
-                metadata_type="telemetry", platform="LANDSAT_8", instrument="OLI_TIRS"
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        with pytest.raises(UserWarning):
+            next(
+                index.datasets.search(
+                    metadata_type="telemetry",
+                    platform="LANDSAT_8",
+                    instrument="OLI_TIRS",
+                )
             )
-        )
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
@@ -742,13 +753,15 @@ def test_search_special_fields(
     assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Unknown field: no results
-    with pytest.raises(ValueError):
-        next(
-            index.datasets.search(
-                platform="LANDSAT_8",
-                flavour="chocolate",
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        with pytest.raises(UserWarning):
+            next(
+                index.datasets.search(
+                    platform="LANDSAT_8",
+                    flavour="chocolate",
+                )
             )
-        )
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
@@ -840,12 +853,17 @@ def test_count_by_product_searches(
     assert products == ((pseudo_ls8_type, 1),)
 
     # No results when searching for a different dataset type.
-    products = tuple(
-        index.datasets.count_by_product(
-            product=ls5_telem_type.name, platform="LANDSAT_8", instrument="OLI_TIRS"
-        )
-    )
-    assert products == ()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        with pytest.raises(UserWarning):
+            products = tuple(
+                index.datasets.count_by_product(
+                    product=ls5_telem_type.name,
+                    platform="LANDSAT_8",
+                    instrument="OLI_TIRS",
+                )
+            )
+            assert products == ()
 
     # One result when no types specified.
     products = tuple(
@@ -861,12 +879,15 @@ def test_count_by_product_searches(
     assert products == ((pseudo_ls8_type, 1),)
 
     # No results for different metadata type.
-    products = tuple(
-        index.datasets.count_by_product(
-            metadata_type="telemetry",
-        )
-    )
-    assert products == ()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        with pytest.raises(UserWarning):
+            products = tuple(
+                index.datasets.count_by_product(
+                    metadata_type="telemetry",
+                )
+            )
+            assert products == ()
 
 
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
@@ -1113,8 +1134,10 @@ def test_csv_search_via_cli(
         assert len(rows) == 0
 
     def no_such_product(*args) -> None:
-        with pytest.raises(ValueError):
-            _cli_csv_search(("datasets", *args), clirunner)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            with pytest.raises(UserWarning):
+                _cli_csv_search(("datasets", *args), clirunner)
 
     matches_both("lat in [-40, -10]")
     matches_both("product=" + pseudo_ls8_type.name)
