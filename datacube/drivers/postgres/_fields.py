@@ -232,7 +232,7 @@ class SimpleDocField(PgDocField):
     def __eq__(self, value) -> Expression:  # type: ignore[override]
         if isinstance(value, PgDocField):
             # For checking DocField equality in tests
-            return self.__dict__ == value.__dict__
+            return self.__dict__ == value.__dict__  # type: ignore[return-value]
         return EqualsExpression(self, self.parse_value(value))
 
     @override
@@ -249,7 +249,7 @@ class SimpleDocField(PgDocField):
         return self.extract(ctx)
 
     @override
-    def parse_value(self, value) -> str:  # type: ignore[override]
+    def parse_value(self, value) -> str:
         return str(value)
 
 
@@ -265,7 +265,7 @@ class IntDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value) -> int:
+    def parse_value(self, value) -> int:  # type: ignore[override]
         return int(value)
 
 
@@ -277,7 +277,7 @@ class BoolDocField(SimpleDocField):
         return cast(value, postgres.BOOLEAN)
 
     @override
-    def parse_value(self, value) -> bool:
+    def parse_value(self, value) -> bool:  # type: ignore[override]
         if isinstance(value, str):
             if value.lower() == "false":
                 return False
@@ -298,7 +298,7 @@ class NumericDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value) -> Decimal:
+    def parse_value(self, value) -> Decimal:  # type: ignore[override]
         return Decimal(value)
 
 
@@ -314,7 +314,7 @@ class DoubleDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value) -> float:
+    def parse_value(self, value) -> float:  # type: ignore[override]
         return float(value)
 
 
@@ -340,7 +340,7 @@ class DateDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value: datetime | str) -> datetime:
+    def parse_value(self, value: datetime | str) -> datetime:  # type: ignore[override]
         return utils.parse_time(value)
 
     @property
