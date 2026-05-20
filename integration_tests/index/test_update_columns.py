@@ -13,6 +13,11 @@ from sqlalchemy import text
 from datacube.drivers.postgres import _schema
 from datacube.drivers.postgres.sql import SCHEMA_NAME, pg_column_exists
 
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    # Ruff is getting this wrong.  Hopefully can remove noqa down the track.
+    from sqlalchemy import Connection  # noqa: TC004
+
 DROP_COLUMN = """
 alter table {schema}.{table} drop column {column}
 """
@@ -25,7 +30,7 @@ and tgrelid = '{schema}.{table}'::regclass;
 """
 
 
-def check_trigger(conn, table_name: str) -> bool:
+def check_trigger(conn: Connection, table_name: str) -> bool:
     trigger_result = conn.execute(
         text(TRIGGER_PRESENCE.format(schema=SCHEMA_NAME, table=table_name))
     ).fetchone()
