@@ -13,6 +13,11 @@ from sqlalchemy import text
 from datacube.drivers.postgres import _schema
 from datacube.drivers.postgres.sql import SCHEMA_NAME, pg_column_exists
 
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    # Ruff is getting this wrong.  Hopefully can remove noqa down the track.
+    from sqlalchemy import Connection  # noqa: TC004
+
 DROP_COLUMN = """
 alter table {schema}.{table} drop column {column}
 """
@@ -25,7 +30,7 @@ and tgrelid = '{schema}.{table}'::regclass;
 """
 
 
-def check_trigger(conn, table_name: str) -> bool:
+def check_trigger(conn: Connection, table_name: str) -> bool:
     trigger_result = conn.execute(
         text(TRIGGER_PRESENCE.format(schema=SCHEMA_NAME, table=table_name))
     ).fetchone()
@@ -55,10 +60,10 @@ def test_added_column(clirunner, uninitialised_postgres_db) -> None:
         assert pg_column_exists(c, _schema.DATASET_LOCATION.name, "added")
 
         # Check for triggers
-        assert check_trigger(connection, _schema.METADATA_TYPE.name)
-        assert check_trigger(connection, _schema.PRODUCT.name)
-        assert check_trigger(connection, _schema.DATASET.name)
-        assert not check_trigger(connection, _schema.DATASET_LOCATION.name)
+        assert check_trigger(c, _schema.METADATA_TYPE.name)
+        assert check_trigger(c, _schema.PRODUCT.name)
+        assert check_trigger(c, _schema.DATASET.name)
+        assert not check_trigger(c, _schema.DATASET_LOCATION.name)
 
 
 @pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
@@ -71,10 +76,10 @@ def test_readd_column(clirunner, uninitialised_postgres_db) -> None:
     with uninitialised_postgres_db._connect() as connection:
         c = connection._connection
         # Drop all the columns for an init rerun
-        drop_column(connection, _schema.METADATA_TYPE.name, "updated")
-        drop_column(connection, _schema.PRODUCT.name, "updated")
-        drop_column(connection, _schema.DATASET.name, "updated")
-        drop_column(connection, _schema.DATASET_LOCATION.name, "added")
+        drop_column(c, _schema.METADATA_TYPE.name, "updated")
+        drop_column(c, _schema.PRODUCT.name, "updated")
+        drop_column(c, _schema.DATASET.name, "updated")
+        drop_column(c, _schema.DATASET_LOCATION.name, "added")
 
         assert not pg_column_exists(c, _schema.METADATA_TYPE.name, "updated")
         assert not pg_column_exists(c, _schema.PRODUCT.name, "updated")
