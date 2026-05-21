@@ -7,6 +7,8 @@ Test creation of added/updated columns during
 `datacube system init`
 """
 
+from __future__ import annotations
+
 import pytest
 from sqlalchemy import text
 
@@ -15,8 +17,7 @@ from datacube.drivers.postgres.sql import SCHEMA_NAME, pg_column_exists
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
-    # Ruff is getting this wrong.  Hopefully can remove noqa down the track.
-    from sqlalchemy import Connection  # noqa: TC004
+    from sqlalchemy import Connection
 
 DROP_COLUMN = """
 alter table {schema}.{table} drop column {column}
