@@ -24,6 +24,7 @@ from sqlalchemy import create_engine, event
 from typing_extensions import override
 
 import datacube
+from datacube.drivers.common_psql import catch_timeout
 from datacube.index.exceptions import IndexSetupError
 from datacube.utils import json, jsonify_document
 
@@ -217,6 +218,7 @@ class PostgresDb:
             )
         return full_name[-64:]
 
+    @catch_timeout
     def init(self, with_permissions: bool = True) -> bool:
         """
         Init a new database (if not already set up).

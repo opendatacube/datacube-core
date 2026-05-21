@@ -520,10 +520,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         :param id_: dataset id
         """
         with self._db_connection() as connection:
-            location = connection.get_location(id_)
-            if location:
-                return location[0]
-            return None
+            return connection.get_location(id_)
 
     @deprecat(
         reason="Multiple locations per dataset are now deprecated. "
