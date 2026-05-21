@@ -136,6 +136,7 @@ new:
    index_driver: postgis
    db_url: postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb
    db_iam_authentication: yes
+   db_query_timeout: 3000
 postgis:
    alias: new
 memory:
@@ -166,6 +167,7 @@ def simple_dict() -> dict[str, dict[str, str | int]]:
         "index_driver": "postgis",
         "db_url": "postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb",
         "db_iam_authentication": "yes",
+        "db_query_timeout": 3000,
     }
     d: dict[str, dict[str, str | int]] = {
         "default": {"alias": "legacy"},
@@ -306,7 +308,8 @@ def assert_simple_options(cfg) -> None:
     assert not cfg["default"]["db_iam_authentication"]
     with pytest.raises(KeyError):
         assert cfg["default"]["db_iam_timeout"]
-
+    assert cfg["default"].db_query_timeout == 0
+    assert cfg["new"].db_query_timeout == 3000
     assert (
         cfg["new2"].db_url
         == "postgresql+psycopg2://foo:bar@server.subdomain.domain/mytestdb"

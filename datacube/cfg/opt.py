@@ -360,6 +360,7 @@ def config_options_for_psql_driver(env: ODCEnvironment) -> list[ODCOptionHandler
         IntOptionHandler(
             "db_connection_timeout", env, default=_DEFAULT_CONN_TIMEOUT, minval=1
         ),
+        IntOptionHandler("db_query_timeout", env, default=0, minval=0),
     ]
 
 
