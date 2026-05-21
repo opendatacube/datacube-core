@@ -26,6 +26,7 @@ import datacube.index.postgis.index
 import datacube.index.postgres.index
 from datacube import Datacube
 from datacube.cfg.opt import _DEFAULT_DB_USER
+from datacube.index.exceptions import NoProductsWarning
 from datacube.model import Range
 from datacube.testutils import load_dataset_definition, suppress_deprecations
 from datacube.utils.dates import tz_as_utc
@@ -250,8 +251,8 @@ def test_search_dataset_equals(index: Index, pseudo_ls8_dataset: Dataset) -> Non
 
     # Wrong sensor name
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             next(
                 index.datasets.search(
                     platform="LANDSAT-8",
@@ -712,8 +713,8 @@ def test_searches_only_type(
 
     # No results when searching for a different dataset type.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             next(
                 index.datasets.search(
                     product=ls5_telem_type.name,
@@ -729,8 +730,8 @@ def test_searches_only_type(
 
     # No results for different metadata type.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             next(
                 index.datasets.search(
                     metadata_type="telemetry",
@@ -754,8 +755,8 @@ def test_search_special_fields(
 
     # Unknown field: no results
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             next(
                 index.datasets.search(
                     platform="LANDSAT_8",
@@ -854,8 +855,8 @@ def test_count_by_product_searches(
 
     # No results when searching for a different dataset type.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             products = tuple(
                 index.datasets.count_by_product(
                     product=ls5_telem_type.name,
@@ -880,8 +881,8 @@ def test_count_by_product_searches(
 
     # No results for different metadata type.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             products = tuple(
                 index.datasets.count_by_product(
                     metadata_type="telemetry",
@@ -1135,8 +1136,8 @@ def test_csv_search_via_cli(
 
     def no_such_product(*args) -> None:
         with warnings.catch_warnings():
-            warnings.simplefilter("error", UserWarning)
-            with pytest.raises(UserWarning):
+            warnings.simplefilter("error", NoProductsWarning)
+            with pytest.raises(NoProductsWarning):
                 _cli_csv_search(("datasets", *args), clirunner)
 
     matches_both("lat in [-40, -10]")

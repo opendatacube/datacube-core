@@ -20,7 +20,7 @@ import yaml.resolver
 from click import echo
 
 from datacube.index.abstract import DatasetTuple
-from datacube.index.exceptions import MissingRecordError
+from datacube.index.exceptions import MissingRecordError, NoProductsWarning
 from datacube.index.hl import Doc2Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli, print_help_msg
@@ -661,7 +661,7 @@ def search_cmd(index: Index, limit: int, f: str, expressions) -> None:
     Search available Datasets
     """
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
+        warnings.simplefilter("error", NoProductsWarning)
         try:
             datasets = index.datasets.search(limit=limit, **expressions)
             _OUTPUT_WRITERS[f](
@@ -671,7 +671,7 @@ def search_cmd(index: Index, limit: int, f: str, expressions) -> None:
             echo(str(e), err=True)
             sys.exit(1)
         # Print warning message for empty result cleanly bit don't return an error code
-        except UserWarning as w:
+        except NoProductsWarning as w:
             echo(str(w))
             sys.exit(0)
 
@@ -795,7 +795,7 @@ def count_cmd(
 
         results = []
         with warnings.catch_warnings():
-            warnings.simplefilter("error", UserWarning)
+            warnings.simplefilter("error", NoProductsWarning)
             try:
                 for product, series in index.datasets.count_by_product_through_time(
                     period, archived, **query
@@ -816,7 +816,7 @@ def count_cmd(
             except (NotImplementedError, ValueError) as e:
                 echo(str(e), err=True)
                 sys.exit(1)
-            except UserWarning as w:
+            except NoProductsWarning as w:
                 echo(str(w))
                 sys.exit(0)
 
@@ -825,18 +825,18 @@ def count_cmd(
     else:
         if count_only:
             with warnings.catch_warnings():
-                warnings.simplefilter("error", UserWarning)
+                warnings.simplefilter("error", NoProductsWarning)
                 try:
                     echo(index.datasets.count(archived, **query))
                 except (NotImplementedError, ValueError) as e:
                     echo(str(e), err=True)
                     sys.exit(1)
-                except UserWarning as w:
+                except NoProductsWarning as w:
                     echo(str(w))
                     sys.exit(0)
         else:
             with warnings.catch_warnings():
-                warnings.simplefilter("error", UserWarning)
+                warnings.simplefilter("error", NoProductsWarning)
                 try:
                     _OUTPUT_WRITERS[f](
                         (
@@ -850,7 +850,7 @@ def count_cmd(
                 except (NotImplementedError, ValueError) as e:
                     echo(str(e), err=True)
                     sys.exit(1)
-                except UserWarning as w:
+                except NoProductsWarning as w:
                     echo(str(w))
                     sys.exit(0)
 
@@ -900,7 +900,7 @@ def archive_cmd(
     else:
         if query:
             with warnings.catch_warnings():
-                warnings.simplefilter("error", UserWarning)
+                warnings.simplefilter("error", NoProductsWarning)
                 try:
                     found = [
                         ds.id  # type: ignore[attr-defined]
@@ -911,7 +911,7 @@ def archive_cmd(
                 except (NotImplementedError, ValueError, RuntimeError) as e:
                     echo(str(e), err=True)
                     sys.exit(1)
-                except UserWarning as w:
+                except NoProductsWarning as w:
                     echo(str(w))
                     sys.exit(0)
             if not found:

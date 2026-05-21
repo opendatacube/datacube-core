@@ -28,6 +28,7 @@ from datacube.index.abstract import (
     DatasetSpatialMixin,
     DatasetTuple,
 )
+from datacube.index.exceptions import NoProductsWarning
 from datacube.index.postgres._transaction import IndexResourceAddIn
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset
@@ -955,7 +956,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         product_queries = list(self._get_product_queries(query))
         if not product_queries:
-            warnings.warn(self._empty_product_queries_reason(query), stacklevel=2)
+            warnings.warn(
+                self._empty_product_queries_reason(query),
+                NoProductsWarning,
+                stacklevel=2,
+            )
             return
 
         for q, product in product_queries:
@@ -995,7 +1000,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             raise NotImplementedError("Spatial index API not supported by this index.")
         product_queries = list(self._get_product_queries(query))
         if not product_queries:
-            warnings.warn(self._empty_product_queries_reason(query), stacklevel=2)
+            warnings.warn(
+                self._empty_product_queries_reason(query),
+                NoProductsWarning,
+                stacklevel=2,
+            )
             return
 
         for q, product in product_queries:
@@ -1021,7 +1030,11 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
 
         product_queries = list(self._get_product_queries(query))
         if not product_queries:
-            warnings.warn(self._empty_product_queries_reason(query), stacklevel=2)
+            warnings.warn(
+                self._empty_product_queries_reason(query),
+                NoProductsWarning,
+                stacklevel=2,
+            )
             return
         if ensure_single and len(product_queries) > 1:
             raise RuntimeError(

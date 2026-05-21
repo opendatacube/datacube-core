@@ -22,6 +22,7 @@ import datacube.scripts.cli_app
 import datacube.scripts.search_tool
 from datacube import Datacube
 from datacube.cfg.opt import _DEFAULT_DB_USER
+from datacube.index.exceptions import NoProductsWarning
 from datacube.model import Not, Range
 from datacube.testutils import suppress_deprecations
 from datacube.utils.dates import tz_as_utc
@@ -78,8 +79,8 @@ def test_search_dataset_equals_eo3(index: Index, ls8_eo3_dataset: Dataset) -> No
 
     # Wrong product family
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             next(
                 index.datasets.search(
                     platform="landsat-8",
@@ -802,8 +803,8 @@ def test_searches_only_type_eo3(
 
     # No results when searching for a different dataset type.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             next(index.datasets.search(product="spam_and_eggs", platform="landsat-8"))
 
     # Two result when no types specified.
@@ -813,8 +814,8 @@ def test_searches_only_type_eo3(
 
     # No results for different metadata type.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             next(
                 index.datasets.search(
                     metadata_type="spam_type",
@@ -833,8 +834,8 @@ def test_search_special_fields_eo3(
 
     # Unknown field: no results
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             next(
                 index.datasets.search(
                     platform="landsat-8",
@@ -861,8 +862,8 @@ def test_search_by_uri_eo3(
 def test_search_conflicting_types(index: Index, ls8_eo3_dataset) -> None:
     # Should return no results.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             next(
                 index.datasets.search(
                     product=ls8_eo3_dataset.product.name,
@@ -887,8 +888,8 @@ def test_fetch_all_of_md_type(index: Index, ls8_eo3_dataset: Dataset) -> None:
 
     # No results for another.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             next(index.datasets.search(metadata_type="spam_and_eggs"))
 
 
@@ -911,8 +912,8 @@ def test_count_searches(index: Index, ls8_eo3_dataset: Dataset) -> None:
 
     # No results when searching for a different dataset type.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             datasets = index.datasets.count(
                 product="spam_and_eggs", platform="landsat-8", instrument="OLI_TIRS"
             )
@@ -927,8 +928,8 @@ def test_count_searches(index: Index, ls8_eo3_dataset: Dataset) -> None:
 
     # No results for different metadata type.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             datasets = index.datasets.count(
                 metadata_type="spam_and_eggs",
                 platform="landsat-8",
@@ -962,8 +963,8 @@ def test_count_by_product_searches_eo3(
 
     # No results when searching for a different dataset type.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             products = tuple(
                 index.datasets.count_by_product(
                     product="spam_and_eggs", platform="landsat-8"
@@ -981,8 +982,8 @@ def test_count_by_product_searches_eo3(
 
     # No results for different metadata type.
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
-        with pytest.raises(UserWarning):
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
             products = tuple(
                 index.datasets.count_by_product(
                     metadata_type="spam_and_eggs",
@@ -1271,8 +1272,8 @@ def test_csv_search_via_cli_eo3(
 
     def no_such_product(*args) -> None:
         with warnings.catch_warnings():
-            warnings.simplefilter("error", UserWarning)
-            with pytest.raises(UserWarning):
+            warnings.simplefilter("error", NoProductsWarning)
+            with pytest.raises(NoProductsWarning):
                 _cli_csv_search(("datasets", *args), clirunner)
 
     matches_both("lat in [-40, -10]")
@@ -1406,17 +1407,17 @@ def test_invalid_search_terms_eo3(
     index: Index, ls8_eo3_dataset, s1_eo3_dataset
 ) -> None:
     with warnings.catch_warnings():
-        warnings.simplefilter("error", UserWarning)
+        warnings.simplefilter("error", NoProductsWarning)
         # Invalid field across all products
-        with pytest.raises(UserWarning) as e:
+        with pytest.raises(NoProductsWarning) as e:
             list(index.datasets.search(foo="bar"))
         assert "No products match search terms" in str(e.value)
         # Non-existent product
-        with pytest.raises(UserWarning) as e:
+        with pytest.raises(NoProductsWarning) as e:
             list(index.datasets.search(product="foo"))
         assert "No such product(s): foo" in str(e.value)
         # Invalid field for product
-        with pytest.raises(UserWarning) as e:
+        with pytest.raises(NoProductsWarning) as e:
             list(index.datasets.search(product="ga_ls8c_ard_3", instrument_mode="SM"))
         assert "Specified products do not match search terms" in str(e.value)
         # Invalid time range
