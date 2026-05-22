@@ -12,6 +12,7 @@ from deprecat import deprecat
 from typing_extensions import override
 
 from datacube.cfg.opt import config_options_for_psql_driver
+from datacube.drivers.common_psql import catch_generator_timeout
 from datacube.drivers.postgres import PostgresDb
 from datacube.index.abstract import (
     AbstractIndex,
@@ -29,7 +30,7 @@ from datacube.model import MetadataType
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Generator, Iterable, Mapping
 
     from datacube.cfg.api import ODCEnvironment
     from datacube.cfg.opt import ODCOptionHandler
@@ -185,7 +186,8 @@ class Index(AbstractIndex):
         return f"Index<db={self._db!r}>"
 
     @contextmanager
-    def _active_connection(self, transaction: bool = False) -> Iterator[PostgresDbAPI]:
+    @catch_generator_timeout
+    def _active_connection(self, transaction: bool = False) -> Generator[PostgresDbAPI]:
         """
         Context manager representing a database connection.
 

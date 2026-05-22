@@ -14,6 +14,7 @@ from odc.geo import CRS
 from typing_extensions import override
 
 from datacube.cfg.opt import config_options_for_psql_driver
+from datacube.drivers.common_psql import catch_generator_timeout
 from datacube.drivers.postgis import PostGisDb
 from datacube.index.abstract import (
     AbstractIndex,
@@ -31,7 +32,7 @@ from datacube.model import MetadataType
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Generator, Iterable, Mapping, Sequence
 
     from datacube.cfg.api import ODCEnvironment, ODCOptionHandler
     from datacube.drivers.postgis import PostgisDbAPI
@@ -225,7 +226,8 @@ class Index(AbstractIndex):
         return self._db.drop_spatial_index(crs)
 
     @contextmanager
-    def _active_connection(self, transaction: bool = False) -> Iterator[PostgisDbAPI]:
+    @catch_generator_timeout
+    def _active_connection(self, transaction: bool = False) -> Generator[PostgisDbAPI]:
         """
         Context manager representing a database connection.
 
