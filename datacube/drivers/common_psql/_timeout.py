@@ -14,24 +14,26 @@ from datacube.index.exceptions import QueryTimeout
 F: TypeAlias = Callable[..., Any]
 G: TypeAlias = Callable[..., Generator[Any]]
 
+try:
+    from psycopg2.errors import QueryCanceled as QueryCanceled2
+except ImportError:
+
+    class QueryCanceled2(Exception):  # type: ignore[no-redef]  # noqa: N818
+        pass
+
+
+try:
+    from psycopg.errors import QueryCanceled as QueryCanceled3
+except ImportError:
+
+    class QueryCanceled3(Exception):  # type: ignore[no-redef]  # noqa: N818
+        pass
+
 
 def catch_generator_timeout(gen: G) -> G:
     """
     Decorator to catch postgresql exceptions from query timeouts in a Generator function, and raise a QueryTimeout
     """
-    try:
-        from psycopg2.errors import QueryCanceled as QueryCanceled2
-    except ImportError:
-
-        class QueryCanceled2(Exception):  # type: ignore[no-redef]  # noqa: N818
-            pass
-
-    try:
-        from psycopg.errors import QueryCanceled as QueryCanceled3
-    except ImportError:
-
-        class QueryCanceled3(Exception):  # type: ignore[no-redef]  # noqa: N818
-            pass
 
     @wraps(gen)
     def timeout_wrapper(*args: Any, **kwargs: Any) -> Generator[Any]:
@@ -50,19 +52,6 @@ def catch_timeout(func: F) -> F:
     """
     Decorator to catch postgresql exceptions from query timeouts in a simple function, and raise a QueryTimeout
     """
-    try:
-        from psycopg2.errors import QueryCanceled as QueryCanceled2
-    except ImportError:
-
-        class QueryCanceled2(Exception):  # type: ignore[no-redef]  # noqa: N818
-            pass
-
-    try:
-        from psycopg.errors import QueryCanceled as QueryCanceled3
-    except ImportError:
-
-        class QueryCanceled3(Exception):  # type: ignore[no-redef]  # noqa: N818
-            pass
 
     @wraps(func)
     def timeout_wrapper(*args: Any, **kwargs: Any) -> Any:
