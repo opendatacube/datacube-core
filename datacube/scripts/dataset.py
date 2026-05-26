@@ -673,7 +673,6 @@ def search_cmd(index: Index, limit: int, f: str, expressions) -> None:
         # Print warning message for empty result cleanly bit don't return an error code
         except NoProductsWarning as w:
             echo(str(w))
-            sys.exit(0)
 
 
 def _get_derived_set(index: Index, id_: UUID) -> set[Dataset]:
@@ -823,9 +822,9 @@ def count_cmd(
         _OUTPUT_WRITERS[f](results, fields=["product", "time", "count"])
 
     else:
-        if count_only:
-            with warnings.catch_warnings():
-                warnings.simplefilter("error", NoProductsWarning)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", NoProductsWarning)
+            if count_only:
                 try:
                     echo(index.datasets.count(archived, **query))
                 except (NotImplementedError, ValueError) as e:
@@ -833,10 +832,7 @@ def count_cmd(
                     sys.exit(1)
                 except NoProductsWarning as w:
                     echo(str(w))
-                    sys.exit(0)
-        else:
-            with warnings.catch_warnings():
-                warnings.simplefilter("error", NoProductsWarning)
+            else:
                 try:
                     _OUTPUT_WRITERS[f](
                         (
@@ -852,7 +848,6 @@ def count_cmd(
                     sys.exit(1)
                 except NoProductsWarning as w:
                     echo(str(w))
-                    sys.exit(0)
 
 
 @dataset_cmd.command("archive", help="Archive datasets")
