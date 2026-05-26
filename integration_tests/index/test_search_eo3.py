@@ -1402,6 +1402,7 @@ def test_search_boolean_eo3(index: Index, s1_eo3_dataset) -> None:
     assert len(res) == 0
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_invalid_search_terms_eo3(
     index: Index, ls8_eo3_dataset, s1_eo3_dataset
 ) -> None:
@@ -1437,6 +1438,7 @@ def test_invalid_search_terms_eo3(
         assert len(res) == 0
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_graceful_errors_cli(clirunner: Any, ls8_eo3_dataset) -> None:
     # invalid search expression grammar
     result = clirunner(
