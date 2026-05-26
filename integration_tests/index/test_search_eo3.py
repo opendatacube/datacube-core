@@ -23,7 +23,7 @@ import datacube.scripts.cli_app
 import datacube.scripts.search_tool
 from datacube import Datacube
 from datacube.cfg.opt import _DEFAULT_DB_USER
-from datacube.index.exceptions import QueryTimeout
+from datacube.index.exceptions import NoProductsWarning, QueryTimeout
 from datacube.model import Not, Range
 from datacube.testutils import suppress_deprecations
 from datacube.utils.dates import tz_as_utc
@@ -79,13 +79,15 @@ def test_search_dataset_equals_eo3(index: Index, ls8_eo3_dataset: Dataset) -> No
     assert datasets[0].id == ls8_eo3_dataset.id
 
     # Wrong product family
-    with pytest.raises(ValueError):
-        next(
-            index.datasets.search(
-                platform="landsat-8",
-                product_family="splunge",
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
+            next(
+                index.datasets.search(
+                    platform="landsat-8",
+                    product_family="splunge",
+                )
             )
-        )
 
 
 def test_search_with_query_timeout(
@@ -866,8 +868,10 @@ def test_searches_only_type_eo3(
     assert datasets[0].id == wo_eo3_dataset.id
 
     # No results when searching for a different dataset type.
-    with pytest.raises(ValueError):
-        next(index.datasets.search(product="spam_and_eggs", platform="landsat-8"))
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
+            next(index.datasets.search(product="spam_and_eggs", platform="landsat-8"))
 
     # Two result when no types specified.
     datasets = list(index.datasets.search(platform="landsat-8"))
@@ -875,13 +879,15 @@ def test_searches_only_type_eo3(
     assert {ds.id for ds in datasets} == {ls8_eo3_dataset.id, wo_eo3_dataset.id}
 
     # No results for different metadata type.
-    with pytest.raises(ValueError):
-        next(
-            index.datasets.search(
-                metadata_type="spam_type",
-                platform="landsat-8",
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
+            next(
+                index.datasets.search(
+                    metadata_type="spam_type",
+                    platform="landsat-8",
+                )
             )
-        )
 
 
 def test_search_special_fields_eo3(
@@ -893,13 +899,15 @@ def test_search_special_fields_eo3(
     assert datasets[0].id == ls8_eo3_dataset.id
 
     # Unknown field: no results
-    with pytest.raises(ValueError):
-        next(
-            index.datasets.search(
-                platform="landsat-8",
-                flavour="vanilla",
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
+            next(
+                index.datasets.search(
+                    platform="landsat-8",
+                    flavour="vanilla",
+                )
             )
-        )
 
 
 def test_search_by_uri_eo3(
@@ -919,14 +927,16 @@ def test_search_by_uri_eo3(
 
 def test_search_conflicting_types(index: Index, ls8_eo3_dataset) -> None:
     # Should return no results.
-    with pytest.raises(ValueError):
-        next(
-            index.datasets.search(
-                product=ls8_eo3_dataset.product.name,
-                # The ls8 type is not of type storage_unit.
-                metadata_type="storage_unit",
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
+            next(
+                index.datasets.search(
+                    product=ls8_eo3_dataset.product.name,
+                    # The ls8 type is not of type storage_unit.
+                    metadata_type="storage_unit",
+                )
             )
-        )
 
 
 def test_fetch_all_of_md_type(index: Index, ls8_eo3_dataset: Dataset) -> None:
@@ -943,8 +953,10 @@ def test_fetch_all_of_md_type(index: Index, ls8_eo3_dataset: Dataset) -> None:
     assert results[0].id == ls8_eo3_dataset.id
 
     # No results for another.
-    with pytest.raises(ValueError):
-        next(index.datasets.search(metadata_type="spam_and_eggs"))
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
+            next(index.datasets.search(metadata_type="spam_and_eggs"))
 
 
 def test_count_searches(index: Index, ls8_eo3_dataset: Dataset) -> None:
@@ -965,10 +977,12 @@ def test_count_searches(index: Index, ls8_eo3_dataset: Dataset) -> None:
     assert datasets == 1
 
     # No results when searching for a different dataset type.
-    datasets = index.datasets.count(
-        product="spam_and_eggs", platform="landsat-8", instrument="OLI_TIRS"
-    )
-    assert datasets == 0
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
+            index.datasets.count(
+                product="spam_and_eggs", platform="landsat-8", instrument="OLI_TIRS"
+            )
 
     # One result when no types specified.
     datasets = index.datasets.count(
@@ -978,10 +992,15 @@ def test_count_searches(index: Index, ls8_eo3_dataset: Dataset) -> None:
     assert datasets == 1
 
     # No results for different metadata type.
-    datasets = index.datasets.count(
-        metadata_type="spam_and_eggs", platform="landsat-8", instrument="OLI_TIRS"
-    )
-    assert datasets == 0
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
+            datasets = index.datasets.count(
+                metadata_type="spam_and_eggs",
+                platform="landsat-8",
+                instrument="OLI_TIRS",
+            )
+            assert datasets == 0
 
 
 def test_count_by_product_searches_eo3(
@@ -1008,10 +1027,15 @@ def test_count_by_product_searches_eo3(
     assert products == ((ls8_eo3_dataset.product, 2),)
 
     # No results when searching for a different dataset type.
-    products = tuple(
-        index.datasets.count_by_product(product="spam_and_eggs", platform="landsat-8")
-    )
-    assert products == ()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
+            products = tuple(
+                index.datasets.count_by_product(
+                    product="spam_and_eggs", platform="landsat-8"
+                )
+            )
+            assert products == ()
 
     # Three results over 2 products when no types specified.
     products = set(
@@ -1022,12 +1046,15 @@ def test_count_by_product_searches_eo3(
     assert products == {(ls8_eo3_dataset.product, 2), (wo_eo3_dataset.product, 1)}
 
     # No results for different metadata type.
-    products = tuple(
-        index.datasets.count_by_product(
-            metadata_type="spam_and_eggs",
-        )
-    )
-    assert products == ()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        with pytest.raises(NoProductsWarning):
+            products = tuple(
+                index.datasets.count_by_product(
+                    metadata_type="spam_and_eggs",
+                )
+            )
+            assert products == ()
 
     index.datasets.archive([ls8_eo3_dataset.id])
     products = tuple(
@@ -1309,8 +1336,10 @@ def test_csv_search_via_cli_eo3(
         assert len(rows) == 0
 
     def no_such_product(*args) -> None:
-        with pytest.raises(ValueError):
-            _cli_csv_search(("datasets", *args), clirunner)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", NoProductsWarning)
+            with pytest.raises(NoProductsWarning):
+                _cli_csv_search(("datasets", *args), clirunner)
 
     matches_both("lat in [-40, -10]")
     matches_both("product=" + ls8_eo3_dataset.product.name)
@@ -1437,6 +1466,66 @@ def test_search_boolean_eo3(index: Index, s1_eo3_dataset) -> None:
         )
     )
     assert len(res) == 0
+
+
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
+def test_invalid_search_terms_eo3(
+    index: Index, ls8_eo3_dataset, s1_eo3_dataset
+) -> None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        # Invalid field across all products
+        with pytest.raises(NoProductsWarning) as e:
+            list(index.datasets.search(foo="bar"))
+        assert "No products match search terms" in str(e.value)
+        # Non-existent product
+        with pytest.raises(NoProductsWarning) as e:
+            list(index.datasets.search(product="foo"))
+        assert "No such product(s): foo" in str(e.value)
+        # Invalid field for product
+        with pytest.raises(NoProductsWarning) as e:
+            list(index.datasets.search(product="ga_ls8c_ard_3", instrument_mode="SM"))
+        assert "Specified products do not match search terms" in str(e.value)
+        # Invalid time range
+        with pytest.raises(ValueError) as e:
+            list(index.datasets.search(time=Range(2014, 20145)))
+        assert "Invalid value for field 'time'" in str(e.value)
+        # Range value to simple field
+        with pytest.raises(NotImplementedError):
+            list(index.datasets.search(instrument=Range(1, 2)))
+        # Valid field with invalid value type that can't be converted
+        with pytest.raises(ValueError) as e:
+            list(index.datasets.search(product="ga_ls8c_ard_3", eo_gsd="foo"))
+        assert "Invalid value for field 'eo_gsd'" in str(e.value)
+        # Invalid value type that can be converted
+        res = list(index.datasets.search(product="ga_ls8c_ard_3", eo_gsd="15.0"))
+        assert len(res)
+        res = list(index.datasets.search(instrument=1))
+        assert len(res) == 0
+
+
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
+def test_graceful_errors_cli(clirunner: Any, ls8_eo3_dataset) -> None:
+    # invalid search expression grammar
+    result = clirunner(
+        ["dataset", "search", "product in [a, b]"],
+        cli_method=datacube.scripts.cli_app.cli,
+        verbose_flag="",
+        expect_success=False,
+    )
+    assert result.exit_code == 1, f"Output: {result.output}"
+    assert "Invalid expression." in result.output
+
+    # Errors raised by invalid query terms should be handled gracefully
+    # rather than spitting out the whole stack trace
+    result = clirunner(
+        ["dataset", "count", "--query", "product=foo"],
+        cli_method=datacube.scripts.cli_app.cli,
+        verbose_flag="",
+        expect_success=False,
+    )
+    assert result.exit_code == 0, f"Output: {result.output}"
+    assert result.output == "No such product(s): foo\n"
 
 
 @pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)

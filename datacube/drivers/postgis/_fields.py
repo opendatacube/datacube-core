@@ -297,7 +297,7 @@ class SimpleDocField(PgDocField):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
-        return EqualsExpression(self, value)
+        return EqualsExpression(self, self.parse_value(value))
 
     @override
     def between(self, low, high) -> Expression:
@@ -311,6 +311,10 @@ class SimpleDocField(PgDocField):
 
     def evaluate(self, ctx):
         return self.extract(ctx)
+
+    @override
+    def parse_value(self, value) -> str:
+        return str(value)
 
 
 class UnindexableValue(Exception):  # noqa: N818
@@ -344,7 +348,7 @@ class NumericDocField(SimpleDocField):
         return RangeBetweenExpression(self, low, high, _range_class=PgRange)
 
     @override
-    def parse_value(self, value):
+    def parse_value(self, value) -> Decimal:  # type: ignore[override]
         return Decimal(value)
 
 
@@ -352,7 +356,7 @@ class IntDocField(NumericDocField):
     type_name: _AVAILABLE_TYPES = "integer"
 
     @override
-    def parse_value(self, value) -> int:
+    def parse_value(self, value) -> int:  # type: ignore[override]
         return int(value)
 
 
@@ -360,7 +364,7 @@ class DoubleDocField(NumericDocField):
     type_name: _AVAILABLE_TYPES = "double"
 
     @override
-    def parse_value(self, value) -> float:
+    def parse_value(self, value) -> float:  # type: ignore[override]
         return float(value)
 
 
@@ -383,11 +387,12 @@ class BoolDocField(SimpleDocField):
         return cast(value, postgres.BOOLEAN)
 
     @override
-    def parse_value(self, value) -> bool:
-        if value.lower() == "false":
-            return False
-        if value.lower() == "true":
-            return True
+    def parse_value(self, value) -> bool:  # type: ignore[override]
+        if isinstance(value, str):
+            if value.lower() == "false":
+                return False
+            if value.lower() == "true":
+                return True
         return bool(value)
 
     @override
@@ -439,7 +444,7 @@ class DateDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value: datetime | str) -> datetime:
+    def parse_value(self, value: datetime | str) -> datetime:  # type: ignore[override]
         return utils.parse_time(value)
 
     @property

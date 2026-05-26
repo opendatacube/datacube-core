@@ -42,6 +42,7 @@ from datacube.index.abstract import (
     DatasetSpatialMixin,
     DatasetTuple,
 )
+from datacube.index.exceptions import NoProductsWarning
 from datacube.index.postgis._transaction import IndexResourceAddIn
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, Range
@@ -910,6 +911,18 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             q["product_id"] = product.id
             yield q, product
 
+    def _empty_product_queries_reason(self, query) -> str:
+        product = query.pop("product", None)
+        if product is None:
+            return f"No products match search terms: {query!r}"
+        # If products were specified in the query but no matching products were found,
+        # it could either be because none of the products exist in the database,
+        # or because none of the products define the specified fields
+        product = [product] if isinstance(product, str) else list(product)
+        if all(self.products.get_by_name(p) is None for p in product):
+            return f"No such product(s): {(', ').join(product)}"
+        return f"Specified products do not match search terms: {query!r}"
+
     # pylint: disable=too-many-locals
     def _do_search_by_product(
         self,
@@ -927,11 +940,12 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         assert source_filter is None
         product_queries = list(self._get_product_queries(query))
         if not product_queries:
-            product = query.get("product", None)
-            if product is None:
-                raise ValueError(f"No products match search terms: {query!r}")
-            else:
-                raise ValueError(f"No such product: {product}")
+            warnings.warn(
+                self._empty_product_queries_reason(query),
+                NoProductsWarning,
+                stacklevel=2,
+            )
+            return
 
         for q, product in product_queries:
             # Extract Geospatial search geometry
@@ -975,7 +989,14 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
     def _do_count_by_product(
         self, query, archived: bool | None = False
     ) -> Generator[tuple[Product, int]]:
-        product_queries = self._get_product_queries(query)
+        product_queries = list(self._get_product_queries(query))
+        if not product_queries:
+            warnings.warn(
+                self._empty_product_queries_reason(query),
+                NoProductsWarning,
+                stacklevel=2,
+            )
+            return
 
         for q, product in product_queries:
             geom = extract_geom_from_query(**q)
@@ -1001,14 +1022,18 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         del query["time"]
 
         product_queries = list(self._get_product_queries(query))
-        if ensure_single:
-            if len(product_queries) == 0:
-                raise ValueError(f"No products match search terms: {query!r}")
-            if len(product_queries) > 1:
-                raise ValueError(
-                    "Multiple products match single query search: "
-                    f"{[dt.name for _, dt in product_queries]!r}"
-                )
+        if not product_queries:
+            warnings.warn(
+                self._empty_product_queries_reason(query),
+                NoProductsWarning,
+                stacklevel=2,
+            )
+            return
+        if ensure_single and len(product_queries) > 1:
+            raise RuntimeError(
+                "Multiple products match single query search: "
+                f"{[dt.name for _, dt in product_queries]!r}"
+            )
 
         for q, product in product_queries:
             dataset_fields = product.metadata_type.dataset_fields

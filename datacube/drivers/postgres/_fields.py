@@ -230,7 +230,7 @@ class SimpleDocField(PgDocField):
 
     @override
     def __eq__(self, value) -> Expression:  # type: ignore[override]
-        return EqualsExpression(self, value)
+        return EqualsExpression(self, self.parse_value(value))
 
     @override
     def between(self, low, high) -> Expression:
@@ -245,6 +245,10 @@ class SimpleDocField(PgDocField):
     def evaluate(self, ctx):
         return self.extract(ctx)
 
+    @override
+    def parse_value(self, value) -> str:
+        return str(value)
+
 
 class IntDocField(SimpleDocField):
     type_name: _AVAILABLE_TYPES = "integer"
@@ -258,7 +262,7 @@ class IntDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value) -> int:
+    def parse_value(self, value) -> int:  # type: ignore[override]
         return int(value)
 
 
@@ -270,11 +274,12 @@ class BoolDocField(SimpleDocField):
         return cast(value, postgres.BOOLEAN)
 
     @override
-    def parse_value(self, value) -> bool:
-        if value.lower() == "false":
-            return False
-        if value.lower() == "true":
-            return True
+    def parse_value(self, value) -> bool:  # type: ignore[override]
+        if isinstance(value, str):
+            if value.lower() == "false":
+                return False
+            if value.lower() == "true":
+                return True
         return bool(value)
 
 
@@ -290,7 +295,7 @@ class NumericDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value) -> Decimal:
+    def parse_value(self, value) -> Decimal:  # type: ignore[override]
         return Decimal(value)
 
 
@@ -306,7 +311,7 @@ class DoubleDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value) -> float:
+    def parse_value(self, value) -> float:  # type: ignore[override]
         return float(value)
 
 
@@ -332,7 +337,7 @@ class DateDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     @override
-    def parse_value(self, value: datetime | str) -> datetime:
+    def parse_value(self, value: datetime | str) -> datetime:  # type: ignore[override]
         return utils.parse_time(value)
 
     @property

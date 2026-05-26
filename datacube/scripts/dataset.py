@@ -9,6 +9,7 @@ import datetime
 import logging
 import multiprocessing
 import sys
+import warnings
 from collections import OrderedDict
 from textwrap import dedent
 from typing import Any, Literal, cast
@@ -19,7 +20,7 @@ import yaml.resolver
 from click import echo
 
 from datacube.index.abstract import DatasetTuple
-from datacube.index.exceptions import MissingRecordError
+from datacube.index.exceptions import MissingRecordError, NoProductsWarning
 from datacube.index.hl import Doc2Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli, print_help_msg
@@ -659,8 +660,19 @@ def search_cmd(index: Index, limit: int, f: str, expressions) -> None:
     """
     Search available Datasets
     """
-    datasets = index.datasets.search(limit=limit, **expressions)
-    _OUTPUT_WRITERS[f](build_dataset_info(index, dataset) for dataset in datasets)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", NoProductsWarning)
+        try:
+            datasets = index.datasets.search(limit=limit, **expressions)
+            _OUTPUT_WRITERS[f](
+                build_dataset_info(index, dataset) for dataset in datasets
+            )
+        except (NotImplementedError, ValueError, RuntimeError) as e:
+            echo(str(e), err=True)
+            sys.exit(1)
+        # Print warning message for empty result cleanly bit don't return an error code
+        except NoProductsWarning as w:
+            echo(str(w))
 
 
 def _get_derived_set(index: Index, id_: UUID) -> set[Dataset]:
@@ -718,7 +730,7 @@ def uri_search_cmd(index: Index, paths: list[str], search_mode) -> None:
 
         \b
         Sample usage syntax:
-        datacube dataset count --period "1 year" --query "time in [2020, 2023]" --query "region=\"101010\"" product_name
+        datacube dataset count --period "1 year" --query "time in [2020, 2023] region=\"101010\"" product_name
         """),
 )
 @click.option(
@@ -781,35 +793,61 @@ def count_cmd(
             sys.exit(1)
 
         results = []
-        for product, series in index.datasets.count_by_product_through_time(
-            period, archived, **query
-        ):
-            for timerange, count in series:
-                results.append(
-                    OrderedDict(
-                        (
-                            ("product", product.name),
-                            ("time", tz_as_utc(timerange[0]).strftime("%Y-%m-%d")),
-                            ("count", count),
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", NoProductsWarning)
+            try:
+                for product, series in index.datasets.count_by_product_through_time(
+                    period, archived, **query
+                ):
+                    for timerange, count in series:
+                        results.append(
+                            OrderedDict(
+                                (
+                                    ("product", product.name),
+                                    (
+                                        "time",
+                                        tz_as_utc(timerange[0]).strftime("%Y-%m-%d"),
+                                    ),
+                                    ("count", count),
+                                )
+                            )
                         )
-                    )
-                )
+            except (NotImplementedError, ValueError) as e:
+                echo(str(e), err=True)
+                sys.exit(1)
+            except NoProductsWarning as w:
+                echo(str(w))
+                sys.exit(0)
 
         _OUTPUT_WRITERS[f](results, fields=["product", "time", "count"])
 
     else:
-        if count_only:
-            echo(index.datasets.count(archived, **query))
-        else:
-            _OUTPUT_WRITERS[f](
-                (
-                    OrderedDict((("product", product.name), ("count", count)))
-                    for product, count in index.datasets.count_by_product(
-                        archived, **query
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", NoProductsWarning)
+            if count_only:
+                try:
+                    echo(index.datasets.count(archived, **query))
+                except (NotImplementedError, ValueError) as e:
+                    echo(str(e), err=True)
+                    sys.exit(1)
+                except NoProductsWarning as w:
+                    echo(str(w))
+            else:
+                try:
+                    _OUTPUT_WRITERS[f](
+                        (
+                            OrderedDict((("product", product.name), ("count", count)))
+                            for product, count in index.datasets.count_by_product(
+                                archived, **query
+                            )
+                        ),
+                        fields=["product", "count"],
                     )
-                ),
-                fields=["product", "count"],
-            )
+                except (NotImplementedError, ValueError) as e:
+                    echo(str(e), err=True)
+                    sys.exit(1)
+                except NoProductsWarning as w:
+                    echo(str(w))
 
 
 @dataset_cmd.command("archive", help="Archive datasets")
@@ -856,12 +894,21 @@ def archive_cmd(
         )
     else:
         if query:
-            found = [
-                ds.id  # type: ignore[attr-defined]
-                for ds in index.datasets.search_returning(
-                    field_names=["id"], archived=None, **query
-                )
-            ]
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", NoProductsWarning)
+                try:
+                    found = [
+                        ds.id  # type: ignore[attr-defined]
+                        for ds in index.datasets.search_returning(
+                            field_names=["id"], archived=None, **query
+                        )
+                    ]
+                except (NotImplementedError, ValueError, RuntimeError) as e:
+                    echo(str(e), err=True)
+                    sys.exit(1)
+                except NoProductsWarning as w:
+                    echo(str(w))
+                    sys.exit(0)
             if not found:
                 echo("No datasets found with the query terms")
                 sys.exit(0)

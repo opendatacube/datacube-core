@@ -22,7 +22,11 @@ from datacube.utils.uris import split_uri
 
 def _assert_same(obj1, obj2) -> None:
     assert obj1.__class__ == obj2.__class__
-    assert obj1.__dict__ == obj2.__dict__
+    if isinstance(obj1, RangeDocField):
+        assert obj1.lower.__dict__ == obj2.lower.__dict__
+        assert obj1.greater.__dict__ == obj2.greater.__dict__
+    else:
+        assert obj1.__dict__ == obj2.__dict__
 
 
 def test_split_uri() -> None:
