@@ -1528,6 +1528,7 @@ def test_graceful_errors_cli(clirunner: Any, ls8_eo3_dataset) -> None:
     assert result.output == "No such product(s): foo\n"
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
 def test_shared_lineage_api(
     index: Index, ls8_eo3_dataset, wo_eo3_dataset, fc_eo3_dataset
 ) -> None:
