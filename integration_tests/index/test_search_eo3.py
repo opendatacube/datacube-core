@@ -1437,3 +1437,13 @@ def test_search_boolean_eo3(index: Index, s1_eo3_dataset) -> None:
         )
     )
     assert len(res) == 0
+
+
+@pytest.mark.parametrize("db_tz", ("UTC",), indirect=True)
+def test_shared_lineage_api(
+    index: Index, ls8_eo3_dataset, wo_eo3_dataset, fc_eo3_dataset
+) -> None:
+    derived = index.lineage.get_derived_ids(ls8_eo3_dataset.id)
+    assert derived == {"ard": [wo_eo3_dataset.id, fc_eo3_dataset.id]}
+    sources = index.lineage.get_source_ids(wo_eo3_dataset.id)
+    assert sources == {"ard": [ls8_eo3_dataset.id]}

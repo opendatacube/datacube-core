@@ -49,7 +49,7 @@ from datacube.drivers.common_psql import (
 )
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.fields import NotExpression, OrExpression
-from datacube.model import Range
+from datacube.model import LineageRelation, Range
 from datacube.utils.uris import split_uri
 
 from . import _dynamic as dynamic
@@ -67,6 +67,7 @@ from ._schema import DATASET, DATASET_LOCATION, DATASET_SOURCE, METADATA_TYPE, P
 TYPE_CHECKING = False
 if TYPE_CHECKING:
     import datetime
+    import uuid
     from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 
     from sqlalchemy import Connection, FromClause, Label, RootTransaction, Select
@@ -440,6 +441,26 @@ class PostgresDbAPI:
             )
             .where(DATASET_SOURCE.c.source_dataset_ref == dataset_id)
         )
+
+    def get_derived_relations(self, dataset_id: uuid.UUID) -> list[LineageRelation]:
+        return [
+            LineageRelation(classifier=c, source_id=dataset_id, derived_id=d)
+            for c, d in self.stream_query(
+                select(DATASET_SOURCE.c.classifier, DATASET_SOURCE.c.dataset_ref).where(
+                    DATASET_SOURCE.c.source_dataset_ref == dataset_id
+                )
+            )
+        ]
+
+    def get_source_relations(self, dataset_id: uuid.UUID) -> list[LineageRelation]:
+        return [
+            LineageRelation(classifier=c, source_id=s, derived_id=dataset_id)
+            for c, s in self.stream_query(
+                select(
+                    DATASET_SOURCE.c.classifier, DATASET_SOURCE.c.source_dataset_ref
+                ).where(DATASET_SOURCE.c.dataset_ref == dataset_id)
+            )
+        ]
 
     def get_dataset_sources(self, dataset_id: DSID) -> Sequence:
         # recursively build the list of (dataset_ref, source_dataset_ref) pairs starting from dataset_id

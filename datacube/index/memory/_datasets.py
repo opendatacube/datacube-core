@@ -44,6 +44,7 @@ if TYPE_CHECKING:
 
     from datacube.index.abstract import AbstractIndex
     from datacube.model._base import DSID, QueryField
+    from datacube.model.lineage import Eo3LineageDict
     from datacube.utils.changes import AllowPolicy, Change, Offset
     from datacube.utils.documents import JsonDict
 
@@ -1037,6 +1038,18 @@ class DatasetResource(AbstractDatasetResource):
 
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
 
+    def _get_derived_ids(self, id_: UUID) -> Eo3LineageDict:
+        return {
+            classifier: [did]
+            for classifier, did in self._derivations.get(id_, {}).items()
+        }
+
+    def _get_source_ids(self, id_: UUID) -> Eo3LineageDict:
+        return {
+            classifier: [sid]
+            for classifier, sid in self._derived_from.get(id_, {}).items()
+        }
+
 
 class LineageResource(NoLineageResource):
     """
@@ -1051,3 +1064,11 @@ class LineageResource(NoLineageResource):
     @override
     def _add_batch(self, batch_rels: Iterable[LineageRelation]) -> BatchStatus:
         return self._index.datasets._add_lineage_batch(batch_rels)
+
+    @override
+    def get_derived_ids(self, id_: DSID) -> Eo3LineageDict:
+        return self._index.datasets._get_derived_ids(dsid_to_uuid(id_))
+
+    @override
+    def get_source_ids(self, id_: DSID) -> Eo3LineageDict:
+        return self._index.datasets._get_source_ids(dsid_to_uuid(id_))

@@ -1,0 +1,43 @@
+name: ga_ls_fc_3
+license: CC-BY-4.0
+metadata_type: eo3
+description: Geoscience Australia Landsat Fractional Cover Collection 3
+metadata:
+  product:
+    name: ga_ls_fc_3
+  properties:
+    odc:file_format: GeoTIFF
+    odc:product_family: fc
+measurements:
+- name: bs
+  dtype: uint8
+  units: percent
+  nodata: 255
+  aliases:
+  - bare
+- name: pv
+  dtype: uint8
+  units: percent
+  nodata: 255
+  aliases:
+  - green_veg
+- name: npv
+  dtype: uint8
+  units: percent
+  nodata: 255
+  aliases:
+  - dead_veg
+- name: ue
+  dtype: uint8
+  units: '1'
+  nodata: 255
+  aliases:
+  - err
+load:
+  crs: EPSG:3577
+  align:
+    x: 0
+    y: 0
+  resolution:
+    x: 30
+    y: -30
