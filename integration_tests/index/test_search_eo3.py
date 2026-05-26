@@ -914,10 +914,9 @@ def test_count_searches(index: Index, ls8_eo3_dataset: Dataset) -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("error", NoProductsWarning)
         with pytest.raises(NoProductsWarning):
-            datasets = index.datasets.count(
+            index.datasets.count(
                 product="spam_and_eggs", platform="landsat-8", instrument="OLI_TIRS"
             )
-            assert datasets == 0
 
     # One result when no types specified.
     datasets = index.datasets.count(
@@ -1446,7 +1445,7 @@ def test_graceful_errors_cli(clirunner: Any, ls8_eo3_dataset) -> None:
         verbose_flag="",
         expect_success=False,
     )
-    assert result.exit_code == 1
+    assert result.exit_code == 1, f"Output: {result.output}"
     assert "Invalid expression." in result.output
 
     # Errors raised by invalid query terms should be handled gracefully
@@ -1457,5 +1456,5 @@ def test_graceful_errors_cli(clirunner: Any, ls8_eo3_dataset) -> None:
         verbose_flag="",
         expect_success=False,
     )
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
     assert result.output == "No such product(s): foo\n"
