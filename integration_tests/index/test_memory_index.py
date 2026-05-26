@@ -313,6 +313,10 @@ def test_mem_ds_lineage(mem_eo3_data: tuple) -> None:
     assert len(derived) == 1
     assert derived[0].id == wo_id
     assert "cloud_cover" in dc.index.products.get_field_names(ls8_ds.product)
+    derived = dc.index.lineage.get_derived_ids(ls8_id)
+    assert derived == {"ard": [wo_id]}
+    sources = dc.index.lineage.get_source_ids(wo_id)
+    assert sources == {"ard": [ls8_id]}
 
 
 def test_mem_ds_search_dups(mem_eo3_data: tuple) -> None:

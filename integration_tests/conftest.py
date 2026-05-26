@@ -108,6 +108,7 @@ def ext_eo3_mdt_path() -> str:
 def eo3_product_paths() -> list[str]:
     return [
         str(EO3_TESTDIR / "ard_ls8.odc-product.yaml"),
+        str(EO3_TESTDIR / "ga_ls_fc_3.odc-product.yaml"),
         str(EO3_TESTDIR / "ga_ls_wo_3.odc-product.yaml"),
         str(EO3_TESTDIR / "s2_africa_product.yaml"),
     ]
@@ -186,6 +187,15 @@ def eo3_wo_dataset_doc() -> tuple[dict, str]:
 
 
 @pytest.fixture
+def eo3_fc_dataset_doc() -> tuple[dict, str]:
+    return (
+        get_eo3_test_data_doc("fc_dataset.yaml"),
+        "s3://dea-public-data/derivative/ga_ls_fc_3/1-6-0/090/086/2016/05/12/"
+        "ga_ls_fc_3_090086_2016-05-12_final.stac-item.json",
+    )
+
+
+@pytest.fixture
 def eo3_africa_dataset_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("s2_africa_dataset.yaml"),
@@ -251,6 +261,11 @@ def extended_eo3_product_doc() -> dict:
 @pytest.fixture
 def base_eo3_product_doc() -> dict:
     return get_eo3_test_data_doc("ga_ls_wo_3.odc-product.yaml")
+
+
+@pytest.fixture
+def base_eo3_product2_doc() -> dict:
+    return get_eo3_test_data_doc("ga_ls_fc_3.odc-product.yaml")
 
 
 @pytest.fixture
@@ -412,6 +427,13 @@ def wo_eo3_product(index: Index, base_eo3_product_doc) -> Product:
 
 
 @pytest.fixture
+def fc_eo3_product(index: Index, base_eo3_product2_doc) -> Product:
+    p = index.products.add_document(base_eo3_product2_doc)
+    assert p is not None
+    return p
+
+
+@pytest.fixture
 def africa_s2_eo3_product(index: Index, africa_s2_product_doc) -> Product:
     p = index.products.add_document(africa_s2_product_doc)
     assert p is not None
@@ -441,12 +463,15 @@ def eo3_products(
     ls8_eo3_product,
     ls8_lvl1_eo3_product,
     africa_s2_eo3_product,
+    wo_eo3_product,
+    fc_eo3_product,
 ):
     return [
         africa_s2_eo3_product,
         ls8_eo3_product,
         wo_eo3_product,
         ls8_lvl1_eo3_product,
+        fc_eo3_product,
     ]
 
 
@@ -483,6 +508,13 @@ def wo_eo3_dataset(
     index: Index, wo_eo3_product, eo3_wo_dataset_doc, ls8_eo3_dataset
 ) -> Dataset:
     return doc_to_ds(index, wo_eo3_product.name, *eo3_wo_dataset_doc)
+
+
+@pytest.fixture
+def fc_eo3_dataset(
+    index: Index, fc_eo3_product, eo3_fc_dataset_doc, ls8_eo3_dataset
+) -> Dataset:
+    return doc_to_ds(index, fc_eo3_product.name, *eo3_fc_dataset_doc)
 
 
 @pytest.fixture
