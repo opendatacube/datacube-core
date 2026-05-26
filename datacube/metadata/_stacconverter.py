@@ -291,7 +291,7 @@ def ds2stac(
                 dataset.grids, measurement.get("grid", "default")
             )
             if proj_fields:
-                proj = ProjectionExtension.ext(asset)  # type: ignore[arg-type]
+                proj = ProjectionExtension.ext(asset)
                 proj.apply(
                     shape=proj_fields["shape"],
                     transform=proj_fields["transform"],

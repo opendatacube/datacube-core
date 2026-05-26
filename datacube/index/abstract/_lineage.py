@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
     from datacube.model import LineageDirection, LineageRelation, LineageTree
     from datacube.model._base import DSID
-    from datacube.model.lineage import LineageRelations
+    from datacube.model.lineage import Eo3LineageDict, LineageRelations
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -61,6 +61,15 @@ class AbstractLineageResource(ABC):
         :return: A derived-direction Lineage tree with id at the root.
         """
 
+    def get_derived_ids(self, id_: DSID) -> Eo3LineageDict:
+        """
+        Return the derived ids of a dataset.
+
+        :param id\\_: The ID of the dataset to get the derived ids of.
+        :return: An EO3-style lineage dict.
+        """
+        return self.get_derived_tree(id_, max_depth=1).to_eo3_doc()
+
     @abstractmethod
     def get_source_tree(self, id_: DSID, max_depth: int = 0) -> LineageTree:
         """
@@ -75,6 +84,15 @@ class AbstractLineageResource(ABC):
         :param max_depth: Maximum recursion depth.  Default/Zero = unlimited depth
         :return: A source-direction Lineage tree with id at the root.
         """
+
+    def get_source_ids(self, id_: DSID) -> Eo3LineageDict:
+        """
+        Return the derived ids of a dataset.
+
+        :param id\\_: The ID of the dataset to get the derived ids of.
+        :return: An EO3-style lineage dict.
+        """
+        return self.get_source_tree(id_, max_depth=1).to_eo3_doc()
 
     @abstractmethod
     def merge(

@@ -10,11 +10,15 @@ from typing_extensions import override
 
 from datacube.index.abstract import BatchStatus, NoLineageResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
-from datacube.model import LineageRelation
+from datacube.model import LineageRelation, dsid_to_uuid
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
     from collections.abc import Iterable
+    from uuid import UUID
+
+    from datacube.model import DSID
+    from datacube.model.lineage import Eo3LineageDict
 
 
 class LineageResource(NoLineageResource, IndexResourceAddIn):
@@ -43,3 +47,24 @@ class LineageResource(NoLineageResource, IndexResourceAddIn):
                 ]
             )
         return BatchStatus(b_added, b_skipped, monotonic() - b_started)
+
+    @override
+    def get_derived_ids(self, id_: DSID) -> Eo3LineageDict:
+        lineage: dict[str, list[UUID]] = {}
+        with self._db_connection() as connection:
+            for rel in connection.get_derived_relations(dsid_to_uuid(id_)):
+                if deriveds := lineage.get(rel.classifier):
+                    deriveds.append(rel.derived_id)
+                else:
+                    lineage[rel.classifier] = [rel.derived_id]
+        return lineage
+
+    @override
+    def get_source_ids(self, id_: DSID) -> Eo3LineageDict:
+        lineage: dict[str, list[UUID]] = {}
+        with self._db_connection() as connection:
+            for rel in connection.get_source_relations(dsid_to_uuid(id_)):
+                # Lineage rewriting forces single source per classifier in postgres driver
+                assert rel.classifier not in lineage, "Lineage rewrite error"
+                lineage[rel.classifier] = [rel.source_id]
+        return lineage

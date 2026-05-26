@@ -223,12 +223,23 @@ remaining configuration options only apply to the ``postgres`` and
 
    **Only used for the 'postgres' and 'postgis' index drivers.**
 
-   The database connection timeout, in seconds.
+   The database idle connection timeout, in seconds.
 
    Connections in the connection pool that are idle for more than the
    configured timeout are automatically closed.
 
    Defaults to 60.
+
+.. confval:: db_query_timeout
+
+   **Only used for the 'postgres' and 'postgis' index drivers.**
+
+   The database query timeout, in milliseconds.
+
+   Queries that take longer than the configured timeout will be cancelled and raise a
+   ``datacube.index.exceptions.QueryTimeout`` exception.
+
+   Defaults to 0, indicating no timeout.
 
 .. confval:: db_url
 

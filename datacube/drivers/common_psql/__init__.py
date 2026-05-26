@@ -15,11 +15,14 @@ from ._perms import (
     has_roles,
 )
 from ._schema import create_schema, drop_schema, has_schema
+from ._timeout import catch_generator_timeout, catch_timeout
 from ._utils import as_role, ensure_extension, escape_pg_identifier, get_connection_info
 
 __all__ = [
     "UserRoleBase",
     "as_role",
+    "catch_generator_timeout",
+    "catch_timeout",
     "create_schema",
     "create_user",
     "drop_schema",

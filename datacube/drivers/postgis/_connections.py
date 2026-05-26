@@ -25,6 +25,7 @@ from sqlalchemy import create_engine, event
 from typing_extensions import override
 
 import datacube
+from datacube.drivers.common_psql import catch_timeout
 from datacube.index.exceptions import IndexSetupError, NoIndexError
 from datacube.utils import json, jsonify_document
 
@@ -106,6 +107,7 @@ class PostGisDb:
             config_env.db_iam_authentication,
             config_env.db_iam_timeout if config_env.db_iam_authentication else 600,
             config_env.db_connection_timeout,
+            config_env.db_query_timeout,
         )
         if validate:
             if not _core.database_exists(engine):
@@ -131,8 +133,12 @@ class PostGisDb:
         iam_rds_auth: bool = False,
         iam_rds_timeout: float | int = 600,
         pool_timeout: int = 60,
+        query_timeout: int = 0,
     ) -> Engine:
         connect_args: dict[str, Any] = {"application_name": application_name}
+        if query_timeout:
+            # Query timeout, in milliseconds.
+            connect_args["options"] = f"-c statement_timeout={query_timeout}"
         if str(url).startswith("postgresql+psycopg://"):
             try:
                 from psycopg import ClientCursor
@@ -223,6 +229,7 @@ class PostGisDb:
             )
         return full_name[-64:]
 
+    @catch_timeout
     def init(self, with_permissions: bool = True) -> bool:
         """
         Init a new database (if not already set up).

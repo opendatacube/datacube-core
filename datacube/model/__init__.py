@@ -1509,9 +1509,9 @@ class ExtraDimensions:
         if self.dims is not None:
             for dim in self.dims.values():
                 name = dim.get("name")
-                names += (name,)  # type: ignore[assignment]
-                shapes += (len(self.measurements_values(name)),)  # type: ignore[assignment,arg-type]
-        return names, shapes
+                names += (name,)
+                shapes += (len(self.measurements_values(name)),)  # type: ignore[arg-type,operator]
+        return names, shapes  # type: ignore[return-value]
 
     @override
     def __str__(self) -> str:

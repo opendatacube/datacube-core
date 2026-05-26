@@ -29,7 +29,7 @@ dependencies = [
     'alembic',
     'antimeridian<0.4.5', # All test_index_cloning tests fail with 0.4.5.
     'cachetools',
-    'click>=8.2',  # Support for deprecated argument on options
+    'click>=8.2,<8.4',  # Support for deprecated argument on options. ClickRunner tests failing with 8.4
     'dask[array]',
     'deprecat',
     'distributed',
@@ -250,7 +250,7 @@ include = ['datacube*']
 
 [tool.setuptools_scm]
 write_to = 'datacube/_version.py'
-fallback_version = "1.9.18"
+fallback_version = "1.9.19"
 
 [tool.ty.src]
 include = ["datacube", "examples", "integration_tests", "tests"]

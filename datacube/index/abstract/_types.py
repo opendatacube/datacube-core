@@ -16,7 +16,7 @@ from datacube.migration import ODC2DeprecationWarning
 # Product required for Sphinx's documentation plugin for named tuples.
 from datacube.model import (
     Dataset,
-    Product,  # noqa: TC001
+    Product,
 )
 from datacube.model.lineage import Eo3LineageDict  # noqa: TC001
 

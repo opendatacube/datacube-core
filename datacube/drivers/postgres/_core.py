@@ -16,6 +16,7 @@ from typing_extensions import Self, override
 from datacube.drivers.common_psql import (
     UserRoleBase,
     as_role,
+    catch_timeout,
     create_schema,
     ensure_role,
     get_connection_info,
@@ -232,6 +233,7 @@ def ensure_db(engine, with_permissions: bool = True) -> bool:
     return is_new
 
 
+@catch_timeout
 def database_exists(engine) -> bool:
     """
     Have they init'd this database? (Thin wrapper around ``has_schema()``)

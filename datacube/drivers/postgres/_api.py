@@ -39,10 +39,17 @@ from sqlalchemy.dialects.postgresql import INTERVAL, JSONB, UUID, insert
 from sqlalchemy.exc import IntegrityError
 from typing_extensions import override
 
-from datacube.drivers.common_psql import create_user, drop_users, grant_role, has_role
+from datacube.drivers.common_psql import (
+    catch_generator_timeout,
+    catch_timeout,
+    create_user,
+    drop_users,
+    grant_role,
+    has_role,
+)
 from datacube.index.exceptions import MissingRecordError
 from datacube.index.fields import NotExpression, OrExpression
-from datacube.model import Range
+from datacube.model import LineageRelation, Range
 from datacube.utils.uris import split_uri
 
 from . import _dynamic as dynamic
@@ -60,7 +67,8 @@ from ._schema import DATASET, DATASET_LOCATION, DATASET_SOURCE, METADATA_TYPE, P
 TYPE_CHECKING = False
 if TYPE_CHECKING:
     import datetime
-    from collections.abc import Iterable, Iterator, Mapping, Sequence
+    import uuid
+    from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 
     from sqlalchemy import Connection, FromClause, Label, RootTransaction, Select
     from sqlalchemy.engine import Row
@@ -223,8 +231,29 @@ class PostgresDbAPI:
         self._sqla_txn.rollback()  # type: ignore[union-attr]
         self._end_transaction()
 
-    def execute(self, command):
+    @catch_generator_timeout
+    def stream_query(self, command, batch_size=0):
+        # For select queries whose results may be streamed
+        if batch_size:
+            return self._connection.execution_options(
+                stream_results=True, yield_per=batch_size
+            ).execute(command)
         return self._connection.execute(command)
+
+    @catch_timeout
+    def run_query(self, command):
+        # For eager queries whose results are fetched up front
+        return list(self._connection.execute(command).fetchall())
+
+    @catch_timeout
+    def run_scalar_query(self, command):
+        # For queries returning a single scalar value
+        return self._connection.execute(command).scalar()
+
+    @catch_timeout
+    def execute(self, command, args=None):
+        # For DDL and DML commands.
+        return self._connection.execute(command, args)
 
     def insert_dataset(self, metadata_doc, dataset_id, product_id) -> bool:
         """
@@ -232,7 +261,7 @@ class PostgresDbAPI:
         :return: whether it was inserted
         """
         dataset_type_ref: Any = bindparam("dataset_type_ref")
-        ret = self._connection.execute(
+        ret = self.execute(
             insert(DATASET)
             .from_select(
                 ["id", "dataset_type_ref", "metadata_type_ref", "metadata"],
@@ -256,14 +285,14 @@ class PostgresDbAPI:
 
     def insert_dataset_bulk(self, values) -> tuple:
         requested = len(values)
-        res = self._connection.execute(insert(DATASET), values)
+        res = self.execute(insert(DATASET), values)
         return res.rowcount, requested - res.rowcount
 
     def update_dataset(self, metadata_doc, dataset_id, product_id) -> bool:
         """
         Update dataset
         """
-        res = self._connection.execute(
+        res = self.execute(
             DATASET.update()
             .returning(DATASET.c.id)
             .where(
@@ -283,7 +312,7 @@ class PostgresDbAPI:
         """
         scheme, body = split_uri(uri)
 
-        r = self._connection.execute(
+        r = self.execute(
             insert(DATASET_LOCATION).on_conflict_do_nothing(
                 index_elements=["uri_scheme", "uri_body", "dataset_ref"]
             ),
@@ -298,23 +327,21 @@ class PostgresDbAPI:
 
     def insert_dataset_location_bulk(self, values) -> tuple:
         requested = len(values)
-        res = self._connection.execute(insert(DATASET_LOCATION), values)
+        res = self.execute(insert(DATASET_LOCATION), values)
         return res.rowcount, requested - res.rowcount
 
     def contains_dataset(self, dataset_id) -> bool:
         return bool(
-            self._connection.execute(
-                select(DATASET.c.id).where(DATASET.c.id == dataset_id)
-            ).fetchone()
+            self.run_query(select(DATASET.c.id).where(DATASET.c.id == dataset_id))
         )
 
     def datasets_intersection(self, dataset_ids) -> list:
         """Compute set intersection: db_dataset_ids & dataset_ids"""
         return [
             r[0]
-            for r in self._connection.execute(
+            for r in self.run_query(
                 select(DATASET.c.id).where(DATASET.c.id.in_(dataset_ids))
-            ).fetchall()
+            )
         ]
 
     def get_datasets_for_location(self, uri: str, mode: SearchMode | None = None):
@@ -330,11 +357,11 @@ class PostgresDbAPI:
         else:
             raise ValueError(f"Unsupported query mode {mode}")
 
-        return self._connection.execute(
+        return self.run_query(
             select(*_DATASET_SELECT_FIELDS)
             .select_from(DATASET_LOCATION.join(DATASET))
             .where(and_(DATASET_LOCATION.c.uri_scheme == scheme, body_query))
-        ).fetchall()
+        )
 
     def all_dataset_ids(self, archived: bool | None = False):
         query = select(DATASET.c.id).select_from(DATASET)
@@ -342,13 +369,13 @@ class PostgresDbAPI:
             query = query.where(DATASET.c.archived.is_not(None))
         elif archived is not None:
             query = query.where(DATASET.c.archived.is_(None))
-        return self._connection.execute(query).fetchall()
+        return self.run_query(query)
 
     def insert_dataset_source(
         self, classifier, dataset_id: DSID, source_dataset_id: DSID
     ) -> bool:
         try:
-            r = self._connection.execute(
+            r = self.execute(
                 insert(DATASET_SOURCE).on_conflict_do_nothing(
                     index_elements=["classifier", "dataset_ref"]
                 ),
@@ -370,7 +397,7 @@ class PostgresDbAPI:
             raise
 
     def archive_dataset(self, dataset_id: DSID) -> None:
-        self._connection.execute(
+        self.execute(
             DATASET.update()
             .where(DATASET.c.id == dataset_id)
             .where(DATASET.c.archived == None)
@@ -378,33 +405,34 @@ class PostgresDbAPI:
         )
 
     def restore_dataset(self, dataset_id: DSID) -> None:
-        self._connection.execute(
+        self.execute(
             DATASET.update().where(DATASET.c.id == dataset_id).values(archived=None)
         )
 
     def delete_dataset(self, dataset_id: DSID) -> None:
-        self._connection.execute(
+        self.execute(
             DATASET_LOCATION.delete().where(
                 DATASET_LOCATION.c.dataset_ref == dataset_id
             )
         )
-        self._connection.execute(
+        self.execute(
             DATASET_SOURCE.delete().where(DATASET_SOURCE.c.dataset_ref == dataset_id)
         )
-        self._connection.execute(DATASET.delete().where(DATASET.c.id == dataset_id))
+        self.execute(DATASET.delete().where(DATASET.c.id == dataset_id))
 
     def get_dataset(self, dataset_id: DSID):
-        return self._connection.execute(
+        ds = self.run_query(
             select(*_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
-        ).first()
+        )
+        return ds[0] if ds else None
 
-    def get_datasets(self, dataset_ids: Iterable[DSID]) -> Sequence:
-        return self._connection.execute(
+    def get_datasets(self, dataset_ids: Iterable[DSID]) -> Generator:
+        return self.stream_query(
             select(*_DATASET_SELECT_FIELDS).where(DATASET.c.id.in_(dataset_ids))
-        ).fetchall()
+        )
 
     def get_derived_datasets(self, dataset_id: DSID) -> Sequence:
-        return self._connection.execute(
+        return self.run_query(
             select(*_DATASET_SELECT_FIELDS)
             .select_from(
                 DATASET.join(
@@ -412,7 +440,27 @@ class PostgresDbAPI:
                 )
             )
             .where(DATASET_SOURCE.c.source_dataset_ref == dataset_id)
-        ).fetchall()
+        )
+
+    def get_derived_relations(self, dataset_id: uuid.UUID) -> list[LineageRelation]:
+        return [
+            LineageRelation(classifier=c, source_id=dataset_id, derived_id=d)
+            for c, d in self.stream_query(
+                select(DATASET_SOURCE.c.classifier, DATASET_SOURCE.c.dataset_ref).where(
+                    DATASET_SOURCE.c.source_dataset_ref == dataset_id
+                )
+            )
+        ]
+
+    def get_source_relations(self, dataset_id: uuid.UUID) -> list[LineageRelation]:
+        return [
+            LineageRelation(classifier=c, source_id=s, derived_id=dataset_id)
+            for c, s in self.stream_query(
+                select(
+                    DATASET_SOURCE.c.classifier, DATASET_SOURCE.c.source_dataset_ref
+                ).where(DATASET_SOURCE.c.dataset_ref == dataset_id)
+            )
+        ]
 
     def get_dataset_sources(self, dataset_id: DSID) -> Sequence:
         # recursively build the list of (dataset_ref, source_dataset_ref) pairs starting from dataset_id
@@ -468,11 +516,12 @@ class PostgresDbAPI:
             aggd.join(DATASET, DATASET.c.id == aggd.c.dataset_ref)
         )
 
-        return self._connection.execute(query).fetchall()
+        return self.run_query(query)
 
+    @catch_timeout
     def search_datasets_by_metadata(
         self, metadata: dict, archived: bool | None = False
-    ) -> Sequence:
+    ) -> Generator:
         """
         Find any datasets that have the given metadata.
         """
@@ -483,16 +532,16 @@ class PostgresDbAPI:
         elif archived is not None:
             where_clause = and_(where_clause, DATASET.c.archived.is_(None))
         query = select(*_DATASET_SELECT_FIELDS).where(where_clause)
-        return self._connection.execute(query).fetchall()
+        return self.stream_query(query)
 
-    def search_products_by_metadata(self, metadata: dict) -> Sequence:
+    def search_products_by_metadata(self, metadata: dict) -> Generator:
         """
         Find any products that have the given metadata.
         """
         # Find any products types whose metadata document contains the passed in metadata
-        return self._connection.execute(
+        return self.stream_query(
             PRODUCT.select().where(PRODUCT.c.metadata.contains(metadata))
-        ).fetchall()
+        )
 
     @staticmethod
     def _alchemify_expressions(expressions) -> list:
@@ -654,7 +703,7 @@ class PostgresDbAPI:
             archived=archived,
             order_by=order_by,
         )
-        return self._connection.execute(select_query)
+        return self.stream_query(select_query)
 
     def bulk_simple_dataset_search(self, products=None, batch_size: int = 0):
         """
@@ -677,7 +726,7 @@ class PostgresDbAPI:
                 .select_from(PRODUCT)
                 .where(PRODUCT.c.name.in_(products))
             )
-            products = [row[0] for row in self._connection.execute(query)]
+            products = [row[0] for row in self.run_query(query)]
             if not products:
                 return []
         else:
@@ -690,9 +739,7 @@ class PostgresDbAPI:
         )
         if products:
             query = query.where(DATASET.c.dataset_type_ref.in_(products))
-        return self._connection.execution_options(
-            stream_results=True, yield_per=batch_size
-        ).execute(query)
+        return self.stream_query(query, batch_size=batch_size)
 
     def get_all_lineage(self, batch_size: int):
         """
@@ -708,9 +755,7 @@ class PostgresDbAPI:
             DATASET_SOURCE.c.classifier,
             DATASET_SOURCE.c.source_dataset_ref,
         )
-        return self._connection.execution_options(
-            stream_results=True, yield_per=batch_size
-        ).execute(query)
+        return self.stream_query(query, batch_size=batch_size)
 
     def insert_lineage_bulk(self, vals) -> tuple:
         """
@@ -771,7 +816,7 @@ class PostgresDbAPI:
             .group_by(*group_expressions)
             .having(func.count(DATASET.c.id) > 1)
         )
-        return self._connection.execute(select_query)
+        return self.stream_query(select_query)
 
     def get_duplicates_with_time(
         self, match_fields: Iterable[Field], expressions: Iterable[Expression]
@@ -833,7 +878,7 @@ class PostgresDbAPI:
             .having(func.count(overlapping.c.id) > 1)
         )
 
-        return self._connection.execute(final_query)
+        return self.stream_query(final_query)
 
     def count_datasets(
         self, expressions: Iterable[Expression], archived: bool | None = False
@@ -851,7 +896,7 @@ class PostgresDbAPI:
             .select_from(self._from_expression(DATASET, expressions))
             .where(where_exprs)
         )
-        num = self._connection.scalar(select_query)
+        num = self.run_scalar_query(select_query)
         return 0 if num is None else num
 
     def count_datasets_through_time(
@@ -862,7 +907,7 @@ class PostgresDbAPI:
         time_field,
         expressions: Iterable[Expression],
     ) -> Iterator[tuple[tuple[datetime.datetime, datetime.datetime], int]]:
-        results = self._connection.execute(
+        results = self.stream_query(
             self.count_datasets_through_time_query(
                 start, end, period, time_field, expressions
             )
@@ -941,24 +986,20 @@ class PostgresDbAPI:
         return from_expression
 
     def get_product(self, id_: int):
-        return self._connection.execute(
-            PRODUCT.select().where(PRODUCT.c.id == id_)
-        ).first()
+        out = self.run_query(PRODUCT.select().where(PRODUCT.c.id == id_))
+        return out[0] if out else None
 
     def get_metadata_type(self, id_: int):
-        return self._connection.execute(
-            METADATA_TYPE.select().where(METADATA_TYPE.c.id == id_)
-        ).first()
+        out = self.run_query(METADATA_TYPE.select().where(METADATA_TYPE.c.id == id_))
+        return out[0] if out else None
 
     def get_product_by_name(self, name: str):
-        return self._connection.execute(
-            PRODUCT.select().where(PRODUCT.c.name == name)
-        ).first()
+        out = self.run_query(PRODUCT.select().where(PRODUCT.c.name == name))
+        return out[0] if out else None
 
     def get_metadata_type_by_name(self, name: str):
-        return self._connection.execute(
-            METADATA_TYPE.select().where(METADATA_TYPE.c.name == name)
-        ).first()
+        out = self.run_query(METADATA_TYPE.select().where(METADATA_TYPE.c.name == name))
+        return out[0] if out else None
 
     def insert_product(
         self,
@@ -969,7 +1010,7 @@ class PostgresDbAPI:
         definition,
         concurrently: bool = True,
     ):
-        res = self._connection.execute(
+        res = self.execute(
             PRODUCT.insert().values(
                 name=name,
                 metadata=metadata,
@@ -978,7 +1019,7 @@ class PostgresDbAPI:
             )
         )
 
-        type_id = res.inserted_primary_key[0]  # type: ignore[index]
+        type_id = res.inserted_primary_key[0]
 
         # Initialise search fields.
         self._setup_product_fields(
@@ -1000,7 +1041,7 @@ class PostgresDbAPI:
         update_metadata_type: bool = False,
         concurrently: bool = False,
     ):
-        res = self._connection.execute(
+        prod = self.run_query(
             PRODUCT.update()
             .returning(PRODUCT.c.id)
             .where(PRODUCT.c.name == name)
@@ -1009,16 +1050,14 @@ class PostgresDbAPI:
                 metadata_type_ref=metadata_type_id,
                 definition=definition,
             )
-        )
-        prod = res.first()
-        assert prod is not None
+        )[0]
         type_id = prod[0]
 
         if update_metadata_type:
             if not self._connection.in_transaction():
                 raise RuntimeError("Must update metadata types in transaction")
 
-            self._connection.execute(
+            self.execute(
                 DATASET.update()
                 .where(DATASET.c.dataset_type_ref == type_id)
                 .values(
@@ -1038,11 +1077,9 @@ class PostgresDbAPI:
         return type_id
 
     def delete_product(self, name: str, fields, definition):
-        res = self._connection.execute(
+        prod = self.run_query(
             PRODUCT.delete().returning(PRODUCT.c.id).where(PRODUCT.c.name == name)
-        )
-        prod = res.first()
-        assert prod is not None
+        )[0]
         type_id = prod[0]
 
         # Update dynamic fields to remove deleted product fields
@@ -1060,24 +1097,22 @@ class PostgresDbAPI:
     def insert_metadata_type(
         self, name: str, definition, concurrently: bool = False
     ) -> None:
-        res = self._connection.execute(
+        res = self.execute(
             METADATA_TYPE.insert().values(name=name, definition=definition)
         )
-        type_id = res.inserted_primary_key[0]  # type: ignore[index]
+        type_id = res.inserted_primary_key[0]
 
         self._setup_metadata_type_fields(
             type_id, name, definition, concurrently=concurrently
         )
 
     def update_metadata_type(self, name: str, definition, concurrently: bool = False):
-        res = self._connection.execute(
+        prod = self.run_query(
             METADATA_TYPE.update()
             .returning(METADATA_TYPE.c.id)
             .where(METADATA_TYPE.c.name == name)
             .values(name=name, definition=definition)
-        )
-        prod = res.first()
-        assert prod is not None
+        )[0]
         type_id = prod[0]
 
         self._setup_metadata_type_fields(
@@ -1112,6 +1147,7 @@ class PostgresDbAPI:
                 concurrently=concurrently,
             )
 
+    @catch_timeout
     def _setup_metadata_type_fields(
         self,
         id_,
@@ -1151,6 +1187,7 @@ class PostgresDbAPI:
                 concurrently=concurrently,
             )
 
+    @catch_timeout
     def _setup_product_fields(
         self,
         id_,
@@ -1196,34 +1233,32 @@ class PostgresDbAPI:
                     continue
 
     def get_all_products(self) -> Sequence:
-        return self._connection.execute(
-            PRODUCT.select().order_by(PRODUCT.c.name.asc())
-        ).fetchall()
+        return self.run_query(PRODUCT.select().order_by(PRODUCT.c.name.asc()))
 
     def get_all_product_docs(self):
-        return self._connection.execute(select(PRODUCT.c.definition))
+        return self.stream_query(select(PRODUCT.c.definition))
 
     def _get_products_for_metadata_type(self, id_: int) -> Sequence:
-        return self._connection.execute(
+        return self.run_query(
             PRODUCT.select()
             .where(PRODUCT.c.metadata_type_ref == id_)
             .order_by(PRODUCT.c.name.asc())
-        ).fetchall()
+        )
 
     def get_all_metadata_types(self) -> Sequence:
-        return self._connection.execute(
+        return self.run_query(
             METADATA_TYPE.select().order_by(METADATA_TYPE.c.name.asc())
-        ).fetchall()
+        )
 
     def get_all_metadata_type_docs(self):
-        return self._connection.execute(select(METADATA_TYPE.c.definition))
+        return self.run_query(select(METADATA_TYPE.c.definition))
 
     def get_all_metadata_defs(self) -> list:
         return [
             r[0]
-            for r in self._connection.execute(
+            for r in self.run_query(
                 select(METADATA_TYPE.c.definition).order_by(METADATA_TYPE.c.name.asc())
-            ).fetchall()
+            )
         ]
 
     def temporal_extent_by_product(
@@ -1247,23 +1282,23 @@ class PostgresDbAPI:
             selection="greatest",
         )
 
-        res = self._connection.execute(
+        res = self.run_query(
             select(
                 func.min(time_min.alchemy_expression),
                 func.max(time_max.alchemy_expression),
             ).where(DATASET.c.dataset_type_ref == product_id)
-        ).first()
+        )
 
-        if res is None:
+        if not res:
             raise RuntimeError(
                 "Product has no datasets and therefore no temporal extent"
             )
-        return res  # type: ignore[return-value]
+        return res[0]
 
     def get_locations(self, dataset_id) -> list:
         return [
             record[0]
-            for record in self._connection.execute(
+            for record in self.run_query(
                 select(_dataset_uri_field(DATASET_LOCATION))
                 .where(
                     and_(
@@ -1272,7 +1307,7 @@ class PostgresDbAPI:
                     )
                 )
                 .order_by(DATASET_LOCATION.c.added.desc(), DATASET_LOCATION.c.id.desc())
-            ).fetchall()
+            )
         ]
 
     def get_archived_locations(self, dataset_id) -> list:
@@ -1281,7 +1316,7 @@ class PostgresDbAPI:
         """
         return [
             (location_uri, archived_time)
-            for location_uri, archived_time in self._connection.execute(
+            for location_uri, archived_time in self.run_query(
                 select(
                     _dataset_uri_field(DATASET_LOCATION), DATASET_LOCATION.c.archived
                 )
@@ -1292,7 +1327,7 @@ class PostgresDbAPI:
                     )
                 )
                 .order_by(DATASET_LOCATION.c.added.desc())
-            ).fetchall()
+            )
         ]
 
     def remove_location(self, dataset_id, uri: str) -> bool:
@@ -1302,7 +1337,7 @@ class PostgresDbAPI:
         :returns bool: Was the location deleted?
         """
         scheme, body = split_uri(uri)
-        res = self._connection.execute(
+        res = self.execute(
             delete(DATASET_LOCATION).where(
                 and_(
                     DATASET_LOCATION.c.dataset_ref == dataset_id,
@@ -1315,7 +1350,7 @@ class PostgresDbAPI:
 
     def archive_location(self, dataset_id, uri: str) -> bool:
         scheme, body = split_uri(uri)
-        res = self._connection.execute(
+        res = self.execute(
             DATASET_LOCATION.update()
             .where(
                 and_(
@@ -1331,7 +1366,7 @@ class PostgresDbAPI:
 
     def restore_location(self, dataset_id, uri: str) -> bool:
         scheme, body = split_uri(uri)
-        res = self._connection.execute(
+        res = self.execute(
             DATASET_LOCATION.update()
             .where(
                 and_(
@@ -1349,8 +1384,8 @@ class PostgresDbAPI:
     def __repr__(self) -> str:
         return f"PostgresDb<connection={self._connection!r}>"
 
-    def list_users(self) -> Iterator:
-        result = self._connection.execute(
+    def list_users(self) -> Generator:
+        result = self.stream_query(
             text("""
             select
                 group_role.rolname as role_name,
@@ -1366,6 +1401,7 @@ class PostgresDbAPI:
         for row in result:
             yield UserRole(row.role_name).simple_str(), row.user_name, row.description
 
+    @catch_timeout
     def create_user(
         self,
         username: str,
@@ -1383,9 +1419,11 @@ class PostgresDbAPI:
             description,
         )
 
+    @catch_timeout
     def drop_users(self, users: Iterable[str]) -> bool:
         return drop_users(self._connection, users)
 
+    @catch_timeout
     def grant_role(self, role_str: str, users: Iterable[str]) -> bool:
         """
         Grant a role to a user.
@@ -1404,7 +1442,7 @@ class PostgresDbAPI:
         """
         Find the database-local time of the last dataset that changed for this product.
         """
-        return self._connection.execute(
+        return self.run_scalar_query(
             select(
                 func.max(
                     func.greatest(
@@ -1413,4 +1451,4 @@ class PostgresDbAPI:
                     )
                 )
             ).where(DATASET.c.dataset_type_ref == product_id)
-        ).scalar()
+        )

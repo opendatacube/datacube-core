@@ -44,6 +44,14 @@ jobs:
           persist-credentials: false
       - name: Install uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install the project
+        run: uv sync --locked --group=dev
+      - name: Detect number of cores
+        run: |
+          CORES=$(nproc)
+          echo "MYPY_NUM_WORKERS=$CORES" >> $GITHUB_ENV
       - name: run linter
         run: |
           uv run ${LINT_COMMAND}
@@ -51,3 +59,4 @@ jobs:
           LINT_COMMAND: ${{matrix.lintcommand}}
           UV_PYTHON: ${{ matrix.python-version }}
           UV_PYTHON_PREFERENCE: managed
+          MYPY_NUM_WORKERS: ${{ env.MYPY_NUM_WORKERS }}

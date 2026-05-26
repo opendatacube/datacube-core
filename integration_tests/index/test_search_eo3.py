@@ -17,12 +17,13 @@ from typing import Any
 import pytest
 import yaml
 from antimeridian import FixWindingWarning
+from odc.geo import CRS
 
 import datacube.scripts.cli_app
 import datacube.scripts.search_tool
 from datacube import Datacube
 from datacube.cfg.opt import _DEFAULT_DB_USER
-from datacube.index.exceptions import NoProductsWarning
+from datacube.index.exceptions import NoProductsWarning, QueryTimeout
 from datacube.model import Not, Range
 from datacube.testutils import suppress_deprecations
 from datacube.utils.dates import tz_as_utc
@@ -87,6 +88,69 @@ def test_search_dataset_equals_eo3(index: Index, ls8_eo3_dataset: Dataset) -> No
                     product_family="splunge",
                 )
             )
+
+
+def test_search_with_query_timeout(
+    cfg_env: ODCEnvironment,
+    index: Index,
+    ls8_eo3_dataset: Dataset,
+    ls8_eo3_dataset2: Dataset,
+    ls8_eo3_dataset3: Dataset,
+    ls8_eo3_dataset4: Dataset,
+    africa_eo3_dataset: Dataset,
+    africa_eo3_dataset2: Dataset,
+    s1_eo3_dataset: Dataset,
+) -> None:
+    # Confirm things work without timeout
+    datasets = list(
+        index.datasets.search_by_metadata(
+            metadata={"product": {"name": ls8_eo3_dataset.product.name}}
+        )
+    )
+    assert len(datasets) == 4
+    datasets = list(
+        index.datasets.search(
+            platform="landsat-8",
+            time=Range(
+                datetime.datetime(2013, 1, 1, 23, 0, 0),
+                datetime.datetime(2017, 1, 12, 23, 59, 59),
+            ),
+            cloud_cover=Range(0.0, 100.0),
+            product=ls8_eo3_dataset.product.name,
+        )
+    )
+    assert len(datasets) == 4
+    cfg_env._normalised["db_query_timeout"] = 1
+    dc = Datacube(env=cfg_env, validate_connection=False)
+    # We use search_by_metadata because it does not use indexes and times out more easily
+    # We attempt 20 times because sometimes it manages to succeed even with the minimum timeout.
+    seen_timeout = False
+    no_timeouts = 0
+    while no_timeouts < 20:
+        try:
+            # Try a few different queries. Hopefully at least one is slow.
+            ids = set()
+            gen = dc.index.datasets.search_by_metadata(
+                metadata={"product": {"name": ls8_eo3_dataset.product.name}}
+            )
+            for ds in gen:
+                ids.add(ds.id)
+            gen = dc.index.datasets.search(
+                platform="landsat-8",
+                time=Range(
+                    datetime.datetime(2013, 1, 1, 23, 0, 0),
+                    datetime.datetime(2017, 1, 12, 23, 59, 59),
+                ),
+                product=africa_eo3_dataset.product.name,
+            )
+            for ds in gen:
+                ids.add(ds.id)
+            dc.index.datasets.spatial_extent(ids, crs=CRS("epsg:4326"))
+            no_timeouts += 1
+        except QueryTimeout:
+            seen_timeout = True
+            break
+    assert seen_timeout, "No timeouts seen in 20 attempts"
 
 
 def test_search_dataset_range_eo3(
@@ -611,9 +675,11 @@ def test_search_returning_eo3(
     assert id_ == ls8_eo3_dataset.id
     assert document == ls8_eo3_dataset.metadata_doc
 
-    my_username = cfg_env.db_username
+    my_username: str | None = cfg_env.db_username
     if not my_username:
         my_username = _DEFAULT_DB_USER
+
+    assert my_username is not None
 
     # Mixture of document and native fields
     results = list(
@@ -1460,3 +1526,12 @@ def test_graceful_errors_cli(clirunner: Any, ls8_eo3_dataset) -> None:
     )
     assert result.exit_code == 0, f"Output: {result.output}"
     assert result.output == "No such product(s): foo\n"
+
+
+def test_shared_lineage_api(
+    index: Index, ls8_eo3_dataset, wo_eo3_dataset, fc_eo3_dataset
+) -> None:
+    derived = index.lineage.get_derived_ids(ls8_eo3_dataset.id)
+    assert derived == {"ard": [wo_eo3_dataset.id, fc_eo3_dataset.id]}
+    sources = index.lineage.get_source_ids(wo_eo3_dataset.id)
+    assert sources == {"ard": [ls8_eo3_dataset.id]}
