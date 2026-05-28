@@ -5,6 +5,39 @@
 Release History
 ***************
 
+1.9.20 (28 May 2026)
+======================
+
+New features:
+
+* Support for a new `db_query_timeout` parameter
+* New lineage API methods for more efficient querying of basic lineage information in legacy index drivers.
+
+What's Changed
+--------------
+
+* CI: use more cores for MyPy by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2492
+* Use raw SQL Alchemy connection in add column tests by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2493
+* tests: remove noqa by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2494
+* New query timeout option by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2486
+* Enhance Lineage API by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2496
+* Improve dataset search queries error handling by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2485
+* Prepare for 1.9.20 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2499
+
+Automated Updates
+-----------------
+
+* build(deps): bump github/codeql-action from 4.35.3 to 4.35.4 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2489
+* build(deps): bump astral-sh/uv from 0.11.14 to 0.11.15 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2490
+* build(deps): bump astral-sh/uv from 0.11.15 to 0.11.16 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2495
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2497
+* build(deps): bump github/codeql-action from 4.35.4 to 4.35.5 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2498
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.19...1.9.20
+
+The Open Data Cube Steering Council thanks and acknowledges RISE and Geoscience Australia
+for their contributions to this release and ongoing support of the project.
+
 1.9.19 (19 May 2026)
 ======================
 
