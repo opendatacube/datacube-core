@@ -27,7 +27,7 @@ classifiers = [
 dependencies = [
     'affine',
     'alembic',
-    'antimeridian<0.4.5', # All test_index_cloning tests fail with 0.4.5.
+    'antimeridian<0.4.8', # All test_index_cloning tests fail with 0.4.5.
     'cachetools',
     'click>=8.2',  # Support for deprecated argument on options.
     'dask[array]',
@@ -52,7 +52,7 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["setuptools>=69", "setuptools_scm[toml]>=8,<10"]
+requires = ["setuptools>=69", "setuptools_scm[toml]>=8,<11"]
 # v69 includes py.typed files by default
 build-backend = "setuptools.build_meta"
 
@@ -79,7 +79,7 @@ scikit-image = ['scikit-image<0.26','tifffile<2026']
 [dependency-groups]
 dev = [
     'datacube[netcdf,postgres,psycopg3,s3,scikit-image]',
-    'click<8.4',  # ClickRunner tests failing with 8.4
+    'click<8.5',  # ClickRunner tests failing with 8.4
     # Test requirements
     'hypothesis',
     'moto>=5.0',
