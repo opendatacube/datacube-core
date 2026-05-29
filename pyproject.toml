@@ -79,7 +79,7 @@ scikit-image = ['scikit-image<0.26','tifffile<2026']
 [dependency-groups]
 dev = [
     'datacube[netcdf,postgres,psycopg3,s3,scikit-image]',
-    'click<8.4',  # ClickRunner tests failing with 8.4
+    'click!=8.4.0',  # ClickRunner tests failing with 8.4.0
     # Test requirements
     'hypothesis',
     'moto>=5.0',
