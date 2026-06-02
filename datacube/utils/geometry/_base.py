@@ -10,7 +10,7 @@ import math
 import warnings
 from collections import OrderedDict
 from collections.abc import Sequence
-from typing import Any, NamedTuple, TypeAlias
+from typing import Any, NamedTuple, TypeAlias, override
 
 import cachetools
 import numpy
@@ -22,7 +22,6 @@ from pyproj.exceptions import CRSError
 from pyproj.transformer import Transformer
 from shapely import from_wkt, geometry, ops
 from shapely.geometry import base
-from typing_extensions import override
 
 from ..math import is_almost_int
 from .tools import is_affine_st, roi_normalise, roi_shape
@@ -213,6 +212,7 @@ class CRS:
                 "Expect string or any object with `.to_epsg()` or `.to_wkt()` methods"
             )
 
+    @override
     def __getstate__(self) -> dict[str, str]:
         return {"crs_str": self._str}
 
@@ -807,6 +807,7 @@ class Geometry:
     # Implement pickle/unpickle
     # It does work without these two methods, but gdal/ogr prints 'ERROR 1: Empty geometries cannot be constructed'
     # when unpickling, which is quite unpleasant.
+    @override
     def __getstate__(self) -> dict[str, Any]:
         return {"geom": self.json, "crs": self.crs}
 

@@ -12,11 +12,10 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, override
 from uuid import UUID
 
 from deprecat import deprecat
-from typing_extensions import override
 
 from datacube.drivers.postgres._api import split_uri
 from datacube.drivers.postgres._fields import SimpleDocField

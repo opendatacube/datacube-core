@@ -7,8 +7,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from time import monotonic
-
-from typing_extensions import override
+from typing import override
 
 from datacube.utils import report_to_user
 

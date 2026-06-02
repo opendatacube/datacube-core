@@ -11,13 +11,12 @@ from __future__ import annotations
 from collections import namedtuple
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, override
 
 from sqlalchemy import and_, cast, func
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import INT4RANGE, INTERVAL, NUMRANGE, TSTZRANGE
 from sqlalchemy.sql import ColumnElement
-from typing_extensions import override
 
 from datacube import utils
 from datacube.model import Range

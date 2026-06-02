@@ -49,10 +49,10 @@ def test_temporal_extent(
 
     start, end = index.products.temporal_extent(ls8_eo3_dataset.product)
     assert start == datetime.datetime(
-        2013, 4, 4, 0, 58, 34, 682275, tzinfo=datetime.timezone.utc
+        2013, 4, 4, 0, 58, 34, 682275, tzinfo=datetime.UTC
     )
     assert end == datetime.datetime(
-        2016, 5, 28, 23, 50, 59, 149573, tzinfo=datetime.timezone.utc
+        2016, 5, 28, 23, 50, 59, 149573, tzinfo=datetime.UTC
     )
     start2, end2 = index.products.temporal_extent(ls8_eo3_dataset.product.name)
     assert start == start2 and end == end2

@@ -7,7 +7,7 @@ from __future__ import annotations
 import inspect
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, override
 
 import numpy as np
 import toolz
@@ -17,7 +17,6 @@ from odc.geo.geobox import GeoBox, zoom_to
 from odc.geo.geobox import pad as gbox_pad
 from odc.geo.warp import resampling_s2rio
 from odc.geo.xr import xr_coords
-from typing_extensions import override
 
 from ..api import Datacube
 from ..index.eo3 import EO3Grid

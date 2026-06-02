@@ -10,13 +10,13 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Self, override
 
 from alembic import command, config
 from alembic.migration import MigrationContext
 from alembic.runtime.environment import EnvironmentContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import MetaData, text
-from typing_extensions import Self, override
 
 from datacube.drivers.common_psql import (
     UserRoleBase,

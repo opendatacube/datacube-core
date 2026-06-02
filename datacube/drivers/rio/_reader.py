@@ -7,13 +7,12 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, NamedTuple, TypeAlias, TypeVar
+from typing import Any, NamedTuple, TypeAlias, override
 
 import numpy as np
 import rasterio
 import rasterio.crs
 from odc.geo import CRS
-from typing_extensions import override
 
 from datacube.drivers._types import GeoRasterReader, ReaderDriver, ReaderDriverEntry
 from datacube.utils import get_part_from_uri, uri_to_local_path
@@ -41,10 +40,9 @@ class Overrides(NamedTuple):
 
 
 RioWindow: TypeAlias = tuple[tuple[int, int], tuple[int, int]]  # pylint: disable=invalid-name
-T = TypeVar("T")
 
 
-def pick(a: T | None, b: T | None) -> T | None:
+def pick[T](a: T | None, b: T | None) -> T | None:
     """Return first non-None value or None if all are None"""
     return b if a is None else a
 

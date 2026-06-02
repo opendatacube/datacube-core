@@ -36,10 +36,6 @@ repos:
       rev: v2.4.2
       hooks:
       - id: codespell
-        # Add tomli as a dependency for Python 3.10 to read config from pyproject.toml
-        # This can be removed when we no longer support 3.10
-        additional_dependencies:
-          - tomli
         files: ^.*\.py$
     - repo: https://github.com/Lucas-C/pre-commit-hooks
       rev: v1.5.6

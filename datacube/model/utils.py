@@ -8,7 +8,7 @@ import os
 import platform
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Literal, overload
 
 import numpy
@@ -113,7 +113,7 @@ def geobox_info(
 def new_dataset_info() -> dict[str, str]:
     return {
         "id": str(uuid.uuid4()),
-        "creation_dt": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
+        "creation_dt": datetime.now(UTC).replace(tzinfo=None).isoformat(),
     }
 
 

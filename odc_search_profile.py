@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from time import monotonic
 
 from odc.geo.geom import CRS, polygon
@@ -92,10 +92,7 @@ def test_offset_geom(dc: Datacube) -> Iterable[Dataset]:
 def test_temporal_search(dc: Datacube) -> Iterable[Dataset]:
     return dc.index.datasets.search(
         product="ga_ls8c_ard_3",
-        time=Range(
-            datetime(2016, 1, 1, tzinfo=timezone.utc),
-            datetime(2016, 4, 5, tzinfo=timezone.utc),
-        ),
+        time=Range(datetime(2016, 1, 1, tzinfo=UTC), datetime(2016, 4, 5, tzinfo=UTC)),
     )
 
 

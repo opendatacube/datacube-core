@@ -5,8 +5,7 @@
 from __future__ import annotations
 
 from time import monotonic
-
-from typing_extensions import override
+from typing import override
 
 from datacube.index.abstract import AbstractLineageResource, BatchStatus
 from datacube.index.postgis._transaction import IndexResourceAddIn

@@ -11,7 +11,6 @@ from __future__ import annotations
 import datetime
 import warnings
 from collections import namedtuple
-from datetime import timezone
 from typing import Any
 
 import pytest
@@ -342,10 +341,10 @@ def test_zero_width_range_search(index: Index, ls8_eo3_dataset4: Dataset) -> Non
         index.datasets.search(
             time=Range(
                 begin=datetime.datetime(
-                    2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc
+                    2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.UTC
                 ),
                 end=datetime.datetime(
-                    2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc
+                    2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.UTC
                 ),
             )
         )
@@ -356,10 +355,10 @@ def test_zero_width_range_search(index: Index, ls8_eo3_dataset4: Dataset) -> Non
         index.datasets.search(
             time=Range(
                 begin=datetime.datetime(
-                    2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc
+                    2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.UTC
                 ),
                 end=datetime.datetime(
-                    2013, 7, 21, 0, 57, 27, 432563, tzinfo=datetime.timezone.utc
+                    2013, 7, 21, 0, 57, 27, 432563, tzinfo=datetime.UTC
                 ),
             )
         )
@@ -370,10 +369,10 @@ def test_zero_width_range_search(index: Index, ls8_eo3_dataset4: Dataset) -> Non
         index.datasets.search(
             time=Range(
                 begin=datetime.datetime(
-                    2013, 7, 21, 0, 57, 25, 432563, tzinfo=datetime.timezone.utc
+                    2013, 7, 21, 0, 57, 25, 432563, tzinfo=datetime.UTC
                 ),
                 end=datetime.datetime(
-                    2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.timezone.utc
+                    2013, 7, 21, 0, 57, 26, 432563, tzinfo=datetime.UTC
                 ),
             )
         )
@@ -606,8 +605,8 @@ def test_search_not_expressions_eo3(
             product="ga_ls8c_ard_3",
             time=Not(
                 Range(
-                    begin=datetime.datetime(2016, 5, 1, tzinfo=datetime.timezone.utc),
-                    end=datetime.datetime(2016, 5, 15, tzinfo=datetime.timezone.utc),
+                    begin=datetime.datetime(2016, 5, 1, tzinfo=datetime.UTC),
+                    end=datetime.datetime(2016, 5, 15, tzinfo=datetime.UTC),
                 )
             ),
         )
@@ -660,8 +659,8 @@ def test_search_returning_eo3(
     count_by_date = index.datasets.count(
         product="ga_ls8c_ard_3",
         time=Range(
-            begin=datetime.datetime(2016, 5, 12, 18, tzinfo=datetime.timezone.utc),
-            end=datetime.datetime(2016, 5, 13, 2, tzinfo=datetime.timezone.utc),
+            begin=datetime.datetime(2016, 5, 12, 18, tzinfo=datetime.UTC),
+            end=datetime.datetime(2016, 5, 13, 2, tzinfo=datetime.UTC),
         ),
     )
     assert count_by_date == 1
@@ -698,7 +697,7 @@ def test_search_returning_eo3(
     assert format_ == "GeoTIFF"
 
     # It's always UTC in the document
-    expected_time = creation_time.astimezone(timezone.utc).replace(tzinfo=None)
+    expected_time = creation_time.astimezone(datetime.UTC).replace(tzinfo=None)
     assert expected_time.isoformat() == ls8_eo3_dataset.metadata.creation_dt
     assert label == ls8_eo3_dataset.metadata.label
 
@@ -1083,8 +1082,8 @@ def test_count_time_groups(index: Index, ls8_eo3_dataset: Dataset) -> None:
             "1 day",
             product=ls8_eo3_dataset.product.name,
             time=Range(
-                datetime.datetime(2016, 5, 11, tzinfo=timezone.utc),
-                datetime.datetime(2016, 5, 13, tzinfo=timezone.utc),
+                datetime.datetime(2016, 5, 11, tzinfo=datetime.UTC),
+                datetime.datetime(2016, 5, 13, tzinfo=datetime.UTC),
             ),
         )
     )
@@ -1093,15 +1092,15 @@ def test_count_time_groups(index: Index, ls8_eo3_dataset: Dataset) -> None:
     assert timeline == [
         (
             Range(
-                datetime.datetime(2016, 5, 11, tzinfo=timezone.utc),
-                datetime.datetime(2016, 5, 12, tzinfo=timezone.utc),
+                datetime.datetime(2016, 5, 11, tzinfo=datetime.UTC),
+                datetime.datetime(2016, 5, 12, tzinfo=datetime.UTC),
             ),
             0,
         ),
         (
             Range(
-                datetime.datetime(2016, 5, 12, tzinfo=timezone.utc),
-                datetime.datetime(2016, 5, 13, tzinfo=timezone.utc),
+                datetime.datetime(2016, 5, 12, tzinfo=datetime.UTC),
+                datetime.datetime(2016, 5, 13, tzinfo=datetime.UTC),
             ),
             1,
         ),
@@ -1290,12 +1289,8 @@ def test_find_duplicates_with_time(
     # tuple of strings, postgres with psycopg2 returns a string.
     time = (
         (
-            datetime.datetime(
-                2023, 4, 30, 23, 50, 33, 884549, tzinfo=datetime.timezone.utc
-            ),
-            datetime.datetime(
-                2023, 4, 30, 23, 50, 34, 884549, tzinfo=datetime.timezone.utc
-            ),
+            datetime.datetime(2023, 4, 30, 23, 50, 33, 884549, tzinfo=datetime.UTC),
+            datetime.datetime(2023, 4, 30, 23, 50, 34, 884549, tzinfo=datetime.UTC),
         )
         if index._db.driver_name == "postgis"  # type: ignore[attr-defined]
         else ("2023-04-30 23:50:33.884549", "2023-04-30 23:50:34.884549")

@@ -7,11 +7,10 @@ from __future__ import annotations
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, override
 
 from deprecat import deprecat
 from odc.geo import CRS
-from typing_extensions import override
 
 from datacube.cfg.opt import config_options_for_psql_driver
 from datacube.drivers.common_psql import catch_generator_timeout

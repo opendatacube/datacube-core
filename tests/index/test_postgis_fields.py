@@ -39,7 +39,7 @@ def test_float_parse() -> None:
 def test_date_parse() -> None:
     fld = DateDocField("test_fld", "field for testing", Dataset.metadata_doc, True)
     assert fld.parse_value("2020-07-22T14:45:22.452434+0000") == datetime.datetime(
-        2020, 7, 22, 14, 45, 22, 452434, tzinfo=datetime.timezone.utc
+        2020, 7, 22, 14, 45, 22, 452434, tzinfo=datetime.UTC
     )
 
 

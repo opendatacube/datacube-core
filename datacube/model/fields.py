@@ -10,10 +10,9 @@ This allows extraction of fields of interest from dataset metadata document.
 from __future__ import annotations
 
 import decimal
-from typing import Any, Generic, Literal, TypeAlias, get_args
+from typing import Any, Generic, Literal, TypeAlias, get_args, override
 
 import toolz
-from typing_extensions import override
 
 from datacube.utils import parse_time
 
@@ -140,7 +139,7 @@ class SimpleField(Field):
         return self._converter(v)
 
 
-class RangeField(Generic[OrderedT], Field):
+class RangeField(Generic[OrderedT], Field):  # noqa: UP046
     def __init__(
         self,
         min_offset,

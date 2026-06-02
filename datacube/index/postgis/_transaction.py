@@ -5,9 +5,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import Any
-
-from typing_extensions import override
+from typing import Any, override
 
 from datacube.drivers.postgis._api import PostgisDbAPI
 from datacube.index.abstract import AbstractTransaction

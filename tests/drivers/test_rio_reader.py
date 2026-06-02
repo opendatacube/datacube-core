@@ -6,7 +6,7 @@
 
 import warnings
 from concurrent.futures import Future, ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import numpy as np
 import pytest
@@ -28,8 +28,6 @@ from datacube.testutils.iodriver import (
     mk_rio_driver,
     open_reader,
 )
-
-UTC = timezone.utc
 
 
 def test_rio_rd_entry() -> None:

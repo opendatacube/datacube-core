@@ -5,10 +5,9 @@
 from __future__ import annotations
 
 import logging
-from typing import cast
+from typing import cast, override
 
 from odc.geo import CRS
-from typing_extensions import override
 
 from datacube.index.abstract import AbstractProductResource
 from datacube.index.fields import as_expression
