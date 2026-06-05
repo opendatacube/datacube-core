@@ -320,6 +320,8 @@ def test_ds2stac(eo3_dataset: Dataset) -> None:
             "raster:bands",
         )
     )
+    assert output_stac["assets"]["nbart_blue"]["raster:bands"][0]["nodata"] == -999
+    assert output_stac["assets"]["oa_time_delta"]["raster:bands"][0]["nodata"] == "nan"
     assert "raster:bands" not in output_stac["assets"]["nbar_blue"]
     assert output_stac["links"] == [
         {

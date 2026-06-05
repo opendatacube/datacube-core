@@ -20,7 +20,12 @@ from urllib.parse import urljoin
 from pystac import Asset, Item, Link, MediaType
 from pystac.extensions.eo import Band, EOExtension
 from pystac.extensions.projection import ProjectionExtension
-from pystac.extensions.raster import DataType, RasterBand, RasterExtension
+from pystac.extensions.raster import (
+    DataType,
+    NoDataStrings,
+    RasterBand,
+    RasterExtension,
+)
 from pystac.extensions.sar import SarExtension
 from pystac.extensions.sat import SatExtension
 from pystac.extensions.view import ViewExtension
@@ -308,8 +313,13 @@ def ds2stac(
             m = product.measurements[canonical_measurement]
             raster = RasterExtension.ext(asset)
             data_type = m.get("dtype")
+            nodata = m.get("nodata")
+            if math.isnan(nodata):
+                nodata = NoDataStrings.NAN
+            elif not math.isfinite(nodata):
+                nodata = NoDataStrings.NINF if nodata < 0 else NoDataStrings.INF
             rband = RasterBand.create(
-                nodata=m.get("nodata"),
+                nodata=nodata,
                 data_type=None if data_type is None else DataType(data_type),
                 unit=m.get("units"),
                 scale=m.get("scale_factor"),
