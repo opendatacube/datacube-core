@@ -328,6 +328,14 @@ def ls8_stac_doc() -> tuple[dict, str]:
 
 
 @pytest.fixture
+def ls8_stac_relative_doc() -> tuple[dict, str]:
+    return (
+        get_eo3_test_data_doc("ga_ls8c_ard_3_stac_relative.json"),
+        str(EO3_TESTDIR / "ga_ls8c_ard_3_stac_relative.json"),
+    )
+
+
+@pytest.fixture
 def ls8_stac_lvl1_doc() -> tuple[dict, str]:
     return (
         get_eo3_test_data_doc("ga_ls8c_lvl1_stac.json"),

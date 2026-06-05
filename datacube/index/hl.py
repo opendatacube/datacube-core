@@ -432,6 +432,8 @@ class Doc2Dataset:
     :param home_index: Ignored if index.supports_exernal_home is False.  Defaults to None.
                 Optional string labelling the "home index" for lineage datasets.
                 home_index is ignored if an explicit source_tree is passed to the resolver.
+
+    :param conversion_cfg: config dict used when converting STAC items
     """
 
     def __init__(
@@ -444,6 +446,7 @@ class Doc2Dataset:
         skip_lineage: bool = False,
         eo3: bool | str = "auto",
         home_index: str | None = None,
+        conversion_cfg: Mapping[str, Any] | None = None,
     ) -> None:
         if not index.supports_lineage:
             skip_lineage = True
@@ -474,6 +477,7 @@ class Doc2Dataset:
 
         self.index = index
         self._eo3 = eo3
+        self._conversion_cfg = conversion_cfg or {}
         matcher = product_matcher(rules)
         self._ds_resolve = dataset_resolver(
             index,
@@ -509,13 +513,14 @@ class Doc2Dataset:
             # stac2ds returns a Dataset, so in theory we could return here.
             # However, it does not currently handle lineage properly nor conduct consistency checks,
             # so we retrieve the eo3 dict and proceed as usual.
-            # TODO: add conversion cfg to doc2ds params if needed
+            print(self._conversion_cfg["asset_absolute_paths"])
             try:
                 eo3_doc = next(
                     iter(
                         stac2ds(
                             [item],
                             cfg={
+                                **self._conversion_cfg,
                                 "only_known_products": True,
                                 "remap_lineage": not self.index.supports_external_lineage,
                             },
