@@ -1,27 +1,33 @@
 ---
-name: ga_s1_nrb_iw_hh_0
-description: Geoscience Australia Sentinel-1 Interferometric Wide Mode Normalised Radar Backscatter Gamma0 HH Linear Backscatter Collection 0.
+name: ga_s1_nrb_iw_vv_vh_0
+description: Geoscience Australia Sentinel-1 Interferometric Wide Mode Normalised Radar Backscatter Gamma0 VV+VH Linear Backscatter Collection 0.
 metadata_type: eo3_s1_nrb
 
 license: CC-BY-4.0
 
 metadata:
   product: 
-    name: ga_s1_nrb_iw_hh_0
+    name: ga_s1_nrb_iw_vv_vh_0
   properties:
     odc:product_family: sar_ard
 
 measurements:
-  - name: HH_gamma0
-    aliases:
-      - hh_gamma0
+  - name: VV_gamma0
     dtype: float32
-    nodata: .nan
-    units: '1'
+    units: linear power
+    nodata: NaN
+    aliases:
+      - vv_gamma0
+  - name: VH_gamma0
+    dtype: float32
+    units: linear power
+    nodata: NaN
+    aliases:
+      - vh_gamma0
   - name: mask
     dtype: uint8
+    units: classification
     nodata: 255
-    units: '1'
     flags_definition:
       mask:
         bits: [0,1,2,3,4,5,6,7]
@@ -32,31 +38,31 @@ measurements:
           255: invalid sample
         description: shadow layover data mask
   - name: number_of_looks
+    dtype: float32
+    units: count
+    nodata: NaN
     aliases:
       - n_looks
       - nlooks
-    dtype: float32
-    nodata: .nan
-    units: '1'
   - name: gamma0_to_beta0_ratio
     dtype: float32
-    nodata: .nan
-    units: '1'
+    units: ratio
+    nodata: NaN
   - name: gamma0_to_sigma0_ratio
     dtype: float32
-    nodata: .nan
-    units: '1'
+    units: ratio
+    nodata: NaN
   - name: local_incidence_angle
-    aliases:
+    dtype: float32
+    units: degrees
+    nodata: NaN
+    aliases: 
       - lia
       - LIA
-    dtype: float32
-    nodata: .nan
-    units: '1' 
   - name: incidence_angle
-    aliases:
-      - ia
-      - IA
     dtype: float32
-    nodata: .nan
-    units: '1'
+    units: degrees
+    nodata: NaN
+    aliases:
+      - ia 
+      - IA

@@ -474,7 +474,9 @@ def test_s1_nrb(s1_nrb_stac, s1_nrb_product, without_aws_env) -> None:
     # simulate loading an indexed stac dataset by converting it to eo3 then back to stac
     eo3_ds = next(
         iter(
-            stac2ds([s1_nrb_stac], product_cache={"ga_s1_nrb_iw_hh_0": s1_nrb_product})
+            stac2ds(
+                [s1_nrb_stac], product_cache={"ga_s1_nrb_iw_vv_vh_0": s1_nrb_product}
+            )
         )
     )
     with warnings.catch_warnings():
