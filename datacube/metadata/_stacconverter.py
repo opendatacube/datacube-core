@@ -314,10 +314,11 @@ def ds2stac(
             raster = RasterExtension.ext(asset)
             data_type = m.get("dtype")
             nodata = m.get("nodata")
-            if math.isnan(nodata):
-                nodata = NoDataStrings.NAN
-            elif not math.isfinite(nodata):
-                nodata = NoDataStrings.NINF if nodata < 0 else NoDataStrings.INF
+            if isinstance(nodata, float):
+                if math.isnan(nodata):
+                    nodata = NoDataStrings.NAN
+                elif not math.isfinite(nodata):
+                    nodata = NoDataStrings.NINF if nodata < 0 else NoDataStrings.INF
             rband = RasterBand.create(
                 nodata=nodata,
                 data_type=None if data_type is None else DataType(data_type),
