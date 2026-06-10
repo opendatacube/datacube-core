@@ -839,7 +839,6 @@ s3 = [
 ]
 scikit-image = [
     { name = "scikit-image" },
-    { name = "tifffile" },
 ]
 
 [package.dev-dependencies]
@@ -922,10 +921,9 @@ requires-dist = [
     { name = "python-dateutil" },
     { name = "pyyaml" },
     { name = "rasterio", specifier = ">=1.4.4" },
-    { name = "scikit-image", marker = "extra == 'scikit-image'", specifier = "<0.26" },
+    { name = "scikit-image", marker = "extra == 'scikit-image'" },
     { name = "shapely", specifier = ">=2.0" },
     { name = "sqlalchemy", specifier = ">=2.0" },
-    { name = "tifffile", marker = "extra == 'scikit-image'", specifier = "<2026" },
     { name = "toolz" },
     { name = "xarray", specifier = ">=0.9" },
 ]
@@ -952,8 +950,7 @@ dev = [
     { name = "pytest-httpserver" },
     { name = "recommonmark" },
     { name = "ruff" },
-    { name = "sphinx", marker = "python_full_version < '3.11'", specifier = ">=8.1.3,<9" },
-    { name = "sphinx", marker = "python_full_version >= '3.11'", specifier = ">=8.2.3,<9" },
+    { name = "sphinx", specifier = ">=8.2.3,<9" },
     { name = "sphinx-autodoc-typehints" },
     { name = "sphinx-click" },
     { name = "sphinx-design" },
@@ -974,8 +971,7 @@ doc = [
     { name = "nbsphinx" },
     { name = "pydata-sphinx-theme" },
     { name = "recommonmark" },
-    { name = "sphinx", marker = "python_full_version < '3.11'", specifier = ">=8.1.3,<9" },
-    { name = "sphinx", marker = "python_full_version >= '3.11'", specifier = ">=8.2.3,<9" },
+    { name = "sphinx", specifier = ">=8.2.3,<9" },
     { name = "sphinx-autodoc-typehints" },
     { name = "sphinx-click" },
     { name = "sphinx-design" },
