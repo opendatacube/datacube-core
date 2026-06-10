@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import numbers
 from collections import namedtuple
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import numpy
@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     import numpy as np
     from xarray import DataArray
 
-UTC: timezone = timezone.utc
 
 Variable = namedtuple("Variable", ("dtype", "nodata", "dims", "units"))
 _LOG: logging.Logger = logging.getLogger(__name__)

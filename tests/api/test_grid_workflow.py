@@ -4,13 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 import uuid
+from typing import override
 from unittest.mock import MagicMock, patch
 
 import numpy
 import pytest
 from odc.geo import CRS, Resolution
 from odc.geo.gridspec import GridSpec
-from typing_extensions import override
 
 from datacube.api.grid_workflow import GridWorkflow, GridWorkflowException
 from datacube.testutils import mk_sample_product

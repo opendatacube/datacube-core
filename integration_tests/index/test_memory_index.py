@@ -465,16 +465,16 @@ def test_mem_ds_expand_periods(mem_index_fresh: Datacube) -> None:
     )
     assert periods == [
         Range(
-            datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 6, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 5, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 5, 6, tzinfo=datetime.UTC),
         ),
         Range(
-            datetime.datetime(2016, 5, 6, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 6, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 5, 7, tzinfo=datetime.UTC),
         ),
         Range(
-            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 8, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 7, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 5, 8, tzinfo=datetime.UTC),
         ),
     ]
     periods = list(
@@ -486,12 +486,12 @@ def test_mem_ds_expand_periods(mem_index_fresh: Datacube) -> None:
     )
     assert periods == [
         Range(
-            datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 5, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 5, 7, tzinfo=datetime.UTC),
         ),
         Range(
-            datetime.datetime(2016, 5, 7, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 9, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 7, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 5, 9, tzinfo=datetime.UTC),
         ),
     ]
     periods = list(
@@ -503,20 +503,20 @@ def test_mem_ds_expand_periods(mem_index_fresh: Datacube) -> None:
     )
     assert periods == [
         Range(
-            datetime.datetime(2016, 5, 1, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 8, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 1, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 5, 8, tzinfo=datetime.UTC),
         ),
         Range(
-            datetime.datetime(2016, 5, 8, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 15, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 8, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 5, 15, tzinfo=datetime.UTC),
         ),
         Range(
-            datetime.datetime(2016, 5, 15, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 22, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 15, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 5, 22, tzinfo=datetime.UTC),
         ),
         Range(
-            datetime.datetime(2016, 5, 22, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 29, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 22, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 5, 29, tzinfo=datetime.UTC),
         ),
     ]
     periods = list(
@@ -528,24 +528,24 @@ def test_mem_ds_expand_periods(mem_index_fresh: Datacube) -> None:
     )
     assert periods == [
         Range(
-            datetime.datetime(2016, 3, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 3, 5, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 5, 5, tzinfo=datetime.UTC),
         ),
         Range(
-            datetime.datetime(2016, 5, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 7, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 5, 5, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 7, 5, tzinfo=datetime.UTC),
         ),
         Range(
-            datetime.datetime(2016, 7, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 9, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 7, 5, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 9, 5, tzinfo=datetime.UTC),
         ),
         Range(
-            datetime.datetime(2016, 9, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2016, 11, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 9, 5, tzinfo=datetime.UTC),
+            datetime.datetime(2016, 11, 5, tzinfo=datetime.UTC),
         ),
         Range(
-            datetime.datetime(2016, 11, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2017, 1, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 11, 5, tzinfo=datetime.UTC),
+            datetime.datetime(2017, 1, 5, tzinfo=datetime.UTC),
         ),
     ]
     periods = list(
@@ -557,12 +557,12 @@ def test_mem_ds_expand_periods(mem_index_fresh: Datacube) -> None:
     )
     assert periods == [
         Range(
-            datetime.datetime(2016, 3, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2018, 3, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2016, 3, 5, tzinfo=datetime.UTC),
+            datetime.datetime(2018, 3, 5, tzinfo=datetime.UTC),
         ),
         Range(
-            datetime.datetime(2018, 3, 5, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2020, 3, 5, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2018, 3, 5, tzinfo=datetime.UTC),
+            datetime.datetime(2020, 3, 5, tzinfo=datetime.UTC),
         ),
     ]
 
@@ -854,9 +854,7 @@ def test_mem_ds_count_product_through_time(mem_eo3_data: tuple) -> None:
     )
     for _, counts in lds:
         for rng, count in counts:
-            if rng.begin == datetime.datetime(
-                2016, 5, 12, tzinfo=datetime.timezone.utc
-            ):
+            if rng.begin == datetime.datetime(2016, 5, 12, tzinfo=datetime.UTC):
                 assert count == 1
             else:
                 assert count == 0
@@ -869,7 +867,7 @@ def test_mem_ds_count_product_through_time(mem_eo3_data: tuple) -> None:
         )
     )
     for rng, count in counts:
-        if rng.begin == datetime.datetime(2016, 5, 1, tzinfo=datetime.timezone.utc):
+        if rng.begin == datetime.datetime(2016, 5, 1, tzinfo=datetime.UTC):
             assert count == 1
         else:
             assert count == 0

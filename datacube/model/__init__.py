@@ -15,7 +15,7 @@ import warnings
 from collections import OrderedDict
 from functools import cached_property
 from pathlib import Path
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, override
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -26,7 +26,6 @@ from odc.geo import CRS, BoundingBox, Geometry, res_, resyx_, wh_, yx_
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import intersects, polygon
 from odc.geo.gridspec import GridSpec as GeoGridSpec
-from typing_extensions import override
 
 from datacube.migration import ODC2DeprecationWarning
 from datacube.utils import (
@@ -634,6 +633,7 @@ class Measurement:
         """This returns attributes filtered for display in a dataarray."""
         return {key: value for key, value in self.items() if key not in self.ATTR_SKIP}
 
+    @override
     def __getstate__(self):
         state = {**self._data}
         state["canonical_name"] = self.canonical_name
@@ -680,6 +680,7 @@ class MetadataType:
 
     # Fields defined using SQLAlchemy ORM are not pickleable,
     # so use a named (and therefore pickleable) extraction function
+    @override
     def __getstate__(self) -> Mapping[str, Any]:
         return {
             "definition": self.definition,

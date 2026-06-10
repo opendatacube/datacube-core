@@ -1,7 +1,7 @@
 [project]
 name = 'datacube'
 dynamic = ['version']
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 readme = "README.rst"
 license = "Apache-2.0"
 description = "An analysis environment for satellite and other earth observation data"
@@ -17,10 +17,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: GIS",
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
@@ -215,6 +214,7 @@ select = [
 ]
 ignore = [
     # FIXME: re-enable these rules.
+    "UP040",  # Disabled until Sphinx is upgraded to 9.x.
     "B008",
     "B022",
     "B023",
@@ -257,7 +257,7 @@ fallback_version = "1.9.20"
 include = ["datacube", "examples", "integration_tests", "tests"]
 
 [tool.mypy]
-python_version = '3.10'
+python_version = '3.12'
 allow_redefinition = true
 enable_error_code = ['explicit-override']
 ignore_missing_imports = true

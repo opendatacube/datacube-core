@@ -6,10 +6,8 @@ from __future__ import annotations
 
 import os
 import warnings
-from typing import Any
+from typing import Any, override
 from urllib.parse import quote_plus, urlparse
-
-from typing_extensions import override
 
 from ..migration import ODC2DeprecationWarning
 from .exceptions import ConfigException

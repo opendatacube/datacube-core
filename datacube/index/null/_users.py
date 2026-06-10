@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-from typing_extensions import override
+from typing import override
 
 from datacube.index.abstract import AbstractUserResource
 

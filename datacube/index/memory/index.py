@@ -6,10 +6,9 @@ from __future__ import annotations
 
 import logging
 from threading import Lock
-from typing import Any
+from typing import Any, override
 
 from deprecat import deprecat
-from typing_extensions import override
 
 from datacube.index.abstract import (
     AbstractIndex,

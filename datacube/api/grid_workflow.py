@@ -6,12 +6,11 @@ from __future__ import annotations
 
 import logging
 from collections import OrderedDict
-from typing import Literal
+from typing import Literal, override
 
 import pandas as pd
 import xarray as xr
 from odc.geo.geom import intersects
-from typing_extensions import override
 
 from datacube.utils import DatacubeException
 

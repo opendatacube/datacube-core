@@ -5,10 +5,10 @@
 from __future__ import annotations
 
 import logging
+from typing import override
 
 from cachetools.func import lru_cache
 from odc.geo import CRS
-from typing_extensions import override
 
 from datacube.index import fields
 from datacube.index.abstract import AbstractProductResource
@@ -46,6 +46,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
         self.get_unsafe = lru_cache()(self.get_unsafe)  # type: ignore[method-assign]
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)  # type: ignore[method-assign]
 
+    @override
     def __getstate__(self) -> tuple[PostgresDb, AbstractMetadataTypeResource]:
         """
         We define getstate/setstate to avoid pickling the caches

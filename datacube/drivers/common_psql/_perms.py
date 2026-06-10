@@ -8,10 +8,10 @@ import contextlib
 import logging
 from abc import ABCMeta, abstractmethod
 from enum import Enum, EnumMeta
+from typing import Self
 
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
-from typing_extensions import Self
 
 from ._utils import escape_pg_identifier
 

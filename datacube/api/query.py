@@ -13,14 +13,13 @@ import datetime
 import logging
 import math
 import warnings
-from typing import Any, Literal
+from typing import Any, Literal, override
 
 import numpy as np
 import pandas
 from odc.geo import Geometry
 from odc.geo.geom import lonlat_bounds, mid_longitude
 from pandas import to_datetime as pandas_to_datetime
-from typing_extensions import override
 
 from ..index import extract_geom_from_query, strip_all_spatial_fields_from_query
 from ..model import Range
@@ -304,7 +303,7 @@ def _values_to_search(**kwargs) -> dict:
     return search
 
 
-def _time_to_search_dims(time_range) -> Range:
+def _time_to_search_dims(time_range) -> Range | datetime.datetime:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         tr_start, tr_end = time_range, time_range
@@ -372,7 +371,7 @@ def solar_day(dataset: Dataset, longitude: float | None = None) -> np.datetime64
         raise ValueError(
             f"Cannot compute solar_day: dataset '{dataset.id}' is missing center time"
         )
-    utc = dataset.center_time.astimezone(datetime.timezone.utc)
+    utc = dataset.center_time.astimezone(datetime.UTC)
 
     if longitude is None:
         _lon = _ds_mid_longitude(dataset)

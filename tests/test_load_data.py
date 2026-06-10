@@ -4,11 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Never
 
 import numpy as np
 import pytest
-from typing_extensions import Never
 from xarray import Dataset
 
 from datacube import Datacube

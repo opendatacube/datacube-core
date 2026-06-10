@@ -9,9 +9,9 @@ Core SQL schema settings.
 from __future__ import annotations
 
 import logging
+from typing import Self, override
 
 from sqlalchemy import MetaData, text
-from typing_extensions import Self, override
 
 from datacube.drivers.common_psql import (
     UserRoleBase,

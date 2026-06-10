@@ -25,11 +25,9 @@ __all__ = [
 ]
 
 T = TypeVar("T")
-T1 = TypeVar("T1")
-T2 = TypeVar("T2")
 
 
-def map_with_lookahead(
+def map_with_lookahead[T1, T2](
     it: Iterable[T1],
     if_one: Callable[[T1], T2] | None = None,
     if_many: Callable[[T1], T2] | None = None,

@@ -6,9 +6,7 @@ from __future__ import annotations
 
 import logging
 from copy import deepcopy
-from typing import Any, cast
-
-from typing_extensions import override
+from typing import Any, cast, override
 
 from datacube.index.abstract import (
     AbstractMetadataTypeResource,

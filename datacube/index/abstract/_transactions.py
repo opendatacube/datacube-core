@@ -6,9 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from threading import Lock
-from typing import Any
-
-from typing_extensions import override
+from typing import Any, override
 
 from datacube.index.exceptions import TransactionException
 from datacube.utils.generic import thread_local_cache

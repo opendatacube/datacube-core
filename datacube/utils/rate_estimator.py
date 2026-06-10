@@ -4,8 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from timeit import default_timer as t_now
 from types import SimpleNamespace
-
-from typing_extensions import override
+from typing import override
 
 
 class RateEstimator:

@@ -7,10 +7,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypeAlias, cast
+from typing import Any, TypeAlias, cast, override
 from uuid import UUID
-
-from typing_extensions import override
 
 from ._base import DSID, dsid_to_uuid
 

@@ -4,11 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, override
 
 from deprecat import deprecat
 from odc.geo import CRS
-from typing_extensions import override
 
 from datacube.index.abstract import AbstractDatasetResource
 from datacube.migration import ODC2DeprecationWarning

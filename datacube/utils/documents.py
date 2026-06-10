@@ -16,7 +16,7 @@ from collections import OrderedDict
 from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, override
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from uuid import UUID, uuid5
@@ -24,7 +24,6 @@ from uuid import UUID, uuid5
 import numpy
 import toolz
 import yaml
-from typing_extensions import override
 
 from datacube.utils import json
 

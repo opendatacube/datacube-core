@@ -12,11 +12,10 @@ from collections import namedtuple
 from collections.abc import Iterable
 from itertools import chain
 from time import monotonic
-from typing import Any, NamedTuple, cast
+from typing import Any, NamedTuple, cast, override
 
 from deprecat import deprecat
 from odc.geo import CRS
-from typing_extensions import override
 
 from datacube.index import fields
 from datacube.index.abstract import (

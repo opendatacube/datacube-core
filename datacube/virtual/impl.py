@@ -14,7 +14,7 @@ import uuid
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Mapping, Sequence
-from typing import Any, cast
+from typing import Any, cast, override
 
 import dask.array
 import numpy
@@ -26,7 +26,6 @@ from odc.geo.math import is_affine_st
 from odc.geo.overlap import compute_reproject_roi
 from odc.geo.warp import resampling_s2rio, rio_reproject
 from odc.geo.xr import xr_coords
-from typing_extensions import override
 
 from datacube import Datacube
 from datacube.api.core import output_geobox, per_band_load_data_settings

@@ -7,6 +7,7 @@ from __future__ import annotations
 import warnings
 from copy import deepcopy
 from datetime import datetime
+from typing import override
 from unittest import mock
 
 import numpy
@@ -14,7 +15,6 @@ import pytest
 import xarray as xr
 from odc.geo import CRS
 from odc.geo.gridspec import GridSpec
-from typing_extensions import override
 
 from datacube.migration import ODC2DeprecationWarning
 from datacube.model import Dataset, MetadataType, Product
