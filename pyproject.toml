@@ -26,7 +26,7 @@ classifiers = [
 dependencies = [
     'affine',
     'alembic',
-    'antimeridian<0.4.5', # All test_index_cloning tests fail with 0.4.5.
+    'antimeridian<0.4.8', # All test_index_cloning tests fail with 0.4.5.
     'cachetools',
     'click>=8.2',  # Support for deprecated argument on options.
     'dask[array]',
@@ -51,7 +51,7 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["setuptools>=69", "setuptools_scm[toml]>=8,<10"]
+requires = ["setuptools>=69", "setuptools_scm[toml]>=8,<11"]
 # v69 includes py.typed files by default
 build-backend = "setuptools.build_meta"
 

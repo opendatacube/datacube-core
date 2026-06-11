@@ -66,15 +66,15 @@ wheels = [
 
 [[package]]
 name = "antimeridian"
-version = "0.4.4"
+version = "0.4.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "shapely" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b8/75/9090aec3959ddc6a5881bc2f2f718a7510cbf518a3100718ca1097085506/antimeridian-0.4.4.tar.gz", hash = "sha256:cb6b9f93e7af6c3f064e0764974fdb62fe1a118926d010eabc4826b9f597ab3b", size = 12632548, upload-time = "2025-11-26T14:06:31.54Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/ca/e196bc600c4c45a7be7194eed393a2b05d3dc30f0e5c07b92ceb85414c2a/antimeridian-0.4.7.tar.gz", hash = "sha256:ae1ee613ddec6bf1bec35ee89d49baed03341e0c295b26f4c1dca3b36fff9698", size = 12633152, upload-time = "2026-04-03T23:40:00.667Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/79/86484a6e3ef453dfa2f24caa971dc3f69baf95d3a0f2c6d7b378375394ab/antimeridian-0.4.4-py3-none-any.whl", hash = "sha256:050cf00e73dcd51a170042b32d8fa6280eecfe9faf1b13d24610bc22c85e7006", size = 15023, upload-time = "2025-11-26T14:06:29.705Z" },
+    { url = "https://files.pythonhosted.org/packages/50/cc/f1f8a798820dfa339f8321e3b92f5cda38b0e4b2a0bd38f9d7a64bca26ca/antimeridian-0.4.7-py3-none-any.whl", hash = "sha256:fedc04d5460ee9f05e37e7adc335843538fbd911c2bf7bd36c5393cd4ffe107d", size = 15684, upload-time = "2026-04-03T23:39:58.608Z" },
 ]
 
 [[package]]
@@ -894,7 +894,7 @@ doc = [
 requires-dist = [
     { name = "affine" },
     { name = "alembic" },
-    { name = "antimeridian", specifier = "<0.4.5" },
+    { name = "antimeridian", specifier = "<0.4.8" },
     { name = "boto3", marker = "extra == 's3'" },
     { name = "botocore", marker = "extra == 's3'" },
     { name = "bottleneck", marker = "extra == 'performance'" },
