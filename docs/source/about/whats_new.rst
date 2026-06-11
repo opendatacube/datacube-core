@@ -5,8 +5,44 @@
 Release History
 ***************
 
+1.9.21 (11 June 2026)
+=====================
+
+Includes a bug fix to STAC metadata generation.
+
+Datacube-core now requires Python 3.12 at minimum.  The previous minimum Python requirement (3.10)
+is only a few months away from end-of-life and it is becoming harder and harder to maintain support
+as upstream libraries bump their own minimum requirements.
+
+What's Changed
+--------------
+
+* pyproject: permit click 8.4.1 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2500
+* readthedocs: use Ubuntu 26.04/Python 3.14 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2510
+* Ensure STAC raster:bands is valid JSON by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2508
+* pyproject: require Python 3.12 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2504
+* pyproject: remove Python 3.10 pins by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2513
+* Prepare for 1.9.21 release by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2515
+
+Automated Updates
+-----------------
+
+* build(deps): bump astral-sh/uv from 0.11.16 to 0.11.17 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2501
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2503
+* build(deps): bump astral-sh/uv from 0.11.17 to 0.11.18 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2506
+* build(deps): bump the actions-deps group with 4 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2505
+* build(deps): bump astral-sh/uv from 0.11.18 to 0.11.19 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2507
+* build(deps): bump osgeo/gdal from ubuntu-full-3.13.0 to ubuntu-full-3.13.1 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2509
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2511
+* build(deps): bump astral-sh/uv from 0.11.19 to 0.11.20 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2514
+
+The Open Data Cube Steering Council acknowledges the ongoing support and contributions to this release from
+RISE and Geoscience Australia.
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.20...1.9.21
+
 1.9.20 (28 May 2026)
-======================
+====================
 
 New features:
 
