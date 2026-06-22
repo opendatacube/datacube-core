@@ -79,7 +79,9 @@ OUTPUT_FORMATS: dict[str, Callable[[Any, Collection, list[dict[str, Any]]], None
 }
 
 
-@click.group(help="Search the Data Cube", context_settings=CLICK_SETTINGS)
+@click.group(
+    name="datacube-search", help="Search the Data Cube", context_settings=CLICK_SETTINGS
+)
 @ui.global_cli_options
 @click.option(
     "-f",
