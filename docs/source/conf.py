@@ -139,7 +139,7 @@ html_context = {
     "github_user": "opendatacube",
     "github_repo": "datacube-core",
     "github_version": "develop",
-    "doc_path": "docs",
+    "doc_path": "docs/source",
 }
 
 html_logo = "_static/odc-logo-horizontal.svg"

@@ -186,6 +186,7 @@ creation::
 
    datacube spindex update 3577
 
+.. _user-and-permissions-management:
 
 User and Permissions Management
 ===============================
