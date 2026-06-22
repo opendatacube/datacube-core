@@ -118,7 +118,6 @@ doc = [
 [project.scripts]
 datacube = 'datacube.scripts.cli_app:cli'
 datacube-search = 'datacube.scripts.search_tool:cli'
-datacube-worker = 'datacube.execution.worker:main'
 
 [project.entry-points."datacube.plugins.io.read"]
 netcdf = 'datacube.drivers.netcdf.driver:reader_driver_init'
