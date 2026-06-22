@@ -246,7 +246,11 @@ global_cli_options = compose(
 )
 
 
-@click.group(help="Data Cube command-line interface", context_settings=CLICK_SETTINGS)
+@click.group(
+    name="datacube",
+    help="Data Cube command-line interface",
+    context_settings=CLICK_SETTINGS,
+)
 @global_cli_options
 def cli() -> None:
     pass
