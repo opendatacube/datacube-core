@@ -147,21 +147,6 @@ class NullIndexDriver(AbstractIndexDriver):
     def index_class(cls) -> type[AbstractIndex]:
         return Index
 
-    @staticmethod
-    @override
-    @deprecat(
-        reason="The 'metadata_type_from_doc' static method has been deprecated. "
-        "Please use the 'index.metadata_type.from_doc()' instead.",
-        version="1.9.0",
-        category=ODC2DeprecationWarning,
-    )
-    def metadata_type_from_doc(definition: JsonDict) -> MetadataType:
-        """
-        :param definition:
-        """
-        MetadataType.validate(definition)  # type: ignore[attr-defined]
-        return MetadataType(definition, search_field_extractor=Index.get_dataset_fields)
-
 
 def index_driver_init() -> NullIndexDriver:
     return NullIndexDriver()

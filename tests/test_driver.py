@@ -5,20 +5,17 @@
 from types import SimpleNamespace
 
 import pytest
-import yaml
 
 from datacube.drivers import (
-    index_driver_by_name,
     index_drivers,
     new_datasource,
     reader_drivers,
     writer_drivers,
 )
 from datacube.drivers.indexes import IndexDriverCache
-from datacube.model import MetadataType
 from datacube.storage import BandInfo
 from datacube.storage._rio import RasterDatasetDataSource
-from datacube.testutils import mk_sample_dataset, suppress_deprecations
+from datacube.testutils import mk_sample_dataset
 
 
 def test_new_datasource_fallback() -> None:
@@ -77,32 +74,6 @@ def test_writer_driver_mk_uri() -> None:
     file_path = "/path/to/my_file.nc"
     file_uri = writer_driver.mk_uri(file_path=file_path)
     assert file_uri == f"file://{file_path}"
-
-
-def test_metadata_type_from_doc() -> None:
-    metadata_doc = yaml.safe_load("""
-name: minimal
-description: minimal metadata definition
-dataset:
-    id: [id]
-    sources: [lineage, source_datasets]
-    label: [label]
-    creation_dt: [creation_dt]
-    search_fields:
-        some_custom_field:
-            description: some custom field
-            offset: [a,b,c,custom]
-    """)
-
-    for name in index_drivers():
-        driver = index_driver_by_name(name)
-        assert driver is not None
-        with suppress_deprecations():
-            metadata = driver.metadata_type_from_doc(metadata_doc)  # deprecated method
-            assert isinstance(metadata, MetadataType)
-            assert metadata.id is None
-            assert metadata.name == "minimal"
-            assert "some_custom_field" in metadata.dataset_fields
 
 
 def test_reader_cache_throws_on_missing_fallback() -> None:
