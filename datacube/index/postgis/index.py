@@ -273,22 +273,6 @@ class PostgisIndexDriver(AbstractIndexDriver):
 
     @staticmethod
     @override
-    @deprecat(
-        reason="The 'metadata_type_from_doc' static method has been deprecated. "
-        "Please use the 'index.metadata_type.from_doc()' instead.",
-        version="1.9.0",
-        category=ODC2DeprecationWarning,
-    )
-    def metadata_type_from_doc(definition: JsonDict) -> MetadataType:
-        """
-        :param definition:
-        """
-        # TODO: Validate metadata is ODCv2 compliant - e.g. either non-raster or EO3.
-        MetadataType.validate(definition)  # type: ignore[attr-defined]
-        return MetadataType(definition, search_field_extractor=Index.get_dataset_fields)
-
-    @staticmethod
-    @override
     def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:
         return config_options_for_psql_driver(env)
 
