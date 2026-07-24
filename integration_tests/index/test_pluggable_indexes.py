@@ -2,14 +2,25 @@
 #
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
+from typing import Type
+
 import pytest
+
+from datacube.index.postgres.index import Index as PgIndex
+from datacube.index.postgis.index import Index as PGISIndex
 
 from datacube.index.postgres.index import Index
 
+@pytest.fixture
+def index_cls(datacube_env_name) -> Type[PgIndex | PGISIndex]:
+    if datacube_env_name.startswith("postgis"):
+        return PGISIndex
+    return PgIndex
 
-@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"))
-def test_with_standard_index(uninitialised_postgres_db, cfg_env) -> None:
-    index = Index(uninitialised_postgres_db, cfg_env)
+
+@pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3", "postgis", "postgis3"))
+def test_with_standard_index(uninitialised_postgres_db, cfg_env, index_cls) -> None:
+    index = index_cls(uninitialised_postgres_db, cfg_env)
     index.init_db()
 
 
