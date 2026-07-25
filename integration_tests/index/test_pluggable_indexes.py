@@ -5,9 +5,11 @@
 from typing import Type
 
 import pytest
+import yaml
 
 from datacube.index.postgres.index import Index as PgIndex
 from datacube.index.postgis.index import Index as PGISIndex
+from datacube.model import MetadataType
 
 from datacube.index.postgres.index import Index
 
