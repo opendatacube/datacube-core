@@ -7,8 +7,6 @@ from __future__ import annotations
 import logging
 from typing import Any, override
 
-from deprecat import deprecat
-
 from datacube.index.abstract import (
     AbstractIndex,
     AbstractIndexDriver,
@@ -19,8 +17,6 @@ from datacube.index.null._datasets import DatasetResource
 from datacube.index.null._metadata_types import MetadataTypeResource
 from datacube.index.null._products import ProductResource
 from datacube.index.null._users import UserResource
-from datacube.migration import ODC2DeprecationWarning
-from datacube.model import MetadataType
 from datacube.model.fields import get_dataset_fields
 
 TYPE_CHECKING = False
@@ -31,7 +27,6 @@ if TYPE_CHECKING:
 
     from datacube.cfg import ODCEnvironment
     from datacube.model import Field
-    from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -116,9 +111,8 @@ class Index(AbstractIndex):
     ) -> Index:
         return cls(cfg_env)
 
-    @classmethod
     @override
-    def get_dataset_fields(cls, doc: Mapping[str, Any]) -> dict[str, Field]:
+    def get_dataset_fields(self, doc: Mapping[str, Any]) -> dict[str, Field]:
         return get_dataset_fields(doc)
 
     @override

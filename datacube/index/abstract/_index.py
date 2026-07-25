@@ -131,9 +131,8 @@ class AbstractIndex(ABC):
     ) -> AbstractIndex:
         """Instantiate a new index from an ODCEnvironment configuration object"""
 
-    @classmethod
     @abstractmethod
-    def get_dataset_fields(cls, doc: dict) -> Mapping[str, Field]:
+    def get_dataset_fields(self, doc: dict) -> Mapping[str, Field]:
         """Return dataset search fields from a metadata type document"""
 
     @abstractmethod
