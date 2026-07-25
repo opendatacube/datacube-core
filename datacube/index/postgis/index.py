@@ -145,8 +145,8 @@ class Index(AbstractIndex):
         return cls(db, cfg_env)
 
     @override
-    def get_dataset_fields(cls, doc: Mapping[str, Any]) -> dict:
-        return PostGisDb.get_dataset_fields(doc)
+    def get_dataset_fields(self, doc: Mapping[str, Any]) -> dict:
+        return self._db.get_dataset_fields(doc)
 
     @override
     def init_db(
