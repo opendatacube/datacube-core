@@ -8,8 +8,6 @@ import logging
 from contextlib import contextmanager
 from typing import Any, override
 
-from deprecat import deprecat
-
 from datacube.cfg.opt import config_options_for_psql_driver
 from datacube.drivers.common_psql import catch_generator_timeout
 from datacube.drivers.postgres import PostgresDb
@@ -24,8 +22,6 @@ from datacube.index.postgres._metadata_types import MetadataTypeResource
 from datacube.index.postgres._products import ProductResource
 from datacube.index.postgres._transaction import PostgresTransaction
 from datacube.index.postgres._users import UserResource
-from datacube.migration import ODC2DeprecationWarning
-from datacube.model import MetadataType
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
@@ -35,7 +31,6 @@ if TYPE_CHECKING:
     from datacube.cfg.opt import ODCOptionHandler
     from datacube.drivers.postgres import PostgresDbAPI
     from datacube.index.abstract import AbstractTransaction
-    from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -139,9 +134,8 @@ class Index(AbstractIndex):
         )
         return cls(db, cfg_env)
 
-    @classmethod
     @override
-    def get_dataset_fields(cls, doc: Mapping[str, Any]) -> Mapping[str, Any]:
+    def get_dataset_fields(self, doc: Mapping[str, Any]) -> Mapping[str, Any]:
         return PostgresDb.get_dataset_fields(doc)
 
     @override
