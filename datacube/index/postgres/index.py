@@ -136,7 +136,7 @@ class Index(AbstractIndex):
 
     @override
     def get_dataset_fields(self, doc: Mapping[str, Any]) -> Mapping[str, Any]:
-        return PostgresDb.get_dataset_fields(doc)
+        return self._db.get_dataset_fields(doc)
 
     @override
     def init_db(
