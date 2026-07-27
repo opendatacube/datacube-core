@@ -34,8 +34,8 @@ def test_index_get_product_time_bounds(
         time_bounds = index.datasets.get_product_time_bounds(
             product="ls5_nbar_scene"
         )  # Test of deprecated method
-    left = sorted(dataset_times, key=lambda dataset: dataset.time.lower)[0].time.lower
-    right = sorted(dataset_times, key=lambda dataset: dataset.time.upper)[-1].time.upper
+    left = min(dataset_times, key=lambda dataset: dataset.time.lower).time.lower
+    right = max(dataset_times, key=lambda dataset: dataset.time.upper).time.upper
 
     assert left == time_bounds[0]
     assert right == time_bounds[1]

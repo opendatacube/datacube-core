@@ -1230,7 +1230,7 @@ class Datacube:
 def per_band_load_data_settings(
     measurements: list[Measurement] | Mapping[str, Measurement],
     resampling: Resampling | Mapping[str, Resampling] | None = None,
-    fuse_func: FuserFunc | str | Mapping[str, FuserFunc | None | str] | None = None,
+    fuse_func: FuserFunc | str | Mapping[str, FuserFunc | str | None] | None = None,
     legacy_load: bool = True,
 ) -> list[Measurement]:
     def with_resampling(
