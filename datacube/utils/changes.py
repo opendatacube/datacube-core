@@ -14,7 +14,7 @@ import numpy
 
 # Type that can be checked for changes.
 # (MyPy approximation without recursive references)
-Changeable: TypeAlias = str | int | None | Sequence[Any] | Mapping[str, Any]
+Changeable: TypeAlias = str | int | Sequence[Any] | Mapping[str, Any] | None
 # More accurate recursive definition:
 # Changeable = str | int | None | Sequence["Changeable"] |  Mapping[str, "Changeable"]
 

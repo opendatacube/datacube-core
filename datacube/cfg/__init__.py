@@ -35,8 +35,6 @@ __all__ = [
     "IAMAuthenticationOptionHandler",
     "IntOptionHandler",
     "ODCConfig",
-    "ODCConfig",
-    "ODCEnvironment",
     "ODCEnvironment",
     "ODCOptionHandler",
     "PostgresURLOptionHandler",

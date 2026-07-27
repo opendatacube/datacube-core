@@ -11,6 +11,6 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-JsonAtom: TypeAlias = None | bool | str | float | int
+JsonAtom: TypeAlias = bool | str | float | int | None
 JsonLike: TypeAlias = JsonAtom | list["JsonLike"] | dict[str, "JsonLike"]
 JsonDict: TypeAlias = dict[str, JsonLike]
