@@ -232,8 +232,10 @@ aws_secret_access_key = fake-fake-fake
         profile="no_region", creds=creds.get_frozen_credentials(), region_name="mordor"
     )
 
+    sess_creds = sess.get_credentials()
+    assert sess_creds is not None
     assert (
-        sess.get_credentials().get_frozen_credentials()
+        sess_creds.get_frozen_credentials()
         == creds.get_frozen_credentials()
     )
 
