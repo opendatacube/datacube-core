@@ -75,7 +75,6 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-
 def include_name(
     name: str | None,
     type_: Literal[
@@ -85,6 +84,7 @@ def include_name(
         "index",
         "unique_constraint",
         "foreign_key_constraint",
+        "check_constraint",
     ],
     parent_names: MutableMapping[
         Literal["schema_name", "table_name", "schema_qualified_table_name"], str | None
