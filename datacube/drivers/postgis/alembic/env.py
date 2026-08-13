@@ -75,6 +75,7 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
+
 def include_name(
     name: str | None,
     type_: Literal[

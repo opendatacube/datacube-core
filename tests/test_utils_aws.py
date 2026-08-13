@@ -234,10 +234,7 @@ aws_secret_access_key = fake-fake-fake
 
     sess_creds = sess.get_credentials()
     assert sess_creds is not None
-    assert (
-        sess_creds.get_frozen_credentials()
-        == creds.get_frozen_credentials()
-    )
+    assert sess_creds.get_frozen_credentials() == creds.get_frozen_credentials()
 
     aws, creds = get_aws_settings(profile="east")
     assert aws["region_name"] == "us-east-1"
