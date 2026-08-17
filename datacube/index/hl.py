@@ -513,7 +513,6 @@ class Doc2Dataset:
             # stac2ds returns a Dataset, so in theory we could return here.
             # However, it does not currently handle lineage properly nor conduct consistency checks,
             # so we retrieve the eo3 dict and proceed as usual.
-            print(self._conversion_cfg["asset_absolute_paths"])
             try:
                 eo3_doc = next(
                     iter(
