@@ -18,10 +18,9 @@ from __future__ import annotations
 import logging
 import re
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, override
 
 from sqlalchemy import create_engine, event
-from typing_extensions import override
 
 import datacube
 from datacube.drivers.common_psql import catch_timeout

@@ -1,7 +1,7 @@
 [project]
 name = 'datacube'
 dynamic = ['version']
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 readme = "README.rst"
 license = "Apache-2.0"
 description = "An analysis environment for satellite and other earth observation data"
@@ -17,10 +17,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: GIS",
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
@@ -72,9 +71,7 @@ netcdf = ['netcdf4']
 # orjson = ['orjson']
 postgres = ['psycopg2']
 psycopg3 = ['psycopg']
-# tifffile 2026 (a scikit-image dependency) tells pip/uv it is Python 3.10 compatible, but isn't.
-# Remove pins after we move minimum to Python 3.12
-scikit-image = ['scikit-image<0.26','tifffile<2026']
+scikit-image = ['scikit-image']
 
 [dependency-groups]
 dev = [
@@ -111,18 +108,16 @@ doc = [
     'nbsphinx',
     'pydata-sphinx-theme',
     'recommonmark',
-    "Sphinx>=8.1.3,<9; python_version<'3.11'",
-    "Sphinx>=8.2.3,<9; python_version>='3.11'",
+    "Sphinx>=8.2.3,<9",
     'sphinx_autodoc_typehints',  # Propagate mypy info into docs
-    'sphinx-click',
+    'sphinx-click', # Version 6.2.0 has Sphinx 9 compatibility issues.
     'sphinx-design',
-    'sphinx-toolbox', # Sphinx 9 compatibility issues
+    'sphinx-toolbox',
 ]
 
 [project.scripts]
 datacube = 'datacube.scripts.cli_app:cli'
 datacube-search = 'datacube.scripts.search_tool:cli'
-datacube-worker = 'datacube.execution.worker:main'
 
 [project.entry-points."datacube.plugins.io.read"]
 netcdf = 'datacube.drivers.netcdf.driver:reader_driver_init'
@@ -215,6 +210,7 @@ select = [
 ]
 ignore = [
     # FIXME: re-enable these rules.
+    "UP040",  # Disabled until Sphinx is upgraded to 9.x.
     "B008",
     "B022",
     "B023",
@@ -251,13 +247,13 @@ include = ['datacube*']
 
 [tool.setuptools_scm]
 write_to = 'datacube/_version.py'
-fallback_version = "1.9.20"
+fallback_version = "1.9.21"
 
 [tool.ty.src]
 include = ["datacube", "examples", "integration_tests", "tests"]
 
 [tool.mypy]
-python_version = '3.10'
+python_version = '3.12'
 allow_redefinition = true
 enable_error_code = ['explicit-override']
 ignore_missing_imports = true

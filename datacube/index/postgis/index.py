@@ -7,11 +7,9 @@ from __future__ import annotations
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, override
 
-from deprecat import deprecat
 from odc.geo import CRS
-from typing_extensions import override
 
 from datacube.cfg.opt import config_options_for_psql_driver
 from datacube.drivers.common_psql import catch_generator_timeout
@@ -27,8 +25,6 @@ from datacube.index.postgis._metadata_types import MetadataTypeResource
 from datacube.index.postgis._products import ProductResource
 from datacube.index.postgis._transaction import PostgisTransaction
 from datacube.index.postgis._users import UserResource
-from datacube.migration import ODC2DeprecationWarning
-from datacube.model import MetadataType
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
@@ -38,7 +34,6 @@ if TYPE_CHECKING:
     from datacube.drivers.postgis import PostgisDbAPI
     from datacube.index.abstract import AbstractTransaction
     from datacube.model._base import DSID
-    from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -149,10 +144,9 @@ class Index(AbstractIndex):
         )
         return cls(db, cfg_env)
 
-    @classmethod
     @override
-    def get_dataset_fields(cls, doc: Mapping[str, Any]) -> dict:
-        return PostGisDb.get_dataset_fields(doc)
+    def get_dataset_fields(self, doc: Mapping[str, Any]) -> dict:
+        return self._db.get_dataset_fields(doc)
 
     @override
     def init_db(
@@ -271,22 +265,6 @@ class PostgisIndexDriver(AbstractIndexDriver):
     @override
     def index_class(cls) -> type[AbstractIndex]:
         return Index
-
-    @staticmethod
-    @override
-    @deprecat(
-        reason="The 'metadata_type_from_doc' static method has been deprecated. "
-        "Please use the 'index.metadata_type.from_doc()' instead.",
-        version="1.9.0",
-        category=ODC2DeprecationWarning,
-    )
-    def metadata_type_from_doc(definition: JsonDict) -> MetadataType:
-        """
-        :param definition:
-        """
-        # TODO: Validate metadata is ODCv2 compliant - e.g. either non-raster or EO3.
-        MetadataType.validate(definition)  # type: ignore[attr-defined]
-        return MetadataType(definition, search_field_extractor=Index.get_dataset_fields)
 
     @staticmethod
     @override

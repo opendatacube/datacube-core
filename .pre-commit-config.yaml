@@ -18,28 +18,24 @@ repos:
         - id: check-added-large-files
         - id: check-merge-conflict
     -   repo: https://github.com/pylint-dev/pylint
-        rev: v4.0.5  # Use the sha / tag you want to point at
+        rev: v4.0.7  # Use the sha / tag you want to point at
         hooks:
         -   id: pylint
     - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.15.15
+      rev: v0.16.2
       hooks:
       - id: ruff-check
         args: [--fix, --show-fixes, --output-format, grouped]
       - id: ruff-format
     - repo: https://github.com/astral-sh/uv-pre-commit
-      rev: 0.11.17
+      rev: 0.12.3
       hooks:
         # Ensure uv.lock is up-to-date if pyproject.toml has changed
         - id: uv-lock
     - repo: https://github.com/codespell-project/codespell
-      rev: v2.4.2
+      rev: v2.4.3
       hooks:
       - id: codespell
-        # Add tomli as a dependency for Python 3.10 to read config from pyproject.toml
-        # This can be removed when we no longer support 3.10
-        additional_dependencies:
-          - tomli
         files: ^.*\.py$
     - repo: https://github.com/Lucas-C/pre-commit-hooks
       rev: v1.5.6

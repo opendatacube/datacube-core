@@ -5,11 +5,11 @@
 from __future__ import annotations
 
 import warnings
+from typing import override
 
 import numpy
 import pandas as pd
 import xarray
-from typing_extensions import override
 
 from datacube.utils.masking import make_mask as make_mask_prim
 from datacube.utils.masking import mask_invalid_data as mask_invalid_data_prim

@@ -8,14 +8,13 @@ Validation of document/dictionary changes.
 
 from collections.abc import Callable, Mapping, Sequence
 from itertools import zip_longest
-from typing import Any, TypeAlias, cast
+from typing import Any, TypeAlias, cast, override
 
 import numpy
-from typing_extensions import override
 
 # Type that can be checked for changes.
 # (MyPy approximation without recursive references)
-Changeable: TypeAlias = str | int | None | Sequence[Any] | Mapping[str, Any]
+Changeable: TypeAlias = str | int | Sequence[Any] | Mapping[str, Any] | None
 # More accurate recursive definition:
 # Changeable = str | int | None | Sequence["Changeable"] |  Mapping[str, "Changeable"]
 

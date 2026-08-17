@@ -9,9 +9,6 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from urllib.parse import urlparse
 
-from deprecat import deprecat
-
-from datacube.migration import ODC2DeprecationWarning
 from datacube.utils import report_to_user
 from datacube.utils.generic import thread_local_cache
 
@@ -23,9 +20,8 @@ if TYPE_CHECKING:
     from odc.geo import CRS
 
     from datacube.cfg import ODCEnvironment, ODCOptionHandler
-    from datacube.model import Field, MetadataType
+    from datacube.model import Field
     from datacube.model._base import DSID
-    from datacube.utils.json_types import JsonDict
 
     from ._datasets import AbstractDatasetResource
     from ._lineage import AbstractLineageResource
@@ -135,9 +131,8 @@ class AbstractIndex(ABC):
     ) -> AbstractIndex:
         """Instantiate a new index from an ODCEnvironment configuration object"""
 
-    @classmethod
     @abstractmethod
-    def get_dataset_fields(cls, doc: dict) -> Mapping[str, Field]:
+    def get_dataset_fields(self, doc: dict) -> Mapping[str, Field]:
         """Return dataset search fields from a metadata type document"""
 
     @abstractmethod
@@ -421,16 +416,6 @@ class AbstractIndexDriver(ABC):
         return cls.index_class().from_config(
             config_env, application_name, validate_connection
         )
-
-    @staticmethod
-    @abstractmethod
-    @deprecat(
-        reason="The 'metadata_type_from_doc' static method has been deprecated. "
-        "Please use the 'index.metadata_type.from_doc()' instead.",
-        version="1.9.0",
-        category=ODC2DeprecationWarning,
-    )
-    def metadata_type_from_doc(definition: JsonDict) -> MetadataType: ...
 
     @staticmethod
     def get_config_option_handlers(env: ODCEnvironment) -> Iterable[ODCOptionHandler]:

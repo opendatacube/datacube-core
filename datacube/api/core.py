@@ -11,7 +11,7 @@ import uuid
 import warnings
 from collections.abc import Mapping
 from itertools import groupby
-from typing import Any, Literal, TypeAlias, cast
+from typing import Any, Literal, TypeAlias, cast, override
 
 import deprecat
 import numpy
@@ -21,7 +21,6 @@ from odc.geo import CRS, res_, resyx_, yx_
 from odc.geo.geobox import GeoBox, GeoboxTiles
 from odc.geo.geom import bbox_union, box, intersects
 from odc.geo.xr import xr_coords
-from typing_extensions import override
 from xarray.core.coordinates import DataArrayCoordinates
 
 from datacube.cfg import ODCConfig
@@ -1231,7 +1230,7 @@ class Datacube:
 def per_band_load_data_settings(
     measurements: list[Measurement] | Mapping[str, Measurement],
     resampling: Resampling | Mapping[str, Resampling] | None = None,
-    fuse_func: FuserFunc | str | Mapping[str, FuserFunc | None | str] | None = None,
+    fuse_func: FuserFunc | str | Mapping[str, FuserFunc | str | None] | None = None,
     legacy_load: bool = True,
 ) -> list[Measurement]:
     def with_resampling(

@@ -320,6 +320,8 @@ def test_ds2stac(eo3_dataset: Dataset) -> None:
             "raster:bands",
         )
     )
+    assert output_stac["assets"]["nbart_blue"]["raster:bands"][0]["nodata"] == -999
+    assert output_stac["assets"]["oa_time_delta"]["raster:bands"][0]["nodata"] == "nan"
     assert "raster:bands" not in output_stac["assets"]["nbar_blue"]
     assert output_stac["links"] == [
         {
@@ -472,7 +474,9 @@ def test_s1_nrb(s1_nrb_stac, s1_nrb_product, without_aws_env) -> None:
     # simulate loading an indexed stac dataset by converting it to eo3 then back to stac
     eo3_ds = next(
         iter(
-            stac2ds([s1_nrb_stac], product_cache={"ga_s1_nrb_iw_hh_0": s1_nrb_product})
+            stac2ds(
+                [s1_nrb_stac], product_cache={"ga_s1_nrb_iw_vv_vh_0": s1_nrb_product}
+            )
         )
     )
     with warnings.catch_warnings():

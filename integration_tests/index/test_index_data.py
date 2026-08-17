@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import copy
 import datetime
-from datetime import timezone
 from pathlib import Path
 from uuid import UUID
 
@@ -805,7 +804,7 @@ def test_index_dataset_with_location(
 
 
 def utc_now() -> datetime.datetime:
-    return datetime.datetime.now(timezone.utc)
+    return datetime.datetime.now(datetime.UTC)
 
 
 def test_bulk_reads_transaction(

@@ -5,9 +5,9 @@
 from __future__ import annotations
 
 import logging
+from typing import override
 
 from cachetools.func import lru_cache
-from typing_extensions import override
 
 from datacube.index.abstract import AbstractMetadataTypeResource
 from datacube.index.postgres._transaction import IndexResourceAddIn
@@ -35,6 +35,7 @@ class MetadataTypeResource(AbstractMetadataTypeResource, IndexResourceAddIn):
         self.get_unsafe = lru_cache()(self.get_unsafe)  # type: ignore[method-assign]
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)  # type: ignore[method-assign]
 
+    @override
     def __getstate__(self) -> tuple:
         """
         We define getstate/setstate to avoid pickling the caches

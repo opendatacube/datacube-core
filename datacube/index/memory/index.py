@@ -6,10 +6,7 @@ from __future__ import annotations
 
 import logging
 from threading import Lock
-from typing import Any
-
-from deprecat import deprecat
-from typing_extensions import override
+from typing import Any, override
 
 from datacube.index.abstract import (
     AbstractIndex,
@@ -21,8 +18,6 @@ from datacube.index.memory._fields import get_dataset_fields
 from datacube.index.memory._metadata_types import MetadataTypeResource
 from datacube.index.memory._products import ProductResource
 from datacube.index.memory._users import UserResource
-from datacube.migration import ODC2DeprecationWarning
-from datacube.model import MetadataType
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
@@ -32,7 +27,6 @@ if TYPE_CHECKING:
 
     from datacube.cfg import ODCEnvironment
     from datacube.model import Field
-    from datacube.utils.json_types import JsonDict
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -131,9 +125,8 @@ class Index(AbstractIndex):
     ) -> Index:
         return cls(cfg_env)
 
-    @classmethod
     @override
-    def get_dataset_fields(cls, doc: Mapping[str, Any]) -> dict[str, Field]:
+    def get_dataset_fields(self, doc: Mapping[str, Any]) -> dict[str, Field]:
         return get_dataset_fields(doc)
 
     @override
@@ -161,21 +154,6 @@ class MemoryIndexDriver(AbstractIndexDriver):
     @override
     def index_class(cls) -> type[AbstractIndex]:
         return Index
-
-    @staticmethod
-    @override
-    @deprecat(
-        reason="The 'metadata_type_from_doc' static method has been deprecated. "
-        "Please use the 'index.metadata_type.from_doc()' instead.",
-        version="1.9.0",
-        category=ODC2DeprecationWarning,
-    )
-    def metadata_type_from_doc(definition: JsonDict) -> MetadataType:
-        """
-        :param definition:
-        """
-        MetadataType.validate(definition)  # type: ignore[attr-defined]
-        return MetadataType(definition, search_field_extractor=Index.get_dataset_fields)
 
 
 def index_driver_init() -> MemoryIndexDriver:

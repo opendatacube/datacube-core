@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import math
 from collections import namedtuple
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from functools import cached_property
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, override
 
 from sqlalchemy import and_, cast, func
 from sqlalchemy.dialects import postgresql as postgres
@@ -22,7 +22,6 @@ from sqlalchemy.dialects.postgresql import Range as PgRange
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import ColumnElement, ColumnExpressionArgument, FromClause
 from sqlalchemy.types import TIMESTAMP
-from typing_extensions import override
 
 from datacube import utils
 from datacube.drivers.postgis._schema import Dataset, search_field_index_map
@@ -618,8 +617,8 @@ class DateRangeDocField(RangeDocField):
         if isinstance(low, datetime) and isinstance(high, datetime):
             return RangeBetweenExpression(
                 self,
-                tz_as_utc(low).astimezone(timezone.utc),
-                tz_as_utc(high).astimezone(timezone.utc),
+                tz_as_utc(low).astimezone(UTC),
+                tz_as_utc(high).astimezone(UTC),
                 _range_class=PgRange,
             )
         raise ValueError(

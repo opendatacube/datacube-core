@@ -12,7 +12,6 @@ import copy
 import datetime
 import uuid
 import warnings
-from datetime import timezone
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -597,7 +596,7 @@ def test_search_returning(
     assert format_ == "PSEUDOMD"
 
     # It's always UTC in the document
-    expected_time = creation_time.astimezone(timezone.utc).replace(tzinfo=None)
+    expected_time = creation_time.astimezone(datetime.UTC).replace(tzinfo=None)
     assert expected_time.isoformat() == pseudo_ls8_dataset.metadata_doc["creation_dt"]
     assert label == pseudo_ls8_dataset.metadata_doc["ga_label"]
 

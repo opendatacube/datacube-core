@@ -14,12 +14,11 @@ import logging
 import os
 import sys
 from textwrap import dedent
-from typing import Literal
+from typing import Literal, override
 
 import click
 from lark.exceptions import UnexpectedCharacters, UnexpectedEOF
 from sqlalchemy.exc import OperationalError, ProgrammingError
-from typing_extensions import override
 
 from datacube import __version__
 from datacube.api.core import Datacube
@@ -247,7 +246,11 @@ global_cli_options = compose(
 )
 
 
-@click.group(help="Data Cube command-line interface", context_settings=CLICK_SETTINGS)
+@click.group(
+    name="datacube",
+    help="Data Cube command-line interface",
+    context_settings=CLICK_SETTINGS,
+)
 @global_cli_options
 def cli() -> None:
     pass

@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import datetime
 import decimal
-import sys
 from textwrap import dedent
 from typing import Any
 
@@ -152,13 +151,8 @@ def test_get_dataset_range_fields() -> None:
     assert xx["ab"].extract({}) is None
 
     # partially missing Range
-    if sys.version_info < (3, 11):
-        first_answer = Range(3, None)
-        second_answer = Range(None, 4)
-    else:
-        # Need type ignores with Python 3.11+ since Range is typed.
-        first_answer = Range(3, None)  # type: ignore[type-var]
-        second_answer = Range(None, 4)  # type: ignore[type-var]
+    first_answer = Range(3, None)  # type: ignore[type-var]
+    second_answer = Range(None, 4)  # type: ignore[type-var]
     assert xx["ab"].extract({"a": 3}) == first_answer
     assert xx["ab"].extract({"b": 4}) == second_answer
 

@@ -16,7 +16,7 @@ Persistence API implementation for postgres.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, override
 from typing import cast as type_cast
 
 from sqlalchemy import (
@@ -37,7 +37,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import INTERVAL, JSONB, UUID, insert
 from sqlalchemy.exc import IntegrityError
-from typing_extensions import override
 
 from datacube.drivers.common_psql import (
     catch_generator_timeout,

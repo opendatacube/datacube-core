@@ -7,7 +7,6 @@ Module
 """
 
 import datetime
-from datetime import timezone
 from os import terminal_size
 
 from sqlalchemy.dialects.postgresql import Range as PgRange
@@ -38,7 +37,7 @@ def test_csv_serialise() -> None:
         [
             {"f1": 12, "f2": PgRange(1.0, 2.0)},
             {
-                "f1": datetime.datetime(2014, 7, 26, 23, 48, 0, tzinfo=timezone.utc),
+                "f1": datetime.datetime(2014, 7, 26, 23, 48, 0, tzinfo=datetime.UTC),
                 "f2": PgRange(-1.0, 2.0),
             },
             {"f1": datetime.datetime(2014, 7, 26, 23, 48, 0), "f2": "landsat"},
@@ -61,7 +60,7 @@ def test_pretty_serialise() -> None:
         [
             {"f1": 12, "field 2": PgRange(1.0, 2.0)},
             {
-                "f1": datetime.datetime(2014, 7, 26, 23, 48, 0, tzinfo=timezone.utc),
+                "f1": datetime.datetime(2014, 7, 26, 23, 48, 0, tzinfo=datetime.UTC),
                 "field 2": PgRange(-1.0, 2.0),
             },
             {"f1": datetime.datetime(2014, 7, 26, 23, 48, 0), "field 2": "landsat"},

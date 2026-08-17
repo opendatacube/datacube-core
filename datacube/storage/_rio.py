@@ -11,13 +11,13 @@ from __future__ import annotations
 import contextlib
 import logging
 from contextlib import contextmanager
+from typing import override
 from urllib.parse import urlparse
 
 import numpy as np
 import rasterio
 from affine import Affine
 from odc.geo import CRS
-from typing_extensions import override
 
 from datacube.utils import get_part_from_uri, is_vsipath, uri_to_local_path
 from datacube.utils.math import num2numpy

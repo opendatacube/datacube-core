@@ -12,12 +12,11 @@ import logging
 import warnings
 from collections import namedtuple
 from time import monotonic
-from typing import Any, NamedTuple, cast
+from typing import Any, NamedTuple, cast, override
 from uuid import UUID
 
 from deprecat import deprecat
 from odc.geo import CRS
-from typing_extensions import override
 
 from datacube.drivers.postgis._api import (
     extract_dataset_fields,

@@ -10,10 +10,9 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from itertools import chain
-from typing import Any
+from typing import Any, override
 
 import yaml
-from typing_extensions import override
 
 from datacube.model.utils import SafeDumper
 

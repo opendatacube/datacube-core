@@ -3,15 +3,12 @@
 # Copyright (c) 2015-2026 ODC Contributors
 # SPDX-License-Identifier: Apache-2.0
 import datetime
-import sys
-from collections import namedtuple
 from collections.abc import Iterable
 from typing import Generic, NamedTuple, Protocol, TypeAlias, TypeVar
 from uuid import UUID
 
 from odc.geo import Geometry
 
-T = TypeVar("T")
 _T_contra = TypeVar("_T_contra", contravariant=True)
 
 
@@ -22,31 +19,27 @@ class Orderable(Protocol[_T_contra]):
 
 OrderedT = TypeVar("OrderedT", bound=Orderable)
 
-if sys.version_info < (3, 11):
-    # NamedTuples with multiple inheritance are not supported in Python 3.10.
-    Range = namedtuple("Range", ("begin", "end"))
-    Not = namedtuple("Not", "value")
-else:
 
-    class Range(NamedTuple, Generic[OrderedT]):
-        """
-        A named tuple representing a range.
+class Range(NamedTuple, Generic[OrderedT]):  # noqa: UP046
+    """
+    A named tuple representing a range.
 
-        :param begin: start of the range.
-        :param end: end of the range.
-        """
+    :param begin: start of the range.
+    :param end: end of the range.
+    """
 
-        begin: OrderedT
-        end: OrderedT
+    begin: OrderedT
+    end: OrderedT
 
-    class Not(NamedTuple, Generic[T]):
-        """
-        A named tuple representing negated value.
 
-        :param value: The value to be negated.
-        """
+class Not[T](NamedTuple):
+    """
+    A named tuple representing negated value.
 
-        value: T
+    :param value: The value to be negated.
+    """
+
+    value: T
 
 
 def ranges_overlap(ra: Range, rb: Range) -> bool:
