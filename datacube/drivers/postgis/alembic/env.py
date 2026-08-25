@@ -85,6 +85,7 @@ def include_name(
         "index",
         "unique_constraint",
         "foreign_key_constraint",
+        "check_constraint",
     ],
     parent_names: MutableMapping[
         Literal["schema_name", "table_name", "schema_qualified_table_name"], str | None
