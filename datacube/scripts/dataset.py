@@ -119,7 +119,7 @@ def dataset_stream(
 
 
 def load_datasets_for_update(
-    doc_stream: Iterable, index: Index, cfg_dict: dict[str, Any]
+    doc_stream: Iterable, index: Index, cfg_dict: Mapping[str, Any]
 ) -> Generator[tuple]:
     """Consume stream of dataset documents, associate each to a product by looking
     up existing dataset in the index. Datasets not in the database will be
