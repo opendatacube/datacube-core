@@ -401,6 +401,50 @@ def test_dataset_add_stac_ext_lineage(
     assert st == ds.source_tree
 
 
+@pytest.mark.parametrize("db_tz", ("UTC",))
+def test_dataset_add_stac_relative_links(
+    index, clirunner, ls8_stac_relative_doc, eo3_products
+) -> None:
+    stac_doc, path = ls8_stac_relative_doc
+    dsid = stac_doc["id"]
+
+    r = clirunner(
+        ["dataset", "add", "--ignore-lineage", "--asset-relative-paths", path]
+    )
+    assert r.exit_code == 0, f"Output: {r.output}"
+
+    ds = index.datasets.get(dsid)
+    assert ds is not None
+    assert ds.measurements.get("nbar_blue") is not None
+    assert (
+        ds.measurements["nbar_blue"].get("path")
+        == "ga_ls8c_nbar_3-1-0_088080_2020-05-25_final_band02.tif"
+    )
+    assert ds.accessories.get("thumbnail:nbart") is not None
+    assert (
+        ds.accessories["thumbnail:nbart"].get("path")
+        == "ga_ls8c_nbart_3-1-0_088080_2020-05-25_final_thumbnail.jpg"
+    )
+
+    index.datasets.purge([dsid], True)
+    # default behaviour is to use absolute paths
+    r = clirunner(["dataset", "add", "--ignore-lineage", path])
+    assert r.exit_code == 0, f"Output: {r.output}"
+
+    ds = index.datasets.get(dsid)
+    assert ds is not None
+    assert ds.measurements.get("nbar_blue") is not None
+    assert (
+        ds.measurements["nbar_blue"].get("path")
+        == "http://dea-public-data-dev.s3-ap-southeast-2.amazonaws.com/analysis-ready-data/ga_ls8c_ard_3/088/080/2020/05/25/ga_ls8c_nbar_3-1-0_088080_2020-05-25_final_band02.tif"
+    )
+    assert ds.accessories.get("thumbnail:nbart") is not None
+    assert (
+        ds.accessories["thumbnail:nbart"].get("path")
+        == "http://dea-public-data-dev.s3-ap-southeast-2.amazonaws.com/analysis-ready-data/ga_ls8c_ard_3/088/080/2020/05/25/ga_ls8c_nbart_3-1-0_088080_2020-05-25_final_thumbnail.jpg"
+    )
+
+
 @pytest.mark.parametrize(
     "datacube_env_name", ("datacube", "datacube3", "postgis", "postgis3")
 )

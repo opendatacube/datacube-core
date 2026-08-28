@@ -528,7 +528,7 @@ class SimpleDocNav:
     @property
     def location(self) -> str | None:
         if self.is_stac:
-            for link in self._doc.get("link", []):
+            for link in self._doc.get("links", []):
                 if link.get("rel") == "self":
                     return link.get("href")
         return self._doc.get("location", None)

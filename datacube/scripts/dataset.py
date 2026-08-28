@@ -118,7 +118,9 @@ def dataset_stream(
         yield dataset
 
 
-def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Generator[tuple]:
+def load_datasets_for_update(
+    doc_stream: Iterable, index: Index, cfg_dict: Mapping[str, Any]
+) -> Generator[tuple]:
     """Consume stream of dataset documents, associate each to a product by looking
     up existing dataset in the index. Datasets not in the database will be
     logged.
@@ -141,7 +143,9 @@ def load_datasets_for_update(doc_stream: Iterable, index: Index) -> Generator[tu
             return None, None, f"No such dataset in the database: {uuid}"
 
         # TODO: what about lineage?
-        doc2ds = Doc2Dataset(index, [existing.product.name], skip_lineage=True)
+        doc2ds = Doc2Dataset(
+            index, [existing.product.name], skip_lineage=True, conversion_cfg=cfg_dict
+        )
         ds, err = doc2ds(ds, uri)
         return (ds, existing, err)
 
@@ -239,6 +243,12 @@ def _ui_path_doc_stream(p: str | Path) -> list[tuple[str, SimpleDocNav]]:
     default=False,
 )
 @click.option(
+    "--asset-absolute-paths/--asset-relative-paths",
+    help="Specify whether STAC item assets should use absolute or relative paths (default is to use absolute paths)",
+    is_flag=True,
+    default=True,
+)
+@click.option(
     "--workers", default=1, type=int, help="Number of workers to use, default 1"
 )
 @click.argument("dataset-paths", type=str, nargs=-1)
@@ -252,6 +262,7 @@ def index_cmd(
     dry_run: bool,
     ignore_lineage: bool,
     archive_less_mature: bool,
+    asset_absolute_paths: bool,
     dataset_paths: list[str],
     workers: int,
 ) -> None:
@@ -260,6 +271,7 @@ def index_cmd(
         print_help_msg(index_cmd)
         sys.exit(1)
 
+    cfg_dict = {"asset_absolute_paths": asset_absolute_paths}
     try:
         ds_resolve = Doc2Dataset(
             index,
@@ -268,6 +280,7 @@ def index_cmd(
             skip_lineage=ignore_lineage,
             fail_on_missing_lineage=not auto_add_lineage,
             verify_lineage=verify_lineage,
+            conversion_cfg=cfg_dict,
         )
     except ValueError as e:
         _LOG.error(e)
@@ -392,15 +405,22 @@ def parse_update_rules(
     is_flag=True,
     default=False,
 )
+@click.option(
+    "--asset-absolute-paths/--asset-relative-paths",
+    help="Specify whether STAC item assets should use absolute or relative paths (default is to use absolute paths)",
+    is_flag=True,
+    default=True,
+)
 @click.argument("dataset-paths", nargs=-1)
 @ui.pass_index()
 def update_cmd(
     index: Index,
     keys_that_can_change: Sequence[str],
-    dry_run,
+    dry_run: bool,
     location_policy: Literal["keep", "archive", "forget"],
     dataset_paths: Iterable[Path | str],
-    archive_less_mature,
+    archive_less_mature: bool,
+    asset_absolute_paths: bool,
 ) -> None:
     if not dataset_paths:
         echo("Error: no datasets provided\n", err=True)
@@ -454,8 +474,10 @@ def update_cmd(
     success, fail = 0, 0
     doc_stream = ui_path_doc_stream(dataset_paths, logger=_LOG, uri=True)
 
+    cfg_dict = {"asset_absolute_paths": asset_absolute_paths}
+
     for ds, existing_ds in load_datasets_for_update(
-        remap_uri_from_doc(doc_stream), index
+        remap_uri_from_doc(doc_stream), index, cfg_dict
     ):
         _LOG.info("Matched %s", ds)
 
