@@ -5,6 +5,81 @@
 Release History
 ***************
 
+1.9.22 (1 September 2026)
+=========================
+
+Includes a bug fix to STAC metadata generation when using relative asset paths.
+
+What's Changed
+--------------
+
+* CI: disable uv cache for releases by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2518
+* [docs] Fix edit page links.  Add a target for database roles by @omad in https://github.com/opendatacube/datacube-core/pull/2524
+* [cli] datacube-worker was already removed, finish it off 🧹 by @omad in https://github.com/opendatacube/datacube-core/pull/2526
+* [cli] Be explicit about CLI name by @omad in https://github.com/opendatacube/datacube-core/pull/2525
+* Update to Ruff 0.16.0 by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2550
+* Refactor: make get_dataset_fields per instance by @SpacemanPaul in https://github.com/opendatacube/datacube-core/pull/2552
+* Add sorting of release notes by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2558
+* Upgrade setuptools-scm and uv.lock by @omad in https://github.com/opendatacube/datacube-core/pull/2561
+* `dataset add` stac relative asset paths option by @Ariana-B in https://github.com/opendatacube/datacube-core/pull/2562
+* Prepare for 1.9.22 release by @pjonsson in https://github.com/opendatacube/datacube-core/pull/2576
+
+Automated Updates
+-----------------
+
+* build(deps): bump astral-sh/uv from 0.11.20 to 0.11.21 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2517
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2519
+* build(deps): bump the actions-deps group with 3 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2520
+* build(deps): bump astral-sh/uv from 0.11.21 to 0.11.22 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2521
+* build(deps): bump astral-sh/uv from 0.11.22 to 0.11.23 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2522
+* build(deps): bump msgpack from 1.1.2 to 1.2.1 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2523
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2527
+* build(deps): bump codecov/codecov-action from 6.0.1 to 7.0.0 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2528
+* build(deps): bump astral-sh/uv from 0.11.23 to 0.11.24 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2529
+* build(deps): bump astral-sh/uv from 0.11.24 to 0.11.25 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2530
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2531
+* build(deps): bump actions/checkout from 6.0.3 to 7.0.0 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2532
+* build(deps): bump astral-sh/uv from 0.11.25 to 0.11.26 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2533
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2534
+* build(deps): bump actions/cache from 5.0.5 to 6.1.0 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2536
+* build(deps): bump astral-sh/uv from 0.11.26 to 0.11.27 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2535
+* build(deps): bump astral-sh/uv from 0.11.27 to 0.11.28 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2537
+* build(deps): bump mistune from 3.2.1 to 3.3.0 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2538
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2539
+* build(deps): bump the actions-deps group with 3 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2540
+* build(deps): bump astral-sh/uv from 0.11.28 to 0.11.29 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2541
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2542
+* build(deps): bump the actions-deps group with 2 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2544
+* build(deps): bump astral-sh/uv from 0.11.29 to 0.11.30 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2543
+* build(deps): bump pillow from 12.2.0 to 12.3.0 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2545
+* build(deps): bump astral-sh/uv from 0.11.30 to 0.11.31 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2547
+* build(deps): bump osgeo/gdal from ubuntu-full-3.13.1 to ubuntu-full-3.13.2 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2546
+* build(deps): bump astral-sh/uv from 0.11.31 to 0.11.32 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2548
+* build(deps): bump the actions-deps group with 2 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2551
+* build(deps): bump astral-sh/uv from 0.11.32 to 0.12.0 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2553
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2549
+* build(deps): bump the actions-deps group with 3 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2555
+* build(deps): bump astral-sh/uv from 0.12.0 to 0.12.1 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2554
+* build(deps): bump cryptography from 48.0.1 to 50.0.0 by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2556
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2557
+* build(deps): bump astral-sh/uv from 0.12.1 to 0.12.3 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2559
+* build(deps): bump the actions-deps group with 2 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2560
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2563
+* build(deps): bump github/codeql-action/upload-sarif from 4.37.4 to 4.37.6 in the actions-deps group by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2565
+* build(deps): bump astral-sh/uv from 0.12.3 to 0.12.5 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2564
+* build(deps): bump osgeo/gdal from ubuntu-full-3.13.2 to ubuntu-full-3.13.3 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2567
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2568
+* build(deps): bump the actions-deps group with 2 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2569
+* build(deps): bump astral-sh/uv from 0.12.5 to 0.12.7 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2571
+* build(deps): bump the actions-deps group with 2 updates by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2574
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/opendatacube/datacube-core/pull/2572
+* build(deps): bump astral-sh/uv from 0.12.7 to 0.12.8 in /docker by @dependabot[bot] in https://github.com/opendatacube/datacube-core/pull/2573
+
+The Open Data Cube Steering Council thanks and acknowledges RISE, Geoscience Australia and CSIRO
+for their contributions to this release and ongoing support of the project.
+
+**Full Changelog**: https://github.com/opendatacube/datacube-core/compare/1.9.21...1.9.22
+
 1.9.21 (11 June 2026)
 =====================
 
