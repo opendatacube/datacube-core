@@ -18,6 +18,7 @@ import click
 import yaml
 import yaml.resolver
 from click import echo
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from datacube.index.abstract import DatasetTuple
 from datacube.index.exceptions import MissingRecordError, NoProductsWarning
@@ -304,7 +305,7 @@ def index_cmd(
                 pool.join()
         else:
             doc_stream = ui_path_doc_stream(pp, logger=_LOG, uri=True)
-        index_datasets(
+        fails = index_datasets(
             dataset_stream(remap_uri_from_doc(doc_stream), ds_resolve),
             index,
             auto_add_lineage=auto_add_lineage and not ignore_lineage,
@@ -312,6 +313,7 @@ def index_cmd(
             # Convert from bool to int to avoid warnings
             archive_less_mature=500 if archive_less_mature else None,
         )
+        sys.exit(1 if fails > 0 else 0)
 
 
 def index_datasets(
@@ -320,13 +322,18 @@ def index_datasets(
     auto_add_lineage: bool,
     dry_run: bool,
     archive_less_mature: int | None,
-) -> None:
+) -> int:
+    fails = 0
     if index.name == "pgis_index":
         if not dry_run:
-            index.datasets.bulk_add(
-                _mk_dataset_tuples(dss), archive_less_mature=archive_less_mature
-            )
-        return
+            try:
+                index.datasets.bulk_add(
+                    _mk_dataset_tuples(dss), archive_less_mature=archive_less_mature
+                )
+            except (OperationalError, ProgrammingError) as e:
+                _LOG.error(e)
+                fails += 1
+        return fails
     for dataset in dss:
         _LOG.info("Matched %s", dataset)
         if not dry_run:
@@ -338,6 +345,11 @@ def index_datasets(
                 )
             except (ValueError, MissingRecordError) as e:
                 _LOG.error("Failed to add dataset %s: %s", dataset.local_uri, e)
+                fails += 1
+            except (OperationalError, ProgrammingError) as e:
+                _LOG.error(e)
+                fails += 1
+    return fails
 
 
 def parse_update_rules(
