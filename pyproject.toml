@@ -26,7 +26,7 @@ classifiers = [
 dependencies = [
     'affine',
     'alembic',
-    'antimeridian<0.4.5', # All test_index_cloning tests fail with 0.4.5.
+    'antimeridian<0.4.9', # All test_index_cloning tests fail with 0.4.5.
     'cachetools',
     'click>=8.2',  # Support for deprecated argument on options.
     'dask[array]',
