@@ -76,10 +76,12 @@ def database_init(
             ODC2DeprecationWarning,
             stacklevel=1,
         )
-
-    was_created = index.init_db(
-        with_default_types=default_types, with_permissions=init_users
-    )
+    try:
+        was_created = index.init_db(
+            with_default_types=default_types, with_permissions=init_users
+        )
+    except OperationalError as e:
+        handle_exception("Error Connecting to Database: %s", e)
 
     if was_created:
         echo(style("Created.", bold=True))
