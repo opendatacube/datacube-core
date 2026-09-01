@@ -358,8 +358,8 @@ def handle_exception(msg: str, e: Exception) -> None:
     """
     Exit following an exception in a CLI app
 
-    If verbosity (-v flag) specified, dump out a stack trace. Otherwise,
-    simply print the given error message.
+    If verbosity (-v flag) is specified twice, dump out a stack trace.
+    Otherwise, simply print the given error message.
 
     Include a '%s' in the message to print the single line message from the
     exception.
@@ -368,7 +368,7 @@ def handle_exception(msg: str, e: Exception) -> None:
     :param msg: Message to User with optional %s
     """
     ctx = click.get_current_context()
-    if ctx.obj["verbosity"] >= 1:
+    if ctx.obj["verbosity"] >= 2:
         raise e
     if "%s" in msg:
         click.echo(msg % e, err=True)
