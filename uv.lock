@@ -3,20 +3,20 @@ revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15' and platform_machine == 'ARM64' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and platform_machine == 'ARM64' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and platform_machine != 'ARM64' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and platform_machine != 'ARM64' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and platform_machine == 'ARM64' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and platform_machine != 'ARM64' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.13.*' and platform_machine == 'ARM64' and sys_platform == 'win32'",
-    "python_full_version < '3.13' and platform_machine == 'ARM64' and sys_platform == 'win32'",
     "python_full_version == '3.13.*' and platform_machine != 'ARM64' and sys_platform == 'win32'",
-    "python_full_version < '3.13' and platform_machine != 'ARM64' and sys_platform == 'win32'",
     "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
-    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.13' and platform_machine == 'ARM64' and sys_platform == 'win32'",
+    "python_full_version < '3.13' and platform_machine != 'ARM64' and sys_platform == 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version < '3.13' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
@@ -69,15 +69,15 @@ wheels = [
 
 [[package]]
 name = "antimeridian"
-version = "0.4.4"
+version = "0.4.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "shapely" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b8/75/9090aec3959ddc6a5881bc2f2f718a7510cbf518a3100718ca1097085506/antimeridian-0.4.4.tar.gz", hash = "sha256:cb6b9f93e7af6c3f064e0764974fdb62fe1a118926d010eabc4826b9f597ab3b", size = 12632548, upload-time = "2025-11-26T14:06:31.54Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1a/33/d11ef627eece463e8bc134da4ef2991311bdef1db26ba9b646c020a7a6d2/antimeridian-0.4.8.tar.gz", hash = "sha256:0ec6b84e083dceecdbcd73a88af4b860258dceda418c4147546b10c6c8b45b44", size = 12633370, upload-time = "2026-06-22T15:28:18.89Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/79/86484a6e3ef453dfa2f24caa971dc3f69baf95d3a0f2c6d7b378375394ab/antimeridian-0.4.4-py3-none-any.whl", hash = "sha256:050cf00e73dcd51a170042b32d8fa6280eecfe9faf1b13d24610bc22c85e7006", size = 15023, upload-time = "2025-11-26T14:06:29.705Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/34/a6d9e709ae551f36bea13f66800c561b7f09d3b6cc607c4b9cfcd2e089ae/antimeridian-0.4.8-py3-none-any.whl", hash = "sha256:a6764ddbfaed26edf95f2535632c3984edd98697202b9a5c7d2b9ae5da4a7771", size = 15686, upload-time = "2026-06-22T15:28:17.644Z" },
 ]
 
 [[package]]
@@ -1001,7 +1001,7 @@ doc = [
 requires-dist = [
     { name = "affine" },
     { name = "alembic" },
-    { name = "antimeridian", specifier = "<0.4.5" },
+    { name = "antimeridian", specifier = "<0.4.9" },
     { name = "boto3", marker = "extra == 's3'" },
     { name = "botocore", marker = "extra == 's3'" },
     { name = "bottleneck", marker = "extra == 'performance'" },
