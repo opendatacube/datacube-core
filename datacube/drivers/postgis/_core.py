@@ -217,6 +217,17 @@ def ensure_db(engine: Engine, with_permissions: bool = True) -> bool:
                 c.execute(text(f"grant create on schema {SCHEMA_NAME} to odc_manage"))
                 # Belt and braces to cover corner cases
                 c.execute(text("grant odc_manage to odc_admin"))
+                # fill Descriptions of roles
+                c.execute(
+                    "comment on role odc_admin is 'OpenDataCube Admin, used for creating roles'"
+                )
+                c.execute(
+                    "comment on role odc_manage is 'OpenDataCube Manage, used for sequences and products'"
+                )
+                c.execute(
+                    "comment on role odc_user is 'OpenDataCube User, used for normal select statements'"
+                )
+                c.execute("comment on schema odc is 'OpenDataCube Schema'")
             c.commit()
 
     return is_new
