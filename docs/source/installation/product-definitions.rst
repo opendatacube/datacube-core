@@ -67,7 +67,7 @@ dataset. See the `datacube-product-sync <https://github.com/opendatacube/odc-too
 For a detailed description of the format of a valid product document, refer to the `formal specification`_.
 
 Global datasets (PostGIS)
-========================
+=========================
 
 For products where **every dataset covers the entire globe**, set the optional
 top-level boolean ``global_datasets: true`` in the product definition. It defaults
