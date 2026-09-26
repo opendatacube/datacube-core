@@ -66,4 +66,27 @@ dataset. See the `datacube-product-sync <https://github.com/opendatacube/odc-too
 
 For a detailed description of the format of a valid product document, refer to the `formal specification`_.
 
+Global datasets (PostGIS)
+========================
+
+For products where **every dataset covers the entire globe**, set the optional
+top-level boolean ``global_datasets: true`` in the product definition. It defaults
+to ``false``. This is an assertion by the product administrator; the index does
+not verify global coverage.
+
+The PostGIS index omits the spatial predicate and spatial-index join for these
+products when searching or counting datasets. Product, metadata and archive
+filters still apply. In queries covering multiple products, only products with
+the flag enabled skip spatial filtering. Products without the flag keep their
+existing behaviour. Other index drivers do not use this optimisation.
+
+Do not enable the flag for tiled, regional, near-global or mixed-coverage
+products: doing so can return datasets that do not intersect the requested area.
+Loading and clipping raster data are unchanged. The optimisation does not remove
+global datasets from spatial indexes or improve searches of other products that
+still use those indexes.
+
+Changing this flag on an existing product requires the usual explicit approval
+for an unsafe product update, because it changes spatial-query semantics.
+
 .. _`formal specification`: https://github.com/opendatacube/eo3/blob/develop/SPECIFICATION-odc-product.md
