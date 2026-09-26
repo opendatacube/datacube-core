@@ -947,8 +947,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return
 
         for q, product in product_queries:
-            # Validate spatial inputs even when global coverage makes the
-            # resulting geometry unnecessary for filtering this product.
+            # Validate spatial inputs even when skipping spatial filtering.
             query_geom = extract_geom_from_query(**q)
             geom = None if product.global_datasets else query_geom
             q = strip_all_spatial_fields_from_query(q)
@@ -1000,10 +999,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return
 
         for q, product in product_queries:
-            geom = extract_geom_from_query(**q)
+            # Validate spatial inputs even when skipping spatial filtering.
+            query_geom = extract_geom_from_query(**q)
+            geom = None if product.global_datasets else query_geom
             q = strip_all_spatial_fields_from_query(q)
-            if product.global_datasets:
-                geom = None
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             with self._db_connection() as connection:
