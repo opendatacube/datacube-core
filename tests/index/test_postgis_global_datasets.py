@@ -81,6 +81,7 @@ def query_capture(eo3_product: Product) -> QueryCapture:
 @pytest.mark.parametrize(
     "spatial_query",
     [
+        {},
         {"lat": (-5, 10), "lon": (30, 45)},
         {"geopolygon": geom.box(30, -5, 45, 10, crs="EPSG:4326")},
     ],
@@ -115,8 +116,9 @@ def test_global_dataset_query_sql(
     spatial_table = dialect.identifier_preparer.format_table(spatial_index.__table__)
     product_ref = str(Dataset.product_ref.compile(dialect=dialect))
     archived_column = str(Dataset.archived.compile(dialect=dialect))
-    assert (f"JOIN {spatial_table}" in sql) is (flag is not True)
-    assert ("ST_Intersects" in sql) is (flag is not True)
+    spatial_filter = bool(spatial_query) and flag is not True
+    assert (f"JOIN {spatial_table}" in sql) is spatial_filter
+    assert ("ST_Intersects" in sql) is spatial_filter
     assert f"{product_ref} =" in sql
     assert dataset_id in statements[0].params.values()
     if archived is False:
@@ -157,18 +159,21 @@ def test_product_global_datasets_defaults_false(
 
 
 @pytest.mark.parametrize("flag", [None, False, True])
+@pytest.mark.parametrize("operation", ["search", "search_returning", "count"])
 def test_global_datasets_preserve_spatial_query_validation(
-    query_capture: QueryCapture, flag: bool | None
+    query_capture: QueryCapture, flag: bool | None, operation: str
 ) -> None:
     resource, statements = query_capture([flag])
+    options = {"field_names": ("id",)} if operation == "search_returning" else {}
     with pytest.raises(
         ValueError, match="Cannot specify spatial key lat AND geopolygon"
     ):
-        list(
-            resource.search(
-                product="product_1",
-                lat=(-5, 10),
-                geopolygon=geom.box(30, -5, 45, 10, crs="EPSG:4326"),
-            )
+        result = getattr(resource, operation)(
+            product="product_1",
+            lat=(-5, 10),
+            geopolygon=geom.box(30, -5, 45, 10, crs="EPSG:4326"),
+            **options,
         )
+        if operation != "count":
+            list(result)
     assert statements == []
