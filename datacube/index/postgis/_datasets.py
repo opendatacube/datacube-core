@@ -950,6 +950,10 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             # Extract Geospatial search geometry
             geom = extract_geom_from_query(**q)
             q = strip_all_spatial_fields_from_query(q)
+            if product.global_datasets:
+                # Every dataset matches the spatial constraint, so avoid the
+                # spatial index join. Other products retain their own geometry.
+                geom = None
             dataset_fields = product.metadata_type.dataset_fields
             if additional_fields:
                 dataset_fields.update(additional_fields)
@@ -1000,6 +1004,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
         for q, product in product_queries:
             geom = extract_geom_from_query(**q)
             q = strip_all_spatial_fields_from_query(q)
+            if product.global_datasets:
+                geom = None
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             with self._db_connection() as connection:

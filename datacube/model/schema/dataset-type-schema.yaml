@@ -37,6 +37,12 @@ properties:
             "$ref": "#/definitions/measurement"
     managed:
         type: boolean
+    global_datasets:
+        type: boolean
+        default: false
+        description: >-
+            Assert that every dataset in this product covers the globe.
+            The PostGIS index may skip spatial filtering for this product.
 
 required:
     - name

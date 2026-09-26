@@ -26,6 +26,8 @@ only_mandatory_fields: dict[str, Any] = {
     "valid_product_update",
     [
         {},
+        {"global_datasets": True},
+        {"global_datasets": False},
         {"storage": {"crs": "EPSG:3577"}},
         # With the optional properties
         {
@@ -54,6 +56,9 @@ def test_incomplete_product_is_invalid() -> None:
     [
         # Mandatory
         {"name": None},
+        {"global_datasets": "false"},
+        {"global_datasets": 1},
+        {"global_datasets": None},
         # Should be an object
         {"storage": "s"},
         # Should be a string
