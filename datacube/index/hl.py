@@ -105,8 +105,9 @@ def product_matcher(rules: Sequence[ProductRule]) -> ProductMatcher:
 
             raise BadMatch(
                 "Dataset metadata did not match product signature."
-                f"\nDataset definition:\n {json.dumps(doc, indent=4)}\n"
-                f"\nProduct signature:\n {json.dumps(rule.signature, indent=4)}\n"
+                "\nDataset definition:\n"
+                f"{json.dumps(jsonify_document(doc), indent=4)}\n"
+                f"\nProduct signature:\n{json.dumps(rule.signature, indent=4)}\n"
             )
 
         return matcher
