@@ -45,7 +45,7 @@ dependencies = [
     'pyyaml',
     'rasterio>=1.4.4',  # Handle changes in recent versions of GDAL
     'shapely>=2.0',
-    'sqlalchemy>=2.0',  # GeoAlchemy2 requires >=1.4.
+    'sqlalchemy>=2.0,<2.1',  # GeoAlchemy2 requires >=1.4.
     'toolz',
     'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
 ]
