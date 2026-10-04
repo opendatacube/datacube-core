@@ -302,7 +302,7 @@ class PostgisDbAPI:
         result = (
             Session(executor).execute(command) if orm else executor.execute(command)
         )
-        yield from result.scalars() if orm and orm_scalars else result
+        yield result.scalars() if orm and orm_scalars else result
 
     @catch_timeout
     def run_query(self, command, orm: bool = False, orm_scalars=False) -> Sequence:
