@@ -968,8 +968,11 @@ def archive_cmd(
         echo(f"Archiving dataset: {dataset}")
 
     if not dry_run:
-        index.datasets.archive(all_datasets)
-
+        try:
+            index.datasets.archive(all_datasets)
+        except (OperationalError, ProgrammingError) as e:
+            echo(str(e), err=True)
+            sys.exit(1)
     echo("Completed dataset archival.")
 
 
