@@ -172,7 +172,8 @@ norecursedirs = [".*", "build", "dist", ".git", "tmp*", "docs", ".jj"]
 filterwarnings = [
     "ignore::FutureWarning",
     "ignore:datetime.datetime.utcnow*:DeprecationWarning:botocore.*",
-    "ignore:.*numpy.ndarray size changed.*:"
+    "ignore:.*numpy.ndarray size changed.*:",
+    "ignore:datacube.utils.geometry.*:DeprecationWarning"
 ]
 
 [tool.ruff]
