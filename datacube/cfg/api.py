@@ -14,7 +14,7 @@ import warnings
 from collections.abc import Sequence
 from os import PathLike
 from threading import Lock
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, override
 
 from ..migration import ODC2DeprecationWarning
 from .cfg import find_config, parse_text
@@ -357,6 +357,10 @@ class ODCEnvironment:
         val = handler.validate_and_normalise(val)
         self._normalised[handler.name] = val
         handler.handle_dependent_options(val)
+
+    @override
+    def __repr__(self) -> str:
+        return f"<ODCEnvironment name={self._name} _raw={self._raw}>"
 
 
 # TypeAliases for more concise type hints.
