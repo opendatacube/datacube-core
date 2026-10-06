@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 
+from datacube.cfg import psql_url_from_config
+
 TYPE_CHECKING = False
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -138,8 +140,10 @@ def test_config_check(clirunner, index, cfg_env) -> None:
     # it prints something vaguely related and does not error-out.
     result = clirunner(["system", "check"])
 
-    assert cfg_env["db_hostname"] in result.output
-    assert cfg_env["db_username"] in result.output
+    # Are we displaying the correct database URL for this environment
+    db_url = psql_url_from_config(cfg_env)
+    assert db_url in result.output
+
     assert str(cfg_env["skip_broken_datasets"]) in result.output
     assert str(cfg_env["dc_load_limit"]) in result.output
 
