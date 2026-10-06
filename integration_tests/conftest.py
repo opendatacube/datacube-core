@@ -1126,6 +1126,9 @@ def clirunner(datacube_env_name: str):
             exe_opts.append(verbose_flag)
         exe_opts.extend(opts)
 
+        print(
+            f"[pytest fixture clirunner] Running CLI command: {cli_method} {' '.join(exe_opts)}"
+        )
         result = CliRunner().invoke(
             cli_method, exe_opts, input=stdin_input, catch_exceptions=catch_exceptions
         )

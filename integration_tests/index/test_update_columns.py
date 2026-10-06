@@ -50,8 +50,9 @@ def drop_column(conn, table: str, column: str) -> None:
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"), indirect=True)
 def test_added_column(clirunner, uninitialised_postgres_db) -> None:
     # Run on an empty database.
-    result = clirunner(["--env", "datacube", "system", "init"])
+    result = clirunner(["system", "init"])
     assert "Created." in result.output
+    print(result.output)
 
     with uninitialised_postgres_db._connect() as connection:
         c = connection._connection
@@ -71,8 +72,9 @@ def test_added_column(clirunner, uninitialised_postgres_db) -> None:
 @pytest.mark.parametrize("datacube_env_name", ("datacube", "datacube3"), indirect=True)
 def test_readd_column(clirunner, uninitialised_postgres_db) -> None:
     # Run on an empty database. drop columns and re-add
-    result = clirunner(["--env", "datacube", "system", "init"])
+    result = clirunner(["system", "init"])
     assert "Created." in result.output
+    print(result.output)
 
     with uninitialised_postgres_db._connect() as connection:
         c = connection._connection
@@ -87,7 +89,8 @@ def test_readd_column(clirunner, uninitialised_postgres_db) -> None:
         assert not pg_column_exists(c, _schema.DATASET.name, "updated")
         assert not pg_column_exists(c, _schema.DATASET_LOCATION.name, "added")
 
-    result = clirunner(["--env", "datacube", "system", "init"])
+    result = clirunner(["system", "init"])
+    print(result.output)
 
     with uninitialised_postgres_db._connect() as connection:
         c = connection._connection
