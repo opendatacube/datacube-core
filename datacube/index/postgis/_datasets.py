@@ -947,8 +947,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return
 
         for q, product in product_queries:
-            # Extract Geospatial search geometry
-            geom = extract_geom_from_query(**q)
+            # Validate spatial inputs even when skipping spatial filtering.
+            geom = None if product.global_datasets else extract_geom_from_query(**q)
             q = strip_all_spatial_fields_from_query(q)
             dataset_fields = product.metadata_type.dataset_fields
             if additional_fields:
@@ -998,7 +998,8 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return
 
         for q, product in product_queries:
-            geom = extract_geom_from_query(**q)
+            # Validate spatial inputs even when skipping spatial filtering.
+            geom = None if product.global_datasets else extract_geom_from_query(**q)
             q = strip_all_spatial_fields_from_query(q)
             dataset_fields = product.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))

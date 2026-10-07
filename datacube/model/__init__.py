@@ -780,6 +780,11 @@ class Product:
         return self.definition.get("managed", False)
 
     @property
+    def global_datasets(self) -> bool:
+        """Whether every dataset covers the globe (PostGIS spatial-search hint)."""
+        return self.definition.get("global_datasets", False)
+
+    @property
     def metadata_doc(self) -> Mapping[str, Any]:
         return self.definition["metadata"]
 
