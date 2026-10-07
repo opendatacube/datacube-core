@@ -173,7 +173,9 @@ filterwarnings = [
     "ignore::FutureWarning",
     "ignore:datetime.datetime.utcnow*:DeprecationWarning:botocore.*",
     "ignore:.*numpy.ndarray size changed.*:",
-    "ignore:datacube.utils.geometry.*:DeprecationWarning"
+    # Ignore deprecation warning during pytest collection of datacube.utils.geometry
+    # but, still discover and run tests within that module.
+    "ignore:datacube.utils.geometry.*:DeprecationWarning:importlib.*"
 ]
 
 [tool.ruff]
