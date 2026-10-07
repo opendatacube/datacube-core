@@ -52,7 +52,6 @@ def test_added_column(clirunner, uninitialised_postgres_db) -> None:
     # Run on an empty database.
     result = clirunner(["system", "init"])
     assert "Created." in result.output
-    print(result.output)
 
     with uninitialised_postgres_db._connect() as connection:
         c = connection._connection
