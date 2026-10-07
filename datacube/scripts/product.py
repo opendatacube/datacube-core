@@ -58,18 +58,24 @@ def add_products(index: Index, allow_exclusive_lock: bool, files: list) -> None:
 This operation requires constructing a bunch of indexes and this takes time, the
 bigger your database the longer it will take. Just wait a bit.""")
 
-    signal.signal(signal.SIGINT, on_ctrlc)
+    # Catch SIGINT (Ctrl+C) while adding products to try to prevent bad database states.
+    # Restore it afterwards since datacube cli commands are sometimes called from
+    # within tests and we want Ctrl+C to work normally there.
+    previous_handler = signal.signal(signal.SIGINT, on_ctrlc)
 
-    for descriptor_path, parsed_doc in docs:
-        try:
-            type_ = index.products.from_doc(parsed_doc)
-            echo(f'Adding "{type_.name}" (this might take a while)', nl=False)
-            index.products.add(type_, allow_table_lock=allow_exclusive_lock)
-            echo(" DONE")
-        except InvalidDocException as e:
-            _LOG.exception(e)
-            _LOG.error("Invalid product definition: %s", descriptor_path)
-            sys.exit(1)
+    try:
+        for descriptor_path, parsed_doc in docs:
+            try:
+                type_ = index.products.from_doc(parsed_doc)
+                echo(f'Adding "{type_.name}" (this might take a while)', nl=False)
+                index.products.add(type_, allow_table_lock=allow_exclusive_lock)
+                echo(" DONE")
+            except InvalidDocException as e:
+                _LOG.exception(e)
+                _LOG.error("Invalid product definition: %s", descriptor_path)
+                sys.exit(1)
+    finally:
+        signal.signal(signal.SIGINT, previous_handler)
 
 
 @product_cli.command("update")
