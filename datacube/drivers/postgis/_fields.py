@@ -374,8 +374,8 @@ class BoolDocField(SimpleDocField):
     def search_value_to_alchemy(self, value):
         # Convert boolean to int (range) for indexing purposes
         return func.numrange(
-            int(value),
-            int(value),
+            cast(int(value), postgres.NUMERIC),
+            cast(int(value), postgres.NUMERIC),
             # Inclusive on both sides.
             "[]",
             type_=NUMRANGE,
@@ -531,8 +531,8 @@ class NumericRangeDocField(RangeDocField):
     def value_to_alchemy(self, value):
         low, high = value
         return func.numrange(
-            low,
-            high,
+            cast(low, postgres.NUMERIC),
+            cast(high, postgres.NUMERIC),
             # Inclusive on both sides.
             "[]",
             type_=NUMRANGE,
