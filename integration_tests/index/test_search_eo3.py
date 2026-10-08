@@ -1283,27 +1283,38 @@ def test_find_duplicates_with_time(
     all_datasets = list(index.datasets.search())
     assert len(all_datasets) == 3
 
-    search_result = namedtuple("search_result", ["region_code", "time"])
-
-    # Postgis driver returns tuple of datetime, postgres with psycopg3 returns
-    # tuple of strings, postgres with psycopg2 returns a string.
-    time = (
-        (
-            datetime.datetime(2023, 4, 30, 23, 50, 33, 884549, tzinfo=datetime.UTC),
-            datetime.datetime(2023, 4, 30, 23, 50, 34, 884549, tzinfo=datetime.UTC),
+    # The underlying driver determines how the tstzrange is returned:
+    #  - Postgis driver returns a tuple of datetimes.
+    #  - postgres with psycopg3 returns a tuple of strings.
+    #  - postgres with psycopg2 returns a tuple of strings on SQLAlchemy >= 2.1,
+    #    but a single composite string on SQLAlchemy 2.0.
+    psycopg_tuple = ("2023-04-30 23:50:33.884549", "2023-04-30 23:50:34.884549")
+    psycopg2_legacy_str = '("2023-04-30 23:50:33.884549","2023-04-30 23:50:34.884549")'
+    if index._db.driver_name == "postgis":  # type: ignore[attr-defined]
+        acceptable_times: tuple[Any, ...] = (
+            (
+                datetime.datetime(2023, 4, 30, 23, 50, 33, 884549, tzinfo=datetime.UTC),
+                datetime.datetime(2023, 4, 30, 23, 50, 34, 884549, tzinfo=datetime.UTC),
+            ),
         )
-        if index._db.driver_name == "postgis"  # type: ignore[attr-defined]
-        else ("2023-04-30 23:50:33.884549", "2023-04-30 23:50:34.884549")
-        if str(index._db._engine.url).startswith("postgresql+psycopg:")  # type: ignore[attr-defined]
-        else '("2023-04-30 23:50:33.884549","2023-04-30 23:50:34.884549")'
-    )
+    elif str(index._db._engine.url).startswith("postgresql+psycopg:"):  # type: ignore[attr-defined]
+        acceptable_times = (psycopg_tuple,)
+    else:
+        # psycopg2: SQLAlchemy 2.1 parses the composite into a tuple of strings,
+        # SQLAlchemy 2.0 returned the raw composite string.
+        acceptable_times = (psycopg_tuple, psycopg2_legacy_str)
     res = sorted(
         index.datasets.search_product_duplicates(
             nrt_dataset.product, "region_code", "time"
         )
     )
 
-    assert res == [(search_result("090086", time), {nrt_dataset.id, final_dataset.id})]
+    assert len(res) == 1
+    (result_key, result_ids) = res[0]
+    assert hasattr(result_key, "region_code") and hasattr(result_key, "time")
+    assert result_key.region_code == "090086"
+    assert result_key.time in acceptable_times
+    assert result_ids == {nrt_dataset.id, final_dataset.id}
 
 
 def test_csv_search_via_cli_eo3(
