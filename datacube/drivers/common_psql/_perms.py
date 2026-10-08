@@ -10,7 +10,7 @@ from abc import ABCMeta, abstractmethod
 from enum import Enum, EnumMeta
 from typing import Self
 
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 from sqlalchemy.exc import ProgrammingError
 
 from ._utils import escape_pg_identifier
@@ -286,12 +286,18 @@ def create_user(
         _LOG.error("User already exists: %s", username)
         return False
     username = escape_pg_identifier(conn, username)
-    sql = text(f"create user {username} password :password in role {role.value}")
+    # PostgreSQL does not accept server-side bound parameters in CREATE USER (a
+    # utility statement), so render the password inline as an escaped literal.
+    sql = text(
+        f"create user {username} password :password in role {role.value}"
+    ).bindparams(bindparam("password", value=password, literal_execute=True))
     try:
-        conn.execute(sql, {"password": password})
+        conn.execute(sql)
         if description:
-            sql = text(f"comment on role {username} is :description")
-            conn.execute(sql, {"description": description})
+            sql = text(f"comment on role {username} is :description").bindparams(
+                bindparam("description", value=description, literal_execute=True)
+            )
+            conn.execute(sql)
         return True
     except ProgrammingError:
         _LOG.error("Insufficient permission to create user: %s", username)
