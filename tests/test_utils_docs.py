@@ -20,6 +20,7 @@ import moto
 import numpy as np
 import pytest
 import toolz
+from affine import Affine
 
 from datacube.model import MetadataType
 from datacube.model.utils import (
@@ -34,7 +35,7 @@ from datacube.testutils import (
     make_graph_abcde,
     mk_sample_product,
 )
-from datacube.utils import InvalidDocException, SimpleDocNav, read_documents
+from datacube.utils import InvalidDocException, SimpleDocNav, json, read_documents
 from datacube.utils.changes import (
     MISSING,
     DocumentMismatchError,
@@ -593,6 +594,42 @@ def test_jsonify() -> None:
     assert jsonify_document({"k": UUID("1f231570-e777-11e6-820f-185e0f80a5c0")}) == {
         "k": "1f231570-e777-11e6-820f-185e0f80a5c0"
     }
+
+
+@pytest.mark.parametrize(
+    "coefficients, expected",
+    [
+        ((1, 0, 0, 0, 1, 0), (1, 0, 0, 0, 1, 0, 0, 0, 1)),
+        (
+            (25, 0.5, 300000, -0.75, -25, 7000000),
+            (25, 0.5, 300000, -0.75, -25, 7000000, 0, 0, 1),
+        ),
+        (
+            (float("nan"), float("inf"), -float("inf"), -0.0, 1, 0.25),
+            ("NaN", "Infinity", "-Infinity", -0.0, 1, 0.25, 0, 0, 1),
+        ),
+    ],
+)
+def test_jsonify_affine(
+    coefficients: tuple[float, ...], expected: tuple[float | str, ...]
+) -> None:
+    transform = Affine(*coefficients)
+    assert jsonify_document(transform) == expected
+
+    doc: OrderedDict[int | str, Any] = OrderedDict(
+        [(1, [{"transform": transform}]), ("other", (2, 3))]
+    )
+    converted = jsonify_document(doc)
+    assert converted == OrderedDict(
+        [("1", [{"transform": expected}]), ("other", (2, 3))]
+    )
+    assert json.loads(json.dumps(converted, allow_nan=False)) == {
+        "1": [{"transform": list(expected)}],
+        "other": [2, 3],
+    }
+    assert doc[1][0]["transform"] is transform
+    assert converted["1"] is not doc[1]
+    assert converted["1"][0] is not doc[1][0]
 
 
 def test_netcdf_strings() -> None:
