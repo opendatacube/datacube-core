@@ -9,6 +9,7 @@ For now this provides tools to configure GDAL environment for performant reads f
 """
 
 from ._rio import (
+    GDALManagedAWSSession,
     activate_from_config,
     activate_rio_env,
     configure_s3_access,
@@ -18,6 +19,7 @@ from ._rio import (
 )
 
 __all__ = [
+    "GDALManagedAWSSession",
     "activate_from_config",
     "activate_rio_env",
     "configure_s3_access",
