@@ -7,16 +7,19 @@ from unittest import mock
 
 import moto
 import pytest
+import rasterio.env
 
 from datacube.testutils import write_files
 from datacube.utils.aws import configure_s3_access
 from datacube.utils.rio import (
+    GDALManagedAWSSession,
     activate_from_config,
     activate_rio_env,
     deactivate_rio_env,
     get_rio_env,
     set_default_rio_config,
 )
+from datacube.utils.rio._rio import SECRET_KEYS, _state
 
 
 def test_rio_env_no_aws() -> None:
@@ -197,3 +200,71 @@ def test_rio_configure_aws_access(monkeypatch, without_aws_env, dask_client) -> 
 
     ee = client.submit(_activate_and_get, sanitize=False).result()
     assert ee == ee_local
+
+
+def test_rio_env_aws_gdal_credentials(monkeypatch, without_aws_env) -> None:
+    deactivate_rio_env()
+    # static keys in the process environment must not be copied into GDAL config
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key-id")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
+
+    with mock.patch("boto3.Session", side_effect=AssertionError("boto3 used")):
+        ee = activate_rio_env(
+            aws={
+                "gdal_credentials": True,
+                "region_name": "us-west-1",
+                "profile_name": "odc",
+                "requester_pays": True,
+            }
+        )
+
+    assert isinstance(_state().env.session, GDALManagedAWSSession)
+    ee = get_rio_env(sanitize=False)
+    assert not set(SECRET_KEYS) & set(ee)
+    assert ee["AWS_NO_SIGN_REQUEST"] == "NO"
+    assert ee["AWS_REGION"] == "us-west-1"
+    assert ee["AWS_PROFILE"] == "odc"
+    assert ee["AWS_REQUEST_PAYER"] == "requester"
+
+    # rasterio.open(s3://..) must not stack a boto3 AWSSession on top
+    @rasterio.env.ensure_env_with_credentials
+    def _open(fp):
+        return rasterio.env.getenv()
+
+    assert not set(SECRET_KEYS) & set(_open("s3://bucket/file.tif"))
+
+    deactivate_rio_env()
+    assert get_rio_env() == {}
+
+
+def test_rio_configure_aws_access_web_identity(monkeypatch, without_aws_env) -> None:
+    pp = write_files({"token": "fake-oidc-token"})
+    monkeypatch.setenv("AWS_WEB_IDENTITY_TOKEN_FILE", str(pp / "token"))
+    monkeypatch.setenv("AWS_ROLE_ARN", "arn:aws:iam::123456789012:role/odc-reader")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "ap-southeast-2")
+    monkeypatch.setenv("AWS_CONFIG_FILE", str(pp / "missing"))
+    monkeypatch.setenv("AWS_SHARED_CREDENTIALS_FILE", str(pp / "missing"))
+
+    with moto.mock_aws(), mock.patch.dict(os.environ):
+        # moto sets fake static keys, remove them so web identity is used
+        for k in SECRET_KEYS:
+            os.environ.pop(k, None)
+
+        creds = configure_s3_access(gdal_credentials=True)
+        assert creds is not None
+        assert creds.method == "assume-role-with-web-identity"
+
+        ee = activate_from_config()
+        assert ee is not None
+        assert isinstance(_state().env.session, GDALManagedAWSSession)
+
+        ee = get_rio_env(sanitize=False)
+        assert not set(SECRET_KEYS) & set(ee)
+        assert ee["AWS_NO_SIGN_REQUEST"] == "NO"
+        assert ee["AWS_REGION"] == "ap-southeast-2"
+
+    with pytest.raises(ValueError):
+        configure_s3_access(gdal_credentials=True, driver="rio")
+
+    set_default_rio_config()
+    deactivate_rio_env()
