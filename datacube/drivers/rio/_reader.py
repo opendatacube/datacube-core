@@ -254,8 +254,9 @@ class RDEntry(ReaderDriverEntry):
         if pool is None:
             max_workers = cfg.pop("max_workers", 1)
             pool = ThreadPoolExecutor(max_workers=max_workers)
-        elif not isinstance(pool, ThreadPoolExecutor):
-            if not cfg.pop("allow_custom_pool", False):
-                raise ValueError("External `pool` should be a `ThreadPoolExecutor`")
+        elif not isinstance(pool, ThreadPoolExecutor) and not cfg.pop(
+            "allow_custom_pool", False
+        ):
+            raise ValueError("External `pool` should be a `ThreadPoolExecutor`")
 
         return RIORdrDriver(pool, cfg)
