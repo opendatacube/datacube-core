@@ -1,0 +1,23 @@
+name: merge-gateway
+
+on:
+  pull_request:
+
+permissions: {}
+
+# When a PR is updated, cancel the jobs from the previous version. Merges
+# do not define head_ref, so use run_id to never cancel those jobs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  merge-gateway:
+    permissions:
+      checks: read # Required for reading the status of other workflows.
+    uses: DigitalEarthSweden/.github/.github/workflows/merge-gateway.yaml@0adea110cd9bfac2c7213926de7bbe678ea6e01a # packages/action-merge-gateway/v1.0.0
+    with:
+      # Timeout of longest workflow (build).
+      timeout: 55
+    secrets:
+      repo-token: ${{ secrets.GITHUB_TOKEN }}
