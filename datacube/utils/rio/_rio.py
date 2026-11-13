@@ -13,7 +13,7 @@ from typing import Literal
 import rasterio
 import rasterio.env
 from deprecat import deprecat
-from rasterio.session import AWSSession, DummySession
+from rasterio.session import AWSSession, DummySession, Session
 
 from datacube.migration import ODC2DeprecationWarning
 from datacube.utils.generic import thread_local_cache
@@ -33,6 +33,51 @@ SECRET_KEYS = ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN"
 
 def _sanitize(opts: Mapping, keys) -> dict:
     return {k: (v if k not in keys else "xx..xx") for k, v in opts.items()}
+
+
+class GDALManagedAWSSession(Session):
+    """AWS session that leaves obtaining and refreshing credentials to GDAL.
+
+    :class:`rasterio.session.AWSSession` resolves credentials with boto3 and
+    passes a frozen copy of them to GDAL, so temporary (STS) credentials stop
+    working once they expire. This session only passes on non-secret settings,
+    GDAL then finds credentials itself (``AWS_WEB_IDENTITY_TOKEN_FILE`` and
+    ``AWS_ROLE_ARN``, ``~/.aws`` files, EC2/ECS metadata, ...) and refreshes
+    them as needed.
+    """
+
+    def __init__(
+        self,
+        region_name: str | None = None,
+        profile_name: str | None = None,
+        endpoint_url: str | None = None,
+        requester_pays: bool = False,
+        aws_unsigned: bool = False,
+    ) -> None:
+        self.region_name = region_name
+        self.profile_name = profile_name
+        self.endpoint_url = endpoint_url
+        self.requester_pays = requester_pays
+        self.unsigned = aws_unsigned
+
+    @classmethod
+    def hascreds(cls, config) -> bool:
+        return AWSSession.hascreds(config)
+
+    def get_credential_options(self) -> dict:
+        # "NO" is GDAL's default, but setting it explicitly makes rasterio treat
+        # this environment as credentialized, otherwise it would push a boto3
+        # AWSSession with frozen credentials on top of it when opening s3:// paths.
+        opts = {"AWS_NO_SIGN_REQUEST": "YES" if self.unsigned else "NO"}
+        if self.region_name:
+            opts["AWS_REGION"] = self.region_name
+        if self.profile_name:
+            opts["AWS_PROFILE"] = self.profile_name
+        if self.requester_pays:
+            opts["AWS_REQUEST_PAYER"] = "requester"
+        if self.endpoint_url:
+            opts["AWS_S3_ENDPOINT"] = self.endpoint_url
+        return opts
 
 
 def _state(purge: bool = False):
@@ -78,16 +123,21 @@ def activate_rio_env(
     :param aws: Dictionary of options for rasterio.session.AWSSession
                 OR 'auto' -- session = rasterio.session.AWSSession()
 
+                With ``gdal_credentials=True`` in the dictionary
+                :class:`GDALManagedAWSSession` is used instead, and GDAL
+                obtains and refreshes credentials itself.
+
     :param cloud_defaults: When True inject settings for reading COGs
     :param kwargs: Passed on to rasterio.Env(..) constructor
     """
-    session = DummySession()
+    session: Session = DummySession()
 
     if aws is not None:
         if not (aws == "auto" or isinstance(aws, dict)):
             raise ValueError('Only support: None|"auto"|{..} for `aws` parameter')
 
         aws = {} if aws == "auto" else dict(**aws)
+        gdal_credentials = aws.pop("gdal_credentials", False)
         region_name = aws.get("region_name", "auto")
 
         if region_name == "auto":
@@ -100,7 +150,8 @@ def activate_rio_env(
                 if "region_name" in aws:
                     raise e
 
-        session = AWSSession(**aws)
+        session_cls = GDALManagedAWSSession if gdal_credentials else AWSSession
+        session = session_cls(**aws)
 
     opts = (
         {
