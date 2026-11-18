@@ -449,6 +449,7 @@ def get_aws_settings(
     region_name: str = "auto",
     aws_unsigned: bool = False,
     requester_pays: bool = False,
+    gdal_credentials: bool = False,
 ) -> tuple[dict[str, Any], Credentials | None]:
     """
     Compute ``aws=`` parameter for ``set_default_rio_config``.
@@ -460,6 +461,9 @@ def get_aws_settings(
     Note that credentials are baked in to ``aws`` setting dictionary,
     however since those might be STS credentials they might require refresh
     hence they are returned from this function separately as well.
+
+    With ``gdal_credentials=True`` credentials are not baked in, GDAL obtains
+    and refreshes them itself, see ``datacube.utils.rio.GDALManagedAWSSession``.
     """
     session = mk_boto_session(profile=profile, region_name=region_name)
 
@@ -471,6 +475,16 @@ def get_aws_settings(
     creds = get_creds_with_retry(session)
     if creds is None:
         raise ValueError("Couldn't get credentials")
+
+    if gdal_credentials:
+        aws = {
+            "region_name": region_name,
+            "requester_pays": requester_pays,
+            "gdal_credentials": True,
+        }
+        if profile is not None:
+            aws["profile_name"] = profile
+        return aws, creds
 
     cc = creds.get_frozen_credentials()
 
@@ -507,6 +521,7 @@ def configure_s3_access(
     cloud_defaults: bool = True,
     client=None,
     driver: str | None = None,
+    gdal_credentials: bool = False,
     **gdal_opts,
 ) -> Credentials | None:
     """Credentialize for S3 bucket access or configure public access.
@@ -517,9 +532,9 @@ def configure_s3_access(
 
     .. note::
 
-       if credentials are STS based they will eventually expire, currently
-       this case is not handled very well, reads will just start failing
-       eventually and will never recover.
+       if credentials are STS based they will eventually expire, and reads
+       will start failing and never recover, unless ``gdal_credentials=True``
+       is used.
 
     :param profile:        AWS profile name to use
     :param region_name:    Default region_name to use if not configured for a given/default AWS profile
@@ -532,11 +547,18 @@ def configure_s3_access(
 
     :param client:         Dask distributed ``dask.Client`` instance, if supplied apply settings on the
                            dask cluster rather than locally.
+    :param gdal_credentials: If ``True`` don't pass credentials to GDAL, let GDAL find and refresh
+                           them itself instead (e.g. from ``AWS_WEB_IDENTITY_TOKEN_FILE``).
+                           Use this for temporary credentials in long running processes. On a
+                           dask cluster the credential source has to be available to the workers.
+
     :param gdal_opts:      Any other option to pass to GDAL environment setup
 
     :returns: credentials object or ``None`` if ``aws_unsigned=True``
     """
     if driver == "rio":
+        if gdal_credentials:
+            raise ValueError("gdal_credentials is not supported with driver='rio'")
         # rio driver has a different approach to RIO configuration.
         # The approaches may be reconcilable in future, but probably not worth the effort.
         return rio_configure_s3_access(
@@ -555,6 +577,7 @@ def configure_s3_access(
         region_name=region_name,
         aws_unsigned=aws_unsigned,
         requester_pays=requester_pays,
+        gdal_credentials=gdal_credentials,
     )
 
     if client is None:
