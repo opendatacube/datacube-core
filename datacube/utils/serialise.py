@@ -14,6 +14,7 @@ from uuid import UUID
 
 import numpy
 import yaml
+from affine import Affine
 from odc.geo.crs import CRS
 
 from datacube.model._base import Range
@@ -62,9 +63,14 @@ def jsonify_document(doc):
     Make a document ready for serialisation as JSON.
 
     Returns the new document, leaving the original unmodified.
+
+    Affine transforms are represented as nine-element tuples.
     """
 
     def fixup_value(v):
+        if isinstance(v, Affine):
+            # Affine 3 no longer inherits from tuple.
+            return tuple(fixup_value(value) for value in v)
         if isinstance(v, float):
             if math.isfinite(v):
                 return v
