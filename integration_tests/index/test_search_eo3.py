@@ -1297,7 +1297,7 @@ def test_find_duplicates_with_time(
                 datetime.datetime(2023, 4, 30, 23, 50, 34, 884549, tzinfo=datetime.UTC),
             ),
         )
-    elif str(index._db._engine.url).startswith("postgresql+psycopg:"):  # type: ignore[attr-defined]
+    elif index.environment.psycopg_version == 3:
         acceptable_times = (psycopg_tuple,)
     else:
         # psycopg2: SQLAlchemy 2.1 parses the composite into a tuple of strings,
