@@ -24,7 +24,7 @@ def _assert_same(obj1, obj2) -> None:
     assert obj1.__class__ == obj2.__class__
     if isinstance(obj1, RangeDocField):
         assert obj1.lower.__dict__ == obj2.lower.__dict__
-        assert obj1.greater.__dict__ == obj2.greater.__dict__
+        assert obj1.upper.__dict__ == obj2.upper.__dict__
     else:
         assert obj1.__dict__ == obj2.__dict__
 

@@ -380,8 +380,8 @@ class RangeDocField(PgDocField):
             offset=min_offset,
             selection="least",
         )
-        self.greater = self.FIELD_CLASS(
-            name + "_greater",
+        self.upper = self.FIELD_CLASS(
+            name + "_upper",
             description,
             alchemy_column,
             indexed=False,
@@ -402,7 +402,7 @@ class RangeDocField(PgDocField):
     @override
     def alchemy_expression(self):
         return self.value_to_alchemy(
-            (self.lower.alchemy_expression, self.greater.alchemy_expression)
+            (self.lower.alchemy_expression, self.upper.alchemy_expression)
         ).label(self.name)
 
     @override
@@ -416,7 +416,7 @@ class RangeDocField(PgDocField):
     @override
     def extract(self, doc) -> Range | None:
         min_val = self.lower.extract(doc)
-        max_val = self.greater.extract(doc)
+        max_val = self.upper.extract(doc)
         if not min_val and not max_val:
             return None
         return Range(min_val, max_val)
@@ -517,7 +517,7 @@ class DateRangeDocField(RangeDocField):
     def expression_with_leniency(self):
         return func.tstzrange(
             self.lower.alchemy_expression - cast("500 milliseconds", INTERVAL),
-            self.greater.alchemy_expression + cast("500 milliseconds", INTERVAL),
+            self.upper.alchemy_expression + cast("500 milliseconds", INTERVAL),
             # Inclusive on both sides.
             "[]",
             type_=TSTZRANGE,
@@ -616,7 +616,7 @@ class EqualsExpression(PgExpression):
         return self.field.evaluate(ctx) == self.value
 
 
-def parse_fields(doc: dict[str, Any], table_column) -> dict[str, PgField]:
+def parse_fields(doc: dict[str, Any], table_column) -> dict[str, PgDocField]:
     """
     Parse a field spec document into objects.
 
@@ -662,7 +662,7 @@ def parse_fields(doc: dict[str, Any], table_column) -> dict[str, PgField]:
     # No later field should have overridden string
     assert type_map["string"] == SimpleDocField
 
-    def _get_field(name: str, descriptor: dict, column) -> PgField:
+    def _get_fields(name: str, descriptor: dict, column) -> dict[str, PgDocField]:
         """
         :param column: SQLAlchemy table column
         """
@@ -683,16 +683,23 @@ def parse_fields(doc: dict[str, Any], table_column) -> dict[str, PgField]:
                 f" Available types are: {list(type_map.keys())!r}"
             )
         try:
-            return field_class(name, description, column, indexed, **ctorargs)
+            fld = field_class(name, description, column, indexed, **ctorargs)
+            if isinstance(fld, RangeDocField):
+                return {
+                    name: fld,
+                    fld.lower.name: fld.lower,
+                    fld.upper.name: fld.upper,
+                }
+            return {name: fld}
         except TypeError as e:
             raise RuntimeError(
                 f"Field {name} has unexpected argument for a {type_name}", e
             ) from None
 
-    return {
-        name: _get_field(name, descriptor, table_column)
-        for name, descriptor in doc.items()
-    }
+    fields: dict[str, PgDocField] = {}
+    for name, descriptor in doc.items():
+        fields.update(_get_fields(name, descriptor, table_column))
+    return fields
 
 
 def _coalesce(*values):
