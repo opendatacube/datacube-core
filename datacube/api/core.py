@@ -374,6 +374,14 @@ class Datacube:
                 time = ("2000", None)  # all data from 2000 onward
                 time = (None, "2000")  # all data up to and including 2000
 
+            The time of a dataset is itself typically stored as a time range,
+            e.g. representing the capture times of the first and last scan lines of a satellite
+            image, or the start and end dates of a summary product.  A dataset is returned
+            if its time range overlaps with query time range.  To search by the start date
+            (or end date) alone, use ``time_lower`` (``or time_upper``).
+
+            Timezone-naive dates are supported, but not recommended.
+
             For 3D datasets, where the product definition contains an ``extra_dimension`` specification,
             these dimensions can be queried using that dimension's name. E.g.::
 

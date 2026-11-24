@@ -126,6 +126,17 @@ class Query:
             dimensions specified by name for 3D datasets. E.g. z=(10, 30).
          * `crs` - spatial coordinate reference system to interpret the spatial bounds
          * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
+
+        Some search fields (notably time) may be stored as range between a minimum and
+        maximum value.  A dataset is returned if its range field metadata overlaps
+        with the range specified for the field in the query. To search against the
+        upper or lower bound of the range instead of the range itself, append
+        ``_upper`` or ``_lower`` to the field name, e.g.: ``time`` to search
+        against the full time range, ``time_lower`` to search against the start
+        date, or ``time_upper`` to search against the end date.
+
+        Refer to the product's metadata type document to determine which search fields
+        are treated as ranges.
         """
         self.index = index
         self.product = product
