@@ -405,12 +405,8 @@ class DateDocField(SimpleDocField):
     @override
     def alchemy_expression(self):
         return self._alchemy_offset_value(
-            self.offset,
-            self.aggregation.pg_calc,
-            type_=TIMESTAMP(timezone=True),
-        ).label(
-            self.name,
-        )
+            self.offset, self.aggregation.pg_calc, type_=TIMESTAMP(timezone=True)
+        ).label(self.name)
 
     @override
     def value_to_alchemy(self, value: DateFieldLike) -> DateFieldLike:
