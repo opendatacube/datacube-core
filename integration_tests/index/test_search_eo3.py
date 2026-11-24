@@ -335,6 +335,61 @@ def test_search_dataset_ranges_eo3(index: Index, ls8_eo3_dataset: Dataset) -> No
     assert len(datasets) == 0
 
 
+def test_search_dataset_range_bounds_eo3(
+    index: Index, ls8_eo3_dataset: Dataset
+) -> None:
+    # Test search by start time only
+    # search range includes start date but not end data (should hit)
+    datasets = list(
+        index.datasets.search(
+            # lat=Range(-37.5, -36.5),
+            time_lower=Range(
+                datetime.datetime(2016, 5, 12, 23, 49, 0, tzinfo=datetime.UTC),
+                datetime.datetime(2016, 5, 12, 23, 50, 45, tzinfo=datetime.UTC),
+            ),
+        )
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    # search range includes end date but not start date (should miss)
+    datasets = list(
+        index.datasets.search(
+            # lat=Range(-37.5, -36.5),
+            time_lower=Range(
+                datetime.datetime(2016, 5, 12, 23, 50, 45, tzinfo=datetime.UTC),
+                datetime.datetime(2016, 5, 12, 23, 50, 59, tzinfo=datetime.UTC),
+            ),
+        )
+    )
+    assert len(datasets) == 0
+    # Test search by end time only
+    # search range includes end date but not start date (should hit)
+    datasets = list(
+        index.datasets.search(
+            # lat=Range(-37.5, -36.5),
+            time_upper=Range(
+                datetime.datetime(2016, 5, 12, 23, 50, 45, tzinfo=datetime.UTC),
+                datetime.datetime(2016, 5, 12, 23, 50, 59, tzinfo=datetime.UTC),
+            ),
+        )
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == ls8_eo3_dataset.id
+
+    # search range includes start date but not end date (should miss)
+    datasets = list(
+        index.datasets.search(
+            # lat=Range(-37.5, -36.5),
+            time_upper=Range(
+                datetime.datetime(2016, 5, 12, 23, 49, 0, tzinfo=datetime.UTC),
+                datetime.datetime(2016, 5, 12, 23, 50, 45, tzinfo=datetime.UTC),
+            ),
+        )
+    )
+    assert len(datasets) == 0
+
+
 def test_zero_width_range_search(index: Index, ls8_eo3_dataset4: Dataset) -> None:
     # Test time search against zero-width time metadata
     datasets = list(
