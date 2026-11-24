@@ -946,7 +946,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 )
 
             source_queries, source_product = product_queries[0]
-            dataset_fields = source_product.metadata_type.dataset_fields
+            dataset_fields = source_product.metadata_type.all_dataset_fields
             source_exprs = tuple(
                 fields.to_expressions(dataset_fields.get, **source_queries)
             )
@@ -963,7 +963,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return
 
         for q, product in product_queries:
-            dataset_fields = product.metadata_type.dataset_fields.copy()
+            dataset_fields = product.metadata_type.all_dataset_fields.copy()
             if additional_fields:
                 dataset_fields.update(additional_fields)
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
@@ -1007,7 +1007,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             return
 
         for q, product in product_queries:
-            dataset_fields = product.metadata_type.dataset_fields
+            dataset_fields = product.metadata_type.all_dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             with self._db_connection() as connection:
                 count = connection.count_datasets(query_exprs, archived=archived)
@@ -1042,7 +1042,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             )
 
         for q, product in product_queries:
-            dataset_fields = product.metadata_type.dataset_fields
+            dataset_fields = product.metadata_type.all_dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             with self._db_connection() as connection:
                 yield (
@@ -1237,7 +1237,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 raise ValueError(f"No products match search terms: {query!r}")
 
         for q, product in product_queries:
-            dataset_fields = product.metadata_type.dataset_fields
+            dataset_fields = product.metadata_type.all_dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             custom_query_exprs = tuple(
                 self.get_custom_query_expressions(custom_query, custom_offsets)

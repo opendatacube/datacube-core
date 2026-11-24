@@ -404,7 +404,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
 
             # Check that all the keys they specified match this product.
             for key, value in list(remaining_matchable.items()):
-                field = type_.metadata_type.dataset_fields.get(key)
+                field = type_.metadata_type.all_dataset_fields.get(key)
                 if not field:
                     # This type doesn't have that field, so it cannot match.
                     break

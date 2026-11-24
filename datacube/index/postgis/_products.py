@@ -410,7 +410,7 @@ class ProductResource(AbstractProductResource, IndexResourceAddIn):
                 if key == "geopolygon":
                     # Geometry field is handled elsewhere by index drivers that support spatial indexes.
                     continue
-                field = type_.metadata_type.dataset_fields.get(key)
+                field = type_.metadata_type.all_dataset_fields.get(key)
                 if not field:
                     # This type doesn't have that field, so it cannot match.
                     break
