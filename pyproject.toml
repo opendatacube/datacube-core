@@ -63,7 +63,7 @@ Issues = "https://github.com/opendatacube/datacube-core/issues"
 Chat = "https://discord.com/invite/4hhBQVas5U"
 
 [project.optional-dependencies]
-performance = ['ciso8601', 'bottleneck']
+performance = ['bottleneck']
 distributed = ['distributed', 'dask[distributed]']
 s3 = ['boto3', 'botocore']
 netcdf = ['netcdf4']
