@@ -25,10 +25,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from datetime import date, tzinfo
 
-try:
-    from ciso8601 import parse_datetime
-except ImportError:
-    parse_datetime = datetime.fromisoformat
+parse_datetime = datetime.fromisoformat
 
 FREQS: dict[str, int] = {"y": YEARLY, "m": MONTHLY, "d": DAILY}
 DURATIONS = {"y": "years", "m": "months", "d": "days"}

@@ -145,17 +145,11 @@ class NativeField(PgField):
         alchemy_column: ColumnElement,
         alchemy_expression: ColumnExpressionArgument | None = None,
         join_clause: ColumnExpressionArgument | None = None,
-        alchemy_table: FromClause | None = None,
         # Should this be selected by default when selecting all fields?
         affects_row_selection: bool = False,
+        **kwargs,
     ) -> None:
-        super().__init__(
-            name,
-            description,
-            alchemy_column,
-            indexed=False,
-            alchemy_table=alchemy_table,
-        )
+        super().__init__(name, description, alchemy_column, indexed=False, **kwargs)
         self._expression = alchemy_expression
         self.affects_row_selection = affects_row_selection
         self.join_clause = join_clause
@@ -278,8 +272,9 @@ class SimpleDocField(PgDocField):
         indexed: bool,
         offset: Offset | Sequence[Offset] | None = None,
         selection: str = "first",
+        **kwargs,
     ) -> None:
-        super().__init__(name, description, alchemy_column, indexed)
+        super().__init__(name, description, alchemy_column, indexed, **kwargs)
         self.offset = offset
         if selection not in SELECTION_TYPES:
             raise ValueError(
@@ -406,6 +401,13 @@ DateFieldLike: TypeAlias = datetime | date | str | ColumnElement
 class DateDocField(SimpleDocField):
     type_name: _AVAILABLE_TYPES = "datetime"
 
+    @property
+    @override
+    def alchemy_expression(self):
+        return self._alchemy_offset_value(
+            self.offset, self.aggregation.pg_calc, type_=TIMESTAMP(timezone=True)
+        ).label(self.name)
+
     @override
     def value_to_alchemy(self, value: DateFieldLike) -> DateFieldLike:
         """
@@ -440,7 +442,9 @@ class DateDocField(SimpleDocField):
 
     @override
     def between(self, low, high) -> ValueBetweenExpression:
-        return ValueBetweenExpression(self, low, high)
+        return ValueBetweenExpression(
+            self, self.value_to_alchemy(low), self.value_to_alchemy(high)
+        )
 
     @override
     def parse_value(self, value: datetime | str) -> datetime:  # type: ignore[override]
@@ -476,8 +480,9 @@ class RangeDocField(PgDocField):
         indexed: bool,
         min_offset=None,
         max_offset=None,
+        **kwargs,
     ) -> None:
-        super().__init__(name, description, alchemy_column, indexed)
+        super().__init__(name, description, alchemy_column, indexed, **kwargs)
         self.lower = self.FIELD_CLASS(
             name + "_lower",
             description,

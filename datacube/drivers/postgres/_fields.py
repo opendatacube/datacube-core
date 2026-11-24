@@ -333,7 +333,9 @@ class DateDocField(SimpleDocField):
 
     @override
     def between(self, low, high) -> ValueBetweenExpression:
-        return ValueBetweenExpression(self, low, high)
+        return ValueBetweenExpression(
+            self, self.value_to_alchemy(low), self.value_to_alchemy(high)
+        )
 
     @override
     def parse_value(self, value: datetime | str) -> datetime:  # type: ignore[override]
