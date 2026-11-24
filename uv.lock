@@ -1,18 +1,18 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.13.*' and sys_platform == 'win32'",
-    "python_full_version < '3.13' and sys_platform == 'win32'",
     "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
-    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'win32'",
+    "python_full_version < '3.13' and sys_platform == 'emscripten'",
     "python_full_version < '3.13' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
@@ -65,15 +65,15 @@ wheels = [
 
 [[package]]
 name = "antimeridian"
-version = "0.4.4"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "shapely" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b8/75/9090aec3959ddc6a5881bc2f2f718a7510cbf518a3100718ca1097085506/antimeridian-0.4.4.tar.gz", hash = "sha256:cb6b9f93e7af6c3f064e0764974fdb62fe1a118926d010eabc4826b9f597ab3b", size = 12632548, upload-time = "2025-11-26T14:06:31.54Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ed/b6/fd34e535939e15885d2f0687fa9c0359bdc78ffdd1b9bc996981491806d1/antimeridian-0.5.0.tar.gz", hash = "sha256:41bdfb77ae04660657906c27bcbbe3b94f302358817e77a51f9a6657e54ee1b9", size = 12640446, upload-time = "2026-11-19T17:07:58.755Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/79/86484a6e3ef453dfa2f24caa971dc3f69baf95d3a0f2c6d7b378375394ab/antimeridian-0.4.4-py3-none-any.whl", hash = "sha256:050cf00e73dcd51a170042b32d8fa6280eecfe9faf1b13d24610bc22c85e7006", size = 15023, upload-time = "2025-11-26T14:06:29.705Z" },
+    { url = "https://files.pythonhosted.org/packages/81/ee/f3d28b7c4a5aba8c26dcf05bdc506ff2810e0ce5311724670ba26a43e1bf/antimeridian-0.5.0-py3-none-any.whl", hash = "sha256:a967803b8e4549a923a7a9182ddd77dfb06a28d77007917fe54dc119b307bd32", size = 15707, upload-time = "2026-11-19T17:07:57.254Z" },
 ]
 
 [[package]]
@@ -993,7 +993,7 @@ doc = [
 requires-dist = [
     { name = "affine" },
     { name = "alembic" },
-    { name = "antimeridian", specifier = "<0.4.5" },
+    { name = "antimeridian", specifier = "<0.5.1" },
     { name = "boto3", marker = "extra == 's3'" },
     { name = "botocore", marker = "extra == 's3'" },
     { name = "bottleneck", marker = "extra == 'performance'" },
@@ -2395,7 +2395,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "ptyprocess" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
