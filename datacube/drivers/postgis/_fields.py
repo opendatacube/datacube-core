@@ -406,6 +406,17 @@ DateFieldLike: TypeAlias = datetime | date | str | ColumnElement
 class DateDocField(SimpleDocField):
     type_name: _AVAILABLE_TYPES = "datetime"
 
+    @property
+    @override
+    def alchemy_expression(self):
+        return self._alchemy_offset_value(
+            self.offset,
+            self.aggregation.pg_calc,
+            type_=TIMESTAMP(timezone=True),
+        ).label(
+            self.name,
+        )
+
     @override
     def value_to_alchemy(self, value: DateFieldLike) -> DateFieldLike:
         """
@@ -440,7 +451,9 @@ class DateDocField(SimpleDocField):
 
     @override
     def between(self, low, high) -> ValueBetweenExpression:
-        return ValueBetweenExpression(self, low, high)
+        return ValueBetweenExpression(
+            self, self.value_to_alchemy(low), self.value_to_alchemy(high)
+        )
 
     @override
     def parse_value(self, value: datetime | str) -> datetime:  # type: ignore[override]
