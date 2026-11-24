@@ -145,17 +145,11 @@ class NativeField(PgField):
         alchemy_column: ColumnElement,
         alchemy_expression: ColumnExpressionArgument | None = None,
         join_clause: ColumnExpressionArgument | None = None,
-        alchemy_table: FromClause | None = None,
         # Should this be selected by default when selecting all fields?
         affects_row_selection: bool = False,
+        **kwargs,
     ) -> None:
-        super().__init__(
-            name,
-            description,
-            alchemy_column,
-            indexed=False,
-            alchemy_table=alchemy_table,
-        )
+        super().__init__(name, description, alchemy_column, indexed=False, **kwargs)
         self._expression = alchemy_expression
         self.affects_row_selection = affects_row_selection
         self.join_clause = join_clause
@@ -278,8 +272,9 @@ class SimpleDocField(PgDocField):
         indexed: bool,
         offset: Offset | Sequence[Offset] | None = None,
         selection: str = "first",
+        **kwargs,
     ) -> None:
-        super().__init__(name, description, alchemy_column, indexed)
+        super().__init__(name, description, alchemy_column, indexed, **kwargs)
         self.offset = offset
         if selection not in SELECTION_TYPES:
             raise ValueError(
@@ -489,8 +484,9 @@ class RangeDocField(PgDocField):
         indexed: bool,
         min_offset=None,
         max_offset=None,
+        **kwargs,
     ) -> None:
-        super().__init__(name, description, alchemy_column, indexed)
+        super().__init__(name, description, alchemy_column, indexed, **kwargs)
         self.lower = self.FIELD_CLASS(
             name + "_lower",
             description,
