@@ -428,8 +428,8 @@ class NumericRangeDocField(RangeDocField):
     def value_to_alchemy(self, value):
         low, high = value
         return func.numrange(
-            low,
-            high,
+            cast(low, postgres.NUMERIC),
+            cast(high, postgres.NUMERIC),
             # Inclusive on both sides.
             "[]",
             type_=NUMRANGE,
@@ -448,8 +448,8 @@ class IntRangeDocField(RangeDocField):
     def value_to_alchemy(self, value):
         low, high = value
         return func.numrange(
-            low,
-            high,
+            cast(low, postgres.NUMERIC),
+            cast(high, postgres.NUMERIC),
             # Inclusive on both sides.
             "[]",
             type_=INT4RANGE,
