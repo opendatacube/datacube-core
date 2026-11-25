@@ -235,6 +235,8 @@ def extract_dataset_fields(ds_metadata, fields: Mapping) -> dict:
             fld_type = field.type_name
             raw_val = field.extract(ds_metadata)
             sqla_val = field.search_value_to_alchemy(raw_val)
+            if field.bound:
+                continue
             result[field_name] = (fld_type, sqla_val)
         except UnindexableValue:
             continue

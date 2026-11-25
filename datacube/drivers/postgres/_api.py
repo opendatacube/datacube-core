@@ -51,6 +51,7 @@ from datacube.index.fields import NotExpression, OrExpression
 from datacube.model import LineageRelation, Range
 from datacube.utils.uris import split_uri
 
+from ...utils.dates import tz_as_utc
 from . import _dynamic as dynamic
 from ._core import UserRole
 from ._fields import (  # noqa: F401
@@ -914,7 +915,10 @@ class PostgresDbAPI:
 
         for time_period, dataset_count in results:
             # if not time_period.upper_inf:
-            yield Range(time_period.lower, time_period.upper), dataset_count
+            yield (
+                Range(tz_as_utc(time_period.lower), tz_as_utc(time_period.upper)),
+                dataset_count,
+            )
 
     def count_datasets_through_time_query(
         self, start, end, period, time_field, expressions

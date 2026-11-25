@@ -12,6 +12,7 @@ import math
 from collections import namedtuple
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from enum import Enum
 from functools import cached_property
 from typing import Any, TypeAlias, override
 
@@ -42,6 +43,15 @@ DatasetJoinArgs: TypeAlias = (
 )
 
 
+class RangeBoundType(Enum):
+    NORMAL_FIELD = 0
+    UPPER_BOUND = 1
+    LOWER_BOUND = 2
+
+    def __bool__(self) -> bool:
+        return self != self.NORMAL_FIELD
+
+
 class PgField(Field):
     """
     Postgis implementation of a searchable field. May be a value inside
@@ -55,13 +65,32 @@ class PgField(Field):
         alchemy_column: ColumnElement,
         indexed: bool,
         alchemy_table: FromClause | None = None,
+        bound: RangeBoundType = RangeBoundType.NORMAL_FIELD,
+        key: str | None = None,
     ) -> None:
+        """
+        Initialize a field definition backed by a SQLAlchemy expression.
+
+        :param name: Field name
+        :param description: Human-readable description of the field.
+        :param alchemy_column: SQLAlchemy column or expression represented by the
+            field.
+        :param indexed: Indicates whether the field is indexed.
+        :param alchemy_table: Optional SQLAlchemy table or selectable associated with
+            the field.
+        :param bound: Is this the upper/lower bound subfield of a range or a standalone
+            field?  (Default: normal field)
+        :param key: The search key used for this field in the search index. Defaults to
+            the name of the field.
+        """
         super().__init__(name, description)
 
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
         self.alchemy_column = alchemy_column
         self.indexed = indexed
         self.alchemy_table = alchemy_table
+        self.bound = bound
+        self.key = self.name if key is None else key
 
     @property
     def select_alchemy_table(self) -> FromClause:
@@ -80,7 +109,7 @@ class PgField(Field):
 
     @cached_property
     def search_index_table(self) -> FromClause:
-        if self.indexed:
+        if self.indexed or self.bound:
             search_table = search_field_index_map[self.type_name]
             return aliased(  # type: ignore[return-value]
                 search_table, name=f"{search_table.__tablename__}-{self.name}"
@@ -89,12 +118,12 @@ class PgField(Field):
 
     @cached_property
     def dataset_join_args(self) -> DatasetJoinArgs:
-        if self.indexed:
+        if self.indexed or self.bound:
             return (
                 self.search_index_table,
                 and_(
                     Dataset.id == self.search_index_table.dataset_ref,  # type: ignore[attr-defined]
-                    self.search_index_table.search_key == self.name,  # type: ignore[attr-defined]
+                    self.search_index_table.search_key == self.key,  # type: ignore[attr-defined]
                 ),
             )
         return (self.search_index_table,)
@@ -109,6 +138,10 @@ class PgField(Field):
 
     @property
     def search_alchemy_expression(self) -> ColumnExpressionArgument:
+        if self.bound:
+            if self.bound == RangeBoundType.UPPER_BOUND:
+                return func.upper(self.search_index_table.search_val)  # type: ignore[attr-defined]
+            return func.lower(self.search_index_table.search_val)  # type: ignore[attr-defined]
         if self.indexed:
             return self.search_index_table.search_val  # type: ignore[attr-defined]
         return self.alchemy_expression
@@ -487,17 +520,21 @@ class RangeDocField(PgDocField):
             name + "_lower",
             description,
             alchemy_column,
-            indexed=False,
+            key=name,
+            indexed=indexed,
             offset=min_offset,
             selection="least",
+            bound=RangeBoundType.LOWER_BOUND,
         )
-        self.greater = self.FIELD_CLASS(
-            name + "_greater",
+        self.upper = self.FIELD_CLASS(
+            name + "_upper",
             description,
             alchemy_column,
-            indexed=False,
+            key=name,
+            indexed=indexed,
             offset=max_offset,
             selection="greatest",
+            bound=RangeBoundType.UPPER_BOUND,
         )
 
     @override
@@ -508,7 +545,7 @@ class RangeDocField(PgDocField):
     @override
     def alchemy_expression(self):
         return self.value_to_alchemy(
-            (self.lower.alchemy_expression, self.greater.alchemy_expression)
+            (self.lower.alchemy_expression, self.upper.alchemy_expression)
         ).label(self.name)
 
     @override
@@ -522,7 +559,7 @@ class RangeDocField(PgDocField):
     @override
     def extract(self, doc) -> Range | None:
         min_val = self.lower.extract(doc)
-        max_val = self.greater.extract(doc)
+        max_val = self.upper.extract(doc)
         if not min_val and not max_val:
             return None
         return Range(min_val, max_val)
@@ -636,7 +673,7 @@ class DateRangeDocField(RangeDocField):
         low = cast(self.lower.alchemy_expression, TIMESTAMP(timezone=True)) - cast(
             "500 milliseconds", INTERVAL
         )
-        high = cast(self.greater.alchemy_expression, TIMESTAMP(timezone=True)) + cast(
+        high = cast(self.upper.alchemy_expression, TIMESTAMP(timezone=True)) + cast(
             "500 milliseconds", INTERVAL
         )
         return func.tstzrange(
@@ -784,7 +821,7 @@ def parse_fields(doc: dict, table_column) -> dict[str, PgDocField]:
     # No later field should have overridden string
     assert type_map["string"] == SimpleDocField
 
-    def _get_field(name: str, descriptor: dict, column) -> PgDocField:
+    def _get_fields(name: str, descriptor: dict, column) -> dict[str, PgDocField]:
         """
         :param column: SQLAlchemy table column
         """
@@ -805,16 +842,23 @@ def parse_fields(doc: dict, table_column) -> dict[str, PgDocField]:
                 f" Available types are: {list(type_map.keys())!r}"
             )
         try:
-            return field_class(name, description, column, indexed, **ctorargs)
+            fld = field_class(name, description, column, indexed, **ctorargs)
+            if isinstance(fld, RangeDocField):
+                return {
+                    name: fld,
+                    fld.lower.name: fld.lower,
+                    fld.upper.name: fld.upper,
+                }
+            return {name: fld}
         except TypeError as e:
             raise RuntimeError(
                 f"Field {name} has unexpected argument for a {type_name}", e
             ) from None
 
-    return {
-        name: _get_field(name, descriptor, table_column)
-        for name, descriptor in doc.items()
-    }
+    fields: dict[str, PgDocField] = {}
+    for name, descriptor in doc.items():
+        fields.update(_get_fields(name, descriptor, table_column))
+    return fields
 
 
 def _coalesce(*values):

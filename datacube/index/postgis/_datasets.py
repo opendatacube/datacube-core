@@ -950,7 +950,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             # Validate spatial inputs even when skipping spatial filtering.
             geom = None if product.global_datasets else extract_geom_from_query(**q)
             q = strip_all_spatial_fields_from_query(q)
-            dataset_fields = product.metadata_type.dataset_fields
+            dataset_fields = product.metadata_type.all_dataset_fields
             if additional_fields:
                 dataset_fields.update(additional_fields)
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
@@ -1001,7 +1001,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             # Validate spatial inputs even when skipping spatial filtering.
             geom = None if product.global_datasets else extract_geom_from_query(**q)
             q = strip_all_spatial_fields_from_query(q)
-            dataset_fields = product.metadata_type.dataset_fields
+            dataset_fields = product.metadata_type.all_dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             with self._db_connection() as connection:
                 count = connection.count_datasets(
@@ -1036,7 +1036,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
             )
 
         for q, product in product_queries:
-            dataset_fields = product.metadata_type.dataset_fields
+            dataset_fields = product.metadata_type.all_dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             with self._db_connection() as connection:
                 yield (
@@ -1214,7 +1214,7 @@ class DatasetResource(AbstractDatasetResource, IndexResourceAddIn):
                 raise ValueError(f"No products match search terms: {query!r}")
 
         for q, product in product_queries:
-            dataset_fields = product.metadata_type.dataset_fields
+            dataset_fields = product.metadata_type.all_dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             custom_query_exprs = tuple(
                 self.get_custom_query_expressions(custom_query, custom_offsets)

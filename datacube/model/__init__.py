@@ -659,7 +659,13 @@ class MetadataType:
             search_field_extractor = get_dataset_fields
         self.definition = definition
         self.search_field_extractor = search_field_extractor
-        self.dataset_fields = self.search_field_extractor(self.definition)
+        self.all_dataset_fields = self.search_field_extractor(self.definition)
+        self.dataset_fields: Mapping[str, Field] = {
+            name: fld
+            for name, fld in self.all_dataset_fields.items()
+            # Won't have access to bound member for SimpleFields.
+            if not name.endswith("_upper") and not name.endswith("_lower")
+        }
         self.id = id_
 
     @property
